@@ -3,7 +3,9 @@
 Ridiculous.. I got nerdsniped by an impossible claim by someone on hackernews that guitar tab was turing complete. (storing to memory seems an obvious obstacle but..) 
 I wanted to see what I might come up with, a different machine, perhaps involving a looper pedal blah blah blah.. it's been a few weeks and I forget what all ridiculous iterations it went through. 
 
-In the process though.. I ended up with ast to tablature, midi to guitar tab (with an optimal fretboard mapper that's kinda cool. maybe deserves finishing and packaging), guitar tab formatter, a "guitputer" machine of sorts.. Some of those things I just mentioned are useful things that I don't know if they already exist, but someone may find some of this code useful, or interesting, or funny.
+In the process though.. I ended up with ast to tablature, midi to guitar tab (with an optimal fretboard mapper that's kinda cool. maybe deserves finishing and packaging), guitar tab formatter, a "guitputer" machine of sorts and a couple of attempts at a "compiler" for it.. 
+
+Some of those things I just mentioned are useful things that I don't know if they already exist, but someone may find some of this code useful, or interesting, or funny.
 
 Up until about the halfway point, I had kept a journal (below) planning to document this. Yeah, I probably won't. :-)
 Code in the repo includes half-finished test scripts and redirected output txt files for debugging. Enjoy.
