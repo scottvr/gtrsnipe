@@ -10,66 +10,68 @@ Some of those things I just mentioned are useful things that I don't know if the
 Up until about the halfway point, I had kept a journal (below) planning to document this. Yeah, I probably won't. :-)
 Code in the repo includes half-finished test scripts and redirected output txt files for debugging. Enjoy.
 
-=============================
+-----
 
-Initial Infrastructure
+## Initial Infrastructure
 
-Changed timing notation from mm:ss to measure.beat format
-Added configurable time signature support
-Created basic instruction set for guitar operations
+- Changed timing notation from mm:ss to measure.beat format
+- Added configurable time signature support
+- basic instruction set for guitar operations
 
-Memory & Addressing
+## Memory & Addressing
 
-Implemented fret-based memory addressing system
-Added capo support as base address register
-Explored alternate tunings as memory access patterns
-Developed concept of using string selection as memory banks
+- fret-based memory addressing system
+- capo support as base address register
+- alternate tunings as memory access patterns
+- using string selection as memory banks
 
-Instruction Set Architecture
+## Instruction Set Architecture
 
-Expanded instruction set with guitar techniques (hammer-ons, pull-offs, slides, etc.)
-Added timing specifications for each instruction type
-Created cycle count system for different operations
+- Expanded instruction set with guitar techniques (hammer-ons, pull-offs, slides, etc.)
+- Added timing specifications for each instruction type
+- Created cycle count system for different operations
 
-CPU & Compilation
+## CPU & Compilation
 
-Developed GuitarCPU class
-Created program compiler for converting operations to tab
-Implemented basic instruction scheduling
+- Developed GuitarCPU class
+- Created program compiler for converting operations to tab
+- Implemented basic instruction scheduling
 
-Tab Generation & Output
+## Tab Generation & Output
 
-Created TabFormatter for proper guitar tablature output
-Added measure bars and timing markers
-Implemented proper string representation
+- Created TabFormatter for proper guitar tablature output
+- Added measure bars and timing markers
+- Implemented proper string representation
 
-Performance Validation & Optimization
+## Performance Validation & Optimization
 
-Added FretboardMapper to track valid playing positions
-Created TechniqueRestrictions to validate playability
-Implemented position optimization to avoid impossible techniques
-Developed system to remap unplayable positions to equivalent playable ones
-Added intelligent scoring for optimal position selection
+- Added FretboardMapper to track valid playing positions
+- Created TechniqueRestrictions to validate playability
+- Implemented position optimization to avoid impossible techniques
+- Developed system to remap unplayable positions to equivalent playable ones
+- Added intelligent scoring for optimal position selection
 
-Optimization Refinements
+## Optimization Refinements
 
-Enhanced position remapping to preserve musical intent
-Improved handling of technique-specific restrictions
-Added context-aware position selection (considering previous positions)
-Removed ambiguous notation (like zero-padding fret numbers)
-Implemented clean tab output without remapping markers
+- Enhanced position remapping to preserve musical intent
+- Improved handling of technique-specific restrictions
+- Added context-aware position selection (considering previous positions)
+- Removed ambiguous notation (like zero-padding fret numbers)
+- Implemented clean tab output without remapping markers
 
-Compiler System Development
+## Compiler System
 
-Created GuitarCompiler class for higher-level translation
-Added operation to instruction mapping
-Implemented memory management system
-Created instruction timing analyzer
-Added support for operation sequences and control flow
+- Created GuitarCompiler class for higher-level translation
+- Added operation to instruction mapping
+- Implemented memory management system
+- Created instruction timing analyzer
+- Added support for operation sequences and control flow
 
-Final Enhancements
+## additional Enhancements
 
-Improved cycle-accurate timing representation
-Added proper handling of technique duration
-Enhanced position optimization for complex sequences
-Refined tab output for maximum readability and playability
+- Improved cycle-accurate timing representation
+- Added proper handling of technique duration
+- Enhanced position optimization for complex sequences
+- Refined tab output for maximum readability and playability
+
+## went off the deep end of time waste
