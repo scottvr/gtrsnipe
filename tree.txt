@@ -1,0 +1,21 @@
+guitar_tools/
+├── __init__.py
+├── converters/
+│   ├── __init__.py
+│   ├── ast_to_ops.py      # AST parser we just made
+│   ├── midi_to_tab.py     # MIDI converter we just refactored
+│   ├── ops_to_tab.py      # Converting operations to tab
+│   └── abc_converter.py   # Your ABC notation code
+├── core/
+│   ├── __init__.py
+│   ├── operations.py      # Guitar operations/instructions
+│   ├── tab.py            # Tab representation we just made
+│   └── musical_types.py   # TimeSignature, etc.
+├── computer/
+│   ├── __init__.py
+│   ├── cpu.py            # Guitar CPU implementation
+│   └── compiler.py       # Operation compiler
+└── utils/
+    ├── __init__.py
+    ├── fretboard.py      # Fretboard mapper we made
+    └── notation.py       # Shared notation helpers
