@@ -1,4 +1,4 @@
-# gtrsnipe (pronounced "guttersnipe"
+# gtrsnipe (pronounced "guttersnipe")
 
 Ridiculous.. I got sniped by an impossible claim by someone on hackernews that guitar tab was turing complete. (storing to memory seems an obvious obstacle but..) 
 I wanted to see what I might come up with, a different machine, perhaps involving a looper pedal blah blah blah.. it's been a few weeks and I forget what all ridiculous iterations it went through. 
