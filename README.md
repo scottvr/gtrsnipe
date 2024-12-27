@@ -34,7 +34,8 @@ Code in the repo includes half-finished test scripts and redirected output txt f
 ## CPU & Compilation
 
 - Developed GuitarCPU class
-- Created program compiler for converting operations to tab
+- Created program compiler for converting operations to tab, demo with python Fibonacci function, which is converted to Operations via parsing the AST, then out to tab (or mid, or abc, or ???)
+- Can output to midi. And justbfor grins, can convert midi to opcodes, for ridiculous code that sounds good, and any other input/ouput combination/direction involving midi (file), GuitarCPU ISA, ABC notation, and guitar tablature notation. 
 - Implemented basic instruction scheduling
 
 ## Tab Generation & Output
@@ -42,6 +43,7 @@ Code in the repo includes half-finished test scripts and redirected output txt f
 - Created TabFormatter for proper guitar tablature output
 - Added measure bars and timing markers
 - Implemented proper string representation
+- (original implementation was just lists of 5th (power) chords, and not actually in tab notation
 
 ## Performance Validation & Optimization
 
