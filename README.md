@@ -7,7 +7,8 @@ In the process though.. I ended up with ast to tablature, midi to guitar tab (wi
 
 Up until about the halfway point, I had kept a journal (below)planning to document this. Yeah, I probably won't. :-)
 
-============================================================
+=============================
+
 Initial Infrastructure
 
 Changed timing notation from mm:ss to measure.beat format
