@@ -27,6 +27,15 @@ Code in the repo includes half-finished test scripts and redirected output txt f
 
 ## Instruction Set Architecture
 
+- a Turing Machine ISA including the operations
+   - LOAD
+   - STORE
+   - ADD
+   - SUB
+   - MUL
+   - DIV
+   - CMP
+   - JMP
 - Expanded instruction set with guitar techniques (hammer-ons, pull-offs, slides, etc.)
 - Added timing specifications for each instruction type
 - Created cycle count system for different operations
@@ -35,7 +44,7 @@ Code in the repo includes half-finished test scripts and redirected output txt f
 
 - Developed GuitarCPU class
 - Created program compiler for converting operations to tab, demo with python Fibonacci function, which is converted to Operations via parsing the AST, then out to tab (or mid, or abc, or ???)
-- Can output to midi. And justbfor grins, can convert midi to opcodes, for ridiculous code that sounds good, and any other input/ouput combination/direction involving midi (file), GuitarCPU ISA, ABC notation, and guitar tablature notation. 
+- Can output to midi. And just for grins, can convert midi to opcodes, for ridiculous code that sounds good, and any other input/ouput combination/direction involving midi (file), GuitarCPU ISA, ABC notation, and guitar tablature notation. 
 - Implemented basic instruction scheduling
 
 ## Tab Generation & Output
@@ -77,3 +86,33 @@ Code in the repo includes half-finished test scripts and redirected output txt f
 - Refined tab output for maximum readability and playability
 
 ## went off the deep end of time waste
+
+### Among the useful things are:
+- a MIDI to Guitar Tab converter
+- a FretboardMapper, which can be used to influence decisions made when shoosing a fret position for the next incoming note from a midi file being read
+- an ABC to MIDI class
+- the inverse capability from the above two items,
+- an ascii tab renderer
+- more
+
+### mostly useless but potentially interesting are:
+- a virtual ("guitar") CPU
+- a compiler for it
+- another compiler for it
+-  code writen in Python can be transpiled to a guitarcpu program, which consists of a series of note events (fret positions and fretting techniques), presented linearly at a tempo which can then be
+    - output as guitar tab
+    - output as a midi file
+- music encoded in a MIDI file can be converted to
+  - guitar tab
+  - a series of musical events whcih can be mapped to GuitarCPU operations.
+    - why would anybody want this?
+      these capabilities mean that one can
+        - take working python code and see what it sounds like
+            - played on guitar from reading tab
+            - as a midi file
+        - take a song as midi data or guitar tab
+            - convert it to whichever it is not
+            - including GuitarCPU program instruction listing
+            - and by extension, python code if you wish
+  - a few different takes and incomplete versions of some of the aforementioned stuff
+
