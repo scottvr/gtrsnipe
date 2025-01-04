@@ -89,7 +89,7 @@ Code in the repo includes half-finished test scripts and redirected output txt f
 
 ### Among the useful things are:
 - a MIDI to Guitar Tab converter
-- a FretboardMapper, which can be used to influence decisions made when shoosing a fret position for the next incoming note from a midi file being read
+- a FretboardMapper, which can be used to influence decisions made when choosing a fret position for the next incoming note from a midi file being read
 - an ABC to MIDI class
 - the inverse capability from the above two items,
 - an ascii tab renderer
