@@ -1,4 +1,4 @@
-# guitar_tools/computer/cpu.py
+# computer/cpu.py
 
 from dataclasses import dataclass
 from typing import Dict, List, Optional
