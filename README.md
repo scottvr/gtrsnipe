@@ -1,6 +1,6 @@
 # gtrsnipe (pronounced "guttersnipe")
 
-Ridiculous.. I got nerdsniped by an [impossible claim by someone on hackernews](https://news.ycombinator.com/item?id=42294766) that [guitar tab was turing complete](https://github.com/tehruhn/turing_complete_guitar). (storing to memory seems an obvious obstacle but..) 
+This codebase is uttterly ridiculous.. normally my stuff is firmly in the *ludicrous* zone; I'm not sure how I veered ao far into *ridiculous* territory aside from that I got nerdsniped by an [impossible claim by someone on hackernews](https://news.ycombinator.com/item?id=42294766) that [guitar tab was turing complete](https://github.com/tehruhn/turing_complete_guitar). (storing to memory seems an obvious obstacle but..) 
 
 I wanted to see what I might come up with, a different machine, perhaps involving a looper pedal blah blah blah.. it's been a few weeks and I forget what all ridiculous iterations it went through.  First I converted [his mm:ss-based time implementation]() with tempo and time signature, then added alternate tunings, then it was off to the races, without any finish line. 
 
