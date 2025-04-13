@@ -4,7 +4,7 @@ This codebase is uttterly ridiculous.. normally my stuff is firmly in the *ludic
 
 I wanted to see what I might come up with, a different machine, perhaps involving a looper pedal blah blah blah.. it's been a few weeks and I forget what all ridiculous iterations it went through.  First I converted [his mm:ss-based time implementation]() with tempo and time signature, then added alternate tunings, then it was off to the races, without any finish line. 
 
-In the process though.. I ended up with ast to tablature, midi to guitar tab (with an optimal fretboard mapper that's kinda cool. maybe deserves finishing and packaging), guitar tab formatter, a "guitputer" machine of sorts and a couple of attempts at a "compiler" for it.. 
+In the process though.. I ended up with ast-to-tablature, midi-to-tab (with an optimal fretboard mapper that's kinda cool. maybe deserves finishing and packaging), guitar tab formatter, a "guitputer" machine of sorts and a couple of attempts at a "compiler" for it.. 
 
 Some of those things I just mentioned are useful things, and someone may find some of this code useful, or interesting, or funny.
 
