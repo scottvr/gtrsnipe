@@ -4,25 +4,18 @@ from .utils.io import save_text_file, save_midi_file
 from .utils.logger import setup_logger
 from argparse import ArgumentParser
 from typing import Optional
-from .formats.mid import MidiUtilFile
 from pathlib import Path
 import os
 import logging
+from sys import exit
 
 logger = logging.getLogger(__name__)
 
 class MusicConverter:
-    def convert(self, input_data: str, from_format: str, to_format: str, nudge: int, track_num: Optional[int], staccato: bool = False) -> str | MidiUtilFile:
+    # --- FIX: Use a more generic return type hint ---
+    def convert(self, input_data: str, from_format: str, to_format: str, nudge: int, track_num: Optional[int], staccato: bool = False) -> object | str:
         """
         Converts music data from one format to another.
-
-        Args:
-            input_data: Path to a file or a string containing the music data.
-            from_format: The format of the input ('mid', 'abc', 'vex').
-            to_format: The desired output format ('mid', 'abc', 'vex').
-        
-        Returns:
-            A string representation of the output or path to the output file.
         """
         song = self._parse(input_data, from_format, track_num, staccato=staccato)
         
@@ -44,7 +37,8 @@ class MusicConverter:
     def _parse(self, data: str, format: str, track_num: Optional[int], staccato: bool = False
                ) -> Song:
         if format == 'mid':
-            return mid.midiReader.parse(data, track_number_to_select=track_num)
+            # Note: The class name was MidiReader, not MidiUtilFile
+            return mid.MidiReader.parse(data, track_number_to_select=track_num)
         elif format == 'abc':
             with open(data, 'r') as f:
                 content = f.read()
@@ -60,7 +54,8 @@ class MusicConverter:
         else:
             raise ValueError(f"Unsupported input format: {format}")
 
-    def _generate(self, song: Song, format: str) -> MidiUtilFile | str:
+    # --- FIX: Use a more generic return type hint ---
+    def _generate(self, song: Song, format: str) -> object | str:
         if format == 'mid':
             return mid.midiGenerator.generate(song)
         elif format == 'abc':
@@ -82,6 +77,12 @@ def main():
         default=0,
         help="An integer to shift the transcription's start time to the right. Each unit corresponds to roughly a 16th note."
     )
+    # --- FIX: Add -y / --yes flag for overwriting files ---
+    parser.add_argument(
+        '-y', '--yes',
+        action='store_true',
+        help="Automatically overwrite the output file if it already exists."
+    )
     parser.add_argument(
         "--track",
         type=int,
@@ -96,7 +97,7 @@ def main():
     parser.add_argument(
         "--staccato",
         action='store_true',
-        help="Extends note durations to the start of the next note for a sustained feel. Primarily for tab-to-MIDI conversions."
+        help="Do not extend note durations to the start of the next note, instead giving each note an 1/8 note duration. Primarily for tab-to-MIDI conversions."
     )
     parser.add_argument(
         '--debug',
@@ -109,6 +110,13 @@ def main():
     log_level = logging.DEBUG if args.debug else logging.INFO
     setup_logger(log_level)
 
+    # --- FIX: Check for existing file before starting conversion ---
+    output_path = Path(args.output_file)
+    if output_path.exists() and not args.yes:
+        logger.error(f"Error: Output file '{output_path}' already exists.")
+        logger.error("Use the -y or --yes flag to allow overwriting.")
+        exit(1)
+
     from_format = args.input_file.split('.')[-1]
     to_format = args.output_file.split('.')[-1]
 
@@ -120,7 +128,8 @@ def main():
         output_data = converter.convert(args.input_file, from_format, to_format, args.nudge, args.track, staccato=args.staccato)
 
         if to_format == 'mid':
-            if isinstance(output_data, MidiUtilFile):
+            # Check against the specific type from the mid module
+            if isinstance(output_data, mid.MidiUtilFile):
                 save_midi_file(output_data, args.output_file)
         else:
             if isinstance(output_data, str):
