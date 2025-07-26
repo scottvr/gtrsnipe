@@ -1,7 +1,7 @@
 # gtrsnipe 
 (pronounced "guttersnipe")
 
-Convert to and from .mid, .abc, .vexx, and .tab files. 
+Convert to and from .mid, .abc, .vex, and .tab files. 
 
 ### What?
 
