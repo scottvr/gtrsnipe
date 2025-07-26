@@ -3,6 +3,14 @@
 
 Convert to and from .mid, .abc, .vexx, and .tab files. 
 
+### What?
+
+gtrsnipe will convert MIDI (from a .mid file) into text-based transcriptions (ASCII tab, VexTab, and ABC notation) arranged for 6-string guitar.
+
+gtrsnipe can also convert these text-based notations into a playable MIDI file. Note that since standard ASCII tab does not encode rhythmic information, gtrsnipe tries to infer an approximation of this based on the spacing between notes (and the number of `-` characters between fretted notes) and since tabs found in theh wild are all over the place in this respect, YMMV. Note that to strike a balance between readability and compactness, gtrsnipe uses a logarithmic spacing algorithm when generating ASCII tabs from MIDI to try and encode as much of this information as possible given the format, so tabs that were originally created by gtrsnipe will often fare better in the final playback of a generated midi than ones posted to usenet in the 1990's. 
+
+By default gtrsnipe will try to infer hammer-on/pull-off performance technique articulations based on the timing of the notes. You can disable this (for straight-picking transcriptions) with `--no-articulations`
+
 ## Installation
 
 ```
@@ -33,7 +41,7 @@ pip install .
 ## Usage Help
 
 ```
-usage: gtrsnipe [-h] [--nudge NUDGE] [--track TRACK] [--no-articulations] input_file output_file
+usage: gtrsnipe [-h] [--nudge NUDGE] [--track TRACK] [--no-articulations] [--staccato] [--debug] input_file output_file
 
 Convert music files between binary MIDI .mid and ASCII .tab .vex, and .abc notation formats, in any direction.
 
@@ -43,11 +51,13 @@ positional arguments:
 
 options:
   -h, --help          show this help message and exit
-  --nudge NUDGE       An integer to shift the transcription's start time to the right. Each unit corresponds to roughly a      
+  --nudge NUDGE       An integer to shift the transcription's start time to the right. Each unit corresponds to roughly a    
                       16th note.
   --track TRACK       The track number (1-based) to select from a multi-track MIDI file. If not set, all tracks are
                       processed.
   --no-articulations  Transcribe with no legato, taps, hammer-ons, pull-offs, etc.
+  --staccato          Do not extend note durations to the start of the next note for a sustained feel, instead giving each note an 1/8 note duration. Primarily for tab-to-MIDI conversions.
+  --debug             Enable detailed debug logging messages.
 
 ```
 

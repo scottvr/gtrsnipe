@@ -1,6 +1,9 @@
 from midiutil import MIDIFile # midutil has writeFile method, MIDI's MIDIFile only has parse()
 import os
 import re
+import logging
+
+logger = logging.getLogger(__name__)
 
 def save_text_file(content: str, output_path: str):
     """
@@ -20,10 +23,10 @@ def save_text_file(content: str, output_path: str):
         
         with open(output_path, 'w') as f:
             f.write(content)
-        print(f"Successfully saved to {output_path}")
+        logger.info(f"Successfully saved to {output_path}")
 
     except IOError as e:
-        print(f"Error: Could not write to file at {output_path}")
+        logger.info(f"Error: Could not write to file at {output_path}")
         raise e
 
 def save_midi_file(midi_object: MIDIFile, output_path: str):

@@ -12,7 +12,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 class MusicConverter:
-    def convert(self, input_data: str, from_format: str, to_format: str, nudge: int, track_num: Optional[int], legato: bool = False) -> str | MidiUtilFile:
+    def convert(self, input_data: str, from_format: str, to_format: str, nudge: int, track_num: Optional[int], staccato: bool = False) -> str | MidiUtilFile:
         """
         Converts music data from one format to another.
 
@@ -24,7 +24,7 @@ class MusicConverter:
         Returns:
             A string representation of the output or path to the output file.
         """
-        song = self._parse(input_data, from_format, track_num, legato=legato)
+        song = self._parse(input_data, from_format, track_num, staccato=staccato)
         
         if input_data:
             song.title = Path(os.path.basename(input_data)).stem
@@ -41,7 +41,7 @@ class MusicConverter:
 
         return output_data
 
-    def _parse(self, data: str, format: str, track_num: Optional[int], legato: bool = False
+    def _parse(self, data: str, format: str, track_num: Optional[int], staccato: bool = False
                ) -> Song:
         if format == 'mid':
             return mid.midiReader.parse(data, track_number_to_select=track_num)
@@ -56,7 +56,7 @@ class MusicConverter:
         elif format == 'tab':
             with open(data, 'r') as f:
                 content = f.read()
-            return tab.AsciiTabParser.parse(content, legato=legato)
+            return tab.AsciiTabParser.parse(content, staccato=staccato)
         else:
             raise ValueError(f"Unsupported input format: {format}")
 
@@ -94,7 +94,7 @@ def main():
         help="Transcribe with no legato, taps, hammer-ons, pull-offs, etc."
     )
     parser.add_argument(
-        "--legato",
+        "--staccato",
         action='store_true',
         help="Extends note durations to the start of the next note for a sustained feel. Primarily for tab-to-MIDI conversions."
     )
@@ -117,7 +117,7 @@ def main():
     converter = MusicConverter()
 
     try:
-        output_data = converter.convert(args.input_file, from_format, to_format, args.nudge, args.track)
+        output_data = converter.convert(args.input_file, from_format, to_format, args.nudge, args.track, staccato=args.staccato)
 
         if to_format == 'mid':
             if isinstance(output_data, MidiUtilFile):

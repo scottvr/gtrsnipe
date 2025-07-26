@@ -5,6 +5,9 @@ import re
 from ..core.types import FretPosition, MusicalEvent, Song, Technique, Track
 from ..guitar.mapper import GuitarMapper
 from itertools import groupby
+import logging
+
+logger = logging.getLogger(__name__)
 
 @dataclass
 class TabNote:
@@ -248,8 +251,10 @@ class AsciiTabParser:
         return relative_duration * base_unit_in_beats
 
     @staticmethod
-    def parse(tab_string: str, legato: bool = False) -> Song:
+    def parse(tab_string: str, staccato: bool = False) -> Song:
+        logger.debug("Starting ASCII Tab parsing.")
         song = Song()
+        track = Track()
 
         tempo_match = re.search(r"Tempo:\s*([\d\.]+)", tab_string, re.IGNORECASE)
         if tempo_match:
@@ -258,99 +263,86 @@ class AsciiTabParser:
         lines = tab_string.split('\n')
         tab_lines = [line for line in lines if re.match(r'^[eBGDAE]\|', line.strip())]
         if not tab_lines or len(tab_lines) % 6 != 0:
-            return song # Return empty song if tab is invalid
+            logger.warning("Tab parsing failed: Invalid or empty tab lines.")
+            return song
 
         full_strings = [""] * 6
         num_page_lines = len(tab_lines) // 6
         for i in range(num_page_lines):
             for j in range(6):
-                # Isolate the main content of the tab line
                 line_content_raw = tab_lines[i * 6 + j].strip().split('|', 1)
                 if len(line_content_raw) > 1:
-                    tab_part = line_content_raw[1]
-                    
-                    # Remove all bar line characters to eliminate their contribution to spacing
-                    tab_part_no_bars = tab_part.replace('|', '')
-                    
-                    full_strings[j] += tab_part_no_bars        
+                    tab_part = line_content_raw[1].replace('|', '')
+                    full_strings[j] += tab_part
        
-        # --- Pass 1: Find all note events and their character positions ---
+        # --- Pass 1: A more robust method to find all note events ---
         temp_events: List[_TabEvent] = []
-        total_length = len(full_strings[0]) if full_strings else 0
-        char_idx = 0
-        while char_idx < total_length:
-            for string_idx in range(6):
-                line = full_strings[string_idx]
-                if char_idx >= len(line) or not line[char_idx].isdigit():
-                    continue
-
-                # Found a note, parse it and its technique
-                fret_str = re.match(r'(\d+)', line[char_idx:])
-                if fret_str:
-                    fret = int(fret_str.group(1))
-                    tech = None
-                    if char_idx > 0 and line[char_idx-1].isalpha():
-                        tech_char = line[char_idx-1]
-                        if tech_char == 'h': tech = "hammer-on"
-                        elif tech_char == 'p': tech = "pull-off"
-
-                    temp_events.append(_TabEvent(char_idx, string_idx, fret, tech))
-            char_idx += 1
+        for string_idx, line in enumerate(full_strings):
+            for match in re.finditer(r'(\d+)', line):
+                fret = int(match.group(1))
+                char_idx = match.start()
+                tech = None
+                if char_idx > 0 and line[char_idx - 1].isalpha():
+                    tech_char = line[char_idx-1]
+                    if tech_char == 'h': tech = "hammer-on"
+                    elif tech_char == 'p': tech = "pull-off"
+                temp_events.append(_TabEvent(char_idx, string_idx, fret, tech))
         
-        # --- Pass 2: Calculate timing based on spacing and create final events ---
-        track = Track()
-        events_with_start_times: List[MusicalEvent] = []
+        logger.debug(f"Found {len(temp_events)} raw note events in the tab string.")
+
+        # --- Pass 2: Calculate timing and add events directly to the track ---
         current_beat = 0.0
         last_char_idx = 0
-        BASE_UNIT_IN_BEATS = 0.25  # Assume a 16th note base unit, same as generator default
+        BASE_UNIT_IN_BEATS = 0.25
 
-        # Group notes by character index to handle chords
         events_by_char_idx = groupby(sorted(temp_events, key=lambda e: e.char_idx), key=lambda e: e.char_idx)
         
         for char_idx, group_iter in events_by_char_idx:
             spacing = char_idx - last_char_idx
+            if spacing < 0: continue # Should not happen with sorted input, but a safeguard
+            
             time_delta = AsciiTabParser._spacing_to_beats(spacing, BASE_UNIT_IN_BEATS)
             current_beat += time_delta
             
             for temp_event in group_iter:
                 pitch = AsciiTabParser._tab_pos_to_midi(temp_event.string_idx, temp_event.fret)
                 event = MusicalEvent(
-                    time=current_beat,
-                    pitch=pitch,
-                    duration=0.5,  # Assign a constant 8th note duration
-                    velocity=90,
-                    string=temp_event.string_idx,
-                    fret=temp_event.fret,
-                    technique=temp_event.technique
+                    time=current_beat, pitch=pitch, duration=0.5, velocity=90,
+                    string=temp_event.string_idx, fret=temp_event.fret, technique=temp_event.technique
                 )
-                events_with_start_times.append(event)
-            
+                track.events.append(event)
             last_char_idx = char_idx
+        
+        logger.debug(f"Finished parsing. Total notes: {len(track.events)}. Final beat count: {current_beat:.2f}")
 
-        # --- Pass 3: recalculate durations if legato mode
-        if legato and len(events_with_start_times) > 1:
-            # Group events by their exact start time to handle chords
-            events_grouped_by_time = [list(g) for t, g in groupby(events_with_start_times, key=lambda e: e.time)]
-
-            # Iterate through the time groups to set duration
-            for i in range(len(events_grouped_by_time) - 1):
-                current_group = events_grouped_by_time[i]
-                next_group = events_grouped_by_time[i+1]
-                
-                # Duration is the time until the next note event starts
-                duration = next_group[0].time - current_group[0].time
-                
-                for event in current_group:
-                    event.duration = duration
+        # --- Pass 3: If staccato is enabled, modify the events now in the track ---
+        if not staccato and len(track.events) > 1:
+            logger.debug("Applying staccato processing.")
+            sorted_events = sorted(track.events, key=lambda e: e.time)
+            events_grouped_by_time = [list(g) for t, g in groupby(sorted_events, key=lambda e: e.time)]
             
-            # The very last note(s) will keep the default duration of 0.5
+            logger.debug(f"Grouped notes into {len(events_grouped_by_time)} distinct time slices.")
+            
+            if len(events_grouped_by_time) <= 1:
+                logger.debug("Cannot apply staccato: only one time slice found. All notes may have the same start time.")
+            else:
+                for i in range(len(events_grouped_by_time) - 1):
+                    current_group = events_grouped_by_time[i]
+                    next_group = events_grouped_by_time[i+1]
+                    duration = next_group[0].time - current_group[0].time
+                    
+                    logger.debug(f"Time: {current_group[0].time:<5.2f} | Notes: {str([e.pitch for e in current_group]):<15} | Old Duration: {current_group[0].duration:.2f} | New Duration: {duration:.2f}")
 
-        track.events.extend(events_with_start_times)
+                    for event in current_group:
+                        event.duration = duration
+        elif staccato:
+            logger.debug("Staccato flag set, skipping legato processing.")
+
         song.tracks.append(track)
+        logger.debug("Finished creating Song object.")
         return song
 
     @staticmethod
     def _tab_pos_to_midi(string_idx: int, fret: int) -> int:
-        # Standard tuning open string pitches: E4, B3, G3, D3, A2, E2
         open_string_pitches = [64, 59, 55, 50, 45, 40]
         return open_string_pitches[string_idx] + fret
