@@ -12,7 +12,6 @@ from sys import exit
 logger = logging.getLogger(__name__)
 
 class MusicConverter:
-    # --- FIX: Use a more generic return type hint ---
     def convert(self, input_data: str, from_format: str, to_format: str, nudge: int, track_num: Optional[int], staccato: bool = False) -> object | str:
         """
         Converts music data from one format to another.
@@ -37,7 +36,6 @@ class MusicConverter:
     def _parse(self, data: str, format: str, track_num: Optional[int], staccato: bool = False
                ) -> Song:
         if format == 'mid':
-            # Note: The class name was MidiReader, not MidiUtilFile
             return mid.MidiReader.parse(data, track_number_to_select=track_num)
         elif format == 'abc':
             with open(data, 'r') as f:
@@ -54,7 +52,6 @@ class MusicConverter:
         else:
             raise ValueError(f"Unsupported input format: {format}")
 
-    # --- FIX: Use a more generic return type hint ---
     def _generate(self, song: Song, format: str) -> object | str:
         if format == 'mid':
             return mid.midiGenerator.generate(song)
@@ -77,7 +74,6 @@ def main():
         default=0,
         help="An integer to shift the transcription's start time to the right. Each unit corresponds to roughly a 16th note."
     )
-    # --- FIX: Add -y / --yes flag for overwriting files ---
     parser.add_argument(
         '-y', '--yes',
         action='store_true',
@@ -110,7 +106,6 @@ def main():
     log_level = logging.DEBUG if args.debug else logging.INFO
     setup_logger(log_level)
 
-    # --- FIX: Check for existing file before starting conversion ---
     output_path = Path(args.output_file)
     if output_path.exists() and not args.yes:
         logger.error(f"Error: Output file '{output_path}' already exists.")
@@ -128,7 +123,6 @@ def main():
         output_data = converter.convert(args.input_file, from_format, to_format, args.nudge, args.track, staccato=args.staccato)
 
         if to_format == 'mid':
-            # Check against the specific type from the mid module
             if isinstance(output_data, mid.MidiUtilFile):
                 save_midi_file(output_data, args.output_file)
         else:
