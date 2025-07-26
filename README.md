@@ -43,7 +43,7 @@ pip install .
 ## Usage Help
 
 ```
-usage: **gtrsnipe** [-h] [--nudge NUDGE] [--track TRACK] [--no-articulations] [--staccato] [--debug] input_file output_file
+usage: gtrsnipe [-h] [--nudge NUDGE] [--track TRACK] [--no-articulations] [--staccato] [--debug] input_file output_file
 
 Convert music files between binary MIDI .mid and ASCII .tab .vex, and .abc notation formats, in any direction.
 
