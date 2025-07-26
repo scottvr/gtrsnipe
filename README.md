@@ -11,6 +11,8 @@ gtrsnipe can also convert these text-based notations into a playable MIDI file. 
 
 By default gtrsnipe will try to infer hammer-on/pull-off performance technique articulations based on the timing of the notes. You can disable this (for straight-picking transcriptions) with `--no-articulations`
 
+gtrsnipe tries to intelligently find the best neck and fingering positions and has a fretboard mapper and sscoring algorithm that is unavoidably shaped by my *subjective* opinions and skills as a player but it  does its best to avoid *objectively* impossible fingerings.
+
 ## Installation
 
 ```
