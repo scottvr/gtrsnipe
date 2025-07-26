@@ -8,9 +8,8 @@ class VextabGenerator:
     @staticmethod
     def generate(song: Song, default_note_length: str = "1/16", no_articulataions=False) -> str:
         """
-        Converts a Song object into a complete Vextab notation string.
+        Converts a Song object into a complete VexTab notation string.
         """
-        # --- Dynamically set measures per line based on visual density ---
         try:
             denominator = int(default_note_length.split('/')[1])
         except (ValueError, IndexError):
@@ -31,68 +30,41 @@ class VextabGenerator:
             mapped_events = mapper.map_events_to_fretboard(track.events, no_articulataions=no_articulataions)
             all_mapped_events.extend(mapped_events)
 
+        # Sort all events by time to process them chronologically
         sorted_events = sorted(all_mapped_events, key=lambda e: e.time)
         if not sorted_events: return "\n".join(output_parts)
 
-        # Group notes by time, with chord playability check ---
-        QUANTIZATION_RESOLUTION = 0.125
-        def quantize_time(beat): return round(beat / QUANTIZATION_RESOLUTION) * QUANTIZATION_RESOLUTION
-        
+        # Group notes by time to form chords
         time_events = []
-        MAX_CHORD_FRET_SPAN = 3
-        for time, notes_in_group_iter in groupby(sorted_events, key=lambda e: quantize_time(e.time)):
+        for time, notes_in_group_iter in groupby(sorted_events, key=lambda e: e.time):
             notes = list(notes_in_group_iter)
-            if len(notes) > 1:
-                frets = [n.fret for n in notes if n.fret is not None]
-                if frets and (max(frets) - min(frets)) > MAX_CHORD_FRET_SPAN:
-                    for note in notes:
-                        time_events.append({'time': time, 'notes': [note], 'technique': note.technique})
-                    continue
-            time_events.append({'time': time, 'notes': notes, 'technique': notes[0].technique})
-
-        # Group "time events" into legato phrases ---
-        phrases = []
-        current_phrase = []
-        for te in time_events:
-            is_new_phrase = (not current_phrase or 
-                             te['technique'] == 'pick' or 
-                             te['notes'][0].string != current_phrase[-1]['notes'][0].string)
-            if is_new_phrase:
-                if current_phrase: phrases.append(current_phrase)
-                current_phrase = [te]
-            else:
-                current_phrase.append(te)
-        if current_phrase: phrases.append(current_phrase)
+            time_events.append({'time': time, 'notes': notes})
         
         try:
             num, den = map(int, song.time_signature.split('/'))
             beats_per_measure = num * (4 / den)
         except (ValueError, ZeroDivisionError): beats_per_measure = 4
 
-        phrases_by_line = groupby(phrases, key=lambda p: int(p[0]['time'] / beats_per_measure) // measures_per_line)
+        # Group notes by which line they will appear on
+        events_by_line = groupby(time_events, key=lambda e: int(e['time'] / beats_per_measure) // measures_per_line)
 
-        for line_number, line_phrases_iter in phrases_by_line:
+        for line_number, line_events_iter in events_by_line:
             notes_for_current_line = []
-            for phrase in line_phrases_iter:
-                # Each 'phrase' is a list of 'time_event' dictionaries.
-                first_time_event = phrase[0]
-                duration_str = VextabGenerator._duration_to_vextab(first_time_event['notes'][0].duration)
-                
-                # Format the first note/chord in the phrase
-                first_notes = first_time_event['notes']
-                if len(first_notes) == 1:
-                    phrase_parts = [f"{first_notes[0].fret}/{first_notes[0].string + 1}"]
+            for event in line_events_iter:
+                # Use the duration from the first note of the event (chord or single note)
+                duration_in_beats = max(n.duration for n in event['notes'])
+                duration_str = VextabGenerator._duration_to_vextab(duration_in_beats)
+
+
+                # Format the notes (handles single notes and chords)
+                if len(event['notes']) == 1:
+                    note = event['notes'][0]
+                    note_str = f"{note.fret}/{note.string + 1}"
                 else:
-                    chord_parts = [f"{n.fret}/{n.string + 1}" for n in first_notes]
-                    phrase_parts = [f"({'.'.join(chord_parts)})"]
+                    chord_parts = [f"{n.fret}/{n.string + 1}" for n in event['notes']]
+                    note_str = f"({'.'.join(chord_parts)})"
                 
-                # Append subsequent legato notes in the phrase
-                for i in range(1, len(phrase)):
-                    note = phrase[i]['notes'][0] # Legato is to a single note
-                    technique_char = 'h' if note.technique == 'hammer-on' else 'p'
-                    phrase_parts.append(f"{technique_char}{note.fret}/{note.string + 1}")
-                
-                notes_for_current_line.append(f"{duration_str} {''.join(phrase_parts)}")
+                notes_for_current_line.append(f"{duration_str} {note_str}")
 
             if notes_for_current_line:
                 tabstave_header = f"\ntabstave notation=true time={song.time_signature}" if line_number > 0 else f"tabstave notation=true time={song.time_signature}"
@@ -103,17 +75,22 @@ class VextabGenerator:
     
     @staticmethod
     def _duration_to_vextab(duration_in_beats: float) -> str:
-        if duration_in_beats >= 4.0: return ":w"; 
-        if duration_in_beats >= 3.0: return ":hd"; 
-        if duration_in_beats >= 2.0: return ":h"; 
-        if duration_in_beats >= 1.5: return ":qd"; 
-        if duration_in_beats >= 1.0: return ":q"; 
-        if duration_in_beats >= 0.75: return ":8d"; 
-        if duration_in_beats >= 0.5: return ":8"; 
-        if duration_in_beats >= 0.25: return ":16"; 
-        if duration_in_beats >= 0.125: return ":32"; 
-        return ":q"
+        """
+        Quantizes the given duration in beats to the nearest standard VexTab duration string.
+        """
+        duration_map = {
+            ":w": 4.0, ":hd": 3.0, ":h": 2.0, ":qd": 1.5, ":q": 1.0,
+            ":8d": 0.75, ":8": 0.5, ":16": 0.25, ":32": 0.125
+        }
 
+        if duration_in_beats <= 0:
+            return ":q" 
+
+        closest_duration_str = min(
+            duration_map.keys(),
+            key=lambda k: abs(duration_map[k] - duration_in_beats)
+        )
+        return closest_duration_str
 
 class VextabParser:
     """Parses a VexTab notation string into a Song object."""
@@ -130,7 +107,12 @@ class VextabParser:
     @staticmethod
     def _vextab_pos_to_midi(string_num: int, fret: int) -> int:
         """Converts a VexTab 1-based string and fret to a MIDI pitch."""
+        # Note: VexTab strings are 1-6 from high E to low E.
+        # Our internal representation is 0-5 from high E to low E.
+        # So we subtract 1 from the VexTab string number.
         open_string_pitches = [64, 59, 55, 50, 45, 40]
+        if not (1 <= string_num <= 6):
+            return -1 # Invalid string number
         return open_string_pitches[string_num - 1] + fret
 
     @staticmethod
@@ -159,37 +141,53 @@ class VextabParser:
                 current_duration_beats = VextabParser._vextab_duration_to_beats(token)
                 continue
 
-            note_atoms = re.findall(r'\d+/\d+', token)
+            note_atoms = re.findall(r'(\d+)/(\d+)', token) # Find all "fret/string" pairs
             if not note_atoms: continue
-            
-            # --- DURATION FIX ---
-            # The current duration applies to EACH note event within the token, not subdivided.
-            duration_per_event = current_duration_beats
 
-            # --- TECHNIQUE FIX ---
-            # Process the first note and its optional PREFIX technique
-            fret, string_num = map(int, note_atoms[0].split('/'))
-            pitch = VextabParser._vextab_pos_to_midi(string_num, fret)
-            prefix_technique = 'hammer-on' if token.startswith('h') else 'pull-off' if token.startswith('p') else None
-            track.events.append(MusicalEvent(time=current_time_beats, pitch=pitch, duration=duration_per_event, velocity=90, technique=prefix_technique))
-            current_time_beats += duration_per_event
+            # Check if the token represents a chord
+            is_chord = token.startswith('(') and token.endswith(')')
 
-            # Process subsequent notes and their CONNECTING techniques
-            connecting_parts = re.split(r'\d+/\d+', token)[1:-1]
-
-            for i in range(1, len(note_atoms)):
-                fret, string_num = map(int, note_atoms[i].split('/'))
-                pitch = VextabParser._vextab_pos_to_midi(string_num, fret)
+            if is_chord:
+                # For a chord, all notes start at the same time and have the same duration.
+                for fret_str, string_str in note_atoms:
+                    pitch = VextabParser._vextab_pos_to_midi(int(string_str), int(fret_str))
+                    if pitch != -1:
+                        track.events.append(MusicalEvent(
+                            time=current_time_beats,
+                            pitch=pitch,
+                            duration=current_duration_beats,
+                            velocity=90
+                        ))
+                # Advance the timeline once for the entire chord
+                current_time_beats += current_duration_beats
+            else:
+                # For single notes or legato runs, subdivide the duration.
+                # This correctly handles runs like ":16 5h7p5/3"
+                num_events_in_token = len(note_atoms)
+                duration_per_event = current_duration_beats / num_events_in_token
                 
-                tech_char = None
-                if (i-1) < len(connecting_parts):
-                    tech_part = connecting_parts[i-1]
-                    if 'h' in tech_part: tech_char = 'h'
-                    elif 'p' in tech_part: tech_char = 'p'
-                
-                legato_technique = 'hammer-on' if tech_char == 'h' else 'pull-off' if tech_char == 'p' else None
-                track.events.append(MusicalEvent(time=current_time_beats, pitch=pitch, duration=duration_per_event, velocity=90, technique=legato_technique))
-                current_time_beats += duration_per_event
+                techniques = re.findall(r'[ph]', token)
+
+                for i, (fret_str, string_str) in enumerate(note_atoms):
+                    pitch = VextabParser._vextab_pos_to_midi(int(string_str), int(fret_str))
+                    if pitch == -1: continue
+
+                    technique = None
+                    # Determine technique for notes after the first one in a run
+                    if i > 0 and (i - 1) < len(techniques):
+                        tech_char = techniques[i-1]
+                        if tech_char == 'h': technique = 'hammer-on'
+                        elif tech_char == 'p': technique = 'pull-off'
+
+                    track.events.append(MusicalEvent(
+                        time=current_time_beats,
+                        pitch=pitch,
+                        duration=duration_per_event,
+                        velocity=90,
+                        technique=technique
+                    ))
+                    # Advance the time for each note in the run
+                    current_time_beats += duration_per_event
         
         song.tracks.append(track)
         return song
