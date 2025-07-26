@@ -5,13 +5,13 @@ Convert to and from .mid, .abc, .vex, and .tab files.
 
 ### What?
 
-gtrsnipe will convert MIDI (from a .mid file) into text-based transcriptions (ASCII tab, VexTab, and ABC notation) arranged for 6-string guitar.
+**gtrsnipe** will convert MIDI (from a .mid file) into text-based transcriptions (ASCII tab, VexTab, and ABC notation) arranged for 6-string guitar.
 
-gtrsnipe can also convert these text-based notations into a playable MIDI file. Note that since standard ASCII tab does not encode rhythmic information, gtrsnipe tries to infer an approximation of this based on the spacing between notes (and the number of `-` characters between fretted notes) and since tabs found in theh wild are all over the place in this respect, YMMV. Note that to strike a balance between readability and compactness, gtrsnipe uses a logarithmic spacing algorithm when generating ASCII tabs from MIDI to try and encode as much of this information as possible given the format, so tabs that were originally created by gtrsnipe will often fare better in the final playback of a generated midi than ones posted to usenet in the 1990's. 
+**gtrsnipe** can also convert these text-based notations into a playable MIDI file. Note that since standard ASCII tab does not encode rhythmic information, **gtrsnipe** tries to infer an approximation of this based on the spacing between notes (and the number of `-` characters between fretted notes) and since tabs found in theh wild are all over the place in this respect, YMMV. Note that to strike a balance between readability and compactness, **gtrsnipe** uses a logarithmic spacing algorithm when generating ASCII tabs from MIDI to try and encode as much of this information as possible given the format, so tabs that were originally created by **gtrsnipe** will often fare better in the final playback of a generated midi than ones posted to usenet in the 1990's. 
 
-By default gtrsnipe will try to infer hammer-on/pull-off performance technique articulations based on the timing of the notes. You can disable this (for straight-picking transcriptions) with `--no-articulations`
+By default **gtrsnipe** will try to infer hammer-on/pull-off performance technique articulations based on the timing of the notes. You can disable this (for straight-picking transcriptions) with `--no-articulations`
 
-gtrsnipe tries to intelligently find the best neck and fingering positions using a note to fretboard mapper and a scoring algorithm that is unavoidably shaped by my *subjective* opinions and skills as a player but it  does its best to avoid *objectively* impossible fingerings.
+**gtrsnipe** tries to intelligently find the best neck and fingering positions using a note to fretboard mapper and a scoring algorithm that is unavoidably shaped by my *subjective* opinions and skills as a player but it  does its best to avoid *objectively* impossible fingerings.
 
 ## Installation
 
@@ -43,7 +43,7 @@ pip install .
 ## Usage Help
 
 ```
-usage: gtrsnipe [-h] [--nudge NUDGE] [--track TRACK] [--no-articulations] [--staccato] [--debug] input_file output_file
+usage: **gtrsnipe** [-h] [--nudge NUDGE] [--track TRACK] [--no-articulations] [--staccato] [--debug] input_file output_file
 
 Convert music files between binary MIDI .mid and ASCII .tab .vex, and .abc notation formats, in any direction.
 
