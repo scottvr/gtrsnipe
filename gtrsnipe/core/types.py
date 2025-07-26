@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional, Tuple, List
 
@@ -9,6 +9,10 @@ class TimeSignature:
     
     def as_tuple(self) -> Tuple[int, int]:
         return (self.numerator, self.denominator)
+
+    def __str__(self) -> str:
+        """Returns the time signature as a string, e.g., '4/4'."""
+        return f"{self.numerator}/{self.denominator}"
 
 class Technique(Enum):
     PICK = "pick"
@@ -25,6 +29,14 @@ class Tuning(Enum):
     DROP_D = ['D', 'A', 'D', 'G', 'B', 'E']
     OPEN_G = ['D', 'G', 'D', 'G', 'B', 'D']
 
+@dataclass(frozen=True, order=True)
+class FretPosition:
+    string: int  # 0 (high E) to 5 (low E)
+    fret: int    # 0 (open) to max_fret
+    
+    def __str__(self):
+        string_names = ['e', 'B', 'G', 'D', 'A', 'E']
+        return f"{string_names[self.string]}:{self.fret}"
 @dataclass
 class MusicalEvent:
     time: float          # Time in beats
@@ -35,11 +47,16 @@ class MusicalEvent:
     fret: Optional[int] = None
     technique: Optional[str] = None
 
-@dataclass(frozen=True, order=True)
-class FretPosition:
-    string: int  # 0 (high E) to 5 (low E)
-    fret: int    # 0 (open) to max_fret
-    
-    def __str__(self):
-        string_names = ['e', 'B', 'G', 'D', 'A', 'E']
-        return f"{string_names[self.string]}:{self.fret}"
+@dataclass
+class Track:
+    """Represents a single track of music."""
+    events: List[MusicalEvent] = field(default_factory=list)
+    instrument_name: str = "Acoustic Grand Piano"
+
+@dataclass
+class Song:
+    """A universal, format-agnostic representation of a song."""
+    tracks: List[Track] = field(default_factory=list)
+    tempo: float = 120.0
+    time_signature: str = "4/4"
+    title: str = "Untitled"

@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gtrsnipe"
+version = "0.1.0"
+description = "A command-line tool to translate between MIDI and various text notation systems, including ASCII tablature."
+authors = [
+  { name="ScottVR", email="scottvr@gmail.com" },
+]
+readme = "README.md" 
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+# List your project's dependencies here.
+dependencies = [
+    "MIDIFile",
+    "midiutil",
+]
+
+[project.scripts]
+gtrsnipe = "gtrsnipe.converter:main"
+
+[project.urls]
+"Homepage" = "https://github.com/scottvr/gtrsnipe" 

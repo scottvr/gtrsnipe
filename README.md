@@ -1,75 +1,121 @@
-# gtrsnipe (pronounced "guttersnipe")
+# gtrsnipe 
+(pronounced "guttersnipe")
 
-Ridiculous.. I got nerdsniped by an impossible claim by someone on hackernews that guitar tab was turing complete. (storing to memory seems an obvious obstacle but..) 
-I wanted to see what I might come up with, a different machine, perhaps involving a looper pedal blah blah blah.. it's been a few weeks and I forget what all ridiculous iterations it went through. 
+Convert to and from .mid, .abc, .vexx, and .tab files. 
 
-In the process though.. I ended up with ast to tablature, midi to guitar tab (with an optimal fretboard mapper that's kinda cool. maybe deserves finishing and packaging), guitar tab formatter, a "guitputer" machine of sorts and a couple of attempts at a "compiler" for it.. 
+## Installation
 
-Some of those things I just mentioned are useful things that I don't know if they already exist, but someone may find some of this code useful, or interesting, or funny.
+```
+git clone https://github.com/scottvr/gtrsnipe
+cd gtrsnipe
+python -mvenv .venv
+```
 
-Up until about the halfway point, I had kept a journal (below) planning to document this. Yeah, I probably won't. :-)
-Code in the repo includes half-finished test scripts and redirected output txt files for debugging. Enjoy.
+on Windows:
 
-=============================
+```
+.venv\Scripts\activate
+```
 
-Initial Infrastructure
+bash:
 
-Changed timing notation from mm:ss to measure.beat format
-Added configurable time signature support
-Created basic instruction set for guitar operations
+```
+. .venv/bin/activate
+```
 
-Memory & Addressing
+Then, 
 
-Implemented fret-based memory addressing system
-Added capo support as base address register
-Explored alternate tunings as memory access patterns
-Developed concept of using string selection as memory banks
+```
+pip install .
+```
 
-Instruction Set Architecture
 
-Expanded instruction set with guitar techniques (hammer-ons, pull-offs, slides, etc.)
-Added timing specifications for each instruction type
-Created cycle count system for different operations
+## Usage Help
 
-CPU & Compilation
+```
+usage: gtrsnipe [-h] [--nudge NUDGE] [--track TRACK] [--no-articulations] input_file output_file
 
-Developed GuitarCPU class
-Created program compiler for converting operations to tab
-Implemented basic instruction scheduling
+Convert music files between binary MIDI .mid and ASCII .tab .vex, and .abc notation formats, in any direction.
 
-Tab Generation & Output
+positional arguments:
+  input_file          Path to the input music file
+  output_file         Path to save the output music file
 
-Created TabFormatter for proper guitar tablature output
-Added measure bars and timing markers
-Implemented proper string representation
+options:
+  -h, --help          show this help message and exit
+  --nudge NUDGE       An integer to shift the transcription's start time to the right. Each unit corresponds to roughly a      
+                      16th note.
+  --track TRACK       The track number (1-based) to select from a multi-track MIDI file. If not set, all tracks are
+                      processed.
+  --no-articulations  Transcribe with no legato, taps, hammer-ons, pull-offs, etc.
 
-Performance Validation & Optimization
+```
 
-Added FretboardMapper to track valid playing positions
-Created TechniqueRestrictions to validate playability
-Implemented position optimization to avoid impossible techniques
-Developed system to remap unplayable positions to equivalent playable ones
-Added intelligent scoring for optimal position selection
+### Examples
 
-Optimization Refinements
+```
+$ gtrsnipe MrCrowley.mid mrcrowley-organ.tab --track 5
+Converting 'MrCrowley.mid' (mid) to 'mrcrowley-organ.tab' (tab)...
+--- Selecting track 5 of 7 ---
+--- Chord-Aware Mapper initialized. ---
+Successfully saved to mrcrowley-organ.tab
 
-Enhanced position remapping to preserve musical intent
-Improved handling of technique-specific restrictions
-Added context-aware position selection (considering previous positions)
-Removed ambiguous notation (like zero-padding fret numbers)
-Implemented clean tab output without remapping markers
+$ cat ./mrcrowley-organ.tab
+// Title: MrCrowley
+// Tempo: 106.0 BPM
+// Time: 4/4
+// Tuning: STANDARD
 
-Compiler System Development
+e|--1----------------|--0--------------------|--1----------------|--3--------------------|--5----------------|
+B|--3----------------|-----------------------|--1----------------|--5--------------1---p0|--5----------------|
+G|--2----------------|--5--------------------|--2-----0---h2----4|--5--------------------|--5-----4---h5----7|
+D|--0-----2---h3----5|--7--------------7---p5|--3----------------|--5-----5--------------|--7----------------|
+A|-------------------|--7-----7--------------|--3----------------|--3---------3----------|--7----------------|
+E|-------------------|--5---------5----------|--1----------------|-----------------------|--5----------------|
 
-Created GuitarCompiler class for higher-level translation
-Added operation to instruction mapping
-Implemented memory management system
-Created instruction timing analyzer
-Added support for operation sequences and control flow
+e|--7-------------|-------------1--|--3----1----0----1|--5-------------|--0-------------|--1----------------|
+B|--8-------------|-------------1--|--3----1----0----1|--6-------------|----------------|--3----------------|
+G|--9-------------|--5-----7----5--|--7----5----4----5|--7-------------|----------------|--2----------------|
+D|--9----9--------|--7-----8----3--|--5----3---------3|--7-------------|--11-----3---p2-|--0-----2---h3----5|
+A|--7---------7---|----------------|------------7-----|--0-------------|----------------|-------------------|
+E|----------------|--5-----6----1--|--3----1----0----1|----------------|----------------|-------------------|
+...
+```
 
-Final Enhancements
 
-Improved cycle-accurate timing representation
-Added proper handling of technique duration
-Enhanced position optimization for complex sequences
-Refined tab output for maximum readability and playability
+```
+$ gtrsnipe SmellsLikeTeenSpirit.mid --track 6 teenspirit-bass.tab --no-articulations --nudge 14
+Converting 'SmellsLikeTeenSpirit.mid' (mid) to 'teenspirit-bass.tab' (tab)...
+--- Selecting track 6 of 11 ---
+--- Nudging all events forward by 3.5 beats ---
+--- Chord-Aware Mapper initialized. ---
+Successfully saved to teenspirit-bass.tab
+
+$ cat teenspirit-bass.tab
+// Title: SmellsLikeTeenSpirit
+// Tempo: 110.0 BPM
+// Time: 4/4
+// Tuning: STANDARD
+
+e|----------------|----------------|----------------|----------------|----------------|----------------|
+B|----------------|----------------|----------------|----------------|----------------|----------------|
+G|----------------|----------------|----------------|----------------|----------------|----------------|
+D|----------------|----------------|----------------|----------------|----------------|----------------|
+A|----------------|----------------|----------------|----------------|----------------|----------------|
+E|----------------|----------------|----------------|----------------|----------------|----------------|
+
+e|---------------------------------|----------------------------------|----------------------------------|
+B|---------------------------------|----------------------------------|----------------------------------|
+G|---------------------------------|----------------------------------|----------------------------------|
+D|---------------------------------|----------------------------------|----------------------------------|
+A|------------------------1---1----|-------------------------4---4----|-------------------------1---1----|
+E|--1----1--1----1--1--1----------1|--h4----4--4----4--4--4----------4|--p1----1--1----1--1--1----------1|
+
+e|----------------------------------|----------------------------------|----------------------------------|
+B|----------------------------------|----------------------------------|----------------------------------|
+G|----------------------------------|----------------------------------|----------------------------------|
+D|----------------------------------|----------------------------------|----------------------------------|
+A|-------------------------4---4----|-------------------------1---1----|-------------------------4---4----|
+E|--h4----4--4----4--4--4----------4|--p1----1--1----1--1--1----------1|--h4----4--4----4--4--4----------4|
+...
+```
