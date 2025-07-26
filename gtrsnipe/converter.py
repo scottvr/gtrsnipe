@@ -86,7 +86,7 @@ def main():
         "--track",
         type=int,
         default=None,
-        help="The track number (1-based) to select from a multi-track MIDI file. If not set, all tracks are processed."
+        help="The track number (1-based) to select from a multi-track MIDI file. If not set, all tracks are processed. For a multitrack midi, you will want to select a single instrument track to transcribe."
     )
     parser.add_argument(
         "--no-articulations",
