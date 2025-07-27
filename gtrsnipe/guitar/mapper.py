@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from itertools import product
 from typing import Dict, Set, Optional, List, Tuple
 from itertools import groupby
-from ..core.types import MusicalEvent, FretPosition, Tuning
+from ..core.types import MusicalEvent, FretPosition, Tuning, Technique
 import logging
 
 logger = logging.getLogger(__name__)
@@ -14,8 +14,8 @@ class GuitarMapper:
     def __init__(self, max_fret: int = 24, tuning: Tuning = Tuning.STANDARD):
         self.max_fret = max_fret
         self.tuning = tuning
-        self.reference_pitch = 40
-        self.string_offsets = self._calculate_string_offsets()
+        self.open_string_pitches = self._get_open_string_pitches(tuning)
+        self.pitch_to_positions: Dict[int, Set[FretPosition]] = {}
         self._build_pitch_maps()
         logger.info("--- Chord-Aware Mapper initialized. ---")
 
@@ -23,25 +23,38 @@ class GuitarMapper:
         if tuning == Tuning.STANDARD: return [64, 59, 55, 50, 45, 40]
         return [64, 59, 55, 50, 45, 40]
 
-    def _calculate_string_offsets(self) -> List[int]:
-        offsets_low_to_high = [0, 5, 10, 15, 19, 24]
-        return list(reversed(offsets_low_to_high))
-
     def _build_pitch_maps(self):
-        self.pitch_to_positions: Dict[int, Set[FretPosition]] = {}
-        for string in range(6):
-            base_pitch = self.reference_pitch + self.string_offsets[string]
+        for string_idx, base_pitch in enumerate(self.open_string_pitches):
             for fret in range(self.max_fret + 1):
                 pitch = base_pitch + fret
-                pos = FretPosition(string, fret)
+                pos = FretPosition(string_idx, fret)
                 if pitch not in self.pitch_to_positions:
                     self.pitch_to_positions[pitch] = set()
-                self.pitch_to_positions[pitch].add(pos)
-                
+                self.pitch_to_positions[pitch].add(pos)                
+    
+    def _map_to_single_string(self, events: List[MusicalEvent], string_index: int) -> List[MusicalEvent]:
+        open_string_pitch = self.open_string_pitches[string_index]
+        mapped_events = []
+        for event in sorted(events, key=lambda e: e.time):
+            fret = event.pitch - open_string_pitch
+            if 0 <= fret <= self.max_fret:
+                event.string = string_index
+                event.fret = fret
+                mapped_events.append(event)
+            else:
+                logger.warning(f"Note with pitch {event.pitch} is unplayable on string {string_index+1} (fret {fret}) and was dropped.")
+        return mapped_events
+
     def _normalize_pitch(self, pitch: int) -> int:
-        keys = self.pitch_to_positions.keys()
-        while pitch > max(keys): pitch -= 12
-        while pitch < min(keys): pitch += 12
+        """Transposes a pitch by octaves until it is within the playable range of the instrument."""
+        # Get the min and max pitches once to avoid recalculating in the loop
+        min_pitch = min(self.pitch_to_positions.keys())
+        max_pitch = max(self.pitch_to_positions.keys())
+        
+        while pitch > max_pitch:
+            pitch -= 12
+        while pitch < min_pitch:
+            pitch += 12
         return pitch
 
     def _score_fingering(self, fingering: Fingering, prev_fingering: Optional[Fingering]) -> float:
@@ -89,104 +102,112 @@ class GuitarMapper:
         return score
 
     def _find_optimal_fingering(self, notes: List[MusicalEvent], prev_fingering: Optional[Fingering]) -> Optional[Fingering]:
-        """Finds the best way to play a chord by evaluating all fingering combinations."""
-        
-        # Get all possible fret positions for each note in the chord
         note_positions = []
         for note in notes:
-            norm_pitch = self._normalize_pitch(note.pitch)
+            # Using modulo to handle pitches outside the standard guitar range
+            norm_pitch = self._normalize_pitch(note.pitch)            
             positions = self.pitch_to_positions.get(norm_pitch)
-            if not positions: return None # Note is unplayable
+            if not positions: return None
             note_positions.append(positions)
 
-        # Generate all fingering combinations (e.g., [(C_pos1, E_pos1), (C_pos1, E_pos2), ...])
         all_combinations = product(*note_positions)
-
         best_fingering = None
         max_score = -float('inf')
 
         for fingering in all_combinations:
-            # Rule out invalid fingerings (e.g., two notes on the same string)
             strings_used = [pos.string for pos in fingering]
             if len(strings_used) != len(set(strings_used)):
                 continue
 
             score = self._score_fingering(fingering, prev_fingering)
-            if score > -1000: logger.debug(f"considered fingering scored {score}") 
             if score > max_score:
                 max_score = score
                 best_fingering = fingering
-        logger.debug(f"score of best fingering = {max_score}")
         return best_fingering
 
-    def _infer_techniques_from_positions(self, mapped_events: List[MusicalEvent], no_articulations: bool) -> List[MusicalEvent]:
-        if no_articulations:
+
+    def _infer_technique_between_notes(self, prev_event: MusicalEvent, curr_event: MusicalEvent) -> str:
+        if prev_event.fret is None or curr_event.fret is None: return Technique.PICK.value
+        time_delta = curr_event.time - prev_event.time
+        if time_delta < 0.01: return Technique.PICK.value
+        if prev_event.string != curr_event.string: return Technique.PICK.value
+        if time_delta > 0.5: return Technique.PICK.value
+        if curr_event.fret > prev_event.fret: return Technique.HAMMER.value
+        if curr_event.fret < prev_event.fret: return Technique.PULL.value
+        return Technique.PICK.value
+
+    def _infer_techniques_from_positions(self, mapped_events: List[MusicalEvent], no_articulations: bool, single_string_mode: bool = False) -> List[MusicalEvent]:
+        if no_articulations or not mapped_events:
+            if mapped_events:
+                for event in mapped_events: event.technique = Technique.PICK.value
             return mapped_events
-        """Second pass to determine legato techniques based on final positions."""
-        if not mapped_events: return []
-            
-        final_events = [mapped_events[0]]
+
+        # --- Pass 1: Infer base techniques (pick, hammer-on, pull-off) for all notes ---
+        events_with_base_techniques = [mapped_events[0]]
+        mapped_events[0].technique = Technique.PICK.value
+
         for i in range(1, len(mapped_events)):
             prev_event = mapped_events[i-1]
             curr_event = mapped_events[i]
-            inferred_technique = self._infer_technique_between_notes(prev_event, curr_event)
-            curr_event.technique = inferred_technique
-            final_events.append(curr_event)
-        return final_events
+            curr_event.technique = self._infer_technique_between_notes(prev_event, curr_event)
+            events_with_base_techniques.append(curr_event)
 
-    def _infer_technique_between_notes(self, prev_event: MusicalEvent, curr_event: MusicalEvent) -> str:
-        if prev_event.fret is None or curr_event.fret is None: return "pick"
+    # --- Pass 2: If in single-string mode, identify runs and mark the highest note as a 'tap' ---
+        if single_string_mode:
+            runs, current_run = [], []
+            for event in events_with_base_techniques:
+                if event.technique == Technique.PICK.value:
+                    if current_run: runs.append(current_run)
+                    current_run = [event]
+                else:
+                    current_run.append(event)
+            if current_run: runs.append(current_run)
 
-        time_delta = curr_event.time - prev_event.time
+            for run in runs:
+                # Tapping is usually for runs of 3+ notes (e.g., pick-pull-tap)
+                # This also prevents simple hammer-ons (e.g., 5h7) from becoming taps.
+                if len(run) > 2:
+                    highest_pitch = max(e.pitch for e in run)
 
-        # If notes are simultaneous (a chord) or too close, it's not a legato link.
-        # Use a small epsilon to handle floating point inaccuracies.
-        if time_delta < 0.01:
-            return "pick"
+                    # If the highest note only appears once and is the first note,
+                    # it's likely a descending run (e.g., 7p5p3), not a tapping one.
+                    is_descending_run = sum(1 for e in run if e.pitch == highest_pitch) == 1 and run[0].pitch == highest_pitch
+
+                    if not is_descending_run:
+                        for note in run:
+                            if note.pitch == highest_pitch:
+                                note.technique = Technique.TAP.value
             
-        # Check if notes are on the same string for a legato phrase.
-        if prev_event.string != curr_event.string: return "pick"
-        
-        # Increase the time threshold to be more lenient for fast passages.
-        # This allows up to an eighth note's duration between legato notes.
-        if time_delta > 0.5: return "pick"
-        
-        if curr_event.fret > prev_event.fret: return "hammer-on"
-        if curr_event.fret < prev_event.fret: return "pull-off"
-        
-        return "pick"
+        return events_with_base_techniques
     
-    def map_events_to_fretboard(self, events: List[MusicalEvent], no_articulations: bool) -> List[MusicalEvent]:
-        """Maps musical events to a fretboard, considering chords as a whole."""
+    def map_events_to_fretboard(self, events: List[MusicalEvent], no_articulations: bool, single_string: Optional[int] = None) -> List[MusicalEvent]:
         if not events: return []
         
-        # --- Step 1: Group events by quantized time to identify chords ---
-        QUANTIZATION_RESOLUTION = 0.125
-        def quantize_time(beat): return round(beat / QUANTIZATION_RESOLUTION) * QUANTIZATION_RESOLUTION
+        mapped_events: List[MusicalEvent]
         
-        sorted_events = sorted(events, key=lambda e: e.time)
-        time_groups = [list(g) for t, g in groupby(sorted_events, key=lambda e: quantize_time(e.time))]
+        if single_string is not None:
+            logger.info(f"--- Single-string mode active. Mapping all notes to string {single_string}. ---")
+            string_index = single_string - 1
+            mapped_events = self._map_to_single_string(events, string_index)
+        else:
+            QUANTIZATION_RESOLUTION = 0.125
+            def quantize_time(beat): return round(beat / QUANTIZATION_RESOLUTION) * QUANTIZATION_RESOLUTION
+            
+            sorted_events = sorted(events, key=lambda e: e.time)
+            time_groups = [list(g) for t, g in groupby(sorted_events, key=lambda e: quantize_time(e.time))]
 
-        # --- Step 2: Map each time group (note or chord) holistically ---
-        mapped_events = []
-        last_fingering: Optional[Fingering] = None
+            multi_string_events = []
+            last_fingering: Optional[Fingering] = None
+            for note_group in time_groups:
+                fingering = self._find_optimal_fingering(note_group, last_fingering)
+                if fingering:
+                    for i, note_event in enumerate(note_group):
+                        note_event.fret = fingering[i].fret
+                        note_event.string = fingering[i].string
+                    multi_string_events.extend(note_group)
+                    last_fingering = fingering
+                else:
+                    logger.warning(f"Could not find a playable fingering for notes at time {note_group[0].time}")
+            mapped_events = multi_string_events
 
-        for note_group in time_groups:
-            # Set a default "pick" technique before finding the position.
-            # This will be corrected for legato notes in the final pass.
-            for note in note_group:
-                note.technique = "pick"
-                
-            fingering = self._find_optimal_fingering(note_group, last_fingering)
-            logger.debug(f"best fingering: {fingering}") 
-            if fingering:
-                for i, note_event in enumerate(note_group):
-                    note_event.fret = fingering[i].fret
-                    note_event.string = fingering[i].string
-                mapped_events.extend(note_group)
-                last_fingering = fingering
-            else:
-                logger.warning(f"Could not find a playable fingering for notes at time {note_group[0].time}")
-
-        # This function analyzes the final positions to find hammer-ons and pull-offs.
-        return self._infer_techniques_from_positions(mapped_events, no_articulations=no_articulations)
+        return self._infer_techniques_from_positions(mapped_events, no_articulations, single_string_mode=(single_string is not None))

@@ -1,4 +1,5 @@
 from .formats import abc, mid, tab, vex
+from .formats.mid.generator import MidiUtilFile
 from .core.types import Song
 from .utils.io import save_text_file, save_midi_file
 from .utils.logger import setup_logger
@@ -12,7 +13,11 @@ from sys import exit
 logger = logging.getLogger(__name__)
 
 class MusicConverter:
-    def convert(self, input_data: str, from_format: str, to_format: str, nudge: int, track_num: Optional[int], staccato: bool = False, no_articulations: bool = False) -> object | str:
+    def convert(self, input_data: str, from_format: str, to_format: str, 
+                nudge: int, track_num: Optional[int], 
+                staccato: bool = False, 
+                no_articulations: bool = False,
+                single_string: Optional[int] = None) -> object | str:
         """
         Converts music data from one format to another.
         """
@@ -29,7 +34,7 @@ class MusicConverter:
                 for event in track.events:
                     event.time += beat_offset
 
-        output_data = self._generate(song, to_format, no_articulations=no_articulations)
+        output_data = self._generate(song, to_format, no_articulations=no_articulations, single_string=single_string)
 
         return output_data
 
@@ -52,15 +57,16 @@ class MusicConverter:
         else:
             raise ValueError(f"Unsupported input format: {format}")
 
-    def _generate(self, song: Song, format: str, no_articulations: bool = False) -> object | str:
+    def _generate(self, song: Song, format: str, no_articulations: bool = False,
+                  single_string: Optional[int] = None) -> object | str:
         if format == 'mid':
             return mid.midiGenerator.generate(song)
         elif format == 'abc':
             return abc.AbcGenerator.generate(song)
         elif format == 'vex':
-            return vex.VextabGenerator.generate(song, no_articulations=no_articulations)
+            return vex.VextabGenerator.generate(song, no_articulations=no_articulations, single_string=single_string)
         elif format == 'tab':
-            return tab.AsciiTabGenerator.generate(song, no_articulations=no_articulations)
+            return tab.AsciiTabGenerator.generate(song, no_articulations=no_articulations, single_string=single_string)
         else:
             raise ValueError(f"Unsupported output format: {format}")
 
@@ -96,6 +102,13 @@ def main():
         help="Do not extend note durations to the start of the next note, instead giving each note an 1/8 note duration. Primarily for tab-to-MIDI conversions."
     )
     parser.add_argument(
+        "--single-string",
+        type=int,
+        default=None,
+        choices=range(1, 7), # Restrict input to 1, 2, 3, 4, 5, 6
+        help="Force all notes onto a single string (1-6, high e to low E). Ideal for transcribing legato/tapping runs."
+    )
+    parser.add_argument(
         '--debug',
         action='store_true',
         help="Enable detailed debug logging messages."
@@ -120,10 +133,13 @@ def main():
     converter = MusicConverter()
 
     try:
-        output_data = converter.convert(args.input_file, from_format, to_format, args.nudge, args.track, staccato=args.staccato, no_articulations=args.no_articulations)
+        output_data = converter.convert(args.input_file, from_format, to_format, 
+                                        args.nudge, args.track, staccato=args.staccato, 
+                                        no_articulations=args.no_articulations,
+                                        single_string=args.single_string)
 
         if to_format == 'mid':
-            if isinstance(output_data, mid.MidiUtilFile):
+            if isinstance(output_data, MidiUtilFile):
                 save_midi_file(output_data, args.output_file)
         else:
             if isinstance(output_data, str):

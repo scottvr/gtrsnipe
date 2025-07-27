@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from ....core.types import FretPosition, Song, Technique, Track
 from ....guitar.mapper import GuitarMapper
 from ..types import TabScore, TabMeasure, TabNote
@@ -9,7 +9,9 @@ logger = logging.getLogger(__name__)
 
 class AsciiTabGenerator:
     @staticmethod
-    def generate(song: Song, max_line_width: int = 120, default_note_length: str = "1/16", no_articulations: bool = False) -> str:
+    def generate(song: Song, max_line_width: int = 120, default_note_length: str = "1/16", 
+                 no_articulations: bool = False,
+                 single_string: Optional[int] = None) -> str:
         """
         Generates an ASCII tab string from a Song object.
         Args:
@@ -20,7 +22,8 @@ class AsciiTabGenerator:
         mapper = GuitarMapper()
         mapped_song = Song(tempo=song.tempo, time_signature=song.time_signature, title=song.title, tracks=[])
         for track in song.tracks:
-            mapped_events = mapper.map_events_to_fretboard(track.events, no_articulations=no_articulations)
+            mapped_events = mapper.map_events_to_fretboard(track.events, no_articulations=no_articulations,
+                                                           single_string=single_string)
             new_track = Track(events=mapped_events, instrument_name=track.instrument_name)
             mapped_song.tracks.append(new_track)
 
@@ -112,7 +115,7 @@ class AsciiTabGenerator:
             for note in notes_in_chord:
                 str_idx = note.position.string
                 fret = str(note.position.fret)
-                tech_map = {"hammer-on": "h", "pull-off": "p"}
+                tech_map = {"hammer-on": "h", "pull-off": "p", "tap": "t"}
                 symbol = tech_map.get(note.technique.value) if note.technique else None
                 note_text = f"{symbol or ''}{fret}" if symbol else fret
                 

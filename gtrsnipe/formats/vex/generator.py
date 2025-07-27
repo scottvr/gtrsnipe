@@ -1,11 +1,11 @@
 from itertools import groupby
 from ...core.types import Song
 from ...guitar.mapper import GuitarMapper
-import re
-
+from typing import Optional
 class VextabGenerator:
     @staticmethod
-    def generate(song: Song, default_note_length: str = "1/16", no_articulations=False) -> str:
+    def generate(song: Song, default_note_length: str = "1/16", no_articulations=False,
+                 single_string: Optional[int] = None) -> str:
         """
         Converts a Song object into a complete VexTab notation string.
         """
@@ -28,7 +28,8 @@ class VextabGenerator:
         all_mapped_events = []
         for track in song.tracks:
             if not track.events: continue
-            mapped_events = mapper.map_events_to_fretboard(track.events, no_articulations=no_articulations)
+            mapped_events = mapper.map_events_to_fretboard(track.events, no_articulations=no_articulations,
+                                                           single_string=single_string)
             all_mapped_events.extend(mapped_events)
 
         # Sort all events by time to process them chronologically
