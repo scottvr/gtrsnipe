@@ -12,7 +12,7 @@ from sys import exit
 logger = logging.getLogger(__name__)
 
 class MusicConverter:
-    def convert(self, input_data: str, from_format: str, to_format: str, nudge: int, track_num: Optional[int], staccato: bool = False) -> object | str:
+    def convert(self, input_data: str, from_format: str, to_format: str, nudge: int, track_num: Optional[int], staccato: bool = False, no_articulations: bool = False) -> object | str:
         """
         Converts music data from one format to another.
         """
@@ -29,7 +29,7 @@ class MusicConverter:
                 for event in track.events:
                     event.time += beat_offset
 
-        output_data = self._generate(song, to_format)
+        output_data = self._generate(song, to_format, no_articulations=no_articulations)
 
         return output_data
 
@@ -52,15 +52,15 @@ class MusicConverter:
         else:
             raise ValueError(f"Unsupported input format: {format}")
 
-    def _generate(self, song: Song, format: str) -> object | str:
+    def _generate(self, song: Song, format: str, no_articulations: bool = False) -> object | str:
         if format == 'mid':
             return mid.midiGenerator.generate(song)
         elif format == 'abc':
             return abc.AbcGenerator.generate(song)
         elif format == 'vex':
-            return vex.VextabGenerator.generate(song)
+            return vex.VextabGenerator.generate(song, no_articulations=no_articulataions)
         elif format == 'tab':
-            return tab.AsciiTabGenerator.generate(song)
+            return tab.AsciiTabGenerator.generate(song, no_articulations=no_articulations)
         else:
             raise ValueError(f"Unsupported output format: {format}")
 
@@ -120,7 +120,7 @@ def main():
     converter = MusicConverter()
 
     try:
-        output_data = converter.convert(args.input_file, from_format, to_format, args.nudge, args.track, staccato=args.staccato)
+        output_data = converter.convert(args.input_file, from_format, to_format, args.nudge, args.track, staccato=args.staccato, no_articulations=args.no_articulations)
 
         if to_format == 'mid':
             if isinstance(output_data, mid.MidiUtilFile):

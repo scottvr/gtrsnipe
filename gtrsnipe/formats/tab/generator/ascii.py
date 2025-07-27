@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 class AsciiTabGenerator:
     @staticmethod
-    def generate(song: Song, max_line_width: int = 120, default_note_length: str = "1/16", no_articulataions: bool = False) -> str:
+    def generate(song: Song, max_line_width: int = 120, default_note_length: str = "1/16", no_articulations: bool = False) -> str:
         """
         Generates an ASCII tab string from a Song object.
         Args:
@@ -20,7 +20,7 @@ class AsciiTabGenerator:
         mapper = GuitarMapper()
         mapped_song = Song(tempo=song.tempo, time_signature=song.time_signature, title=song.title, tracks=[])
         for track in song.tracks:
-            mapped_events = mapper.map_events_to_fretboard(track.events, no_articulataions=no_articulataions)
+            mapped_events = mapper.map_events_to_fretboard(track.events, no_articulations=no_articulations)
             new_track = Track(events=mapped_events, instrument_name=track.instrument_name)
             mapped_song.tracks.append(new_track)
 

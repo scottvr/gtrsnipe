@@ -118,8 +118,8 @@ class GuitarMapper:
         logger.debug(f"score of best fingering = {max_score}")
         return best_fingering
 
-    def _infer_techniques_from_positions(self, mapped_events: List[MusicalEvent], no_articulataions: bool) -> List[MusicalEvent]:
-        if no_articulataions:
+    def _infer_techniques_from_positions(self, mapped_events: List[MusicalEvent], no_articulations: bool) -> List[MusicalEvent]:
+        if no_articulations:
             return mapped_events
         """Second pass to determine legato techniques based on final positions."""
         if not mapped_events: return []
@@ -155,7 +155,7 @@ class GuitarMapper:
         
         return "pick"
     
-    def map_events_to_fretboard(self, events: List[MusicalEvent], no_articulataions: bool) -> List[MusicalEvent]:
+    def map_events_to_fretboard(self, events: List[MusicalEvent], no_articulations: bool) -> List[MusicalEvent]:
         """Maps musical events to a fretboard, considering chords as a whole."""
         if not events: return []
         
@@ -188,4 +188,4 @@ class GuitarMapper:
                 logger.warning(f"Could not find a playable fingering for notes at time {note_group[0].time}")
 
         # This function analyzes the final positions to find hammer-ons and pull-offs.
-        return self._infer_techniques_from_positions(mapped_events, no_articulataions=no_articulataions)
+        return self._infer_techniques_from_positions(mapped_events, no_articulations=no_articulations)
