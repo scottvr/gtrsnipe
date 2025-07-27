@@ -2,9 +2,9 @@ import argparse
 from itertools import groupby
 from typing import List, Dict
 
-from gtrsnipe.converter import MusicConverter
-from .formats.abc import AbcParser, AbcGenerator
-from .core.types import Song, MusicalEvent
+from ..converter import MusicConverter
+from ..formats import abc, mid, tab, vex
+from ..core.types import Song, MusicalEvent
 
 def midi_to_note_name(pitch: int) -> str:
     """Converts a MIDI pitch number to a human-readable note name (e.g., 60 -> C4)."""
@@ -93,7 +93,7 @@ def main():
     print(f"Loading source MIDI: '{args.input_file}'")
     
     # Use your existing MIDI parser to create the initial Song object
-    source_song = MusicConverter()._parse(args.input_file, 'mid')
+    source_song = gtrsnipe.converter.MusicConverter()._parse(args.input_file, 'mid')
 
     roundtrip_song = Song()
     if args.format == 'abc':

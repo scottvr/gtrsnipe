@@ -5,7 +5,7 @@ from typing import List, Dict
 
 # Assuming the script is placed alongside your project structure
 from gtrsnipe.converter import MusicConverter
-from .core.types import Song, MusicalEvent
+from gtrsnipe.core.types import Song, MusicalEvent
 
 def midi_to_note_name(pitch: int) -> str:
     """Converts a MIDI pitch number to a human-readable note name (e.g., 60 -> C4)."""

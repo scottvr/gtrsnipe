@@ -1,2 +1,2 @@
-from .reader import MidiReader, MIDIFile
-from .generator import midiGenerator, MidiUtilFile
+from .reader import MidiReader
+from .generator import midiGenerator

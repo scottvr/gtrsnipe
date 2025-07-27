@@ -51,6 +51,7 @@ class GuitarMapper:
         MOVEMENT_PENALTY_WEIGHT = 3   # Penalty for distance from previous hand position
         HIGH_FRET_PENALTY_WEIGHT = 0.4  # Penalty for playing high on the neck
         SWEET_SPOT_BONUS = 0.5          # Bonus for playing in the ideal fret range
+        UNPLAYABLE_FRET_SPAN = 4
 
         # Compactness Score (Cluster Score)
         frets = [pos.fret for pos in fingering if pos.fret > 0]
@@ -58,7 +59,7 @@ class GuitarMapper:
         fret_span = (max(frets) - min(frets)) if frets else 0
 
         # Heavily penalize unplayable fret spans
-        if fret_span > 4:
+        if fret_span > UNPLAYABLE_FRET_SPAN:
             return -1000
 
         score = -fret_span * FRET_SPAN_PENALTY_WEIGHT
