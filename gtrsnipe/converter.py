@@ -149,16 +149,22 @@ def main():
         help='Penalty for playing high on the neck (default: 0.4).'
     )
     mapper_group.add_argument(
-        '--sweet-spot-bonus',
-        type=float,
-        default=0.5,
-        help='Bonus for playing in the ideal lower fret range (default: 0.5).'
-    )
-    mapper_group.add_argument(
         '--unplayable-fret-span',
         type=int,
         default=4,
         help='Fret span considered unplayable (default: 4).'
+    )
+    mapper_group.add_argument(
+        '--sweet-spot-low',
+        type=int,
+        default=0,
+        help='Lowest fret of the "sweet spot" (default 0 - open)'
+    )
+    mapper_group.add_argument(
+        '--sweet-spot-high',
+        type=int,
+        default=12,
+        help='Highest fret of the "sweet spot" (default 12)'
     )
     # Technique Inference Thresholds
     mapper_group.add_argument(
