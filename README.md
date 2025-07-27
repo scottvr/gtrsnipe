@@ -189,3 +189,5 @@ Mapper Tuning (Advanced):
                         Min number of notes in a run to be considered for
                         tapping (default: 2).
 ```
+
+`--debug` can be used to show the scoring calculations to gain understanding of how your tweaks affect the results.
