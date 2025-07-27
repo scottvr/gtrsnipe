@@ -155,6 +155,12 @@ def main():
         help='Fret span considered unplayable (default: 4).'
     )
     mapper_group.add_argument(
+        '--sweet-spot-bonus',
+        type=float,
+        default=0.5,
+        help='Bonus for playing in the ideal lower fret range.'
+    )
+    mapper_group.add_argument(
         '--sweet-spot-low',
         type=int,
         default=0,
