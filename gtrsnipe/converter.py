@@ -189,6 +189,8 @@ def main():
         movement_penalty=args.movement_penalty,
         high_fret_penalty=args.high_fret_penalty,
         sweet_spot_bonus=args.sweet_spot_bonus,
+        sweet_spot_low=args.sweet_spot_low,
+        sweet_spot_high=args.sweet_spot_high,
         unplayable_fret_span=args.unplayable_fret_span,
         legato_time_threshold=args.legato_time_threshold,
         tapping_run_threshold=args.tapping_run_threshold

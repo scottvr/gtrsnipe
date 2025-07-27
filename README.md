@@ -180,6 +180,10 @@ Mapper Tuning (Advanced):
   --sweet-spot-bonus SWEET_SPOT_BONUS
                         Bonus for playing in the ideal lower fret range
                         (default: 0.5).
+  --sweet-spot-low SWEET_SPOT_LOW
+                        Lowest fret of the "sweet spot" (default 0 - open)
+  --sweet-spot-high SWEET_SPOT_HIGH
+                        Highest fret of the "sweet spot" (default 12)
   --unplayable-fret-span UNPLAYABLE_FRET_SPAN
                         Fret span considered unplayable (default: 4).
   --legato-time-threshold LEGATO_TIME_THRESHOLD
