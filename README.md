@@ -57,7 +57,7 @@ options:
   -h, --help          show this help message and exit
   --nudge NUDGE       An integer to shift the transcription's start time to the right. Each unit
                       corresponds to roughly a 16th note.
-  -y, --yes           Automatically overwrite the output file if it already exists.
+  -y, --yes           Overwrite the output file if it already exists.
   --track TRACK       The track number (1-based) to select from a multi-track MIDI file. 
                       If not set, all tracks are processed. 
                       For a multitrack midi, you will want to select a single instrument track to transcribe.
