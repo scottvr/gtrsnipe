@@ -33,7 +33,7 @@ class AbcParser:
                 default_length_in_beats = fraction_of_whole * 4.0
 
         # identify chords "[...]", single notes, or rests "z" as tokens ---
-        token_pattern = re.compile(r"(\[[A-Ga-g,^=_']*\]|[_^\=]?[A-Ga-g][,']+|z)([\d\/]*)")
+        token_pattern = re.compile(r"(\[[A-Ga-g,^=_']*\]|[_^\=]?[A-Ga-g][,']*|z)([\d\/]*)")
         
         key_field_match = re.search(r"K:.*", abc_string)
         body_start = key_field_match.end() if key_field_match else 0
