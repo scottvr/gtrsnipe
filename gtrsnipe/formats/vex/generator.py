@@ -1,14 +1,17 @@
 from itertools import groupby
 from ...core.types import Song
+from ...core.config import MapperConfig
 from ...guitar.mapper import GuitarMapper
 from typing import Optional
 class VextabGenerator:
     @staticmethod
     def generate(song: Song, default_note_length: str = "1/16", no_articulations=False,
-                 single_string: Optional[int] = None) -> str:
+                 single_string: Optional[int] = None, mapper_config: Optional[MapperConfig] = None, **kwargs) -> str:
         """
         Converts a Song object into a complete VexTab notation string.
         """
+        if mapper_config is None:
+            mapper_config = MapperConfig()
         try:
             denominator = int(default_note_length.split('/')[1])
         except (ValueError, IndexError):
@@ -24,7 +27,7 @@ class VextabGenerator:
                         "text Title: {song.title}",
                         ""]
         
-        mapper = GuitarMapper()
+        mapper = GuitarMapper(config=mapper_config)
         all_mapped_events = []
         for track in song.tracks:
             if not track.events: continue

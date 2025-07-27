@@ -1,5 +1,6 @@
 from typing import List, Optional
 from ....core.types import FretPosition, Song, Technique, Track
+from ....core.config import MapperConfig
 from ....guitar.mapper import GuitarMapper
 from ..types import TabScore, TabMeasure, TabNote
 from itertools import groupby
@@ -11,7 +12,7 @@ class AsciiTabGenerator:
     @staticmethod
     def generate(song: Song, max_line_width: int = 120, default_note_length: str = "1/16", 
                  no_articulations: bool = False,
-                 single_string: Optional[int] = None) -> str:
+                 single_string: Optional[int] = None, mapper_config: Optional[MapperConfig] = None, **kwargs) -> str:
         """
         Generates an ASCII tab string from a Song object.
         Args:
@@ -19,7 +20,10 @@ class AsciiTabGenerator:
             max_line_width: The maximum character width before breaking a line.
             default_note_length: The "base unit" for rhythmic spacing (e.g., "1/8", "1/16").
         """
-        mapper = GuitarMapper()
+        if mapper_config is None:
+            mapper_config = MapperConfig()
+
+        mapper = GuitarMapper(config=mapper_config)
         mapped_song = Song(tempo=song.tempo, time_signature=song.time_signature, title=song.title, tracks=[])
         for track in song.tracks:
             mapped_events = mapper.map_events_to_fretboard(track.events, no_articulations=no_articulations,

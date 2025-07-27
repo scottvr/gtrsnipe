@@ -1,6 +1,7 @@
 from .formats import abc, mid, tab, vex
 from .formats.mid.generator import MidiUtilFile
 from .core.types import Song
+from .core.config import MapperConfig
 from .utils.io import save_text_file, save_midi_file
 from .utils.logger import setup_logger
 from argparse import ArgumentParser
@@ -17,7 +18,8 @@ class MusicConverter:
                 nudge: int, track_num: Optional[int], 
                 staccato: bool = False, 
                 no_articulations: bool = False,
-                single_string: Optional[int] = None) -> object | str:
+                single_string: Optional[int] = None,
+                mapper_config: Optional[MapperConfig] = None) -> object | str:
         """
         Converts music data from one format to another.
         """
@@ -34,11 +36,11 @@ class MusicConverter:
                 for event in track.events:
                     event.time += beat_offset
 
-        output_data = self._generate(song, to_format, no_articulations=no_articulations, single_string=single_string)
+        output_data = self._generate(song, to_format, no_articulations=no_articulations, single_string=single_string, mapper_config=mapper_config)
 
         return output_data
 
-    def _parse(self, data: str, format: str, track_num: Optional[int]) -> Song:
+    def _parse(self, data: str, format: str, track_num: Optional[int], staccato: bool = False) -> Song:
         if format == 'mid':
             return mid.MidiReader.parse(data, track_number_to_select=track_num)
         elif format == 'abc':
@@ -52,20 +54,20 @@ class MusicConverter:
         elif format == 'tab':
             with open(data, 'r') as f:
                 content = f.read()
-            return tab.AsciiTabParser.parse(content)
+            return tab.AsciiTabParser.parse(content, staccato=staccato)
         else:
             raise ValueError(f"Unsupported input format: {format}")
 
     def _generate(self, song: Song, format: str, no_articulations: bool = False,
-                  single_string: Optional[int] = None) -> object | str:
+                  single_string: Optional[int] = None, mapper_config: Optional[MapperConfig] = None) -> object | str:
         if format == 'mid':
             return mid.midiGenerator.generate(song)
         elif format == 'abc':
             return abc.AbcGenerator.generate(song)
         elif format == 'vex':
-            return vex.VextabGenerator.generate(song, no_articulations=no_articulations, single_string=single_string)
+            return vex.VextabGenerator.generate(song, no_articulations=no_articulations, single_string=single_string, mapper_config=mapper_config)
         elif format == 'tab':
-            return tab.AsciiTabGenerator.generate(song, no_articulations=no_articulations, single_string=single_string)
+            return tab.AsciiTabGenerator.generate(song, no_articulations=no_articulations, single_string=single_string, mapper_config=mapper_config)
         else:
             raise ValueError(f"Unsupported output format: {format}")
 
@@ -112,8 +114,79 @@ def main():
         action='store_true',
         help="Enable detailed debug logging messages."
     )
+    mapper_group = parser.add_argument_group('Mapper Tuning (Advanced)')
+    # Instrument tunables
+    mapper_group.add_argument(
+        '--tuning',
+        type=str,
+        default='STANDARD',
+        choices=['STANDARD', 'DROP_D', 'OPEN_G'],
+        help='Specify the guitar tuning (default: STANDARD).'
+    )
+    mapper_group.add_argument(
+        '--max-fret',
+        type=int,
+        default=24,
+        help='Maximum fret number on the virtual guitar neck (default: 24).'
+    )
+    # Scoring Weights
+    mapper_group.add_argument(
+        '--fret-span-penalty',
+        type=float,
+        default=100.0,
+        help='Penalty for wide fret stretches (default: 100.0).'
+    )
+    mapper_group.add_argument(
+        '--movement-penalty',
+        type=float,
+        default=3.0,
+        help='Penalty for hand movement between chords (default: 3.0).'
+    )
+    mapper_group.add_argument(
+        '--high-fret-penalty',
+        type=float,
+        default=0.4,
+        help='Penalty for playing high on the neck (default: 0.4).'
+    )
+    mapper_group.add_argument(
+        '--sweet-spot-bonus',
+        type=float,
+        default=0.5,
+        help='Bonus for playing in the ideal lower fret range (default: 0.5).'
+    )
+    mapper_group.add_argument(
+        '--unplayable-fret-span',
+        type=int,
+        default=4,
+        help='Fret span considered unplayable (default: 4).'
+    )
+    # Technique Inference Thresholds
+    mapper_group.add_argument(
+        '--legato-time-threshold',
+        type=float,
+        default=0.5,
+        help='Max time in beats between notes for a legato phrase (h/p) (default: 0.5).'
+    )
+    mapper_group.add_argument(
+        '--tapping-run-threshold',
+        type=int,
+        default=2,
+        help='Min number of notes in a run to be considered for tapping (default: 2).'
+    )
 
     args = parser.parse_args()
+
+    mapper_config = MapperConfig(
+        max_fret=args.max_fret,
+        tuning=args.tuning,
+        fret_span_penalty=args.fret_span_penalty,
+        movement_penalty=args.movement_penalty,
+        high_fret_penalty=args.high_fret_penalty,
+        sweet_spot_bonus=args.sweet_spot_bonus,
+        unplayable_fret_span=args.unplayable_fret_span,
+        legato_time_threshold=args.legato_time_threshold,
+        tapping_run_threshold=args.tapping_run_threshold
+    )
 
     log_level = logging.DEBUG if args.debug else logging.INFO
     setup_logger(log_level)
@@ -135,7 +208,7 @@ def main():
         output_data = converter.convert(args.input_file, from_format, to_format, 
                                         args.nudge, args.track, staccato=args.staccato, 
                                         no_articulations=args.no_articulations,
-                                        single_string=args.single_string)
+                                        single_string=args.single_string, mapper_config=mapper_config)
 
         if to_format == 'mid':
             if isinstance(output_data, MidiUtilFile):

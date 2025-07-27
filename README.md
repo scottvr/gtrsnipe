@@ -66,6 +66,11 @@ options:
                       instead giving each note an 1/8 note duration. Primarily for tab-to-MIDI conversions.
   --single-string {1,2,3,4,5,6}
                       Force all notes onto a single string (1-6, high e to low E). Ideal for transcribing legato/tapping runs.
+  --tuning {STANDARD,DROP_D,OPEN_G}
+                      Specify the guitar tuning (default: STANDARD).
+  --max-fret MAX_FRET Maximum fret number on the virtual guitar neck
+                      (default: 24).
+
   --debug             Enable detailed debug logging messages.
 
 ```
@@ -157,4 +162,30 @@ G|---------------------------------|---------------------------------|----------
 D|---------------------------------|---------------------------------|-------------------------------|
 A|------------------------1---1----|------------------------4---4----|------------------1---1---1---1|
 E|--1----1--1----1--1--1----------1|--4----4--4----4--4--4----------4|--1---1---1---1----------------|
+```
 
+## Fretboard Mapper Tuning
+
+The following options can be used to tweak the fretboard positioning/fingering algorithm:
+
+```
+Mapper Tuning (Advanced):
+  --fret-span-penalty FRET_SPAN_PENALTY
+                        Penalty for wide fret stretches (default: 100.0).
+  --movement-penalty MOVEMENT_PENALTY
+                        Penalty for hand movement between chords (default:
+                        3.0).
+  --high-fret-penalty HIGH_FRET_PENALTY
+                        Penalty for playing high on the neck (default: 0.4).
+  --sweet-spot-bonus SWEET_SPOT_BONUS
+                        Bonus for playing in the ideal lower fret range
+                        (default: 0.5).
+  --unplayable-fret-span UNPLAYABLE_FRET_SPAN
+                        Fret span considered unplayable (default: 4).
+  --legato-time-threshold LEGATO_TIME_THRESHOLD
+                        Max time in beats between notes for a legato phrase
+                        (h/p) (default: 0.5).
+  --tapping-run-threshold TAPPING_RUN_THRESHOLD
+                        Min number of notes in a run to be considered for
+                        tapping (default: 2).
+```

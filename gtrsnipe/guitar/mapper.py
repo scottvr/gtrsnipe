@@ -3,6 +3,9 @@ from itertools import product
 from typing import Dict, Set, Optional, List, Tuple
 from itertools import groupby
 from ..core.types import MusicalEvent, FretPosition, Tuning, Technique
+from ..core.config import MapperConfig
+from ..core.theory import note_name_to_pitch
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -11,21 +14,21 @@ logger = logging.getLogger(__name__)
 Fingering = Tuple[FretPosition, ...]
 
 class GuitarMapper:
-    def __init__(self, max_fret: int = 24, tuning: Tuning = Tuning.STANDARD):
-        self.max_fret = max_fret
-        self.tuning = tuning
-        self.open_string_pitches = self._get_open_string_pitches(tuning)
+    def __init__(self, config: MapperConfig):
+        self.config = config
+        tuning_str = self.config.tuning.upper()
+        try:
+            self.tuning = Tuning[self.config.tuning.upper()]
+        except KeyError:
+            logger.warning(f"Unknown tuning '{self.config.tuning}'. Defaulting to STANDARD.")
+        self.open_string_pitches = [note_name_to_pitch(n) for n in self.tuning.value] 
         self.pitch_to_positions: Dict[int, Set[FretPosition]] = {}
         self._build_pitch_maps()
         logger.info("--- Chord-Aware Mapper initialized. ---")
 
-    def _get_open_string_pitches(self, tuning: Tuning) -> List[int]:
-        if tuning == Tuning.STANDARD: return [64, 59, 55, 50, 45, 40]
-        return [64, 59, 55, 50, 45, 40]
-
     def _build_pitch_maps(self):
         for string_idx, base_pitch in enumerate(self.open_string_pitches):
-            for fret in range(self.max_fret + 1):
+            for fret in range(self.config.max_fret + 1):
                 pitch = base_pitch + fret
                 pos = FretPosition(string_idx, fret)
                 if pitch not in self.pitch_to_positions:
@@ -37,7 +40,7 @@ class GuitarMapper:
         mapped_events = []
         for event in sorted(events, key=lambda e: e.time):
             fret = event.pitch - open_string_pitch
-            if 0 <= fret <= self.max_fret:
+            if 0 <= fret <= self.config.max_fret:
                 event.string = string_index
                 event.fret = fret
                 mapped_events.append(event)
@@ -59,37 +62,30 @@ class GuitarMapper:
 
     def _score_fingering(self, fingering: Fingering, prev_fingering: Optional[Fingering]) -> float:
         """Scores a complete chord fingering based on compactness, movement, and position."""
-        # --- Weights ---
-        FRET_SPAN_PENALTY_WEIGHT = 100  # Heavy penalty for wide fret stretches
-        MOVEMENT_PENALTY_WEIGHT = 3   # Penalty for distance from previous hand position
-        HIGH_FRET_PENALTY_WEIGHT = 0.4  # Penalty for playing high on the neck
-        SWEET_SPOT_BONUS = 0.5          # Bonus for playing in the ideal fret range
-        UNPLAYABLE_FRET_SPAN = 4
-
         # Compactness Score (Cluster Score)
         frets = [pos.fret for pos in fingering if pos.fret > 0]
         #frets = [pos.fret for pos in fingering]
         fret_span = (max(frets) - min(frets)) if frets else 0
 
         # Heavily penalize unplayable fret spans
-        if fret_span > UNPLAYABLE_FRET_SPAN:
+        if fret_span > self.config.unplayable_fret_span:
             return -1000
 
-        score = -fret_span * FRET_SPAN_PENALTY_WEIGHT
+        score = -fret_span * self.config.fret_span_penalty
 
         # Movement Score
         if prev_fingering:
             avg_current_fret = sum(p.fret for p in fingering) / len(fingering)
             avg_prev_fret = sum(p.fret for p in prev_fingering) / len(prev_fingering)
             fret_diff = abs(avg_current_fret - avg_prev_fret)
-            score -= fret_diff * MOVEMENT_PENALTY_WEIGHT
+            score -= fret_diff * self.config.movement_penalty
 
         avg_fret = sum(p.fret for p in fingering) / len(fingering)
         
-        if 0 <= avg_fret <= 12:
-            score += SWEET_SPOT_BONUS
+        if self.config.sweet_spot_low <= avg_fret <= self.config.sweet_spot_high:
+            score += self.config.sweet_spot_bonus
         elif avg_fret > 12:
-            positional_penalty = (avg_fret - 12) * HIGH_FRET_PENALTY_WEIGHT
+            positional_penalty = (avg_fret - 12) * self.config.high_fret_penalty
             
             # Check if the fingering uses the lowest strings
             # Low E string is index 5, A string is 4
@@ -131,7 +127,7 @@ class GuitarMapper:
         time_delta = curr_event.time - prev_event.time
         if time_delta < 0.01: return Technique.PICK.value
         if prev_event.string != curr_event.string: return Technique.PICK.value
-        if time_delta > 0.5: return Technique.PICK.value
+        if time_delta > self.config.legato_time_threshold: return Technique.PICK.value
         if curr_event.fret > prev_event.fret: return Technique.HAMMER.value
         if curr_event.fret < prev_event.fret: return Technique.PULL.value
         return Technique.PICK.value
@@ -166,7 +162,7 @@ class GuitarMapper:
             for run in runs:
                 # Tapping is usually for runs of 3+ notes (e.g., pick-pull-tap)
                 # This also prevents simple hammer-ons (e.g., 5h7) from becoming taps.
-                if len(run) > 2:
+                if len(run) > self.config.tapping_run_threshold:
                     highest_pitch = max(e.pitch for e in run)
 
                     # If the highest note only appears once and is the first note,

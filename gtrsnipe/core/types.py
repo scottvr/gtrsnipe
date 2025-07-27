@@ -25,9 +25,10 @@ class Technique(Enum):
     PALM_MUTE = "palm-mute"
 
 class Tuning(Enum):
-    STANDARD = ['E', 'A', 'D', 'G', 'B', 'E']
-    DROP_D = ['D', 'A', 'D', 'G', 'B', 'E']
-    OPEN_G = ['D', 'G', 'D', 'G', 'B', 'D']
+    # Values are tuples of note names from high E (string 1) to low E (string 6)
+    STANDARD = ("E4", "B3", "G3", "D3", "A2", "E2")
+    DROP_D   = ("E4", "B3", "G3", "D3", "A2", "D2")
+    OPEN_G   = ("D4", "B3", "G3", "D3", "G2", "D2")
 
 @dataclass(frozen=True, order=True)
 class FretPosition:
