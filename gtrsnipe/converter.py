@@ -21,7 +21,7 @@ class MusicConverter:
         """
         Converts music data from one format to another.
         """
-        song = self._parse(input_data, from_format, track_num, staccato=staccato)
+        song = self._parse(input_data, from_format, track_num)
         
         if input_data:
             song.title = Path(os.path.basename(input_data)).stem
@@ -38,8 +38,7 @@ class MusicConverter:
 
         return output_data
 
-    def _parse(self, data: str, format: str, track_num: Optional[int], staccato: bool = False
-               ) -> Song:
+    def _parse(self, data: str, format: str, track_num: Optional[int]) -> Song:
         if format == 'mid':
             return mid.MidiReader.parse(data, track_number_to_select=track_num)
         elif format == 'abc':
@@ -53,7 +52,7 @@ class MusicConverter:
         elif format == 'tab':
             with open(data, 'r') as f:
                 content = f.read()
-            return tab.AsciiTabParser.parse(content, staccato=staccato)
+            return tab.AsciiTabParser.parse(content)
         else:
             raise ValueError(f"Unsupported input format: {format}")
 
