@@ -58,7 +58,7 @@ class MusicConverter:
         elif format == 'abc':
             return abc.AbcGenerator.generate(song)
         elif format == 'vex':
-            return vex.VextabGenerator.generate(song, no_articulations=no_articulataions)
+            return vex.VextabGenerator.generate(song, no_articulations=no_articulations)
         elif format == 'tab':
             return tab.AsciiTabGenerator.generate(song, no_articulations=no_articulations)
         else:
