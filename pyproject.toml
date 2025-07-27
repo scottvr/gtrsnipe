@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gtrsnipe"
-version = "0.1.0"
+version = "0.1.1"
 description = "A command-line tool to translate between MIDI and various text notation systems, including ASCII tablature."
 authors = [
   { name="ScottVR", email="scottvr@gmail.com" },
