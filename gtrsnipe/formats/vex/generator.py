@@ -20,7 +20,9 @@ class VextabGenerator:
         elif denominator >= 8:
             measures_per_line = 3
 
-        output_parts = [f"//Title: {song.title}, options tempo={int(song.tempo)}"]
+        output_parts = [f"options tempo={int(song.tempo)}",
+                        "text Title: {song.title}",
+                        ""]
         
         mapper = GuitarMapper()
         all_mapped_events = []

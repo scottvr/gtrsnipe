@@ -45,7 +45,6 @@ class AbcParser:
                 fraction_of_whole = AbcParser._abc_duration_to_beats(value)
                 default_length_in_beats = fraction_of_whole * 4.0
 
-        # Regex to find a note (with accidentals and octave) and its optional duration multiplier
         note_pattern = re.compile(r"([_^\=]?[A-Ga-g][,']*)([\d\/]*)")
         
         # Find the start of the music body (after the Key signature)

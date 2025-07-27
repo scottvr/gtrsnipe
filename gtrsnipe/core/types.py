@@ -37,6 +37,7 @@ class FretPosition:
     def __str__(self):
         string_names = ['e', 'B', 'G', 'D', 'A', 'E']
         return f"{string_names[self.string]}:{self.fret}"
+
 @dataclass
 class MusicalEvent:
     time: float          # Time in beats

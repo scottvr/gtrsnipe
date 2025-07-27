@@ -61,7 +61,6 @@ class AbcGenerator:
         abc_lines.append(f"Q:1/4={int(song.tempo)}")
         abc_lines.append("K:C")
 
-        # --- FIX: Calculate beats per measure for bar line logic ---
         try:
             num, den = map(int, song.time_signature.split('/'))
             beats_per_measure = num * (4.0 / den)
@@ -110,12 +109,11 @@ class AbcGenerator:
                 beats_in_current_measure += quantized_duration
                 current_beat = start_time + longest_duration
 
-                # --- FIX: Check for and insert a bar line ---
                 if beats_in_current_measure >= beats_per_measure - 0.01: # Use a small tolerance
                     line += "| "
                     beats_in_current_measure %= beats_per_measure # Use modulo to carry over remainder
 
-            # Line wrapping logic
+            # Line wrapping
             words = line.split()
             max_line_length = 70
             current_line = ""
