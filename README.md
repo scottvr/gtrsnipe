@@ -57,9 +57,12 @@ options:
   -h, --help          show this help message and exit
   --nudge NUDGE       An integer to shift the transcription's start time to the right. Each unit corresponds to roughly a 16th note.
   -y, --yes           Automatically overwrite the output file if it already exists.
-  --track TRACK       The track number (1-based) to select from a multi-track MIDI file. If not set, all tracks are processed. For a multitrack midi, you will want to select a single instrument track to transcribe.
+  --track TRACK       The track number (1-based) to select from a multi-track MIDI file. 
+                      If not set, all tracks are processed. 
+                      For a multitrack midi, you will want to select a single instrument track to transcribe.
   --no-articulations  Transcribe with no legato, taps, hammer-ons, pull-offs, etc.
-  --staccato          Do not extend note durations to the start of the next note for a sustained feel, instead giving each note an 1/8 note duration. Primarily for tab-to-MIDI conversions.
+  --staccato          Do not extend note durations to the start of the next note for a sustained feel,
+                      instead giving each note an 1/8 note duration. Primarily for tab-to-MIDI conversions.
   --debug             Enable detailed debug logging messages.
 
 ```
