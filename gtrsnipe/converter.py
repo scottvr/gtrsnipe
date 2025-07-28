@@ -145,8 +145,8 @@ def main():
     mapper_group.add_argument(
         '--string-switch-penalty',
         type=float,
-        default=10.0,
-        help='Penalty for switching strings (default: 10.0).'
+        default=5.0,
+        help='Penalty for switching strings (default: 5.0).'
     )
     mapper_group.add_argument(
         '--high-fret-penalty',
