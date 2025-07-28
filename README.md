@@ -77,7 +77,8 @@ options:
 
 ### Examples
 
-Transcribing this organ intro for my classical guitar, where the "sweet spot" is lower on the neck
+Transcribing this organ intro for my classical guitar, where the "sweet spot" is lower on the neck:
+
 ```
 $ gtrsnipe MrCrowleyOrganIntro.mid mrcrowley-organ.tab --track 5 --sweet-spot-high 8
 Converting 'MrCrowleyOrganIntro.mid' (mid) to 'mrcrowley-organ.tab' (tab)...
@@ -118,7 +119,6 @@ G|--5-----7-------|------------------|--7-------------|--6-------------|
 D|--7-----8----3--|--5----3----2----3|--7-------------|----------------|
 A|----------------|------------------|----------------|----------------|
 E|--5-----6----1--|--3----1----0----1|--5-------------|----------------|
-
 ```
 
 Transcribing a bass part will work; the mapper will transpose to guitar notes and display on six strings
