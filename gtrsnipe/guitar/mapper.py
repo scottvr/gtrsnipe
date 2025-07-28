@@ -63,8 +63,8 @@ class GuitarMapper:
     def _score_fingering(self, fingering: Fingering, prev_fingering: Optional[Fingering]) -> float:
         """Scores a complete chord fingering based on compactness, movement, and position."""
         # Compactness Score (Cluster Score)
-        frets = [pos.fret for pos in fingering if pos.fret > 0]
-        #frets = [pos.fret for pos in fingering]
+#        frets = [pos.fret for pos in fingering if pos.fret > 0]
+        frets = [pos.fret for pos in fingering]
         fret_span = (max(frets) - min(frets)) if frets else 0
 
         # Heavily penalize unplayable fret spans
@@ -82,16 +82,17 @@ class GuitarMapper:
 
         avg_fret = sum(p.fret for p in fingering) / len(fingering)
         
-        if self.config.sweet_spot_low <= avg_fret <= self.config.sweet_spot_high:
+        if self.config.sweet_spot_low <= avg_fret <= self.config.sweet_spot_high - 2:
             score += self.config.sweet_spot_bonus
-        elif avg_fret > 12:
-            positional_penalty = (avg_fret - 12) * self.config.high_fret_penalty
+            logger.debug(f"Sweet spot bonus! (avg_fret: {avg_fret})")
+        elif avg_fret > self.config.sweet_spot_high - 2:
+            positional_penalty = (avg_fret - self.config.sweet_spot_high) * self.config.high_fret_penalty
             
             # Check if the fingering uses the lowest strings
             # Low E string is index 5, A string is 4
             strings_used = [pos.string for pos in fingering]
-            if any(s >= 4 for s in strings_used):
-                positional_penalty *= 1.5 # Make penalty 50% worse on low strings
+            if any(s >= 3 for s in strings_used):
+                positional_penalty *= self.config.low_string_high_fret_multiplier  # Make penalty worse on low strings
             
             score -= positional_penalty
 
@@ -116,9 +117,11 @@ class GuitarMapper:
                 continue
 
             score = self._score_fingering(fingering, prev_fingering)
+            logger.debug(f"considering score: {score} {fingering}")
             if score > max_score:
                 max_score = score
                 best_fingering = fingering
+        logger.debug(f"best score: {max_score} {best_fingering}")
         return best_fingering
 
 
@@ -195,12 +198,22 @@ class GuitarMapper:
             multi_string_events = []
             last_fingering: Optional[Fingering] = None
             for note_group in time_groups:
-                fingering = self._find_optimal_fingering(note_group, last_fingering)
+                unique_pitches = {}
+                deduplicated_note_group = []
+                for note in note_group:
+                    norm_pitch = self._normalize_pitch(note.pitch)
+                    if norm_pitch not in unique_pitches:
+                        unique_pitches[norm_pitch] = note
+                        deduplicated_note_group.append(note)
+
+                fingering = self._find_optimal_fingering(deduplicated_note_group, last_fingering)
                 if fingering:
-                    for i, note_event in enumerate(note_group):
+                    # The fingering corresponds to the deduplicated notes.
+                    # We need to apply it back to the correct note events.
+                    for i, note_event in enumerate(deduplicated_note_group):
                         note_event.fret = fingering[i].fret
                         note_event.string = fingering[i].string
-                    multi_string_events.extend(note_group)
+                    multi_string_events.extend(deduplicated_note_group)
                     last_fingering = fingering
                 else:
                     logger.warning(f"Could not find a playable fingering for notes at time {note_group[0].time}")

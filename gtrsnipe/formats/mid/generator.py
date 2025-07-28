@@ -1,8 +1,9 @@
 from midiutil import MIDIFile as MidiUtilFile
 import math
-
+import logging
 from ...core.types import MusicalEvent, Song, Track, TimeSignature
 
+logger = logging.getLogger(__name__)
 class midiGenerator:
     """
     Generates a MIDIFile object from a format-agnostic Song object.
@@ -27,7 +28,7 @@ class midiGenerator:
             den_power_of_2 = int(math.log2(den))
             midi_file.addTimeSignature(track, time, num, den_power_of_2, 24)
         except (ValueError, ZeroDivisionError):
-            print(f"*** WARNING: Could not parse time signature '{song.time_signature}'. Defaulting to 4/4. ***")
+            logger.warning(f"*** WARNING: Could not parse time signature '{song.time_signature}'. Defaulting to 4/4. ***")
             midi_file.addTimeSignature(track, time, 4, 2, 24)
 
         # Add notes for each track

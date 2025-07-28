@@ -48,10 +48,10 @@ def save_midi_file(midi_object: MIDIFile, output_path: str):
 
         with open(output_path, 'wb') as output_file:
             midi_object.writeFile(output_file)
-        print(f"Successfully saved MIDI file to {output_path}")
+        logger.info(f"Successfully saved MIDI file to {output_path}")
 
     except IOError as e:
-        print(f"Error: Could not write MIDI file at {output_path}")
+        logger.error(f"Error: Could not write MIDI file at {output_path}")
         raise e
 
 def read_text_file(file_path: str) -> str:
@@ -80,5 +80,5 @@ def read_text_file(file_path: str) -> str:
         return content
 
     except FileNotFoundError:
-        print(f"Error: File not found at {file_path}")
+        logger.error(f"Error: File not found at {file_path}")
         raise

@@ -145,8 +145,14 @@ def main():
     mapper_group.add_argument(
         '--high-fret-penalty',
         type=float,
-        default=0.4,
-        help='Penalty for playing high on the neck (default: 0.4).'
+        default=5,
+        help='Penalty for playing high on the neck (default: 5).'
+    )
+    mapper_group.add_argument(
+        '--low-string-high-fret-multiplier',
+        type=float,
+        default=10.0,
+        help='Multiplier penalty for playing high on the neck on low strings (default: 10).'
     )
     mapper_group.add_argument(
         '--unplayable-fret-span',
@@ -194,6 +200,7 @@ def main():
         fret_span_penalty=args.fret_span_penalty,
         movement_penalty=args.movement_penalty,
         high_fret_penalty=args.high_fret_penalty,
+        low_string_high_fret_multiplier=args.low_string_high_fret_multiplier,
         sweet_spot_bonus=args.sweet_spot_bonus,
         sweet_spot_low=args.sweet_spot_low,
         sweet_spot_high=args.sweet_spot_high,
