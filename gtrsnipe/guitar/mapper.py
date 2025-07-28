@@ -61,47 +61,48 @@ class GuitarMapper:
         return pitch
 
     def _score_fingering(self, fingering: Fingering, prev_fingering: Optional[Fingering]) -> float:
-        """Scores a complete chord fingering based on compactness, movement, and position."""
-        # Compactness Score (Cluster Score)
-#        frets = [pos.fret for pos in fingering if pos.fret > 0]
+        """Scores a fingering based on internal shape, position, and transition cost."""
+        
+        # 1. Internal Shape Score (Compactness)
+        #frets = [pos.fret for pos in fingering if pos.fret > 0]
         frets = [pos.fret for pos in fingering]
         fret_span = (max(frets) - min(frets)) if frets else 0
-
-        # Heavily penalize unplayable fret spans
         if fret_span > self.config.unplayable_fret_span:
             return -1000
-
         score = -fret_span * self.config.fret_span_penalty
 
-        # Movement Score
-        if prev_fingering:
+        # 2. Positional Score (Where on the neck?)
+        if fingering:
+            avg_fret = sum(p.fret for p in fingering) / len(fingering)
+            if self.config.sweet_spot_low <= avg_fret <= self.config.sweet_spot_high:
+                score += self.config.sweet_spot_bonus
+            elif avg_fret > self.config.sweet_spot_high:
+                positional_penalty = (avg_fret - self.config.sweet_spot_high) * self.config.high_fret_penalty
+                strings_used = {pos.string for pos in fingering}
+                if any(s >= 4 for s in strings_used): # Penalize high frets on low strings more
+                    positional_penalty *= self.config.low_string_high_fret_multiplier
+                score -= positional_penalty
+
+        # 3. Transition Score (Cost of movement from previous fingering)
+        if prev_fingering and fingering:
+            # Penalize movement up/down the neck
             avg_current_fret = sum(p.fret for p in fingering) / len(fingering)
             avg_prev_fret = sum(p.fret for p in prev_fingering) / len(prev_fingering)
             fret_diff = abs(avg_current_fret - avg_prev_fret)
             score -= fret_diff * self.config.movement_penalty
-
-        avg_fret = sum(p.fret for p in fingering) / len(fingering)
-        
-        if self.config.sweet_spot_low <= avg_fret <= self.config.sweet_spot_high - 2:
-            score += self.config.sweet_spot_bonus
-            logger.debug(f"Sweet spot bonus! (avg_fret: {avg_fret})")
-        elif avg_fret > self.config.sweet_spot_high - 2:
-            positional_penalty = (avg_fret - self.config.sweet_spot_high) * self.config.high_fret_penalty
             
-            # Check if the fingering uses the lowest strings
-            # Low E string is index 5, A string is 4
-            strings_used = [pos.string for pos in fingering]
-            if any(s >= 3 for s in strings_used):
-                positional_penalty *= self.config.low_string_high_fret_multiplier  # Make penalty worse on low strings
-            
-            score -= positional_penalty
+            # Penalize changing strings
+            strings_used = {pos.string for pos in fingering}
+            prev_strings_used = {pos.string for pos in prev_fingering}
+            string_changes = len(strings_used.symmetric_difference(prev_strings_used))
+            score -= string_changes * self.config.string_switch_penalty
 
         return score
-
+    
     def _find_optimal_fingering(self, notes: List[MusicalEvent], prev_fingering: Optional[Fingering]) -> Optional[Fingering]:
+        # --- This method is now simpler and correct, with no conditional penalty logic ---
         note_positions = []
         for note in notes:
-            # Using modulo to handle pitches outside the standard guitar range
             norm_pitch = self._normalize_pitch(note.pitch)            
             positions = self.pitch_to_positions.get(norm_pitch)
             if not positions: return None
@@ -112,11 +113,12 @@ class GuitarMapper:
         max_score = -float('inf')
 
         for fingering in all_combinations:
-            strings_used = [pos.string for pos in fingering]
-            if len(strings_used) != len(set(strings_used)):
+            strings_used = {pos.string for pos in fingering}
+            if len(strings_used) != len(fingering):
                 continue
 
             score = self._score_fingering(fingering, prev_fingering)
+            
             logger.debug(f"considering score: {score} {fingering}")
             if score > max_score:
                 max_score = score

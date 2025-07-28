@@ -7,6 +7,7 @@ class MapperConfig:
     # From _score_fingering
     fret_span_penalty: float = 100.0
     movement_penalty: float = 3.0
+    string_switch_penalty: float = 10.0
     high_fret_penalty: float = 5.0
     low_string_high_fret_multiplier: float =10.0 
     sweet_spot_bonus: float = 0.5

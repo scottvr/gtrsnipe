@@ -143,6 +143,12 @@ def main():
         help='Penalty for hand movement between chords (default: 3.0).'
     )
     mapper_group.add_argument(
+        '--string-switch-penalty',
+        type=float,
+        default=10.0,
+        help='Penalty for switching strings (default: 10.0).'
+    )
+    mapper_group.add_argument(
         '--high-fret-penalty',
         type=float,
         default=5,
@@ -199,6 +205,7 @@ def main():
         tuning=args.tuning,
         fret_span_penalty=args.fret_span_penalty,
         movement_penalty=args.movement_penalty,
+        string_switch_penalty=args.string_switch_penalty,
         high_fret_penalty=args.high_fret_penalty,
         low_string_high_fret_multiplier=args.low_string_high_fret_multiplier,
         sweet_spot_bonus=args.sweet_spot_bonus,

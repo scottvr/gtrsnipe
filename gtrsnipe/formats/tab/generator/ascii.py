@@ -40,7 +40,7 @@ class AsciiTabGenerator:
         except (ValueError, ZeroDivisionError):
             base_unit_in_beats = 0.25 # Default to a 16th note
 
-        return AsciiTabGenerator._format_score(score, max_line_width, base_unit_in_beats)
+        return AsciiTabGenerator._format_score(score, max_line_width, base_unit_in_beats, mapper_config)
 
     @staticmethod
     def _get_quantized_spacing(time_delta: float, base_unit_in_beats: float) -> int:
@@ -83,7 +83,7 @@ class AsciiTabGenerator:
 
 
     @staticmethod
-    def _format_single_measure(measure: TabMeasure, base_unit_in_beats: float) -> List[str]:
+    def _format_single_measure(measure: TabMeasure, base_unit_in_beats: float, config: MapperConfig) -> List[str]:
         """Formats a single measure and returns its string lines."""
         measure_lines = [""] * 6
         last_event_time = 0.0
@@ -99,7 +99,7 @@ class AsciiTabGenerator:
         events_to_render = []
         for time, notes_in_group_iter in notes_by_time_iter:
             notes = list(notes_in_group_iter)
-            if AsciiTabGenerator._is_chord_playable(notes):
+            if AsciiTabGenerator._is_chord_playable(notes, config):
                 events_to_render.append({'time': time, 'notes': notes})
             else:
                 # Unplayable chord: break it into individual, slightly offset notes
@@ -140,12 +140,11 @@ class AsciiTabGenerator:
         return measure_lines
 
     @staticmethod
-    def _is_chord_playable(notes: List[TabNote]) -> bool:
+    def _is_chord_playable(notes: List[TabNote], config: MapperConfig) -> bool:
         """Checks if a chord is physically playable."""
         if len(notes) <= 1:
             return True
 
-        MAX_FRET_SPAN = 4
         strings_used = set()
         frets_used = []
 
@@ -161,13 +160,13 @@ class AsciiTabGenerator:
         
         # Check fret span
         if len(frets_used) > 1:
-            if (max(frets_used) - min(frets_used)) > MAX_FRET_SPAN:
+            if (max(frets_used) - min(frets_used)) > config.unplayable_fret_span:
                 return False
 
         return True
     
     @staticmethod
-    def _format_score(score: TabScore, max_line_width: int, base_unit_in_beats: float, ) -> str:
+    def _format_score(score: TabScore, max_line_width: int, base_unit_in_beats: float, config: MapperConfig) -> str:
         """Formats the complete score, breaking lines based on character width."""
         string_names = ['e', 'B', 'G', 'D', 'A', 'E']
         header = [
@@ -180,7 +179,7 @@ class AsciiTabGenerator:
         tab_lines = [f"{name}|" for name in string_names]
 
         for measure in score.measures:
-            measure_content = AsciiTabGenerator._format_single_measure(measure, base_unit_in_beats)
+            measure_content = AsciiTabGenerator._format_single_measure(measure, base_unit_in_beats, config)
             
             # If adding the next measure exceeds the max width, break the line.
             # (+1 for the "|" separator)
