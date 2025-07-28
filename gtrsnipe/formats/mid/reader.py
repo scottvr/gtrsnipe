@@ -59,12 +59,12 @@ class MidiReader:
         for event in midi_file.tracks[0].events:
             if isinstance(event, Events.MetaEvent):
                 if event.message == Events.meta.MetaEventKinds.Set_Tempo:
-                    song.tempo = round(60000000 / int(event.attributes["tempo"]), 3)
+                    song.tempo = round(60_000_000 / int(event.attributes["tempo"]), 3)
                 elif event.message == Events.meta.MetaEventKinds.Time_Signature:
                     num = event.attributes["numerator"]
                     den = event.attributes["denominator"]
                     song.time_signature = f"{num}/{den}"
-                    time_sig_obj = TimeSignature(num, den)
+                    time_sig_obj = TimeSignature(int(num), int(den))
 
         # Determine which tracks to process
         tracks_to_process = midi_file.tracks
@@ -153,7 +153,7 @@ class MidiReader:
             if track.events:
                 song.tracks.append(track)
         
-        song.time_signature = f"{time_sig_obj.numerator}/{time_sig_obj.denominator}"
+        song.time_signature = str(time_sig_obj)
 
         # --- STAGE 2: Check for silent data corruption via timeline sanity check ---
         all_events = [event for track in song.tracks for event in track.events]

@@ -172,16 +172,17 @@ The following options can be used to tweak the fretboard positioning/fingering a
 ```
 Mapper Tuning (Advanced):
   --fret-span-penalty FRET_SPAN_PENALTY
-                        Penalty for wide fret stretches (default: 100.0).
+                        Penalty for wide fret stretches (default: 10.0).
   --movement-penalty MOVEMENT_PENALTY
                         Penalty for hand movement between chords (default: 3.0).
   --high-fret-penalty HIGH_FRET_PENALTY
                         Penalty for playing high on the neck (default: 5.0).
+  --ignore-open IGNORE_OPEN
+                        Ignore open strings when calculating position score.
   --string-switch-penalty STRING_SWITCH_PENALTY
                         Penalty for playing high on the neck (default: 5.0).
   --sweet-spot-bonus SWEET_SPOT_BONUS
-                        Bonus for playing in the ideal lower fret range
-                        (default: 0.5).
+                        Bonus for playing in the ideal lower fret range (default: 0.5).
   --sweet-spot-low SWEET_SPOT_LOW
                         Lowest fret of the "sweet spot" (default 0)
   --sweet-spot-high SWEET_SPOT_HIGH
