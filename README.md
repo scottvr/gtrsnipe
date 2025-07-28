@@ -174,8 +174,7 @@ Mapper Tuning (Advanced):
   --fret-span-penalty FRET_SPAN_PENALTY
                         Penalty for wide fret stretches (default: 100.0).
   --movement-penalty MOVEMENT_PENALTY
-                        Penalty for hand movement between chords (default:
-                        3.0).
+                        Penalty for hand movement between chords (default: 3.0).
   --high-fret-penalty HIGH_FRET_PENALTY
                         Penalty for playing high on the neck (default: 5.0).
   --string-switch-penalty STRING_SWITCH_PENALTY
