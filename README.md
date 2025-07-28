@@ -121,7 +121,7 @@ A|----------------|------------------|----------------|----------------|
 E|--5-----6----1--|--3----1----0----1|--5-------------|----------------|
 ```
 
-Transcribing a bass part will work; the mapper will transpose to guitar notes and display on six strings
+Transcribing a bass part will work; the mapper will transpose to guitar notes and display on six strings:
 ```
 $ gtrsnipe SmellsLikeTeenSpirit.mid --track 6 teenspirit-bass.tab --no-articulations --nudge 14
 Converting 'SmellsLikeTeenSpirit.mid' (mid) to 'teenspirit-bass.tab' (tab)...
@@ -177,12 +177,14 @@ Mapper Tuning (Advanced):
                         Penalty for hand movement between chords (default:
                         3.0).
   --high-fret-penalty HIGH_FRET_PENALTY
-                        Penalty for playing high on the neck (default: 0.4).
+                        Penalty for playing high on the neck (default: 5.0).
+  --string-switch-penalty STRING_SWITCH_PENALTY
+                        Penalty for playing high on the neck (default: 5.0).
   --sweet-spot-bonus SWEET_SPOT_BONUS
                         Bonus for playing in the ideal lower fret range
                         (default: 0.5).
   --sweet-spot-low SWEET_SPOT_LOW
-                        Lowest fret of the "sweet spot" (default 0 - open)
+                        Lowest fret of the "sweet spot" (default 0)
   --sweet-spot-high SWEET_SPOT_HIGH
                         Highest fret of the "sweet spot" (default 12)
   --unplayable-fret-span UNPLAYABLE_FRET_SPAN
