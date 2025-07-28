@@ -198,3 +198,4 @@ Mapper Tuning (Advanced):
 ```
 
 `--debug` can be used to show the scoring calculations to gain understanding of how your tweaks affect the results.
+`--ignore-open` can make a surprising amount of difference without having to tweak scoring weights.
