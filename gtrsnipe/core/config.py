@@ -12,6 +12,7 @@ class MapperConfig:
     low_string_high_fret_multiplier: float =10.0 
     sweet_spot_bonus: float = 0.5
     unplayable_fret_span: int = 4
+    ignore_open: bool = False
     sweet_spot_low: int = 0
     sweet_spot_high: int = 12
 

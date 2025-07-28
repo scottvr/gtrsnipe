@@ -184,6 +184,12 @@ def main():
         default=12,
         help='Highest fret of the "sweet spot" (default 12)'
     )
+    mapper_group.add_argument(
+        '--ignore-open',
+        action='store_true',
+        default=False,
+        help="Don't consider open when calculating shape score."
+    )
     # Technique Inference Thresholds
     mapper_group.add_argument(
         '--legato-time-threshold',
@@ -212,6 +218,7 @@ def main():
         sweet_spot_low=args.sweet_spot_low,
         sweet_spot_high=args.sweet_spot_high,
         unplayable_fret_span=args.unplayable_fret_span,
+        ignore_open=args.ignore_open,
         legato_time_threshold=args.legato_time_threshold,
         tapping_run_threshold=args.tapping_run_threshold
     )

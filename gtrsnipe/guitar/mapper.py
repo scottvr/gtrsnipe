@@ -10,7 +10,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# A Fingering is a tuple of FretPosition objects, representing one possible way to play a chord.
 Fingering = Tuple[FretPosition, ...]
 
 class GuitarMapper:
@@ -64,8 +63,10 @@ class GuitarMapper:
         """Scores a fingering based on internal shape, position, and transition cost."""
         
         # 1. Internal Shape Score (Compactness)
-        #frets = [pos.fret for pos in fingering if pos.fret > 0]
-        frets = [pos.fret for pos in fingering]
+        if self.config.ignore_open:
+            frets = [pos.fret for pos in fingering if pos.fret > 0]
+        else:
+            frets = [pos.fret for pos in fingering]
         fret_span = (max(frets) - min(frets)) if frets else 0
         if fret_span > self.config.unplayable_fret_span:
             return -1000
@@ -100,7 +101,6 @@ class GuitarMapper:
         return score
     
     def _find_optimal_fingering(self, notes: List[MusicalEvent], prev_fingering: Optional[Fingering]) -> Optional[Fingering]:
-        # --- This method is now simpler and correct, with no conditional penalty logic ---
         note_positions = []
         for note in notes:
             norm_pitch = self._normalize_pitch(note.pitch)            
@@ -153,7 +153,7 @@ class GuitarMapper:
             curr_event.technique = self._infer_technique_between_notes(prev_event, curr_event)
             events_with_base_techniques.append(curr_event)
 
-    # --- Pass 2: If in single-string mode, identify runs and mark the highest note as a 'tap' ---
+        # --- Pass 2: If in single-string mode, identify runs and mark the highest note as a 'tap' ---
         if single_string_mode:
             runs, current_run = [], []
             for event in events_with_base_techniques:
