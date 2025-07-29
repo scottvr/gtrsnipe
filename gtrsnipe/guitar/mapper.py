@@ -70,7 +70,7 @@ class GuitarMapper:
         fret_span = (max(frets) - min(frets)) if frets else 0
         if fret_span > self.config.unplayable_fret_span:
             return -1000
-        score = -fret_span * self.config.fret_span_penalty
+        score = -fret_span * self.config.fret_span_penalty 
 
         # 2. Positional Score (Where on the neck?)
         if fingering:

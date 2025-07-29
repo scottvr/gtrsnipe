@@ -58,10 +58,15 @@ class AsciiTabGenerator:
 
     @staticmethod
     def _create_score_from_song(song: Song) -> TabScore:
-        # This method is unchanged
         num, den = map(int, song.time_signature.split('/'))
         time_sig_tuple = (num, den)
+
+        if song.tracks:
+            main_track = song.tracks[0]
+            song.title = f"{song.title} {'(' + main_track.instrument_name + ')' if main_track.instrument_name is not None and main_track.instrument_name != 'Acoustic Grand Piano' else ''}"
+
         score = TabScore(tempo=song.tempo, time_signature=time_sig_tuple, tuning_name="STANDARD", title=song.title)
+
         all_events = [event for track in song.tracks for event in track.events]
         if not all_events: return score
         

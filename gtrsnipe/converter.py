@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 class MusicConverter:
     def convert(self, input_data: str, from_format: str, to_format: str, 
                 nudge: int, track_num: Optional[int], 
+                transpose: int = 0,
                 staccato: bool = False, 
                 no_articulations: bool = False,
                 single_string: Optional[int] = None,
@@ -23,10 +24,22 @@ class MusicConverter:
         """
         Converts music data from one format to another.
         """
-        song = self._parse(input_data, from_format, track_num)
+        song = self._parse(input_data, from_format, track_num, staccato=staccato)
+
+        if not song:
+            logger.error("Could not parse the input file; cannot proceed with conversion.")
+            return None # Return None to indicate failure
         
         if input_data:
             song.title = Path(os.path.basename(input_data)).stem
+        
+        if transpose != 0 and song.tracks:
+            logger.info(f"--- Transposing all events by {transpose} semitones ---")
+            for track in song.tracks:
+                for event in track.events:
+                    event.pitch += transpose
+                    # Clamp the pitch to the valid MIDI range [0, 127]
+                    event.pitch = max(0, min(127, event.pitch))
 
         if nudge > 0 and song.tracks:
             nudge_unit_in_beats = 0.25
@@ -59,7 +72,7 @@ class MusicConverter:
             raise ValueError(f"Unsupported input format: {format}")
 
     def _generate(self, song: Song, format: str, no_articulations: bool = False,
-                  single_string: Optional[int] = None, mapper_config: Optional[MapperConfig] = None) -> object | str:
+                  single_string: Optional[int] = None, staccato: bool = False, mapper_config: Optional[MapperConfig] = None) -> object | str:
         if format == 'mid':
             return mid.midiGenerator.generate(song)
         elif format == 'abc':
@@ -93,6 +106,12 @@ def main():
         help="The track number (1-based) to select from a multi-track MIDI file. If not set, all tracks are processed. For a multitrack midi, you will want to select a single instrument track to transcribe."
     )
     parser.add_argument(
+        "--transpose",
+        type=int,
+        default=0,
+        help="Transpose the music up or down by N semitones (e.g., 2 for up, -3 for down)."
+    )
+    parser.add_argument(
         "--no-articulations",
         action='store_true',
         help="Transcribe with no legato, taps, hammer-ons, pull-offs, etc."
@@ -100,7 +119,7 @@ def main():
     parser.add_argument(
         "--staccato",
         action='store_true',
-        help="Do not extend note durations to the start of the next note, instead giving each note an 1/8 note duration. Primarily for tab-to-MIDI conversions."
+        help="Do not extend note durations to the start of the next note, instead giving each note an 1/8 note duration. When converting from ASCII tab."
     )
     parser.add_argument(
         "--single-string",
@@ -242,6 +261,7 @@ def main():
     try:
         output_data = converter.convert(args.input_file, from_format, to_format, 
                                         args.nudge, args.track, staccato=args.staccato, 
+                                        transpose=args.transpose,
                                         no_articulations=args.no_articulations,
                                         single_string=args.single_string, mapper_config=mapper_config)
 

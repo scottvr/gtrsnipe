@@ -55,7 +55,6 @@ class AbcGenerator:
         default_note_len_beats = note_as_fraction_of_whole * 4.0
         
         abc_lines.append("X:1")
-        abc_lines.append(f"T:{song.title}")
         abc_lines.append(f"M:{song.time_signature}")
         abc_lines.append(f"L:{default_note_length}")
         abc_lines.append(f"Q:1/4={int(song.tempo)}")
@@ -70,6 +69,8 @@ class AbcGenerator:
         for track in song.tracks:
             if not track.events: continue
             
+            abc_lines.append(f"T:{song.title} {'(track.instrument_name)' if track.instrument_name and track.instrument_name != 'Acoustic Grand Piano' else ''}")
+
             sorted_events = sorted(track.events, key=lambda e: e.time)
             line = ""
             current_beat = 0.0

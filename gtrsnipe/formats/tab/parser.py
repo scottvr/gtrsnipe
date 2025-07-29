@@ -103,14 +103,14 @@ class AsciiTabParser:
 
         # --- Pass 3: If staccato is enabled, modify the events now in the track ---
         if not staccato and len(track.events) > 1:
-            logger.debug("Applying staccato processing.")
+            logger.debug("Applying legato processing.")
             sorted_events = sorted(track.events, key=lambda e: e.time)
             events_grouped_by_time = [list(g) for t, g in groupby(sorted_events, key=lambda e: e.time)]
             
             logger.debug(f"Grouped notes into {len(events_grouped_by_time)} distinct time slices.")
             
             if len(events_grouped_by_time) <= 1:
-                logger.debug("Cannot apply staccato: only one time slice found. All notes may have the same start time.")
+                logger.debug("Cannot apply legato: only one time slice found. All notes may have the same start time.")
             else:
                 for i in range(len(events_grouped_by_time) - 1):
                     current_group = events_grouped_by_time[i]

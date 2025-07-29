@@ -2,9 +2,10 @@ import io
 import logging
 from contextlib import redirect_stderr
 from typing import Optional, Dict, List
+import traceback
 
 import mido
-from MIDI import MIDIFile, Events  # Your existing library
+from MIDI import MIDIFile, Events  
 
 from ...core.types import Song, TimeSignature, Track, MusicalEvent
 
@@ -19,34 +20,23 @@ class MidiReader:
 
     @staticmethod
     def parse(midi_path: str, track_number_to_select: Optional[int]) -> Song:
-        """
-        Main parsing method that attempts to read a MIDI file with the primary
-        parser and uses a fallback parser if any failure is detected.
-        """
         try:
             logger.info("--- Attempting to parse with primary library (py-midi)... ---")
             return MidiReader._parse_with_py_midi(midi_path, track_number_to_select)
         except Exception as e:
-            logger.warning(
-                f"*** WARNING: Primary parser failed ({e}). Attempting fallback with 'mido'... ---"
-            )
-            try:
-                return MidiReader._parse_with_mido(midi_path, track_number_to_select)
-            except Exception as mido_e:
-                logger.error(
-                    f"*** ERROR: All parsing attempts failed. The fallback parser also raised an error: {mido_e} ***"
-                )
-                # Depending on desired behavior, you might exit or return an empty song
-                exit(1)
+            # --- TEMPORARY DEBUGGING ---
+            # This block will now print the exact exception from py-midi and stop.
+            logger.error(f"The primary 'py-midi' parser failed unexpectedly. See details below.")
+            print("\n--- PY-MIDI PARSER FAILED: FULL TRACEBACK ---")
+            traceback.print_exc()
+            print("---------------------------------------------\n")
+            exit(1) # Stop execution to see the error clearly.
+            # --- END TEMPORARY DEBUGGING ---
 
     @staticmethod
     def _parse_with_py_midi(
         midi_path: str, track_number_to_select: Optional[int]
     ) -> Song:
-        """
-        Parses the MIDI file using the original py-midi library, with enhanced
-        two-stage failure detection.
-        """
         song = Song()
         time_sig_obj = TimeSignature()
         midi_file = MIDIFile(midi_path)
@@ -66,7 +56,6 @@ class MidiReader:
                     song.time_signature = f"{num}/{den}"
                     time_sig_obj = TimeSignature(int(num), int(den))
 
-        # Determine which tracks to process
         tracks_to_process = midi_file.tracks
         track_indices = range(len(midi_file.tracks))
         if track_number_to_select is not None:
@@ -92,17 +81,30 @@ class MidiReader:
 
             error_output = error_buffer.getvalue()
             if error_output:
-                raise RuntimeError(
-                    f"Explicit parser error on Track {i + 1}. Stderr: {error_output}"
+                # FIX: Log the captured error directly for high visibility.
+                logger.error(
+                    f"The 'py-midi' library produced an error while parsing Track {i + 1}:\n"
+                    f"--- Library Stderr ---\n"
+                    f"{error_output.strip()}\n"
+                    f"----------------------"
                 )
-
+                raise RuntimeError(f"Primary parser failed on Track {i + 1} due to stderr output.")
+            
             # Process notes from the track if parsing succeeded
             track = Track()
             active_notes: Dict[int, List[Dict]] = {}
             last_event_time_ticks = 0
+            temp_track_name = None
+            temp_instrument_name = None
 
             for event in track_data.events:
                 last_event_time_ticks = event.time
+                if isinstance(event, Events.MetaEvent):
+                    if event.message == Events.meta.MetaEventKinds.Track_Name:
+                        temp_track_name = event.attributes.get('text')
+                    elif event.message == Events.meta.MetaEventKinds.Instrument_Name:
+                        temp_instrument_name = event.attributes.get('text')                
+                
                 if isinstance(event, Events.MIDIEvent):
                     if len(event.data) >= 2:
                         command, note_pitch, velocity = (
@@ -150,6 +152,8 @@ class MidiReader:
                         )
                     )
 
+            track.instrument_name = str(temp_track_name) or str(temp_instrument_name) or track.instrument_name
+
             if track.events:
                 song.tracks.append(track)
         
@@ -180,9 +184,6 @@ class MidiReader:
     def _parse_with_mido(
         midi_path: str, track_number_to_select: Optional[int]
     ) -> Song:
-        """
-        Parses the MIDI file using the robust 'mido' library as a fallback.
-        """
         song = Song()
         try:
             midi_file = mido.MidiFile(midi_path)
@@ -193,10 +194,7 @@ class MidiReader:
         song.time_signature = "4/4"
         ticks_per_beat = midi_file.ticks_per_beat
 
-        # Mido merges tracks in Type 0 files, so we can usually get metadata
-        # from the first track even in that case.
         if midi_file.tracks:
-            # Get initial tempo and time signature
             for event in midi_file.tracks[0]:
                 if event.is_meta and event.type == "set_tempo":
                     song.tempo = mido.tempo2bpm(event.tempo)
@@ -214,15 +212,21 @@ class MidiReader:
         for track_data in tracks_to_process:
             track = Track()
             active_notes: Dict[int, Dict] = {}
-            # Mido uses delta times, so we need to accumulate absolute time.
             absolute_time_ticks = 0
+
+            temp_track_name = None
+            temp_instrument_name = None
 
             for event in track_data:
                 absolute_time_ticks += event.time
 
-                # Update tempo if it changes mid-track
-                if event.is_meta and event.type == "set_tempo":
-                    song.tempo = mido.tempo2bpm(event.tempo)
+                if event.is_meta:
+                    if event.type == 'track_name':
+                        temp_track_name = event.name
+                    elif event.type == 'instrument_name':
+                        temp_instrument_name = event.name
+                    elif event.type == "set_tempo":
+                        song.tempo = mido.tempo2bpm(event.tempo)
 
                 elif event.type == "note_on" and event.velocity > 0:
                     beat_time = absolute_time_ticks / ticks_per_beat
@@ -263,6 +267,8 @@ class MidiReader:
                         duration=max(0.25, duration),
                     )
                 )
+
+            track.instrument_name = temp_track_name or temp_instrument_name or track.instrument_name
 
             if track.events:
                 song.tracks.append(track)
