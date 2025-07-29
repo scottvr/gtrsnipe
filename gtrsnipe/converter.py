@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class MusicConverter:
     def convert(self, input_data: str, from_format: str, to_format: str, 
                 nudge: int, track_num: Optional[int], 
-                max_line_width: int = 80,
+                max_line_width: int = 40,
                 transpose: int = 0,
                 staccato: bool = False, 
                 no_articulations: bool = False,
@@ -126,7 +126,7 @@ def main():
         "--max-line-width",
         type=int,
         default=80,
-        help="Max number of vertical columns per line of ASCII tab. (default: 80)"
+        help="Max number of vertical columns per line of ASCII tab. (default: 40)"
     )
     parser.add_argument(
         "--single-string",
