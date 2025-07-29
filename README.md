@@ -263,7 +263,7 @@ A|-----6-----6-----6-----6-----6-----6-----6-----6|
 E|--8-----8-----------------8-----8---------------|
 ```
 
-OK, that's better; a little easier to fret iand is bit high up on the neck IMHO. Let's try tweaking the default "sweet-spot" from the first 12 frets, to just the first four frets plus the open string.
+OK, that's better; a little easier to fret, but is bit high up on the neck IMHO. Let's try tweaking the default "sweet-spot" from the first 12 frets, to just the first four frets plus the open string.
 
 with `--sweet-spot-*` and `--string-switch-penalty`:
 the measure comes out exactly how I would have played it:
@@ -280,10 +280,6 @@ Here is the full command-line use to get this full transcription:
 ```
 $ gtrsnipe csx.mid csx.tab --string-switch-penalty 0 --no-articulations --sweet-spot-high 4 -y 
 $ cat ./csx.tab
-// Title: csx (None)
-// Tempo: 120.0 BPM
-// Time: 4/4
-// Tuning: STANDARD
 
 e|------------------------------------------------|
 B|------------------------------------------------|
