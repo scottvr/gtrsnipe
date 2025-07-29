@@ -227,7 +227,7 @@ E|-------------------|-----------------------|--1----------------|--------------
 ```
 
 
-If you know you want to play a piece in a certain position, tweak the "sweet spot". For example this transcription of a Bach Cello piece (Suite No. 1 in G major - BWV 1007 (Prelude)Suite No. 1 in G major - BWV 1007 (Preludeheck out this section:
+If you know you want to play a piece in a certain position, tweak the "sweet spot". For example this transcription of a Bach Cello piece (Suite No. 1 in G major - BWV 1007 (Prelude), check out this section:
 
 ```
 e|------------------------------------------------|
