@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 class MusicConverter:
     def convert(self, input_data: str, from_format: str, to_format: str, 
                 nudge: int, track_num: Optional[int], 
+                max_line_width: int = 80,
                 transpose: int = 0,
                 staccato: bool = False, 
                 no_articulations: bool = False,
@@ -49,7 +50,7 @@ class MusicConverter:
                 for event in track.events:
                     event.time += beat_offset
 
-        output_data = self._generate(song, to_format, no_articulations=no_articulations, single_string=single_string, mapper_config=mapper_config)
+        output_data = self._generate(song, to_format, no_articulations=no_articulations, single_string=single_string, max_line_width=max_line_width, mapper_config=mapper_config)
 
         return output_data
 
@@ -71,7 +72,7 @@ class MusicConverter:
         else:
             raise ValueError(f"Unsupported input format: {format}")
 
-    def _generate(self, song: Song, format: str, no_articulations: bool = False,
+    def _generate(self, song: Song, format: str, no_articulations: bool = False, max_line_width = 80,
                   single_string: Optional[int] = None, staccato: bool = False, mapper_config: Optional[MapperConfig] = None) -> object | str:
         if format == 'mid':
             return mid.midiGenerator.generate(song)
@@ -80,7 +81,7 @@ class MusicConverter:
         elif format == 'vex':
             return vex.VextabGenerator.generate(song, no_articulations=no_articulations, single_string=single_string, mapper_config=mapper_config)
         elif format == 'tab':
-            return tab.AsciiTabGenerator.generate(song, no_articulations=no_articulations, single_string=single_string, mapper_config=mapper_config)
+            return tab.AsciiTabGenerator.generate(song, no_articulations=no_articulations, single_string=single_string, max_line_width=max_line_width, mapper_config=mapper_config)
         else:
             raise ValueError(f"Unsupported output format: {format}")
 
@@ -120,6 +121,12 @@ def main():
         "--staccato",
         action='store_true',
         help="Do not extend note durations to the start of the next note, instead giving each note an 1/8 note duration. When converting from ASCII tab."
+    )
+    parser.add_argument(
+        "--max-line-width",
+        type=int,
+        default=80,
+        help="Max number of vertical columns per line of ASCII tab. (default: 80)"
     )
     parser.add_argument(
         "--single-string",
@@ -261,7 +268,7 @@ def main():
     try:
         output_data = converter.convert(args.input_file, from_format, to_format, 
                                         args.nudge, args.track, staccato=args.staccato, 
-                                        transpose=args.transpose,
+                                        transpose=args.transpose, max_line_width=args.max_line_width,
                                         no_articulations=args.no_articulations,
                                         single_string=args.single_string, mapper_config=mapper_config)
 
