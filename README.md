@@ -222,7 +222,7 @@ A|-------------------|--0---------0----------|--3----------------|--3---------3-
 E|-------------------|-----------------------|--1----------------|-----------------------|--5----------------|
 ```
 
-If you know you want to play a piece in a certain position, tweak the "sweet spot"
+If you know you want to play a piece in a certain position, tweak the "sweet spot":
 
 ```
 $ gtrsnipe csx.mid csx.tab --string-switch-penalty 0 --unplayable-fret-span 4 -y --no-articulations --sweet-spot-low 0 --sweet-spot-high 4 -y --ignore-open
