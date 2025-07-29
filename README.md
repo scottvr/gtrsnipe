@@ -227,7 +227,7 @@ E|-------------------|-----------------------|--1----------------|--------------
 ```
 
 
-If you know you want to play a piece in a certain position, tweak the "sweet spot". For example this transcription of a Bach Cello piece (Suite No. 1 in G major - BWV 1007 (Prelude), check out this section:
+If you know you want to play a piece in a certain position, tweak the "sweet spot". For example this transcription of a Bach Cello piece, Suite No. 1 in G major - BWV 1007 (Prelude), check out this section:
 
 ```
 e|------------------------------------------------|
@@ -252,7 +252,7 @@ A|--7--6--4--7--6--7--9--6--7--6--4--2--0---------|
 E|-----------------------------------------4--2--0|
 ```
 
-The default scoring doesn't work perfectly for this piece. To my ears and hands, there is too much playing on a single string, and for my classical guitar, those 3-6-9 fret spans are impossible for me to play comforably. So, let's remove the penalty for switching strings and see what happens to forhat `3-6-3-6-9 ...`:  measure:
+The default scoring doesn't work perfectly for this piece. To my ears and hands, there is too much playing on a single string, and for my classical guitar, those 3-6-9 fret spans are impossible for me to play comforably. So, let's remove the penalty for switching strings and see what happens to that `3-6-3-6-9 ...`:  measure:
 
 ```
 e|------------------------------------------------|
