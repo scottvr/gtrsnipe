@@ -173,8 +173,10 @@ The following options can be used to tweak the fretboard positioning/fingering a
 
 ```
 Mapper Tuning (Advanced):
+  --unplayable-fret-span UNPLAYABLE_FRET_SPAN
+                        Fret span considered unplayable (default: 4).
   --fret-span-penalty FRET_SPAN_PENALTY
-                        Penalty for wide fret stretches (default: 10.0).
+                        Penalty for >= unplayable_fret_span stretches (default: 10.0).
   --movement-penalty MOVEMENT_PENALTY
                         Penalty for hand movement between chords (default: 3.0).
   --high-fret-penalty HIGH_FRET_PENALTY
@@ -189,8 +191,6 @@ Mapper Tuning (Advanced):
                         Lowest fret of the "sweet spot" (default 0)
   --sweet-spot-high SWEET_SPOT_HIGH
                         Highest fret of the "sweet spot" (default 12)
-  --unplayable-fret-span UNPLAYABLE_FRET_SPAN
-                        Fret span considered unplayable (default: 4).
   --legato-time-threshold LEGATO_TIME_THRESHOLD
                         Max time in beats between notes for a legato phrase
                         (h/p) (default: 0.5).
