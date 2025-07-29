@@ -201,6 +201,8 @@ Mapper Tuning (Advanced):
 
 `--debug` can be used to show the scoring calculations to gain understanding of how your tweaks affect the results.
 
+### Effects of tunables
+
 `--ignore-open` can make a surprising amount of difference without having to tweak scoring weights.
 Compare the first few measures of MrCrowley from earlier:
 
