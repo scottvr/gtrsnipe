@@ -226,10 +226,12 @@ A|-------------------|--0---------0----------|--3----------------|--3---------3-
 E|-------------------|-----------------------|--1----------------|-----------------------|--5----------------|
 ```
 
+with `--sweet-spot-*`
+`--string-switch-penalty`:
 If you know you want to play a piece in a certain position, tweak the "sweet spot":
 
 ```
-$ gtrsnipe csx.mid csx.tab --string-switch-penalty 0 --unplayable-fret-span 4 -y --no-articulations --sweet-spot-low 0 --sweet-spot-high 4 -y --ignore-open
+$ gtrsnipe csx.mid csx.tab --string-switch-penalty 0 -y --no-articulations --sweet-spot-low 0 --sweet-spot-high 4 -y --ignore-open
 
 // Title: Suite No. 1 in G major - BWV 1007
 // Tempo: 120.0 BPM
