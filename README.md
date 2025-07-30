@@ -106,38 +106,7 @@ Tuning Information:
   --show-tuning TUNING_NAME
                         Show the notes for a specific tuning and exit.
 
-Mapper Tuning/Configuration (Advanced):
-  --tuning {STANDARD,E_FLAT,DROP_D,OPEN_G,BASS_STANDARD,BASS_DROP_D,BASS_E_FLAT,SEVEN_STRING_STANDARD,BARITONE_B,BARITONE_A}
-                        Specify the guitar tuning (default: STANDARD).
-  --max-fret MAX_FRET   Maximum fret number on the virtual guitar neck
-                        (default: 24).
-  --fret-span-penalty FRET_SPAN_PENALTY
-                        Penalty for wide fret stretches (default: 100.0).
-  --movement-penalty MOVEMENT_PENALTY
-                        Penalty for hand movement between chords (default:
-                        3.0).
-  --string-switch-penalty STRING_SWITCH_PENALTY
-                        Penalty for switching strings (default: 5.0).
-  --high-fret-penalty HIGH_FRET_PENALTY
-                        Penalty for playing high on the neck (default: 5).
-  --low-string-high-fret-multiplier LOW_STRING_HIGH_FRET_MULTIPLIER
-                        Multiplier penalty for playing high on the neck on low
-                        strings (default: 10).
-  --unplayable-fret-span UNPLAYABLE_FRET_SPAN
-                        Fret span considered unplayable (default: 4).
-  --sweet-spot-bonus SWEET_SPOT_BONUS
-                        Bonus for playing in the ideal lower fret range.
-  --sweet-spot-low SWEET_SPOT_LOW
-                        Lowest fret of the "sweet spot" (default 0 - open)
-  --sweet-spot-high SWEET_SPOT_HIGH
-                        Highest fret of the "sweet spot" (default 12)
-  --ignore-open         Don't consider open when calculating shape score.
-  --legato-time-threshold LEGATO_TIME_THRESHOLD
-                        Max time in beats between notes for a legato phrase
-                        (For h/p when infer articulation is enabled (default)) (default: 0.5).
-  --tapping-run-threshold TAPPING_RUN_THRESHOLD
-                        Min number of notes in a run to be considered for
-                        tapping (when infer articulation is enabled (default)) (default: 2).    
+
 ```
 
 ### Usage Examples  
@@ -230,31 +199,38 @@ E|--2----2--2----2--2--2----------2|--5----5--5----5--5--5----------5|--2---2---
 The following options can be used to tweak the fretboard positioning/fingering algorithm:
 
 ```
-Mapper Tuning (Advanced):
+Mapper Tuning/Configuration (Advanced):
+  --tuning {STANDARD,E_FLAT,DROP_D,OPEN_G,BASS_STANDARD,BASS_DROP_D,BASS_E_FLAT,SEVEN_STRING_STANDARD,BARITONE_B,BARITONE_A}
+                        Specify the guitar tuning (default: STANDARD).
+  --max-fret MAX_FRET   Maximum fret number on the virtual guitar neck
+                        (default: 24).
+  --fret-span-penalty FRET_SPAN_PENALTY
+                        Penalty for wide fret stretches (default: 100.0).
+  --movement-penalty MOVEMENT_PENALTY
+                        Penalty for hand movement between chords (default:
+                        3.0).
+  --string-switch-penalty STRING_SWITCH_PENALTY
+                        Penalty for switching strings (default: 5.0).
+  --high-fret-penalty HIGH_FRET_PENALTY
+                        Penalty for playing high on the neck (default: 5).
+  --low-string-high-fret-multiplier LOW_STRING_HIGH_FRET_MULTIPLIER
+                        Multiplier penalty for playing high on the neck on low
+                        strings (default: 10).
   --unplayable-fret-span UNPLAYABLE_FRET_SPAN
                         Fret span considered unplayable (default: 4).
-  --fret-span-penalty FRET_SPAN_PENALTY
-                        Penalty for >= unplayable_fret_span stretches (default: 10.0).
-  --movement-penalty MOVEMENT_PENALTY
-                        Penalty for hand movement between chords (default: 3.0).
-  --high-fret-penalty HIGH_FRET_PENALTY
-                        Penalty for playing high on the neck (default: 5.0).
-  --ignore-open IGNORE_OPEN
-                        Ignore open strings when calculating position score.
-  --string-switch-penalty STRING_SWITCH_PENALTY
-                        Penalty for playing high on the neck (default: 5.0).
   --sweet-spot-bonus SWEET_SPOT_BONUS
-                        Bonus for playing in the ideal lower fret range (default: 0.5).
+                        Bonus for playing in the ideal lower fret range.
   --sweet-spot-low SWEET_SPOT_LOW
-                        Lowest fret of the "sweet spot" (default 0)
+                        Lowest fret of the "sweet spot" (default 0 - open)
   --sweet-spot-high SWEET_SPOT_HIGH
                         Highest fret of the "sweet spot" (default 12)
+  --ignore-open         Don't consider open when calculating shape score.
   --legato-time-threshold LEGATO_TIME_THRESHOLD
                         Max time in beats between notes for a legato phrase
-                        (h/p) (default: 0.5).
+                        (For h/p when infer articulation is enabled (default)) (default: 0.5).
   --tapping-run-threshold TAPPING_RUN_THRESHOLD
                         Min number of notes in a run to be considered for
-                        tapping (default: 2).
+                        tapping (when infer articulation is enabled (default)) (default: 2).    
 ```
 
 `--debug` can be used to show the scoring calculations to gain understanding of how your tweaks affect the results.
