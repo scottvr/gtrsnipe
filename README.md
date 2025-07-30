@@ -17,7 +17,7 @@ By default **gtrsnipe** will try to infer hammer-on/pull-off performance techniq
 
 The `--nudge` option exists because MIDI track start times can sometimes also be all over the place and is designed to help you make your ascii TAB more visually appealing, though not necessarily accurate in terms of how many "rest" measures there may be before the transcription begins. See example usage below.
 
-The parameter `--max-line-wdith` exists primarily to constrain a tab staff to a certain width suitable for printing on your medium of choice. The default is `40` which ensures a measure fits on standard portrait-orientation 8.5x11" paper, but you are free to make it wider for you computer display or wide-format printing, smaller fonts, etc.
+The parameter `--max-line-wdith` exists primarily to constrain a tab staff to a certain width suitable for printing on your medium of choice. The default is `40` which ensures a measure fits on standard portrait-orientation 8.5x11" paper, but you are free to make it wider for your computer display or wide-format printing, smaller fonts, etc.
 
 ## Installation
 
