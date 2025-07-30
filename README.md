@@ -193,7 +193,6 @@ G|---------------------------------|---------------------------------|----------
 D|---------------------------------|---------------------------------|-------------------------------|
 A|------------------------2---2----|------------------------5---5----|------------------2---2---2---2|
 E|--2----2--2----2--2--2----------2|--5----5--5----5--5--5----------5|--2---2---2---2----------------|
-```
 
 ## Advanced Usage: Fretboard Mapper Tuning
 
@@ -300,7 +299,7 @@ E|--8-----8-----------------8-----8---------------|
 
 OK, that's better; a little easier to fret, but it is bit high up on the neck for my taste. Let's try tweaking the default "sweet-spot" from the first 12 frets, to just the first four frets plus the open string.
 
-with `--sweet-spot-*` and `--string-switch-penalty`,
+with `--sweet-spot-low 0`, `--sweet-spot-high 4`, and `--string-switch-penalty 0`,
 the measure comes out exactly how I would have transcribed it manually:
 ```
 e|------------------------------------------------|
