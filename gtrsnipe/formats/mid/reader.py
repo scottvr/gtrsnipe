@@ -3,6 +3,7 @@ import logging
 from contextlib import redirect_stderr
 from typing import Optional, Dict, List
 import traceback
+from typing import Union
 
 import mido
 from MIDI import MIDIFile, Events  
@@ -11,7 +12,16 @@ from ...core.types import Song, TimeSignature, Track, MusicalEvent
 
 logger = logging.getLogger(__name__)
 
-
+def _safe_decode(value: Optional[Union[str, bytes, float, bytearray, memoryview]]) -> Optional[str]:
+    """Safely decodes a value to a string if it's bytes, otherwise returns it."""
+    if isinstance(value, float):
+        return None
+    if isinstance(value, (bytes, bytearray, float, int, memoryview)):
+        try:
+            return bytes(value).decode('utf-8')
+        except UnicodeDecodeError:
+            return bytes(value).decode('latin-1', errors='ignore')
+    return value
 class MidiReader:
     """
     Parses a MIDI file into a format-agnostic Song object using a hybrid
@@ -101,9 +111,9 @@ class MidiReader:
                 last_event_time_ticks = event.time
                 if isinstance(event, Events.MetaEvent):
                     if event.message == Events.meta.MetaEventKinds.Track_Name:
-                        temp_track_name = event.attributes.get('text')
+                        temp_track_name = _safe_decode(event.attributes.get('text'))
                     elif event.message == Events.meta.MetaEventKinds.Instrument_Name:
-                        temp_instrument_name = event.attributes.get('text')                
+                        temp_instrument_name = _safe_decode(event.attributes.get('text'))
                 
                 if isinstance(event, Events.MIDIEvent):
                     if len(event.data) >= 2:
@@ -152,7 +162,7 @@ class MidiReader:
                         )
                     )
 
-            track.instrument_name = str(temp_track_name) or str(temp_instrument_name) or track.instrument_name
+            track.instrument_name = temp_track_name or temp_instrument_name or track.instrument_name
 
             if track.events:
                 song.tracks.append(track)

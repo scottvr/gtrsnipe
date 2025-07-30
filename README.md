@@ -17,7 +17,15 @@ By default **gtrsnipe** will try to infer hammer-on/pull-off performance techniq
 
 The `--nudge` option exists because MIDI track start times can sometimes also be all over the place and is designed to help you make your ascii TAB more visually appealing, though not necessarily accurate in terms of how many "rest" measures there may be before the transcription begins. See example usage below.
 
+The parameter `--max-line-wdith` exists primarily to constrain a tab staff to a certain width suitable for printing on your medium of choice. The default is `40` which ensures a measure fits on standard portrait-orientation 8.5x11" paper, but you are free to make it wider for you computer display or wide-format printing, smaller fonts, etc.
+
 ## Installation
+
+### Prerequisites
+
+You must have a working Python programming language environment installed (from python.org or your system's software package manager) as well as `git` (from git-scm.com or your system's software package manager.)
+
+### Procedure
 
 ```
 git clone https://github.com/scottvr/gtrsnipe
@@ -31,7 +39,7 @@ on Windows:
 .venv\Scripts\activate
 ```
 
-bash:
+or in bash:
 
 ```
 . .venv/bin/activate
@@ -44,10 +52,19 @@ pip install .
 ```
 
 
-## Usage Help
+## Basic Usage Help
+
+The installation process makes gtrsnipe available as a command within your venv.
 
 ```
-usage: gtrsnipe [-h] [--nudge NUDGE] [--track TRACK] [--no-articulations] [--staccato] [--debug] input_file output_file
+usage: gtrsnipe [-h] [--nudge NUDGE] [-y] [--track TRACK]
+                [--transpose TRANSPOSE] [--no-articulations] [--staccato]
+                [--max-line-width MAX_LINE_WIDTH] [--bass]
+                [--num-strings {4,5,6,7}] [--single-string {1,2,3,4,5,6}]
+                [--debug] [--list-tunings] [--show-tuning TUNING_NAME]
+                [--tuning {STANDARD, E_FLAT, DROP_D, ... ]
+                [--max-fret MAX_FRET]
+                input_file output_file
 
 Convert music files between binary MIDI .mid and ASCII .tab .vex, and .abc notation formats, in any direction.
 
@@ -56,39 +73,88 @@ positional arguments:
   output_file         Path to save the output music file
 
 options:
-  -h, --help          show this help message and exit
-  --nudge NUDGE       An integer to shift the transcription's start time to the right. Each unit
-                      corresponds to roughly a 16th note.
-  -y, --yes           Overwrite the output file if it already exists.
-  --track TRACK       The track number (1-based) to select from a multi-track MIDI file. 
-                      If not set, all tracks are processed. 
-                      For a multitrack midi, you will want to select a single instrument track to transcribe.
-  --no-articulations  Transcribe with no legato, taps, hammer-ons, pull-offs, etc.
-  --staccato          Do not extend note durations to the start of the next note for a sustained feel,
-                      instead giving each note an 1/8 note duration. Primarily for tab-to-MIDI conversions.
+  -h, --help            show this help message and exit
+  --nudge NUDGE         An integer to shift the transcription's start time to
+                        the right. Each unit corresponds to roughly a 16th
+                        note.
+  -y, --yes             Automatically overwrite the output file if it already exists.
+  --track TRACK         The track number (1-based) to select from a multi-
+                        track MIDI file. If not set, all tracks are processed.
+                        For a multitrack midi, you will want to select a
+                        single instrument track to transcribe.
+  --transpose TRANSPOSE
+                        Transpose the music up or down by N semitones (e.g., 2
+                        for up, -3 for down).
+  --no-articulations    Transcribe with no legato, taps, hammer-ons, pull-
+                        offs, etc.
+  --staccato            Do not extend note durations to the start of the next note for a sustained feel,
+                        instead giving each note an 1/8 note duration. When converting *from* ASCII tab.
+  --max-line-width MAX_LINE_WIDTH
+                        Max number of vertical columns per line of ASCII tab.
+                        (default: 40)
+  --bass                Enable bass mode. Automatically uses bass tuning and a
+                        4-string staff.
+  --num-strings {4,5,6,7}
+                        Force the number of strings on the tab staff (4, 5, 6,
+                        or 7). Defaults to 4 for bass and 6 for guitar.
   --single-string {1,2,3,4,5,6}
                       Force all notes onto a single string (1-6, high e to low E). Ideal for transcribing legato/tapping runs.
-  --tuning {STANDARD,DROP_D,OPEN_G}
-                      Specify the guitar tuning (default: STANDARD).
-  --max-fret MAX_FRET Maximum fret number on the virtual guitar neck
-                      (default: 24).
-
   --debug             Enable detailed debug logging messages.
 
+Tuning Information:
+  --list-tunings        List all available tuning names and exit.
+  --show-tuning TUNING_NAME
+                        Show the notes for a specific tuning and exit.
+
+Mapper Tuning/Configuration (Advanced):
+  --tuning {STANDARD,E_FLAT,DROP_D,OPEN_G,BASS_STANDARD,BASS_DROP_D,BASS_E_FLAT,SEVEN_STRING_STANDARD,BARITONE_B,BARITONE_A}
+                        Specify the guitar tuning (default: STANDARD).
+  --max-fret MAX_FRET   Maximum fret number on the virtual guitar neck
+                        (default: 24).
+  --fret-span-penalty FRET_SPAN_PENALTY
+                        Penalty for wide fret stretches (default: 100.0).
+  --movement-penalty MOVEMENT_PENALTY
+                        Penalty for hand movement between chords (default:
+                        3.0).
+  --string-switch-penalty STRING_SWITCH_PENALTY
+                        Penalty for switching strings (default: 5.0).
+  --high-fret-penalty HIGH_FRET_PENALTY
+                        Penalty for playing high on the neck (default: 5).
+  --low-string-high-fret-multiplier LOW_STRING_HIGH_FRET_MULTIPLIER
+                        Multiplier penalty for playing high on the neck on low
+                        strings (default: 10).
+  --unplayable-fret-span UNPLAYABLE_FRET_SPAN
+                        Fret span considered unplayable (default: 4).
+  --sweet-spot-bonus SWEET_SPOT_BONUS
+                        Bonus for playing in the ideal lower fret range.
+  --sweet-spot-low SWEET_SPOT_LOW
+                        Lowest fret of the "sweet spot" (default 0 - open)
+  --sweet-spot-high SWEET_SPOT_HIGH
+                        Highest fret of the "sweet spot" (default 12)
+  --ignore-open         Don't consider open when calculating shape score.
+  --legato-time-threshold LEGATO_TIME_THRESHOLD
+                        Max time in beats between notes for a legato phrase
+                        (For h/p when infer articulation is enabled (default)) (default: 0.5).
+  --tapping-run-threshold TAPPING_RUN_THRESHOLD
+                        Min number of notes in a run to be considered for
+                        tapping (when infer articulation is enabled (default)) (default: 2).    
 ```
 
-### Examples
+### Usage Examples  
 
 Transcribing this organ intro for my classical guitar, where the "sweet spot" is lower on the neck:
 
 ```
-$ gtrsnipe MrCrowleyOrganIntro.mid mrcrowley-organ.tab --track 5 --sweet-spot-high 8
+$ gtrsnipe MrCrowleyOrganIntro.mid mrcrowley-organ.tab --track 5 --sweet-spot-high 8 --max-line-width 120
 Converting 'MrCrowleyOrganIntro.mid' (mid) to 'mrcrowley-organ.tab' (tab)...
 --- Selecting track 5 of 7 ---
 --- Chord-Aware Mapper initialized. ---
 Successfully saved to mrcrowley-organ.tab
+```
 
-$ cat ./mrcrowley-organ.tab
+That command extracts track 5 (the organ track) from a multi-track MIDI file found on the Internet, prefers frets between open and 8th when mapping notes to frets, and outputs the measures up to 120 characters per line. Here's what the output looks like:
+
+```
 // Title: MrCrowley-OrganIntro
 // Tempo: 120.0 BPM
 // Time: 4/4
@@ -123,9 +189,10 @@ A|----------------|------------------|----------------|----------------|
 E|--5-----6----1--|--3----1----0----1|--5-------------|----------------|
 ```
 
-Transcribing a bass part will work; the mapper will transpose to guitar notes and display on six strings:
+When transcribing a bass part, pass the proper tuning and (optionally) the number of strings. Without these arguments, transcribing a bass part will work, but the mapper will transpose to guitar notes and display on six strings. You can simply pass the `--bass` option as a shortcut for 4-strings, standard bass tuning. Passing a --tuning BASS_* tuning will be default render your tab with four strings, but you can override this with `--num-strings 5`, for example.
+
 ```
-$ gtrsnipe SmellsLikeTeenSpirit.mid --track 6 teenspirit-bass.tab --no-articulations --nudge 14
+$ gtrsnipe SmellsLikeTeenSpirit.mid --track 6 teenspirit-bass.tab --no-articulations --nudge 14 --tuning BASS_E_FLAT
 Converting 'SmellsLikeTeenSpirit.mid' (mid) to 'teenspirit-bass.tab' (tab)...
 --- Selecting track 6 of 11 ---
 --- Nudging all events forward by 3.5 beats ---
@@ -134,40 +201,31 @@ Successfully saved to teenspirit-bass.tab
 
 $ cat teenspirit-bass.tab
 // Title: SmellsLikeTeenSpirit
-// Tempo: 110.0 BPM
+// Tempo: 120.0 BPM
 // Time: 4/4
-// Tuning: STANDARD
+// Tuning (High to Low): Gb2 Db2 Ab1 Eb1
 
-e|----------------|----------------|----------------|----------------|----------------|----------------|
-B|----------------|----------------|----------------|----------------|----------------|----------------|
 G|----------------|----------------|----------------|----------------|----------------|----------------|
 D|----------------|----------------|----------------|----------------|----------------|----------------|
 A|----------------|----------------|----------------|----------------|----------------|----------------|
 E|----------------|----------------|----------------|----------------|----------------|----------------|
 
-e|---------------------------------|---------------------------------|---------------------------------|
-B|---------------------------------|---------------------------------|---------------------------------|
 G|---------------------------------|---------------------------------|---------------------------------|
 D|---------------------------------|---------------------------------|---------------------------------|
-A|------------------------1---1----|------------------------4---4----|------------------------1---1----|
-E|--1----1--1----1--1--1----------1|--4----4--4----4--4--4----------4|--1----1--1----1--1--1----------1|
+A|------------------------2---2----|------------------------5---5----|------------------------2---2----|
+E|--2----2--2----2--2--2----------2|--5----5--5----5--5--5----------5|--2----2--2----2--2--2----------2|
 
-e|---------------------------------|---------------------------------|---------------------------------|
-B|---------------------------------|---------------------------------|---------------------------------|
 G|---------------------------------|---------------------------------|---------------------------------|
 D|---------------------------------|---------------------------------|---------------------------------|
-A|------------------------4---4----|------------------------1---1----|------------------------4---4----|
-E|--4----4--4----4--4--4----------4|--1----1--1----1--1--1----------1|--4----4--4----4--4--4----------4|
+A|------------------------5---5----|------------------------2---2----|------------------------5---5----|
+E|--5----5--5----5--5--5----------5|--2----2--2----2--2--2----------2|--5----5--5----5--5--5----------5|
 
-e|---------------------------------|---------------------------------|-------------------------------|
-B|---------------------------------|---------------------------------|-------------------------------|
 G|---------------------------------|---------------------------------|-------------------------------|
 D|---------------------------------|---------------------------------|-------------------------------|
-A|------------------------1---1----|------------------------4---4----|------------------1---1---1---1|
-E|--1----1--1----1--1--1----------1|--4----4--4----4--4--4----------4|--1---1---1---1----------------|
-```
+A|------------------------2---2----|------------------------5---5----|------------------2---2---2---2|
+E|--2----2--2----2--2--2----------2|--5----5--5----5--5--5----------5|--2---2---2---2----------------|
 
-## Fretboard Mapper Tuning
+## Advanced Usage: Fretboard Mapper Tuning
 
 The following options can be used to tweak the fretboard positioning/fingering algorithm:
 
@@ -201,7 +259,7 @@ Mapper Tuning (Advanced):
 
 `--debug` can be used to show the scoring calculations to gain understanding of how your tweaks affect the results.
 
-### Effects of tunables
+### Effects of mapper tunables
 
 `--ignore-open` can make a surprising amount of difference without having to tweak scoring weights.
 Compare the first few measures of MrCrowley from earlier:
@@ -227,7 +285,7 @@ E|-------------------|-----------------------|--1----------------|--------------
 ```
 
 
-If you know you want to play a piece in a certain position, tweak the "sweet spot". For example this transcription of a Bach Cello piece, Suite No. 1 in G major - BWV 1007 (Prelude), check out this section:
+If you know you want to play a piece in a certain position, tweak the "sweet spot". For example is a  transcription of a Bach Cello piece, Suite No. 1 in G major - BWV 1007 (Prelude), check out this section:
 
 ```
 e|------------------------------------------------|
@@ -252,7 +310,7 @@ A|--7--6--4--7--6--7--9--6--7--6--4--2--0---------|
 E|-----------------------------------------4--2--0|
 ```
 
-The default scoring doesn't work perfectly for this piece. To my ears and hands, there is too much playing on a single string, and for my classical guitar, those 3-6-9 fret spans are impossible for me to play comforably. So, let's remove the penalty for switching strings and see what happens to that `3-6-3-6-9 ...`:  measure:
+The default scoring doesn't work perfectly for this piece, imo. To my ears and hands, there is too much playing on a single string, and on my classical guitar, those 3-6-9 fret spans are impossible for me to play comfortably. So, let's remove the penalty for switching strings and see what happens to that `3-6-3-6-9 ...` measure:
 
 ```
 e|------------------------------------------------|
@@ -263,10 +321,10 @@ A|-----6-----6-----6-----6-----6-----6-----6-----6|
 E|--8-----8-----------------8-----8---------------|
 ```
 
-OK, that's better; a little easier to fret, but is bit high up on the neck IMHO. Let's try tweaking the default "sweet-spot" from the first 12 frets, to just the first four frets plus the open string.
+OK, that's better; a little easier to fret, but it is bit high up on the neck for my taste. Let's try tweaking the default "sweet-spot" from the first 12 frets, to just the first four frets plus the open string.
 
-with `--sweet-spot-*` and `--string-switch-penalty`:
-the measure comes out exactly how I would have played it:
+with `--sweet-spot-*` and `--string-switch-penalty`,
+the measure comes out exactly how I would have transcribed it manually:
 ```
 e|------------------------------------------------|
 B|------------------------------------------------|

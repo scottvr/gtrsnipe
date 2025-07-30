@@ -1,5 +1,5 @@
 from typing import List, Optional
-from ....core.types import FretPosition, Song, Technique, Track
+from ....core.types import FretPosition, Song, Technique, Track, Tuning
 from ....core.config import MapperConfig
 from ....guitar.mapper import GuitarMapper
 from ..types import TabScore, TabMeasure, TabNote
@@ -63,7 +63,9 @@ class AsciiTabGenerator:
 
         if song.tracks:
             main_track = song.tracks[0]
-            song.title = f"{song.title} {'(' + main_track.instrument_name + ')' if main_track.instrument_name is not None and main_track.instrument_name != 'Acoustic Grand Piano' else ''}"
+            instrument = main_track.instrument_name
+            if instrument and instrument != 'Acoustic Grand Piano':
+                song.title = f"{song.title} ({instrument})"
 
         score = TabScore(tempo=song.tempo, time_signature=time_sig_tuple, tuning_name="STANDARD", title=song.title)
 
@@ -90,7 +92,7 @@ class AsciiTabGenerator:
     @staticmethod
     def _format_single_measure(measure: TabMeasure, base_unit_in_beats: float, config: MapperConfig) -> List[str]:
         """Formats a single measure and returns its string lines."""
-        measure_lines = [""] * 6
+        measure_lines = [""] * config.num_strings
         last_event_time = 0.0
         
         sorted_notes = sorted(measure.notes, key=lambda n: n.beat_in_measure)
@@ -123,6 +125,11 @@ class AsciiTabGenerator:
 
             for note in notes_in_chord:
                 str_idx = note.position.string
+                # Add a check to prevent index errors if mapper produces an invalid note
+                if str_idx >= len(measure_lines):
+                    logger.warning(f"Note with string index {str_idx} is out of bounds for a {len(measure_lines)}-string instrument. Skipping.")
+                    continue
+                
                 fret = str(note.position.fret)
                 tech_map = {"hammer-on": "h", "pull-off": "p", "tap": "t"}
                 symbol = tech_map.get(note.technique.value) if note.technique else None
@@ -138,7 +145,8 @@ class AsciiTabGenerator:
         if final_max_len < min_measure_width:
             final_max_len = min_measure_width
         
-        for j in range(6):
+        # This loop is now corrected to use config.num_strings
+        for j in range(config.num_strings):
             padding = final_max_len - len(measure_lines[j])
             measure_lines[j] += ('-' * padding)
         
@@ -173,36 +181,55 @@ class AsciiTabGenerator:
     @staticmethod
     def _format_score(score: TabScore, max_line_width: int, base_unit_in_beats: float, config: MapperConfig) -> str:
         """Formats the complete score, breaking lines based on character width."""
-        string_names = ['e', 'B', 'G', 'D', 'A', 'E']
+        
+        try:
+            tuning_notes = Tuning[config.tuning].value
+        except KeyError:
+            tuning_notes = Tuning.STANDARD.value
+
+        # --- New logic to generate conventional string names ---
+        string_names = []
+        is_bass_tuning = config.tuning.startswith('BASS_')
+        
+        for i, note in enumerate(tuning_notes):
+            natural_name = note[0]  # Get the first character (e.g., "E" from "Eb4")
+
+            if is_bass_tuning:
+                # For bass, all names are uppercase
+                display_name = natural_name.upper()
+            else:
+                # For guitars (6, 7, baritone), high string is lowercase
+                display_name = natural_name.lower() if i == 0 else natural_name.upper()
+                        
+            string_names.append(display_name)
+        # --- End of new logic ---
+
         header = [
             f"// Title: {score.title}",
             f"// Tempo: {score.tempo} BPM",
             f"// Time: {score.time_signature[0]}/{score.time_signature[1]}",
-            f"// Tuning: {score.tuning_name}", ""
+            f"// Tuning (High to Low): {' '.join(tuning_notes)}",
+            ""
         ]
         body = []
+        # 'ljust' is no longer needed as all names are a single character
         tab_lines = [f"{name}|" for name in string_names]
 
         for measure in score.measures:
             measure_content = AsciiTabGenerator._format_single_measure(measure, base_unit_in_beats, config)
             
-            # If adding the next measure exceeds the max width, break the line.
-            # (+1 for the "|" separator)
             if len(tab_lines[0]) + len(measure_content[0]) + 1 > max_line_width:
                 body.extend(tab_lines)
                 body.append("")
                 tab_lines = [f"{name}|" for name in string_names]
 
-            # Append the measure content to the current line.
-            for i in range(6):
+            for i in range(config.num_strings):
                 tab_lines[i] += measure_content[i] + "|"
 
-        # Append the final line of tab to the body.
-        if len(tab_lines[0]) > 2: # Check if the line has more than just "e|"
+        if len(tab_lines[0]) > 2:
             body.extend(tab_lines)
             body.append("")
 
         return "\n".join(header + body)
-
 
 

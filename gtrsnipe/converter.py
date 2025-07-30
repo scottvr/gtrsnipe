@@ -2,6 +2,7 @@ from .formats import abc, mid, tab, vex
 from .formats.mid.generator import MidiUtilFile
 from .core.types import Song
 from .core.config import MapperConfig
+from .core.types import Tuning
 from .utils.io import save_text_file, save_midi_file
 from .utils.logger import setup_logger
 from argparse import ArgumentParser
@@ -33,6 +34,15 @@ class MusicConverter:
         
         if input_data:
             song.title = Path(os.path.basename(input_data)).stem
+
+        if from_format == 'mid' and mapper_config and mapper_config.tuning == 'STANDARD' and song.tracks:
+            all_events = [event for track in song.tracks for event in track.events]
+            if all_events:
+                min_pitch = min(event.pitch for event in all_events)
+                # MIDI pitch for Eb2 is 39
+                if min_pitch == 39:
+                    logger.info("--- Lowest note detected is Eb2. Automatically switching to E_FLAT tuning. ---")
+                    mapper_config.tuning = 'E_FLAT'
         
         if transpose != 0 and song.tracks:
             logger.info(f"--- Transposing all events by {transpose} semitones ---")
@@ -87,8 +97,8 @@ class MusicConverter:
 
 def main():
     parser = ArgumentParser(description="Convert music files between binary MIDI .mid and ASCII .tab .vex, and .abc notation formats, in any direction.")
-    parser.add_argument('input_file', help='Path to the input music file')
-    parser.add_argument('output_file', help='Path to save the output music file')
+    parser.add_argument('input_file', nargs='?', help='Path to the input music file')
+    parser.add_argument('output_file', nargs='?', help='Path to save the output music file')
     parser.add_argument(
         "--nudge",
         type=int,
@@ -129,6 +139,18 @@ def main():
         help="Max number of vertical columns per line of ASCII tab. (default: 40)"
     )
     parser.add_argument(
+        "--bass",
+        action='store_true',
+        help="Enable bass mode. Automatically uses bass tuning and a 4-string staff."
+    )
+    parser.add_argument(
+        "--num-strings",
+        type=int,
+        default=None,
+        choices=[4, 5, 6, 7], # Add 7 as a valid choice
+        help="Force the number of strings on the tab staff (4, 5, 6, or 7). Defaults to 4 for bass and 6 for guitar."
+    )
+    parser.add_argument(
         "--single-string",
         type=int,
         default=None,
@@ -140,13 +162,27 @@ def main():
         action='store_true',
         help="Enable detailed debug logging messages."
     )
-    mapper_group = parser.add_argument_group('Mapper Tuning (Advanced)')
+
+    info_group = parser.add_argument_group('Tuning Information')
+    info_group.add_argument(
+        '--list-tunings',
+        action='store_true',
+        help='List all available tuning names and exit.'
+    )
+    info_group.add_argument(
+        '--show-tuning',
+        type=str,
+        metavar='TUNING_NAME',
+        help='Show the notes for a specific tuning and exit.'
+    )
+
+    mapper_group = parser.add_argument_group('Mapper Tuning/Configuration (Advanced)')
     # Instrument tunables
     mapper_group.add_argument(
         '--tuning',
         type=str,
         default='STANDARD',
-        choices=['STANDARD', 'DROP_D', 'OPEN_G'],
+        choices=['STANDARD', 'E_FLAT', 'DROP_D', 'OPEN_G', 'BASS_STANDARD', 'BASS_DROP_D', 'BASS_E_FLAT', 'SEVEN_STRING_STANDARD', 'BARITONE_B', 'BARITONE_A'],
         help='Specify the guitar tuning (default: STANDARD).'
     )
     mapper_group.add_argument(
@@ -231,10 +267,52 @@ def main():
     )
 
     args = parser.parse_args()
+    
+    if args.list_tunings:
+        print("Available Tunings:")
+
+        max_name_len = max(len(t.name) for t in Tuning)
+
+        for tuning in Tuning:
+            notes = ' '.join(tuning.value)
+            print(f"- {tuning.name.ljust(max_name_len)} : {notes}")
+        exit(0)
+
+    if args.show_tuning:
+        tuning_name_to_show = args.show_tuning.upper()
+        try:
+            tuning_to_show = Tuning[tuning_name_to_show]
+            notes = ' '.join(tuning_to_show.value)
+            print(f"Tuning: {tuning_to_show.name}")
+            print(f"Notes:  {notes} (High to Low)")
+        except KeyError:
+            print(f"Error: Tuning '{args.show_tuning}' not found.")
+            print("Use --list-tunings to see all available options.")
+            exit(1)
+        exit(0)    
+    
+    if not args.input_file or not args.output_file:
+        parser.error("the following arguments are required for conversion: input_file, output_file")
+ 
+    # The --bass flag is a shortcut for BASS_STANDARD, but only if another
+    # tuning isn't explicitly chosen.
+    tuning = args.tuning
+    if args.bass and args.tuning == 'STANDARD':
+        tuning = 'BASS_STANDARD'
+    
+    if args.num_strings is not None:
+        num_strings = args.num_strings
+    else:
+        # If no choice is made, infer the number of strings from the tuning name.
+        if tuning.startswith('BASS_'):
+            num_strings = 4
+        else:
+            num_strings = 6
 
     mapper_config = MapperConfig(
         max_fret=args.max_fret,
-        tuning=args.tuning,
+        tuning=tuning,
+        num_strings=num_strings,
         fret_span_penalty=args.fret_span_penalty,
         movement_penalty=args.movement_penalty,
         string_switch_penalty=args.string_switch_penalty,

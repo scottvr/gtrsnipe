@@ -25,3 +25,4 @@ class MapperConfig:
     # Guitar properties
     max_fret: int = 24
     tuning: str = "STANDARD"
+    num_strings: int =  6
