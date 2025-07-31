@@ -158,7 +158,7 @@ A|----------------|------------------|----------------|----------------|
 E|--5-----6----1--|--3----1----0----1|--5-------------|----------------|
 ```
 
-When transcribing a bass part, pass the proper tuning and (optionally) the number of strings. Without these arguments, transcribing a bass part will work, but the mapper will transpose to guitar notes and display on six strings. You can simply pass the `--bass` option as a shortcut for 4-strings, standard bass tuning. Passing a --tuning BASS_* tuning will be default render your tab with four strings, but you can override this with `--num-strings 5`, for example.
+When transcribing a bass part, pass the proper tuning and (optionally) the number of strings. Without these arguments, transcribing a bass part will work, but the mapper will transpose to guitar notes and display on six strings. You can simply pass the `--bass` option as a shortcut for 4-strings, standard bass tuning. Passing a --tuning BASS_* tuning will by default render your tab with four strings, but you can override this with `--num-strings 5`, for example.
 
 ```
 $ gtrsnipe SmellsLikeTeenSpirit.mid --track 6 teenspirit-bass.tab --no-articulations --nudge 14 --tuning BASS_E_FLAT
