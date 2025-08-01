@@ -46,12 +46,12 @@ class Tuning(Enum):
     BARITONE_C = ("C4", "G3", "Eb3", "Bb2", "F2", "C2")    
 @dataclass(frozen=True, order=True)
 class FretPosition:
-    string: int  # 0 (high E) to 5 (low E)
+    string: int  # 0 (highest-pitched string) to num_strings-1
     fret: int    # 0 (open) to max_fret
     
     def __str__(self):
-        string_names = ['e', 'B', 'G', 'D', 'A', 'E']
-        return f"{string_names[self.string]}:{self.fret}"
+        # Generic representation to avoid errors with different tunings
+        return f"S{self.string}:F{self.fret}"
 
 @dataclass
 class MusicalEvent:

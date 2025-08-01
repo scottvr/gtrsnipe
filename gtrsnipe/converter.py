@@ -182,7 +182,7 @@ def main():
         '--tuning',
         type=str,
         default='STANDARD',
-        choices=['STANDARD', 'E_FLAT', 'DROP_D', 'OPEN_G', 'BASS_STANDARD', 'BASS_DROP_D', 'BASS_E_FLAT', 'SEVEN_STRING_STANDARD', 'BARITONE_B', 'BARITONE_A'],
+        choices=['STANDARD', 'E_FLAT', 'DROP_D', 'OPEN_G', 'BASS_STANDARD', 'BASS_DROP_D', 'BASS_E_FLAT', 'SEVEN_STRING_STANDARD', 'BARITONE_B', 'BARITONE_A', 'BARITONE_C', 'OPEN_C6', 'DROP_C'],
         help='Specify the guitar tuning (default: STANDARD).'
     )
     mapper_group.add_argument(
