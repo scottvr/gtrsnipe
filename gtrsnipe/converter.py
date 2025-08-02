@@ -324,7 +324,7 @@ def main():
         parser.error(f"Tuning '{tuning_name}' not found. Use --list-tunings to see available options.")
     mapper_config = MapperConfig(
         max_fret=args.max_fret,
-        tuning=tuning,
+        tuning=tuning_name,
         num_strings=num_strings,
         fret_span_penalty=args.fret_span_penalty,
         movement_penalty=args.movement_penalty,
