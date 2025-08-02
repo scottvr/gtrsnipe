@@ -293,22 +293,35 @@ def main():
     
     if not args.input_file or not args.output_file:
         parser.error("the following arguments are required for conversion: input_file, output_file")
- 
-    # The --bass flag is a shortcut for BASS_STANDARD, but only if another
-    # tuning isn't explicitly chosen.
-    tuning = args.tuning
-    if args.bass and args.tuning == 'STANDARD':
-        tuning = 'BASS_STANDARD'
     
-    if args.num_strings is not None:
-        num_strings = args.num_strings
-    else:
-        # If no choice is made, infer the number of strings from the tuning name.
-        if tuning.startswith('BASS_'):
-            num_strings = 4
-        else:
-            num_strings = 6
+    tuning_name = args.tuning
+    num_strings = args.num_strings
+    
+    if num_strings is not None and tuning_name == 'STANDARD':
+        if num_strings == 7:
+            tuning_name = 'SEVEN_STRING_STANDARD'
+        elif num_strings == 4:
+            tuning_name = 'BASS_STANDARD'
+    # Handle the --bass shortcut.
+    elif args.bass and tuning_name == 'STANDARD':
+        tuning_name = 'BASS_STANDARD'
 
+    if num_strings is None:
+        try:
+            num_strings = len(Tuning[tuning_name].value)
+        except KeyError:
+            num_strings = 6 
+    
+    try:
+        actual_tuning_strings = len(Tuning[tuning_name].value)
+        if num_strings != actual_tuning_strings:
+            parser.error(
+                f"Mismatch between --num-strings ({num_strings}) and tuning '{tuning_name}' "
+                f"(which has {actual_tuning_strings} strings). Please specify a compatible tuning."
+            )
+    except KeyError:
+        # This will catch invalid tuning names passed with --tuning
+        parser.error(f"Tuning '{tuning_name}' not found. Use --list-tunings to see available options.")
     mapper_config = MapperConfig(
         max_fret=args.max_fret,
         tuning=tuning,
