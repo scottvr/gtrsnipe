@@ -5,6 +5,7 @@ from itertools import groupby
 from ..core.types import MusicalEvent, FretPosition, Tuning, Technique
 from ..core.config import MapperConfig
 from ..core.theory import note_name_to_pitch
+from collections import Counter
 
 import logging
 
@@ -94,7 +95,23 @@ class GuitarMapper:
                     positional_penalty *= self.config.low_string_high_fret_multiplier
                 score -= positional_penalty
 
-        # 3. Transition Score (Cost of movement from previous fingering)
+        # 3. Barre Chord Score (Economy of Motion)
+        if len(fingering) > 1: # Only apply to chords of 2 or more notes
+            # We only consider fretted notes for barre shapes, ignoring open strings
+            fretted_notes = [pos.fret for pos in fingering if pos.fret > 0]
+            if fretted_notes:
+                # Count the occurrences of each fret number
+                fret_counts = Counter(fretted_notes)
+                # Find the most common fret in the chord
+                most_common_fret, count = fret_counts.most_common(1)[0]
+                
+                # If more than one note is on the same fret, it's a potential barre
+                if count > 1:
+                    # The bonus/penalty is proportional to the number of notes in the barre
+                    score += (count - 1) * self.config.barre_bonus
+                    score -= (count - 1) * self.config.barre_penalty
+
+        # 4. Transition Score (Cost of movement from previous fingering)
         if prev_fingering and fingering:
             # Penalize movement up/down the neck
             avg_current_fret = sum(p.fret for p in fingering) / len(fingering)
@@ -225,6 +242,11 @@ class GuitarMapper:
             multi_string_events = []
             last_fingering: Optional[Fingering] = None
             for note_group in time_groups:
+                group_to_finger = note_group
+                if self.config.mono_lowest_only and len(note_group) > 1:
+                    lowest_note = min(note_group, key=lambda note: note.pitch)
+                    group_to_finger = [lowest_note]
+                    
                 quantized_beat = quantize_time(note_group[0].time)
                 for note in note_group:
                     note.time = quantized_beat

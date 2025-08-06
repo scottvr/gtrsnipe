@@ -41,3 +41,6 @@ class MapperConfig:
     # barre bonus/penalty
     barre_bonus: float = 0.0
     barre_penalty: float = 0.0
+
+    # Monophonic mode
+    mono_lowest_only: bool = False

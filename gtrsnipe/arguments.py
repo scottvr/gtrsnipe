@@ -21,8 +21,8 @@ def setup_parser() -> ArgumentParser:
         default='STANDARD',
         choices=['STANDARD', 'E_FLAT', 'DROP_D', 'OPEN_G', 'BASS_STANDARD', 'BASS_DROP_D', 
                  'BASS_E_FLAT', 'SEVEN_STRING_STANDARD', 'BARITONE_B', 'BARITONE_A', 
-                 'BARITONE_C', 'C_SHARP', 'OPEN_C6', 'DROP_C'],
-        help='Specify the guitar tuning (default: STANDARD).'
+                 'BARITONE_C', 'C_SHARP', 'OPEN_C6', 'DROP_C', 'PIANO'],
+        help='Specify the guitar tuning or "PIANO" for full-range midi passthrough. (default: STANDARD).'
     )
     instrument_group.add_argument(
         "--bass",
@@ -43,7 +43,12 @@ def setup_parser() -> ArgumentParser:
         default=24,
         help='Maximum fret number on the virtual guitar neck (default: 24).'
     )
-
+    instrument_group.add_argument(
+        '--mono-lowest-only',
+        action='store_true',
+        help="Force monophonic output by keeping only the lowest note in any chord."
+    )
+    
     pipeline_group = parser.add_argument_group('Audio-to-MIDI Pipeline Options')
     pipeline_group.add_argument('--stem', action='store_true', help='Step 1: Enables source separation (Demucs) to isolate a guitar stem.')
     pipeline_group.add_argument('--nr', action='store_true', help='Step 2: Enables noise/reverb reduction on the audio stem.')
@@ -284,7 +289,7 @@ def setup_parser() -> ArgumentParser:
         '--quantization-resolution',
         type=float,
         default=0.125,
-        choices=[0.0625, 0.125, 0.25, 0.5, 1.0],
+        choices=[0.0125, 0.0625, 0.125, 0.25, 0.5, 1.0],
         help="Quantization resolution. Used by the mapper to determine simultaneous sounding of notes (chords) and by the ascii tab generator mainly for spacing purposes."
     )
     mapper_group.add_argument(

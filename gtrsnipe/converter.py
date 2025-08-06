@@ -120,6 +120,8 @@ def main():
 
     log_level = logging.DEBUG if args.debug else logging.INFO
     setup_logger(log_level)
+   
+    to_format = args.output.split('.')[-1]
  
     try:
         current_file = args.input
@@ -132,7 +134,12 @@ def main():
         min_freq = None
         max_freq = None
         SAMPLE_RATE=44100
+ 
+        is_piano_mode = args.tuning.upper() == 'PIANO'
+        if is_piano_mode and to_format != 'mid':
+            parser.error("--tuning PIANO can only be used with MIDI output (e.g., a .mid file).")
 
+ 
         if args.constrain_frequency:
             logger.info("--- Calculating frequency range based on selected tuning ---")
             try:
@@ -267,113 +274,115 @@ def main():
         except KeyError:
             # This will catch invalid tuning names passed with --tuning
             parser.error(f"Tuning '{tuning_name}' not found. Use --list-tunings to see available options.")
+
+        mapper_config = None
         
-        if args.analyze:
-            logger.info(f"--- Analyzing Processed Song Data ---")
-            all_events = [event for track in song.tracks for event in track.events]
-            if not all_events:
-                logger.info("No musical events found in the specified pitch range.")
+        if not is_piano_mode:   
+            if args.analyze:
+                logger.info(f"--- Analyzing Processed Song Data ---")
+                all_events = [event for track in song.tracks for event in track.events]
+                if not all_events:
+                    logger.info("No musical events found in the specified pitch range.")
+                    exit(0)
+
+                min_pitch = min(event.pitch for event in all_events)
+                max_pitch = max(event.pitch for event in all_events)
+
+                suggested_tunings = []
+                for tuning in Tuning:
+                    open_notes = [note_name_to_pitch(n) for n in tuning.value]
+                    lowest_tuning_note = min(open_notes)
+                    highest_playable_note = max(open_notes) + args.max_fret
+                    if min_pitch >= lowest_tuning_note and max_pitch <= highest_playable_note:
+                        suggested_tunings.append((tuning, lowest_tuning_note))
+
+                suggested_tunings.sort(key=lambda x: min_pitch - x[1])
+
+                logger.info(f"Found {len(all_events)} notes within the specified pitch range.")
+                logger.info(f"Lowest Note:  {min_pitch} ({pitch_to_note_name(min_pitch)})")
+                logger.info(f"Highest Note: {max_pitch} ({pitch_to_note_name(max_pitch)})")
+                logger.info("\n--- Tuning Suggestions ---")
+                if not suggested_tunings:
+                    logger.info("Could not find any standard tunings that fit this song's pitch range.")
+                else:
+                    logger.info(f"Based on a {args.max_fret}-fret neck.")
+                    logger.info("The following tunings can accommodate the song's pitch range:")
+                    for tuning, low_note in suggested_tunings:
+                        print(f"- {tuning.name} (Lowest note: {pitch_to_note_name(low_note)})")
                 exit(0)
+            if args.constrain_pitch:
+                max_fret = args.max_fret
+                try:
+                    # Use the tuning from the --tuning argument
+                    constrain_tuning_name = args.tuning.upper()
+                    constrain_tuning = Tuning[constrain_tuning_name]
 
-            min_pitch = min(event.pitch for event in all_events)
-            max_pitch = max(event.pitch for event in all_events)
-            
-            suggested_tunings = []
-            for tuning in Tuning:
-                open_notes = [note_name_to_pitch(n) for n in tuning.value]
-                lowest_tuning_note = min(open_notes)
-                highest_playable_note = max(open_notes) + args.max_fret
-                if min_pitch >= lowest_tuning_note and max_pitch <= highest_playable_note:
-                    suggested_tunings.append((tuning, lowest_tuning_note))
-            
-            suggested_tunings.sort(key=lambda x: min_pitch - x[1])
+                    constrain_open_notes = [note_name_to_pitch(n) for n in constrain_tuning.value]
+                    min_range = min(constrain_open_notes)
+                    max_range = max(constrain_open_notes) + max_fret
 
-            logger.info(f"Found {len(all_events)} notes within the specified pitch range.")
-            logger.info(f"Lowest Note:  {min_pitch} ({pitch_to_note_name(min_pitch)})")
-            logger.info(f"Highest Note: {max_pitch} ({pitch_to_note_name(max_pitch)})")
-            logger.info("\n--- Tuning Suggestions ---")
-            if not suggested_tunings:
-                logger.info("Could not find any standard tunings that fit this song's pitch range.")
-            else:
-                logger.info(f"Based on a {args.max_fret}-fret neck.")
-                logger.info("The following tunings can accommodate the song's pitch range:")
-                for tuning, low_note in suggested_tunings:
-                    print(f"- {tuning.name} (Lowest note: {pitch_to_note_name(low_note)})")
-            exit(0)
-        if args.constrain_pitch:
-            max_fret = args.max_fret
-            try:
-                # Use the tuning from the --tuning argument
-                constrain_tuning_name = args.tuning.upper()
-                constrain_tuning = Tuning[constrain_tuning_name]
-                
-                constrain_open_notes = [note_name_to_pitch(n) for n in constrain_tuning.value]
-                min_range = min(constrain_open_notes)
-                max_range = max(constrain_open_notes) + max_fret
-                
-                logger.info(f"Constraining notes to '{constrain_tuning_name}' range (Mode: {args.pitch_mode})")
+                    logger.info(f"Constraining notes to '{constrain_tuning_name}' range (Mode: {args.pitch_mode})")
 
-                # --- NEW: Handle different pitch modes ---
+                    # --- NEW: Handle different pitch modes ---
 
-                if args.pitch_mode == 'normalize':
-                    notes_normalized = 0
-                    for track in song.tracks:
-                        for event in track.events:
-                            # Check if the note is outside the playable range
-                            if event.pitch > max_range or event.pitch < min_range:
-                                notes_normalized += 1
-                                # While the note is too high, transpose it down by one octave
-                                while event.pitch > max_range:
-                                    event.pitch -= 12
-                                # While the note is too low, transpose it up by one octave
-                                while event.pitch < min_range:
-                                    event.pitch += 12
-                    if notes_normalized > 0:
-                        logger.info(f"Normalized {notes_normalized} out-of-range note(s) by octaves to fit the range.")
+                    if args.pitch_mode == 'normalize':
+                        notes_normalized = 0
+                        for track in song.tracks:
+                            for event in track.events:
+                                # Check if the note is outside the playable range
+                                if event.pitch > max_range or event.pitch < min_range:
+                                    notes_normalized += 1
+                                        # While the note is too high, transpose it down by one octave
+                                    while event.pitch > max_range:
+                                        event.pitch -= 12
+                                            # While the note is too low, transpose it up by one octave
+                                        while event.pitch < min_range:
+                                            event.pitch += 12
+                        if notes_normalized > 0:
+                            logger.info(f"Normalized {notes_normalized} out-of-range note(s) by octaves to fit the range.")
 
-                elif args.pitch_mode == 'drop':
-                    original_note_count = sum(len(track.events) for track in song.tracks)
-                    for track in song.tracks:
-                        track.events = [e for e in track.events if min_range <= e.pitch <= max_range]
-                    
-                    new_note_count = sum(len(track.events) for track in song.tracks)
-                    notes_discarded = original_note_count - new_note_count
-                    if notes_discarded > 0:
-                        logger.info(f"Discarded {notes_discarded} out-of-range note(s).")
+                    elif args.pitch_mode == 'drop':
+                        original_note_count = sum(len(track.events) for track in song.tracks)
+                        for track in song.tracks:
+                            track.events = [e for e in track.events if min_range <= e.pitch <= max_range]
 
-            except KeyError:
-                logger.error(f"Error: Tuning '{args.tuning}' not found.")
-                exit(1)
+                        new_note_count = sum(len(track.events) for track in song.tracks)
+                        notes_discarded = original_note_count - new_note_count
+                        if notes_discarded > 0:
+                            logger.info(f"Discarded {notes_discarded} out-of-range note(s).")
+
+                except KeyError:
+                    logger.error(f"Error: Tuning '{args.tuning}' not found.")
+                    exit(1)
         
-        mapper_config = MapperConfig(
-            max_fret=args.max_fret,
-            tuning=tuning_name,
-            num_strings=num_strings,
-            fret_span_penalty=args.fret_span_penalty,
-            movement_penalty=args.movement_penalty,
-            string_switch_penalty=args.string_switch_penalty,
-            high_fret_penalty=args.high_fret_penalty,
-            low_string_high_fret_multiplier=args.low_string_high_fret_multiplier,
-            sweet_spot_bonus=args.sweet_spot_bonus,
-            sweet_spot_low=args.sweet_spot_low,
-            sweet_spot_high=args.sweet_spot_high,
-            unplayable_fret_span=args.unplayable_fret_span,
-            prefer_open=args.prefer_open,
-            fretted_open_penalty=args.fretted_open_penalty,
-            ignore_open=args.ignore_open,
-            legato_time_threshold=args.legato_time_threshold,
-            tapping_run_threshold=args.tapping_run_threshold,
-            deduplicate_pitches=args.dedupe,
-            quantization_resolution=args.quantization_resolution,
-            capo=args.capo,
-            barre_bonus=args.barre_bonus,  
-            barre_penalty=args.barre_penalty,  
-        )
+            mapper_config = MapperConfig(
+                max_fret=args.max_fret,
+                tuning=tuning_name,
+                num_strings=num_strings,
+                fret_span_penalty=args.fret_span_penalty,
+                movement_penalty=args.movement_penalty,
+                string_switch_penalty=args.string_switch_penalty,
+                high_fret_penalty=args.high_fret_penalty,
+                low_string_high_fret_multiplier=args.low_string_high_fret_multiplier,
+                sweet_spot_bonus=args.sweet_spot_bonus,
+                sweet_spot_low=args.sweet_spot_low,
+                sweet_spot_high=args.sweet_spot_high,
+                unplayable_fret_span=args.unplayable_fret_span,
+                prefer_open=args.prefer_open,
+                fretted_open_penalty=args.fretted_open_penalty,
+                ignore_open=args.ignore_open,
+                legato_time_threshold=args.legato_time_threshold,
+                tapping_run_threshold=args.tapping_run_threshold,
+                deduplicate_pitches=args.dedupe,
+                quantization_resolution=args.quantization_resolution,
+                capo=args.capo,
+                barre_bonus=args.barre_bonus,  
+                barre_penalty=args.barre_penalty,  
+                mono_lowest_only=args.mono_lowest_only,
+            )
 
-        log_level = logging.DEBUG if args.debug else logging.INFO
-        setup_logger(log_level)
     
-        to_format = args.output.split('.')[-1]
+        
 
         output_data = converter.convert(
             song=song,
