@@ -16,6 +16,25 @@ import shutil
 
 logger = logging.getLogger(__name__)
 
+def pre_quantize_song(song: Song, resolution: float) -> Song:
+    """
+    Applies "heavy-handed" quantization to all events in a song.
+
+    This function iterates through every note and snaps its start time to the
+    nearest quantization grid line defined by the resolution.
+    """
+    logger.info(f"--- Applying pre-quantization pass with resolution: {resolution} ---")
+    notes_adjusted = 0
+    for track in song.tracks:
+        for event in track.events:
+            original_time = event.time
+            quantized_time = round(original_time / resolution) * resolution
+            if original_time != quantized_time:
+                event.time = quantized_time
+                notes_adjusted += 1
+    logger.info(f"Adjusted the timing of {notes_adjusted} notes.")
+    return song
+
 class MusicConverter:
     def convert(self, song: Song, from_format: str, to_format: str, 
                 nudge: int, 
@@ -191,10 +210,6 @@ def main():
             if args.remove_fx:
                 current_file = remove_distortion_effects(current_file)
 
-            if not args.p2m:
-                logger.error("Error: Audio input requires at least the --p2m flag to transcribe to MIDI.")
-                exit(1)
-
             if args.stem:
                 current_file = separate_instrument(current_file, 
                                                    instrument=args.stem_name,
@@ -206,17 +221,16 @@ def main():
             if args.nr:
                 current_file = cleanup_audio(current_file)
 
-            if args.p2m:
-                current_file = transcribe_to_midi(
-                    current_file,
-                    overwrite=args.yes,
-                    min_freq=min_freq,
-                    max_freq=max_freq,
-                    onset_threshold=args.onset_threshold,
-                    frame_threshold=args.frame_threshold,
-                    min_note_len_ms=args.min_note_len_ms,
-                    melodia_trick=args.melodia_trick,
-                )
+            current_file = transcribe_to_midi(
+                current_file,
+                overwrite=args.yes,
+                min_freq=min_freq,
+                max_freq=max_freq,
+                onset_threshold=args.onset_threshold,
+                frame_threshold=args.frame_threshold,
+                min_note_len_ms=args.min_note_len_ms,
+                melodia_trick=args.melodia_trick,
+            )
             # --- Flexible Output: Handle MIDI-to-MIDI conversion ---
             if output_ext == '.mid':
                 logger.info(f"Pipeline complete. Saving final MIDI to '{args.output}'")
@@ -233,6 +247,7 @@ def main():
 
         converter = MusicConverter()
         from_format = Path(current_file).suffix.lstrip('.')
+
         # Step A: Parse the file into a Song object
         logger.info(f"--- Parsing '{current_file}' as a {from_format} file for final conversion ---")
         song = converter._parse(current_file, from_format, args.track, staccato=args.staccato)
@@ -244,8 +259,7 @@ def main():
         logger.info(f"Parsed {initial_note_count} initial notes from the input file.")
 
         song.title = Path(os.path.basename(args.input)).stem 
-    
-    
+
         tuning_name = args.tuning
         num_strings = args.num_strings
     
@@ -278,6 +292,64 @@ def main():
         mapper_config = None
         
         if not is_piano_mode:   
+            mapper_config = MapperConfig(
+                max_fret=args.max_fret,
+                tuning=tuning_name,
+                num_strings=num_strings,
+                fret_span_penalty=args.fret_span_penalty,
+                movement_penalty=args.movement_penalty,
+                string_switch_penalty=args.string_switch_penalty,
+                high_fret_penalty=args.high_fret_penalty,
+                low_string_high_fret_multiplier=args.low_string_high_fret_multiplier,
+                sweet_spot_bonus=args.sweet_spot_bonus,
+                sweet_spot_low=args.sweet_spot_low,
+                sweet_spot_high=args.sweet_spot_high,
+                unplayable_fret_span=args.unplayable_fret_span,
+                prefer_open=args.prefer_open,
+                fretted_open_penalty=args.fretted_open_penalty,
+                ignore_open=args.ignore_open,
+                legato_time_threshold=args.legato_time_threshold,
+                tapping_run_threshold=args.tapping_run_threshold,
+                deduplicate_pitches=args.dedupe,
+                quantization_resolution=args.quantization_resolution,
+                capo=args.capo,
+                barre_bonus=args.barre_bonus,  
+                barre_penalty=args.barre_penalty,  
+                mono_lowest_only=args.mono_lowest_only,
+            )
+
+
+        
+
+    
+        
+
+        output_data = converter.convert(
+            song=song,
+            from_format=from_format,
+            to_format=to_format,
+            nudge=args.nudge,
+            transpose=args.transpose,
+            max_line_width=args.max_line_width,
+            no_articulations=args.no_articulations,
+            single_string=args.single_string,
+            mapper_config=mapper_config
+        )
+    
+        output_path = Path(args.output)
+        if output_path.exists() and not args.yes:
+            logger.error(f"Error: Output file '{output_path}' already exists.")
+            logger.error("Use the -y or --yes flag to allow overwriting.")
+            exit(1)
+
+
+        logger.info(f"Converting '{args.input}' ({from_format}) to '{args.output}' ({to_format})...")
+
+        if args.pre_quantize and mapper_config:
+            logger.info(f"Pre-quantizing before any fretboard mapping.")
+            song = pre_quantize_song(song, args.quantization_resolution)    
+        
+        if not is_piano_mode:
             if args.analyze:
                 logger.info(f"--- Analyzing Processed Song Data ---")
                 all_events = [event for track in song.tracks for event in track.events]
@@ -353,58 +425,7 @@ def main():
 
                 except KeyError:
                     logger.error(f"Error: Tuning '{args.tuning}' not found.")
-                    exit(1)
-        
-            mapper_config = MapperConfig(
-                max_fret=args.max_fret,
-                tuning=tuning_name,
-                num_strings=num_strings,
-                fret_span_penalty=args.fret_span_penalty,
-                movement_penalty=args.movement_penalty,
-                string_switch_penalty=args.string_switch_penalty,
-                high_fret_penalty=args.high_fret_penalty,
-                low_string_high_fret_multiplier=args.low_string_high_fret_multiplier,
-                sweet_spot_bonus=args.sweet_spot_bonus,
-                sweet_spot_low=args.sweet_spot_low,
-                sweet_spot_high=args.sweet_spot_high,
-                unplayable_fret_span=args.unplayable_fret_span,
-                prefer_open=args.prefer_open,
-                fretted_open_penalty=args.fretted_open_penalty,
-                ignore_open=args.ignore_open,
-                legato_time_threshold=args.legato_time_threshold,
-                tapping_run_threshold=args.tapping_run_threshold,
-                deduplicate_pitches=args.dedupe,
-                quantization_resolution=args.quantization_resolution,
-                capo=args.capo,
-                barre_bonus=args.barre_bonus,  
-                barre_penalty=args.barre_penalty,  
-                mono_lowest_only=args.mono_lowest_only,
-            )
-
-    
-        
-
-        output_data = converter.convert(
-            song=song,
-            from_format=from_format,
-            to_format=to_format,
-            nudge=args.nudge,
-            transpose=args.transpose,
-            max_line_width=args.max_line_width,
-            no_articulations=args.no_articulations,
-            single_string=args.single_string,
-            mapper_config=mapper_config
-        )
-    
-        output_path = Path(args.output)
-        if output_path.exists() and not args.yes:
-            logger.error(f"Error: Output file '{output_path}' already exists.")
-            logger.error("Use the -y or --yes flag to allow overwriting.")
-            exit(1)
-
-
-        logger.info(f"Converting '{args.input}' ({from_format}) to '{args.output}' ({to_format})...")
-
+                    exit(1) 
 
         if to_format == 'mid':
             if isinstance(output_data, MidiUtilFile):

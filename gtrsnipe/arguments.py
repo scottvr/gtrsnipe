@@ -48,11 +48,10 @@ def setup_parser() -> ArgumentParser:
         action='store_true',
         help="Force monophonic output by keeping only the lowest note in any chord."
     )
-    
+
     pipeline_group = parser.add_argument_group('Audio-to-MIDI Pipeline Options')
     pipeline_group.add_argument('--stem', action='store_true', help='Step 1: Enables source separation (Demucs) to isolate a guitar stem.')
     pipeline_group.add_argument('--nr', action='store_true', help='Step 2: Enables noise/reverb reduction on the audio stem.')
-    pipeline_group.add_argument('--p2m', action='store_true', help='Step 3: Enables pitch-to-MIDI conversion on the audio stem.')
     pipeline_group.add_argument(
         '--remove-fx',
         action='store_true',
@@ -266,7 +265,7 @@ def setup_parser() -> ArgumentParser:
         default=False,
         help="Don't consider open when calculating shape score."
     )
-    # Technique Inference Thresholds
+    # Technique Inference Thresho1Glds
     mapper_group.add_argument(
         '--legato-time-threshold',
         type=float,
@@ -278,6 +277,11 @@ def setup_parser() -> ArgumentParser:
         type=int,
         default=2,
         help='Min number of notes in a run to be considered for tapping (default: 2).'
+    )
+    mapper_group.add_argument(
+        '--pre-quantize',
+        action='store_true',
+        help='Force a pre-quantization pass, snapping all notes to the quantization grid before mapping.'
     )
     mapper_group.add_argument(
         '--dedupe',
