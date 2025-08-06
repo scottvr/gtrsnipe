@@ -1,10 +1,10 @@
 # gtrsnipe 
 (pronounced "guttersnipe")
 
-## v1.1
+## V0.1.1
 Convert to and from .mid, .abc, .vex, and .tab files. 
 
-## V2.0
+## V0.2.0
 Transcribe music for guitar, capable of converting audio files (.mp3, .wav), MIDI (.mid), and various text-based formats (.tab, .vex, .abc) into high-quality ASCII tablature.
 
 ### What?
@@ -81,6 +81,17 @@ usage: gtrsnipe [-h] [--nudge NUDGE] [-y] [--track TRACK]
 - `-i, --input FILE`: Required. Path to the input file (.mp3, .wav, .mid, etc.).
 - `-o, --output FILE`: Required. Path to save the output file (.tab, .mid, etc.).
 - `-y, --yes`: Automatically overwrite the output file if it already exists.
+
+**Instrument Options**
+Instrument Options:
+- `--capo CAPO`           Specify a capo position. All fret numbers will be relative to the capo.
+- `--tuning {STANDARD,E_FLAT,DROP_D,OPEN_G,BASS_STANDARD,BASS_DROP_D,BASS_E_FLAT,SEVEN_STRING_STANDARD,BARITONE_B,BARITONE_A,BARITONE_C,C_SHARP,OPEN_C6,DROP_C}`
+                        Specify the guitar tuning (default: STANDARD).
+- `--bass`                Enable bass mode. Automatically uses bass tuning and a 4-string staff.
+- `--num-strings {4,5,6,7}`
+                        Force the number of strings on the tab staff (4, 5, 6, or 7). Defaults to 4 for bass  
+                        and 6 for guitar.
+- `--max-fret MAX_FRET`   Maximum fret number on the virtual guitar neck (default: 24).
 
 **Audio Pipeline Arguments**
 - `--stem`: Step 1: Enables source separation (Demucs) to isolate an instrument stem.

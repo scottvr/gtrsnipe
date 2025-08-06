@@ -212,6 +212,14 @@ class AsciiTabGenerator:
             f"// Tuning (High to Low): {' '.join(tuning_notes)}",
             ""
         ]
+
+        if config.capo > 0:
+            header.append(f"// Capo: {config.capo}nd Fret" if config.capo == 2 else
+                          f"// Capo: {config.capo}st Fret" if config.capo == 1 else
+                          f"// Capo: {config.capo}th Fret")
+
+        header.append("") # Add a blank line after the header info
+
         body = []
         # 'ljust' is no longer needed as all names are a single character
         tab_lines = [f"{name}|" for name in string_names]

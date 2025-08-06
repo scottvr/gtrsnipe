@@ -6,9 +6,6 @@ from .core.config import MapperConfig
 from .utils.io import save_text_file, save_midi_file
 from .arguments import setup_parser
 from .utils.logger import setup_logger
-from .audio.separator import separate_instrument
-from .audio.cleaner import cleanup_audio
-from .audio.pitch_detector import transcribe_to_midi
 from argparse import ArgumentParser
 from typing import Optional
 from pathlib import Path
@@ -94,10 +91,7 @@ class MusicConverter:
 def main():
     parser = setup_parser()
     args = parser.parse_args()
-
-    log_level = logging.DEBUG if args.debug else logging.INFO
-    setup_logger(log_level)
- 
+   
     if args.list_tunings:
         print("Available Tunings:")
 
@@ -121,6 +115,12 @@ def main():
             exit(1)
         exit(0)    
     
+    if not args.input or not args.output:
+        parser.error("the following arguments are required for conversion: -i/--input and -o/--output")
+
+    log_level = logging.DEBUG if args.debug else logging.INFO
+    setup_logger(log_level)
+ 
     try:
         current_file = args.input
         output_ext = Path(args.output).suffix.lower()
@@ -131,6 +131,8 @@ def main():
 
         min_freq = None
         max_freq = None
+        SAMPLE_RATE=44100
+
         if args.constrain_frequency:
             logger.info("--- Calculating frequency range based on selected tuning ---")
             try:
@@ -139,8 +141,26 @@ def main():
                 
                 min_pitch = min(open_string_pitches)
                 max_pitch = max(open_string_pitches) + args.max_fret
-                
-                min_freq = midi_to_hz(min_pitch)
+
+                if args.constrain_frequency and args.min_note_override:
+                    try:
+                        override_pitch = note_name_to_pitch(args.min_note_override)
+                        logger.info(f"Overriding minimum pitch from {pitch_to_note_name(min_pitch)} to {pitch_to_note_name(override_pitch)}.")
+                        min_pitch = override_pitch
+                    except ValueError:
+                        logger.error(f"Invalid note name for --min-note-override: '{args.min_note_override}'")
+
+                if args.constrain_frequency and args.max_note_override:
+                    try:
+                        override_pitch = note_name_to_pitch(args.max_note_override)
+                        logger.info(f"Overriding maximum pitch from {pitch_to_note_name(max_pitch)} to {pitch_to_note_name(override_pitch)}.")
+                        max_pitch = override_pitch
+                    except ValueError:
+                        logger.error(f"Invalid note name for --max-note-override: '{args.max_note_override}'")
+
+                if args.constrain_frequency:
+                    min_freq = midi_to_hz(min_pitch)
+
                 max_freq = midi_to_hz(max_pitch)
                 
                 logger.info(
@@ -155,23 +175,41 @@ def main():
         # --- Audio Pipeline Execution ---
         if is_audio_input:
             logger.info("--- Audio input detected. Starting audio-to-MIDI pipeline. ---")
+            from .audio.separator import separate_instrument
+            from .audio.cleaner import cleanup_audio, apply_low_pass_filter
+            from .audio.distortion_remover import remove_distortion_effects
+            from .audio.pitch_detector import transcribe_to_midi
+
+            
+            if args.remove_fx:
+                current_file = remove_distortion_effects(current_file)
+
             if not args.p2m:
                 logger.error("Error: Audio input requires at least the --p2m flag to transcribe to MIDI.")
                 exit(1)
 
             if args.stem:
-                # The 'instrument' could be made a CLI argument later
                 current_file = separate_instrument(current_file, 
                                                    instrument=args.stem_name,
                                                    model_name=args.demucs_model)
-            
+
+            if args.low_pass_filter and max_freq:
+                current_file = apply_low_pass_filter(current_file, cutoff_hz=max_freq, sr=SAMPLE_RATE)
+          
             if args.nr:
                 current_file = cleanup_audio(current_file)
 
             if args.p2m:
-                current_file = transcribe_to_midi(current_file, overwrite=args.yes,
-                                                  min_freq=min_freq,max_freq=max_freq)
-
+                current_file = transcribe_to_midi(
+                    current_file,
+                    overwrite=args.yes,
+                    min_freq=min_freq,
+                    max_freq=max_freq,
+                    onset_threshold=args.onset_threshold,
+                    frame_threshold=args.frame_threshold,
+                    min_note_len_ms=args.min_note_len_ms,
+                    melodia_trick=args.melodia_trick,
+                )
             # --- Flexible Output: Handle MIDI-to-MIDI conversion ---
             if output_ext == '.mid':
                 logger.info(f"Pipeline complete. Saving final MIDI to '{args.output}'")
@@ -326,7 +364,10 @@ def main():
             legato_time_threshold=args.legato_time_threshold,
             tapping_run_threshold=args.tapping_run_threshold,
             deduplicate_pitches=args.dedupe,
-            quantization_resolution=args.quantization_resolution
+            quantization_resolution=args.quantization_resolution,
+            capo=args.capo,
+            barre_bonus=args.barre_bonus,  
+            barre_penalty=args.barre_penalty,  
         )
 
         log_level = logging.DEBUG if args.debug else logging.INFO

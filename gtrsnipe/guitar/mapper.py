@@ -26,13 +26,23 @@ class GuitarMapper:
         logger.info("--- Chord-Aware Mapper initialized. ---")
 
     def _build_pitch_maps(self):
+        capo_fret = self.config.capo
         for string_idx, base_pitch in enumerate(self.open_string_pitches):
-            for fret in range(self.config.max_fret + 1):
-                pitch = base_pitch + fret
+            # The effective pitch of the "open" string is the base pitch + the capo position.
+            capo_base_pitch = base_pitch + capo_fret
+           # The number of available frets decreases by the capo position.
+            # The loop now represents frets *above* the capo.
+            for fret in range(self.config.max_fret - capo_fret + 1):
+                # The actual MIDI pitch is the capo'd open string + the fret number.
+                pitch = capo_base_pitch + fret
+                
+                # The FretPosition stores the fret number relative to the capo,
+                # which is what will be displayed on the tab.
                 pos = FretPosition(string_idx, fret)
+                
                 if pitch not in self.pitch_to_positions:
                     self.pitch_to_positions[pitch] = set()
-                self.pitch_to_positions[pitch].add(pos)                
+                self.pitch_to_positions[pitch].add(pos)
     
     def _map_to_single_string(self, events: List[MusicalEvent], string_index: int) -> List[MusicalEvent]:
         open_string_pitch = self.open_string_pitches[string_index]

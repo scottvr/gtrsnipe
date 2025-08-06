@@ -4,13 +4,55 @@ def setup_parser() -> ArgumentParser:
     """Configures and returns the argument parser for the command-line interface."""
     parser = ArgumentParser(description="Convert music files between various formats, including audio to MIDI to tab.")
     
-    parser.add_argument('-i', '--input', required=True, help='Path to the input file (.mid, .mp3, .wav, etc.).')
-    parser.add_argument('-o', '--output', required=True, help='Path to the output file (.tab, .mid, etc.).')
+    parser.add_argument('-i', '--input', help='Path to the input file (.mid, .mp3, .wav, etc.).')
+    parser.add_argument('-o', '--output', help='Path to the output file (.tab, .mid, etc.).')
+
+    instrument_group = parser.add_argument_group("Instrument Options")
+    instrument_group.add_argument(
+        '--capo',
+        type=int,
+        default=0,
+        help="Specify a capo position. All fret numbers will be relative to the capo."
+    )
+        # Instrument tunables
+    instrument_group.add_argument(
+        '--tuning',
+        type=str,
+        default='STANDARD',
+        choices=['STANDARD', 'E_FLAT', 'DROP_D', 'OPEN_G', 'BASS_STANDARD', 'BASS_DROP_D', 
+                 'BASS_E_FLAT', 'SEVEN_STRING_STANDARD', 'BARITONE_B', 'BARITONE_A', 
+                 'BARITONE_C', 'C_SHARP', 'OPEN_C6', 'DROP_C'],
+        help='Specify the guitar tuning (default: STANDARD).'
+    )
+    instrument_group.add_argument(
+        "--bass",
+        action='store_true',
+        help="Enable bass mode. Automatically uses bass tuning and a 4-string staff."
+    )
+    instrument_group.add_argument(
+        "--num-strings",
+        type=int,
+        default=None,
+        choices=[4, 5, 6, 7], # Add 7 as a valid choice
+        help="Force the number of strings on the tab staff (4, 5, 6, or 7). Defaults to 4 for bass and 6 for guitar."
+    )
+
+    instrument_group.add_argument(
+        '--max-fret',
+        type=int,
+        default=24,
+        help='Maximum fret number on the virtual guitar neck (default: 24).'
+    )
 
     pipeline_group = parser.add_argument_group('Audio-to-MIDI Pipeline Options')
     pipeline_group.add_argument('--stem', action='store_true', help='Step 1: Enables source separation (Demucs) to isolate a guitar stem.')
     pipeline_group.add_argument('--nr', action='store_true', help='Step 2: Enables noise/reverb reduction on the audio stem.')
     pipeline_group.add_argument('--p2m', action='store_true', help='Step 3: Enables pitch-to-MIDI conversion on the audio stem.')
+    pipeline_group.add_argument(
+        '--remove-fx',
+        action='store_true',
+        help="Pre-process audio with a distortion recovery model before pitch detection."
+    )
     pipeline_group.add_argument(
         '--stem-name', 
         type=str, 
@@ -29,6 +71,48 @@ def setup_parser() -> ArgumentParser:
         action='store_true',
         help="Constrain pitch detection to the frequency range of the selected tuning."
     )
+    instrument_group.add_argument(
+        '--min-note-override',
+        type=str,
+        default=None,
+        help="Override the calculated lowest note for frequency constraining (e.g., 'E2'). Requires --constrain-frequency."
+    )
+    instrument_group.add_argument(
+        '--max-note-override',
+        type=str,
+        default=None,
+        help="Override the calculated highest note for frequency constraining (e.g., 'E4'). Requires --constrain-frequency."
+    )   
+    pipeline_group.add_argument(
+       '--low-pass-filter',
+        action='store_true',
+        help="Apply a low-pass filter to the audio stem based on the instrument's max frequency."
+    )
+    pipeline_group.add_argument(
+        '--onset-threshold',
+        type=float,
+        default=0.5,
+        help="Basic-Pitch model's note onset threshold (0.0 to 1.0)."
+    )
+    pipeline_group.add_argument(
+        '--frame-threshold',
+        type=float,
+        default=0.3,
+        help="Basic-Pitch model's note frame threshold (0.0 to 1.0)."
+    )
+    pipeline_group.add_argument(
+        '--min-note-len-ms',
+        type=float,
+        default=127.70,
+        help="Basic-Pitch's minimum note length in milliseconds to keep."
+    )
+    pipeline_group.add_argument(
+        '--melodia-trick',
+        action='store_true',
+        help="Basic-Pitch's minimum note length in milliseconds to keep."
+    )
+
+
 
     parser.add_argument(
         "--nudge",
@@ -75,18 +159,6 @@ def setup_parser() -> ArgumentParser:
         help="Max number of vertical columns per line of ASCII tab. (default: 40)"
     )
     parser.add_argument(
-        "--bass",
-        action='store_true',
-        help="Enable bass mode. Automatically uses bass tuning and a 4-string staff."
-    )
-    parser.add_argument(
-        "--num-strings",
-        type=int,
-        default=None,
-        choices=[4, 5, 6, 7], # Add 7 as a valid choice
-        help="Force the number of strings on the tab staff (4, 5, 6, or 7). Defaults to 4 for bass and 6 for guitar."
-    )
-    parser.add_argument(
         "--single-string",
         type=int,
         default=None,
@@ -128,22 +200,6 @@ def setup_parser() -> ArgumentParser:
     )
 
     mapper_group = parser.add_argument_group('Mapper Tuning/Configuration (Advanced)')
-    # Instrument tunables
-    mapper_group.add_argument(
-        '--tuning',
-        type=str,
-        default='STANDARD',
-        choices=['STANDARD', 'E_FLAT', 'DROP_D', 'OPEN_G', 'BASS_STANDARD', 'BASS_DROP_D', 
-                 'BASS_E_FLAT', 'SEVEN_STRING_STANDARD', 'BARITONE_B', 'BARITONE_A', 
-                 'BARITONE_C', 'C_SHARP', 'OPEN_C6', 'DROP_C'],
-        help='Specify the guitar tuning (default: STANDARD).'
-    )
-    mapper_group.add_argument(
-        '--max-fret',
-        type=int,
-        default=24,
-        help='Maximum fret number on the virtual guitar neck (default: 24).'
-    )
     # Scoring Weights
     mapper_group.add_argument(
         '--fret-span-penalty',
@@ -241,6 +297,18 @@ def setup_parser() -> ArgumentParser:
         type=float,
         default=20.0,
         help='The penalty score applied to fretted notes that could be open strings (default: 20.0).'
+    )
+    mapper_group.add_argument(
+        '--barre-bonus',
+        type=float,
+        default=0.0,
+        help='Bonus awarded to fingerings that use a barre/single finger (default: 0.0).'
+    )
+    mapper_group.add_argument(
+        '--barre-penalty',
+        type=float,
+        default=0.0,
+        help='Penalty applied to fingerings that use a barre/single finger (default: 0.0).'
     )
 
     return parser

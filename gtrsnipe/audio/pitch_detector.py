@@ -12,7 +12,14 @@ bp_logger.setLevel(logging.INFO)
 
 logger = logging.getLogger(__name__)
 
-def transcribe_to_midi(audio_file: str, overwrite: bool = False, min_freq: float | None = None, max_freq: float | None = None) -> str:
+def transcribe_to_midi(audio_file: str, overwrite: bool = False, 
+                       min_freq: float | None = None, 
+                       max_freq: float | None = None,
+                       melodia_trick: bool = False,
+                       onset_threshold: float = 0.5,
+                       frame_threshold: float = 0.3,
+                       min_note_len_ms: float = 127.70,
+                       ) -> str:
     """
     Transcribes an audio file to MIDI using Basic-Pitch.
 
@@ -33,6 +40,8 @@ def transcribe_to_midi(audio_file: str, overwrite: bool = False, min_freq: float
     output_path = p.with_suffix(".mid")
     generated_file = output_path.with_name(f"{p.stem}_basic_pitch.mid")
 
+    if melodia_trick:
+        logger.info("--- Using melodia_trick ---")
     if not output_path or overwrite:
         # The predict_and_save function from Basic-Pitch handles the entire process:
         # 1. Loads the pre-trained model.
@@ -47,7 +56,11 @@ def transcribe_to_midi(audio_file: str, overwrite: bool = False, min_freq: float
             save_model_outputs=False,
             save_notes=False,
             minimum_frequency=min_freq,
-            maximum_frequency=max_freq
+            maximum_frequency=max_freq,
+            onset_threshold=onset_threshold,
+            frame_threshold=frame_threshold,
+            minimum_note_length=(min_note_len_ms / 1000),
+            melodia_trick = melodia_trick
         )
 
 
