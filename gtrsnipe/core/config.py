@@ -29,3 +29,10 @@ class MapperConfig:
 
     # from match_events_to_fretboard
     deduplicate_pitches: bool = False
+
+    # quantization resolution. Used by the mapper and the ascii tab genereator.
+    quantization_resolution: float = 0.125
+
+    # open string preference
+    prefer_open: bool = False
+    fretted_open_penalty: float = 20.0

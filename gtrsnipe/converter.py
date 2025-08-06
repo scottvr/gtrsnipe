@@ -287,6 +287,24 @@ def main():
         help="Enable de-duplication of notes with the same pitch within a chord. "
              "Useful for cleaning up MIDI from non-guitar sources."
     )
+    mapper_group.add_argument(
+        '--quantization-resolution',
+        type=float,
+        default=0.125,
+        choices=[0.0625, 0.125, 0.25, 0.5, 1.0],
+        help="Quantization resolution. Used by the mapper to determine simultaneous sounding of notes (chords) and by the ascii tab generator mainly for spacing purposes."
+    )
+    mapper_group.add_argument(
+        '--prefer-open',
+        action='store_true',
+        help='Prefer open strings over their fretted equivalents (e.g., open B over G-string fret 4).'
+    )
+    mapper_group.add_argument(
+        '--fretted-open-penalty',
+        type=float,
+        default=20.0,
+        help='The penalty score applied to fretted notes that could be open strings (default: 20.0).'
+    )
     args = parser.parse_args()
 
     log_level = logging.DEBUG if args.debug else logging.INFO
@@ -327,6 +345,9 @@ def main():
         if not song:
             logger.error("Failed to parse input file or file is empty.")
             exit(1)
+
+        initial_note_count = sum(len(track.events) for track in song.tracks)
+        logger.info(f"Parsed {initial_note_count} initial notes from the input file.")
 
         song.title = Path(os.path.basename(args.input_file)).stem 
     
@@ -450,10 +471,13 @@ def main():
             sweet_spot_low=args.sweet_spot_low,
             sweet_spot_high=args.sweet_spot_high,
             unplayable_fret_span=args.unplayable_fret_span,
+            prefer_open=args.prefer_open,
+            fretted_open_penalty=args.fretted_open_penalty,
             ignore_open=args.ignore_open,
             legato_time_threshold=args.legato_time_threshold,
-                tapping_run_threshold=args.tapping_run_threshold,
-                deduplicate_pitches=args.dedupe 
+            tapping_run_threshold=args.tapping_run_threshold,
+            deduplicate_pitches=args.dedupe,
+            quantization_resolution=args.quantization_resolution
         )
 
         log_level = logging.DEBUG if args.debug else logging.INFO

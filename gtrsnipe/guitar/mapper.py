@@ -97,8 +97,23 @@ class GuitarMapper:
             prev_strings_used = {pos.string for pos in prev_fingering}
             string_changes = len(strings_used.symmetric_difference(prev_strings_used))
             score -= string_changes * self.config.string_switch_penalty
+        if self.config.prefer_open:
+            # Create a set of open string pitches for fast lookups
+            open_pitches_set = set(self.open_string_pitches)
+            
+            for pos in fingering:
+                # If this is a fretted note...
+                if pos.fret > 0:
+                    # ...calculate its pitch.
+                    current_pitch = self.open_string_pitches[pos.string] + pos.fret
+                    
+                    # If that same pitch exists as an open string...
+                    if current_pitch in open_pitches_set:
+                        # ...apply a penalty to this fretted fingering.
+                        score -= self.config.fretted_open_penalty
 
-        return score
+        return score    
+    
     
     def _find_optimal_fingering(self, notes: List[MusicalEvent], prev_fingering: Optional[Fingering]) -> Optional[Fingering]:
         note_positions = []
@@ -191,7 +206,7 @@ class GuitarMapper:
             string_index = single_string - 1
             mapped_events = self._map_to_single_string(events, string_index)
         else:
-            QUANTIZATION_RESOLUTION = 0.125
+            QUANTIZATION_RESOLUTION = self.config.quantization_resolution
             def quantize_time(beat): return round(beat / QUANTIZATION_RESOLUTION) * QUANTIZATION_RESOLUTION
             
             sorted_events = sorted(events, key=lambda e: e.time)
@@ -200,6 +215,9 @@ class GuitarMapper:
             multi_string_events = []
             last_fingering: Optional[Fingering] = None
             for note_group in time_groups:
+                quantized_beat = quantize_time(note_group[0].time)
+                for note in note_group:
+                    note.time = quantized_beat
                 group_to_finger = note_group
                 if self.config.deduplicate_pitches:
                     unique_pitches = {}

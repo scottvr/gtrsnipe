@@ -34,14 +34,22 @@ class MidiReader:
             logger.info("--- Attempting to parse with primary library (py-midi)... ---")
             return MidiReader._parse_with_py_midi(midi_path, track_number_to_select)
         except Exception as e:
-            # --- TEMPORARY DEBUGGING ---
-            # This block will now print the exact exception from py-midi and stop.
-            logger.error(f"The primary 'py-midi' parser failed unexpectedly. See details below.")
-            print("\n--- PY-MIDI PARSER FAILED: FULL TRACEBACK ---")
-            traceback.print_exc()
-            print("---------------------------------------------\n")
-            exit(1) # Stop execution to see the error clearly.
-            # --- END TEMPORARY DEBUGGING ---
+            # This block no longer exits, it logs a warning and proceeds to the fallback.
+            logger.warning(
+                "The primary 'py-midi' parser failed. This can happen with rare or unusual MIDI files, "
+                "or if a sanity check fails."
+            )
+            logger.warning(f"  └─ Details: {e}")
+            
+            # Attempt the fallback parser
+            try:
+                logger.info("--- Attempting to parse with fallback library (mido)... ---")
+                return MidiReader._parse_with_mido(midi_path, track_number_to_select)
+            except Exception as e_fallback:
+                logger.error("All MIDI parsers failed. The file may be corrupt or in an unsupported format.")
+                # Log the full traceback for debugging if needed
+                traceback.print_exc()
+                raise e_fallback # Re-raise the final exception
 
     @staticmethod
     def _parse_with_py_midi(

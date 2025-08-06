@@ -25,12 +25,16 @@ class AsciiTabGenerator:
 
         mapper = GuitarMapper(config=mapper_config)
         mapped_song = Song(tempo=song.tempo, time_signature=song.time_signature, title=song.title, tracks=[])
+
+        total_mapped_notes = 0
         for track in song.tracks:
             mapped_events = mapper.map_events_to_fretboard(track.events, no_articulations=no_articulations,
                                                            single_string=single_string)
+            total_mapped_notes += len(mapped_events)
             new_track = Track(events=mapped_events, instrument_name=track.instrument_name)
             mapped_song.tracks.append(new_track)
 
+        logger.info(f"--- Successfully mapped {total_mapped_notes} notes for transcription. ---")
         score = AsciiTabGenerator._create_score_from_song(mapped_song)
         
         # Calculate the base unit in beats to pass to the formatter
@@ -96,11 +100,8 @@ class AsciiTabGenerator:
         last_event_time = 0.0
         
         sorted_notes = sorted(measure.notes, key=lambda n: n.beat_in_measure)
-        QUANTIZATION_RESOLUTION = 0.125
-        def quantize_time(beat):
-            return round(beat / QUANTIZATION_RESOLUTION) * QUANTIZATION_RESOLUTION
         
-        notes_by_time_iter = groupby(sorted_notes, key=lambda n: quantize_time(n.beat_in_measure))
+        notes_by_time_iter = groupby(sorted_notes, key=lambda n: n.beat_in_measure)
 
         # Pre-process groups to handle unplayable chords
         events_to_render = []
