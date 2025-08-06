@@ -1,8 +1,8 @@
 from .formats import abc, mid, tab, vex
 from .formats.mid.generator import MidiUtilFile
-from .core.types import Song
+from .core.theory import note_name_to_pitch, pitch_to_note_name
+from .core.types import Song, Tuning
 from .core.config import MapperConfig
-from .core.types import Tuning
 from .utils.io import save_text_file, save_midi_file
 from .utils.logger import setup_logger
 from argparse import ArgumentParser
@@ -15,32 +15,26 @@ from sys import exit
 logger = logging.getLogger(__name__)
 
 class MusicConverter:
-    def convert(self, input_data: str, from_format: str, to_format: str, 
-                nudge: int, track_num: Optional[int], 
+    def convert(self, song: Song, from_format: str, to_format: str, 
+                nudge: int, 
                 max_line_width: int = 40,
                 transpose: int = 0,
-                staccato: bool = False, 
                 no_articulations: bool = False,
                 single_string: Optional[int] = None,
                 mapper_config: Optional[MapperConfig] = None) -> object | str:
         """
-        Converts music data from one format to another.
+        Converts a Song object from one format to another.
+        Assumes the Song has already been parsed and filtered.
         """
-        song = self._parse(input_data, from_format, track_num, staccato=staccato)
+        # The call to self._parse() is removed from this method.
+        # Title setting is now handled in main().
 
-        if not song:
-            logger.error("Could not parse the input file; cannot proceed with conversion.")
-            return None # Return None to indicate failure
-        
-        if input_data:
-            song.title = Path(os.path.basename(input_data)).stem
-
+        # This logic remains, as it happens after parsing.
         if from_format == 'mid' and mapper_config and mapper_config.tuning == 'STANDARD' and song.tracks:
             all_events = [event for track in song.tracks for event in track.events]
             if all_events:
                 min_pitch = min(event.pitch for event in all_events)
-                # MIDI pitch for Eb2 is 39
-                if min_pitch == 39:
+                if min_pitch == 39: # MIDI pitch for Eb2
                     logger.info("--- Lowest note detected is Eb2. Automatically switching to E_FLAT tuning. ---")
                     mapper_config.tuning = 'E_FLAT'
         
@@ -49,8 +43,7 @@ class MusicConverter:
             for track in song.tracks:
                 for event in track.events:
                     event.pitch += transpose
-                    # Clamp the pitch to the valid MIDI range [0, 127]
-                    event.pitch = max(0, min(127, event.pitch))
+                    event.pitch = max(0, min(127, event.pitch)) # Clamp to valid MIDI range
 
         if nudge > 0 and song.tracks:
             nudge_unit_in_beats = 0.25
@@ -63,6 +56,7 @@ class MusicConverter:
         output_data = self._generate(song, to_format, no_articulations=no_articulations, single_string=single_string, max_line_width=max_line_width, mapper_config=mapper_config)
 
         return output_data
+
 
     def _parse(self, data: str, format: str, track_num: Optional[int], staccato: bool = False) -> Song:
         if format == 'mid':
@@ -117,6 +111,11 @@ def main():
         help="The track number (1-based) to select from a multi-track MIDI file. If not set, all tracks are processed. For a multitrack midi, you will want to select a single instrument track to transcribe."
     )
     parser.add_argument(
+        '--analyze',
+        action='store_true',
+        help='Analyze the input MIDI file to find the pitch range and suggest suitable tunings, then exit.'
+    )
+    parser.add_argument(
         "--transpose",
         type=int,
         default=0,
@@ -158,6 +157,21 @@ def main():
         help="Force all notes onto a single string (1-6, high e to low E). Ideal for transcribing legato/tapping runs."
     )
     parser.add_argument(
+        '--constrain-pitch',
+        action='store_true',
+        help='Constrain notes to the playable range of the tuning specified by --tuning.'
+    )   
+    
+    parser.add_argument(
+        '--pitch-mode',
+        type=str,
+        default='drop',
+        choices=['drop', 'normalize'],
+        help="Used with --constrain-pitch. 'drop' (default) discards out-of-range notes. "
+             "'normalize' transposes out-of-range notes by octaves until they fit."
+    )
+
+    parser.add_argument(
         '--debug',
         action='store_true',
         help="Enable detailed debug logging messages."
@@ -182,7 +196,9 @@ def main():
         '--tuning',
         type=str,
         default='STANDARD',
-        choices=['STANDARD', 'E_FLAT', 'DROP_D', 'OPEN_G', 'BASS_STANDARD', 'BASS_DROP_D', 'BASS_E_FLAT', 'SEVEN_STRING_STANDARD', 'BARITONE_B', 'BARITONE_A', 'BARITONE_C', 'C_SHARP', 'OPEN_C6', 'DROP_C'],
+        choices=['STANDARD', 'E_FLAT', 'DROP_D', 'OPEN_G', 'BASS_STANDARD', 'BASS_DROP_D', 
+                 'BASS_E_FLAT', 'SEVEN_STRING_STANDARD', 'BARITONE_B', 'BARITONE_A', 
+                 'BARITONE_C', 'C_SHARP', 'OPEN_C6', 'DROP_C'],
         help='Specify the guitar tuning (default: STANDARD).'
     )
     mapper_group.add_argument(
@@ -265,9 +281,17 @@ def main():
         default=2,
         help='Min number of notes in a run to be considered for tapping (default: 2).'
     )
-
+    mapper_group.add_argument(
+        '--dedupe',
+        action='store_true',
+        help="Enable de-duplication of notes with the same pitch within a chord. "
+             "Useful for cleaning up MIDI from non-guitar sources."
+    )
     args = parser.parse_args()
-    
+
+    log_level = logging.DEBUG if args.debug else logging.INFO
+    setup_logger(log_level)
+ 
     if args.list_tunings:
         print("Available Tunings:")
 
@@ -293,82 +317,181 @@ def main():
     
     if not args.input_file or not args.output_file:
         parser.error("the following arguments are required for conversion: input_file, output_file")
+
+    try:
+        converter = MusicConverter()
+        from_format = args.input_file.split('.')[-1]
+        # Step A: Parse the file into a Song object
+        logger.info(f"--- Parsing '{args.input_file}' ---")
+        song = converter._parse(args.input_file, from_format, args.track, staccato=args.staccato)
+        if not song:
+            logger.error("Failed to parse input file or file is empty.")
+            exit(1)
+
+        song.title = Path(os.path.basename(args.input_file)).stem 
     
-    tuning_name = args.tuning
-    num_strings = args.num_strings
     
-    if num_strings is not None and tuning_name == 'STANDARD':
-        if num_strings == 7:
-            tuning_name = 'SEVEN_STRING_STANDARD'
-        elif num_strings == 4:
+        tuning_name = args.tuning
+        num_strings = args.num_strings
+    
+        if num_strings is not None and tuning_name == 'STANDARD':
+            if num_strings == 7:
+                tuning_name = 'SEVEN_STRING_STANDARD'
+            elif num_strings == 4:
+                tuning_name = 'BASS_STANDARD'
+        # Handle the --bass shortcut.
+        elif args.bass and tuning_name == 'STANDARD':
             tuning_name = 'BASS_STANDARD'
-    # Handle the --bass shortcut.
-    elif args.bass and tuning_name == 'STANDARD':
-        tuning_name = 'BASS_STANDARD'
 
-    if num_strings is None:
-        try:
-            num_strings = len(Tuning[tuning_name].value)
-        except KeyError:
-            num_strings = 6 
+        if num_strings is None:
+            try:
+                num_strings = len(Tuning[tuning_name].value)
+            except KeyError:
+                num_strings = 6 
     
-    try:
-        actual_tuning_strings = len(Tuning[tuning_name].value)
-        if num_strings != actual_tuning_strings:
-            parser.error(
-                f"Mismatch between --num-strings ({num_strings}) and tuning '{tuning_name}' "
-                f"(which has {actual_tuning_strings} strings). Please specify a compatible tuning."
-            )
-    except KeyError:
-        # This will catch invalid tuning names passed with --tuning
-        parser.error(f"Tuning '{tuning_name}' not found. Use --list-tunings to see available options.")
-    mapper_config = MapperConfig(
-        max_fret=args.max_fret,
-        tuning=tuning_name,
-        num_strings=num_strings,
-        fret_span_penalty=args.fret_span_penalty,
-        movement_penalty=args.movement_penalty,
-        string_switch_penalty=args.string_switch_penalty,
-        high_fret_penalty=args.high_fret_penalty,
-        low_string_high_fret_multiplier=args.low_string_high_fret_multiplier,
-        sweet_spot_bonus=args.sweet_spot_bonus,
-        sweet_spot_low=args.sweet_spot_low,
-        sweet_spot_high=args.sweet_spot_high,
-        unplayable_fret_span=args.unplayable_fret_span,
-        ignore_open=args.ignore_open,
-        legato_time_threshold=args.legato_time_threshold,
-        tapping_run_threshold=args.tapping_run_threshold
-    )
+        try:
+            actual_tuning_strings = len(Tuning[tuning_name].value)
+            if num_strings != actual_tuning_strings:
+                parser.error(
+                    f"Mismatch between --num-strings ({num_strings}) and tuning '{tuning_name}' "
+                    f"(which has {actual_tuning_strings} strings). Please specify a compatible tuning."
+                )
+        except KeyError:
+            # This will catch invalid tuning names passed with --tuning
+            parser.error(f"Tuning '{tuning_name}' not found. Use --list-tunings to see available options.")
+        
+        if args.analyze:
+            logger.info(f"--- Analyzing Processed Song Data ---")
+            all_events = [event for track in song.tracks for event in track.events]
+            if not all_events:
+                logger.info("No musical events found in the specified pitch range.")
+                exit(0)
 
-    log_level = logging.DEBUG if args.debug else logging.INFO
-    setup_logger(log_level)
+            min_pitch = min(event.pitch for event in all_events)
+            max_pitch = max(event.pitch for event in all_events)
+            
+            suggested_tunings = []
+            for tuning in Tuning:
+                open_notes = [note_name_to_pitch(n) for n in tuning.value]
+                lowest_tuning_note = min(open_notes)
+                highest_playable_note = max(open_notes) + args.max_fret
+                if min_pitch >= lowest_tuning_note and max_pitch <= highest_playable_note:
+                    suggested_tunings.append((tuning, lowest_tuning_note))
+            
+            suggested_tunings.sort(key=lambda x: min_pitch - x[1])
 
-    output_path = Path(args.output_file)
-    if output_path.exists() and not args.yes:
-        logger.error(f"Error: Output file '{output_path}' already exists.")
-        logger.error("Use the -y or --yes flag to allow overwriting.")
-        exit(1)
+            logger.info(f"Found {len(all_events)} notes within the specified pitch range.")
+            logger.info(f"Lowest Note:  {min_pitch} ({pitch_to_note_name(min_pitch)})")
+            logger.info(f"Highest Note: {max_pitch} ({pitch_to_note_name(max_pitch)})")
+            logger.info("\n--- Tuning Suggestions ---")
+            if not suggested_tunings:
+                logger.info("Could not find any standard tunings that fit this song's pitch range.")
+            else:
+                logger.info(f"Based on a {args.max_fret}-fret neck.")
+                logger.info("The following tunings can accommodate the song's pitch range:")
+                for tuning, low_note in suggested_tunings:
+                    print(f"- {tuning.name} (Lowest note: {pitch_to_note_name(low_note)})")
+            exit(0)
+        if args.constrain_pitch:
+            max_fret = args.max_fret
+            try:
+                # Use the tuning from the --tuning argument
+                constrain_tuning_name = args.tuning.upper()
+                constrain_tuning = Tuning[constrain_tuning_name]
+                
+                constrain_open_notes = [note_name_to_pitch(n) for n in constrain_tuning.value]
+                min_range = min(constrain_open_notes)
+                max_range = max(constrain_open_notes) + max_fret
+                
+                logger.info(f"Constraining notes to '{constrain_tuning_name}' range (Mode: {args.pitch_mode})")
 
-    from_format = args.input_file.split('.')[-1]
-    to_format = args.output_file.split('.')[-1]
+                # --- NEW: Handle different pitch modes ---
 
-    logger.info(f"Converting '{args.input_file}' ({from_format}) to '{args.output_file}' ({to_format})...")
+                if args.pitch_mode == 'normalize':
+                    notes_normalized = 0
+                    for track in song.tracks:
+                        for event in track.events:
+                            # Check if the note is outside the playable range
+                            if event.pitch > max_range or event.pitch < min_range:
+                                notes_normalized += 1
+                                # While the note is too high, transpose it down by one octave
+                                while event.pitch > max_range:
+                                    event.pitch -= 12
+                                # While the note is too low, transpose it up by one octave
+                                while event.pitch < min_range:
+                                    event.pitch += 12
+                    if notes_normalized > 0:
+                        logger.info(f"Normalized {notes_normalized} out-of-range note(s) by octaves to fit the range.")
 
-    converter = MusicConverter()
+                elif args.pitch_mode == 'drop':
+                    original_note_count = sum(len(track.events) for track in song.tracks)
+                    for track in song.tracks:
+                        track.events = [e for e in track.events if min_range <= e.pitch <= max_range]
+                    
+                    new_note_count = sum(len(track.events) for track in song.tracks)
+                    notes_discarded = original_note_count - new_note_count
+                    if notes_discarded > 0:
+                        logger.info(f"Discarded {notes_discarded} out-of-range note(s).")
 
-    try:
-        output_data = converter.convert(args.input_file, from_format, to_format, 
-                                        args.nudge, args.track, staccato=args.staccato, 
-                                        transpose=args.transpose, max_line_width=args.max_line_width,
-                                        no_articulations=args.no_articulations,
-                                        single_string=args.single_string, mapper_config=mapper_config)
+            except KeyError:
+                logger.error(f"Error: Tuning '{args.tuning}' not found.")
+                exit(1)
+        
+        mapper_config = MapperConfig(
+            max_fret=args.max_fret,
+            tuning=tuning_name,
+            num_strings=num_strings,
+            fret_span_penalty=args.fret_span_penalty,
+            movement_penalty=args.movement_penalty,
+            string_switch_penalty=args.string_switch_penalty,
+            high_fret_penalty=args.high_fret_penalty,
+            low_string_high_fret_multiplier=args.low_string_high_fret_multiplier,
+            sweet_spot_bonus=args.sweet_spot_bonus,
+            sweet_spot_low=args.sweet_spot_low,
+            sweet_spot_high=args.sweet_spot_high,
+            unplayable_fret_span=args.unplayable_fret_span,
+            ignore_open=args.ignore_open,
+            legato_time_threshold=args.legato_time_threshold,
+                tapping_run_threshold=args.tapping_run_threshold,
+                deduplicate_pitches=args.dedupe 
+        )
+
+        log_level = logging.DEBUG if args.debug else logging.INFO
+        setup_logger(log_level)
+    
+        if not args.output_file:
+            parser.error("the following arguments are required for conversion: input_file, output_file")
+        
+        to_format = args.output_file.split('.')[-1]
+        from_format = args.input_file.split('.')[-1]
+       
+        output_data = converter.convert(
+            song=song,
+            from_format=from_format,
+            to_format=to_format,
+            nudge=args.nudge,
+            transpose=args.transpose,
+            max_line_width=args.max_line_width,
+            no_articulations=args.no_articulations,
+            single_string=args.single_string,
+            mapper_config=mapper_config
+        )
+    
+        output_path = Path(args.output_file)
+        if output_path.exists() and not args.yes:
+            logger.error(f"Error: Output file '{output_path}' already exists.")
+            logger.error("Use the -y or --yes flag to allow overwriting.")
+            exit(1)
+
+
+        logger.info(f"Converting '{args.input_file}' ({from_format}) to '{args.output_file}' ({to_format})...")
+
 
         if to_format == 'mid':
             if isinstance(output_data, MidiUtilFile):
                 save_midi_file(output_data, args.output_file)
         else:
-            if isinstance(output_data, str):
-                save_text_file(output_data, args.output_file)
+            if isinstance(output_data, str):                save_text_file(output_data, args.output_file)
 
     except Exception as e:
         logger.error(f"An error occurred: {e}", exc_info=args.debug)

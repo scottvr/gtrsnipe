@@ -200,22 +200,26 @@ class GuitarMapper:
             multi_string_events = []
             last_fingering: Optional[Fingering] = None
             for note_group in time_groups:
-                unique_pitches = {}
-                deduplicated_note_group = []
-                for note in note_group:
-                    norm_pitch = self._normalize_pitch(note.pitch)
-                    if norm_pitch not in unique_pitches:
-                        unique_pitches[norm_pitch] = note
-                        deduplicated_note_group.append(note)
+                group_to_finger = note_group
+                if self.config.deduplicate_pitches:
+                    unique_pitches = {}
+                    deduplicated_note_group = []
+                    for note in note_group:
+                        norm_pitch = self._normalize_pitch(note.pitch)
+                        if norm_pitch not in unique_pitches:
+                            unique_pitches[norm_pitch] = note
+                            deduplicated_note_group.append(note)
 
-                fingering = self._find_optimal_fingering(deduplicated_note_group, last_fingering)
+                    group_to_finger = deduplicated_note_group
+
+                fingering = self._find_optimal_fingering(group_to_finger, last_fingering)
                 if fingering:
                     # The fingering corresponds to the deduplicated notes.
                     # We need to apply it back to the correct note events.
-                    for i, note_event in enumerate(deduplicated_note_group):
+                    for i, note_event in enumerate(group_to_finger):
                         note_event.fret = fingering[i].fret
                         note_event.string = fingering[i].string
-                    multi_string_events.extend(deduplicated_note_group)
+                    multi_string_events.extend(group_to_finger)
                     last_fingering = fingering
                 else:
                     logger.warning(f"Could not find a playable fingering for notes at time {note_group[0].time}")

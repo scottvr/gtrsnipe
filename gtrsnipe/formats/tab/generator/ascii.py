@@ -2,7 +2,7 @@ from typing import List, Optional
 from ....core.types import FretPosition, Song, Technique, Track, Tuning
 from ....core.config import MapperConfig
 from ....guitar.mapper import GuitarMapper
-from ..types import TabScore, TabMeasure, TabNote
+from ..tab_types import TabScore, TabMeasure, TabNote
 from itertools import groupby
 import logging
 

@@ -26,3 +26,6 @@ class MapperConfig:
     max_fret: int = 24
     tuning: str = "STANDARD"
     num_strings: int =  6
+
+    # from match_events_to_fretboard
+    deduplicate_pitches: bool = False

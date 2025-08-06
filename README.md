@@ -118,12 +118,12 @@ Available Tunings:
 - DROP_D                : E4 B3 G3 D3 A2 D2
 - D_STANDARD            : D4 A3 F3 C3 G2 D2
 - DROP_C                : D4 A3 F3 C3 G2 C2
+- DROP_B                : C#4 F#3 B2 E2 B1
 - OPEN_G                : D4 B3 G3 D3 G2 D2
 - OPEN_E                : E4 B3 G#3 E3 B2 E2
 - DADGAD                : D4 A3 G3 D3 A2 D2
 - OPEN_D                : D4 A3 F#3 D3 A2 D2
 - OPEN_C6               : E4 C4 G3 C3 A2 C2
-- C_SHARP               : C#4 F#3 B2 E2 C#2
 - BASS_STANDARD         : G2 D2 A1 E1
 - BASS_DROP_D           : G2 D2 A1 D1
 - BASS_E_FLAT           : Gb2 Db2 Ab1 Eb1

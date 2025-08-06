@@ -1,5 +1,11 @@
 import re
 
+## for analyzer mode
+PITCH_CLASS_MAP = {
+    0: 'C', 1: 'C#', 2: 'D', 3: 'Eb', 4: 'E', 5: 'F',
+    6: 'F#', 7: 'G', 8: 'Ab', 9: 'A', 10: 'Bb', 11: 'B'
+}
+
 def note_name_to_pitch(name: str) -> int:
     """
     Converts a note name (e.g., "A4", "C#5", "Eb3") to its corresponding MIDI pitch number.
@@ -31,3 +37,16 @@ def note_name_to_pitch(name: str) -> int:
     
     # MIDI pitch formula: pitch = pitch_class + (octave + 1) * 12
     return pitch_class + (octave + 1) * 12
+
+def pitch_to_note_name(pitch: int) -> str:
+    """
+    Converts a MIDI pitch number to its standard note name (e.g., 60 -> C4).
+    """
+    if not (0 <= pitch <= 127):
+        return "Invalid Pitch"
+    
+    octave = (pitch // 12) - 1
+    note_class = pitch % 12
+    note = PITCH_CLASS_MAP[note_class]
+    
+    return f"{note}{octave}"
