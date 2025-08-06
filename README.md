@@ -58,6 +58,7 @@ The installation process makes gtrsnipe available as a command within your venv.
 
 ```
 usage: gtrsnipe [-h] [--nudge NUDGE] [-y] [--track TRACK]
+                [--constrain-pitch] [--pitch-mode {drop,normalize}]
                 [--transpose TRANSPOSE] [--no-articulations] [--staccato]
                 [--max-line-width MAX_LINE_WIDTH] [--bass]
                 [--num-strings {4,5,6,7}] [--single-string {1,2,3,4,5,6}]
@@ -82,6 +83,15 @@ options:
                         track MIDI file. If not set, all tracks are processed.
                         For a multitrack midi, you will want to select a
                         single instrument track to transcribe.
+  --analyze             Analyze the input MIDI file to find its pitch range
+                        and suggest suitable tunings, then exit.  
+  --constrain-pitch     Constrain notes to the playable range of the tuning
+                        specified by --tuning.  
+  --pitch-mode {drop,normalize}
+                        Used with --constrain-pitch. ‘drop’ (default) discards
+                        out-of-range notes; ‘normalize’ transposes them by
+                        octaves until they fit.  
+
   --transpose TRANSPOSE
                         Transpose the music up or down by N semitones (e.g., 2
                         for up, -3 for down).
@@ -251,6 +261,15 @@ Mapper Tuning/Configuration (Advanced):
   --sweet-spot-high SWEET_SPOT_HIGH
                         Highest fret of the "sweet spot" (default 12)
   --ignore-open         Don't consider open when calculating shape score.
+  --dedupe                  Enable de-duplication of notes with the same pitch
+                              within a chord (drops duplicates).  
+  --quantization-resolution {0.0625,0.125,0.25,0.5,1.0}
+                              Quantization resolution for grouping simultaneous
+                              notes (default: 0.125).  
+  --prefer-open             Prefer open strings over fretted equivalents.
+  --fretted-open-penalty F
+                              Penalty for choosing a fretted note when an open
+                              string is available (default: 20.0).  
   --legato-time-threshold LEGATO_TIME_THRESHOLD
                         Max time in beats between notes for a legato phrase
                         (For h/p when infer articulation is enabled (default)) (default: 0.5).
