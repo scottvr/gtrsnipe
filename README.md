@@ -1,25 +1,37 @@
 # gtrsnipe 
 (pronounced "guttersnipe")
 
+## v1.1
 Convert to and from .mid, .abc, .vex, and .tab files. 
+
+## V2.0
+Transcribe music for guitar, capable of converting audio files (.mp3, .wav), MIDI (.mid), and various text-based formats (.tab, .vex, .abc) into high-quality ASCII tablature.
 
 ### What?
 
-**gtrsnipe** will convert MIDI (from a .mid file) into text-based transcriptions (ASCII tab, VexTab, and ABC notation) arranged for 6-string guitar.
+gtrsnipe is a versatile music transcription tool. Its primary function is to create playable guitar tablature from a variety of sources. It features a sophisticated audio-to-tab pipeline that can take a mixed audio track, isolate the guitar part, and transcribe it into a tab.
 
-**gtrsnipe** can also convert these text-based notations into a playable MIDI file from a .vex, .abc, or .tab file. Note that since standard ASCII .tab does not encode rhythmic information, **gtrsnipe** tries to infer an approximation of this based on the spacing between notes (and the number of `-` characters between fretted notes) and since tabs found in the wild are all over the place in this respect, YMMV. 
+It can also convert existing MIDI files into text-based notations or, in reverse, generate a playable MIDI file from a text-based tab.
 
-Note that to strike a balance between readability and compactness, **gtrsnipe** uses a logarithmic spacing algorithm when generating ASCII tabs from MIDI to try and encode as much of this information as possible given the format, so tabs that were originally created by **gtrsnipe** will often fare better in the final playback of a generated midi than ones posted to usenet in the 1990's, but of course if it was generated with gtrsnipe, you already had a mid, vex, or abc of the song which already had rhythmic information to start with so re-midifying from a gtrsnipe tab is kinda pointless, isn't it? 
+At its core, gtrsnipe uses an intelligent fretboard mapper that analyzes notes and chords to find comfortable and logical fingerings on the guitar neck. This process is highly customizable, allowing you to fine-tune the output to match your personal playing style and preferences.
 
-By default **gtrsnipe** will try to infer hammer-on/pull-off performance technique articulations based on the timing of the notes. You can disable this (for straight-picking transcriptions) with `--no-articulations`. Additionally, there is a `--single-string` option for transcriptions that might be best represented on one string with taps/hammer-ons/pull-offs. Best for pieces/segments you know should be played in this manner.
+-----
+## The Audio-to-Tablature Pipeline
 
-**gtrsnipe** tries to intelligently find the best neck and fingering positions using a note to fretboard mapper and a scoring algorithm that is unavoidably shaped by my *subjective* opinions and skills as a player but it  does its best to avoid *objectively* impossible fingerings.
+For audio files, gtrsnipe uses a multi-stage pipeline to process the sound and transcribe the notes. Each stage can be enabled or disabled via command-line flags.
 
-The `--nudge` option exists because MIDI track start times can sometimes also be all over the place and is designed to help you make your ascii TAB more visually appealing, though not necessarily accurate in terms of how many "rest" measures there may be before the transcription begins. See example usage below.
+```mermaid
+flowchart TD
+    A["Audio File (.mp3, .wav)"] -->|stem| B["Demucs Source Separation"]
+    B -->|nr| C["Noise & Reverb Reduction"]
+    C -->|p2m| D["Basic-Pitch Transcription"]
+    D --> E{"GtrSnipe Core Mapper"}
+    E --> F["ASCII Tablature (.tab)"]
+```
 
-The parameter `--max-line-wdith` exists primarily to constrain a tab staff to a certain width suitable for printing on your medium of choice. The default is `40` which ensures a measure fits on standard portrait-orientation 8.5x11" paper, but you are free to make it wider for your computer display or wide-format printing, smaller fonts, etc.
+---
 
-## Installation
+# Installation
 
 ### Prerequisites
 
@@ -27,34 +39,29 @@ You must have a working Python programming language environment installed (from 
 
 ### Procedure
 
+It is highly recommended to install gtrsnipe within a python virtual environment.
+
 ```
 git clone https://github.com/scottvr/gtrsnipe
 cd gtrsnipe
 python -mvenv .venv
 ```
+Activate the environment:
 
-on Windows:
+on Windows: `.venv\Scripts\activate`
+on MacOS/Linux: `. .venv/bin/activate`
 
-```
-.venv\Scripts\activate
-```
-
-or in bash:
+Then, install the project and its dependencies:
 
 ```
-. .venv/bin/activate
+pip install -e .
 ```
 
-Then, 
+## Usage 
 
-```
-pip install .
-```
+The installation process makes gtrsnipe available as a command within your activgated virtual environment.
 
-
-## Basic Usage Help
-
-The installation process makes gtrsnipe available as a command within your venv.
+### Command-line help
 
 ```
 usage: gtrsnipe [-h] [--nudge NUDGE] [-y] [--track TRACK]
@@ -66,57 +73,80 @@ usage: gtrsnipe [-h] [--nudge NUDGE] [-y] [--track TRACK]
                 [--tuning {STANDARD, E_FLAT, DROP_D, ... ]
                 [--max-fret MAX_FRET]
                 input_file output_file
-
-Convert music files between binary MIDI .mid and ASCII .tab .vex, and .abc notation formats, in any direction.
-
-positional arguments:
-  input_file          Path to the input music file
-  output_file         Path to save the output music file
-
-options:
-  -h, --help            show this help message and exit
-  --nudge NUDGE         An integer to shift the transcription's start time to
-                        the right. Each unit corresponds to roughly a 16th
-                        note.
-  -y, --yes             Automatically overwrite the output file if it already exists.
-  --track TRACK         The track number (1-based) to select from a multi-
-                        track MIDI file. If not set, all tracks are processed.
-                        For a multitrack midi, you will want to select a
-                        single instrument track to transcribe.
-  --analyze             Analyze the input MIDI file to find its pitch range
-                        and suggest suitable tunings, then exit.  
-  --constrain-pitch     Constrain notes to the playable range of the tuning
-                        specified by --tuning.  
-  --pitch-mode {drop,normalize}
-                        Used with --constrain-pitch. ‘drop’ (default) discards
-                        out-of-range notes; ‘normalize’ transposes them by
-                        octaves until they fit.  
-
-  --transpose TRANSPOSE
-                        Transpose the music up or down by N semitones (e.g., 2
-                        for up, -3 for down).
-  --no-articulations    Transcribe with no legato, taps, hammer-ons, pull-
-                        offs, etc.
-  --staccato            Do not extend note durations to the start of the next note for a sustained feel,
-                        instead giving each note an 1/8 note duration. When converting *from* ASCII tab.
-  --max-line-width MAX_LINE_WIDTH
-                        Max number of vertical columns per line of ASCII tab.
-                        (default: 40)
-  --bass                Enable bass mode. Automatically uses bass tuning and a
-                        4-string staff.
-  --num-strings {4,5,6,7}
-                        Force the number of strings on the tab staff (4, 5, 6,
-                        or 7). Defaults to 4 for bass and 6 for guitar.
-  --single-string {1,2,3,4,5,6}
-                      Force all notes onto a single string (1-6, high e to low E). Ideal for transcribing legato/tapping runs.
-  --debug             Enable detailed debug logging messages.
-
-Tuning Information:
-  --list-tunings        List all available tuning names and exit.
-  --show-tuning TUNING_NAME
-                        Show the notes for a specific tuning and exit.
-
 ```
+
+### Key arguments
+
+**I/O Arguments**
+- `-i, --input FILE`: Required. Path to the input file (.mp3, .wav, .mid, etc.).
+- `-o, --output FILE`: Required. Path to save the output file (.tab, .mid, etc.).
+- `-y, --yes`: Automatically overwrite the output file if it already exists.
+
+**Audio Pipeline Arguments**
+- `--stem`: Step 1: Enables source separation (Demucs) to isolate an instrument stem.
+- `--nr`: Step 2: Enables noise/reverb reduction on the audio stem.
+- `--p2m`: Step 3: Enables pitch-to-MIDI conversion on the audio stem.
+- `--stem-name {guitar,bass,drums,vocals,other}`: The instrument stem to isolate with Demucs. 'guitar' defaults to the 'other' stem, which is often where guitars are found in a mix.
+- `--demucs-model MODEL_NAME`: The Demucs model to use for separation (e.g., htdemucs, htdemucs_ft). See below for a full list.
+
+
+**General Converstion Options**
+- `--track TRACK`: The track number (1-based) to select from a multi-track MIDI file.
+- `--transpose N`: Transpose the music up or down by N semitones.
+- `--no-articulations`: Transcribe with no legato, taps, hammer-ons, etc.
+- `--bass`: A shortcut for bass mode. Automatically uses bass tuning and a 4-string staff.
+- `--tuning TUNING_NAME`: Specify the guitar tuning (e.g., DROP_D, E_FLAT). Use `--list-tunings` to see all available options and `--show-tuning TUNING_NAME` to see a specific tuning (mostly useful for automation/scripting)
+
+
+## Usage Examples
+
+**Full audio-to-tab transcription**
+
+Run the complete pipeline on a mixed audio file to generate a tab tuned to Drop D.
+
+`gtrsnipe -i x:\S.O.D.mp3 -o march_of_the_S.O.D.tab --bass --stem --stem-name bass --p2m --tuning DROP_D  -y`
+
+**Audio-to-MIDI only**
+
+Extract the guitar part from a song and save it as a MIDI file, stopping the pipeline there.
+
+`gtrsnipe -i "another_song.wav" -o "guitar_part.mid" --stem --p2m`
+
+**Transcribing from Clean Audio**
+
+If you already have a clean, isolated guitar track, you can skip the demucs and noise reduction steps.
+
+`gtrsnipe -i "my_clean_riff.wav" -o "my_riff.tab" --p2m`
+
+**MIDI-to-Tab (Classic V1 Functionality)**
+
+`gtrsnipe -i "MrCrowley.mid" -o "mrcrowley.tab" --track 5`
+
+## Advanced Usage: Mapper & Demucs Tuning
+
+The real power of gtrsnipe comes from its customizability. You can fine-tune the fretboard mapping algorithm and the audio separation models to get the perfect transcription.
+
+**Fretboard Mapper Tuning**
+
+These options tweak the algorithm that decides where to place notes on the virtual fretboard.
+
+- `--sweet-spot-low N / --sweet-spot-high N`: Defines the fret range that is preferred, giving it a score bonus. Useful for forcing a transcription into a specific position on the neck.
+- `--string-switch-penalty N`: Sets the "cost" of moving between strings. Lower this for pieces with lots of string-hopping.
+- `--quantization-resolution N`: Crucial for audio transcription. Snaps notes to a time grid. A coarser value (e.g., 0.25) can clean up messy chords from a raw performance, while a finer value (e.g., 0.125) preserves fast, distinct notes.
+- `--prefer-open`: Toggles a preference for using open strings over their fretted equivalents.
+- ...and many more. Use `gtrsnipe -h` to see the full list of detailed penalties and thresholds.
+
+**Demucs Model Selection** `(--demucs-model)`
+
+Demucs is a state-of-the-art music source separation model. Several models are available, each with specific characteristics. Choosing the right one can significantly improve the quality of the isolated audio stem.
+
+- **htdemucs**: The default Hybrid Transformer Demucs model. A great all-rounder.
+- **htdemucs_ft**: A version of htdemucs fine-tuned on extra data. May offer better quality at the cost of speed.
+- **htdemucs_6s**: A 6-source version that can additionally attempt to separate piano and guitar, though quality may vary.
+- **hdemucs_mmi**: The v3 Hybrid Demucs model, retrained on more data.
+- **mdx / mdx_extra**: Models known for high performance, trained on the MusDB HQ dataset.
+- **mdx_q / mdx_extra_q**: Quantized (smaller, faster) versions of the mdx models, which may have slightly reduced quality.
+
 
 ### Current Supported Tunings
 
@@ -144,7 +174,7 @@ Available Tunings:
 - BARITONE_C            : C4 G3 Eb3 Bb2 F2 C2
 ```
 
-### Usage Examples  
+### More Detailed (V1) Usage Examples  
 
 Transcribing this organ intro for my classical guitar, where the "sweet spot" is lower on the neck:
 
@@ -255,8 +285,8 @@ Mapper Tuning/Configuration (Advanced):
   --unplayable-fret-span UNPLAYABLE_FRET_SPAN
                         Fret span considered unplayable (default: 4).
   --sweet-spot-bonus SWEET_SPOT_BONUS
-                        Bonus for playing in the ideal lower fret range.
-  --sweet-spot-low SWEET_SPOT_LOW
+                        Bonus for playing in the ideal lower fret range. (default 0.5)
+sweet-spot-low SWEET_SPOT_LOW
                         Lowest fret of the "sweet spot" (default 0 - open)
   --sweet-spot-high SWEET_SPOT_HIGH
                         Highest fret of the "sweet spot" (default 12)

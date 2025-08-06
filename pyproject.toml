@@ -21,6 +21,11 @@ classifiers = [
 dependencies = [
     "MIDIFile",
     "midiutil",
+    "demucs",
+    "basic-pitch",
+    "noisereduce",
+    "librosa",
+    "soundfile",
 ]
 
 [project.scripts]
