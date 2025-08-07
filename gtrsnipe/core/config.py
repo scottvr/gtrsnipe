@@ -44,3 +44,9 @@ class MapperConfig:
 
     # Monophonic mode
     mono_lowest_only: bool = False
+
+    # Let Ring preference
+    let_ring_bonus: float = 0.0 # also breaks up repetitive fretting of same note on same position, which can be easier to play
+
+    # Diagonal fret span check
+    count_fret_span_across_neighbors: bool = False
