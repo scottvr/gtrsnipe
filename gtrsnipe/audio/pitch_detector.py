@@ -12,7 +12,8 @@ bp_logger.setLevel(logging.INFO)
 
 logger = logging.getLogger(__name__)
 
-def transcribe_to_midi(audio_file: str, overwrite: bool = False, 
+def transcribe_to_midi(audio_file: str, 
+                       overwrite: bool = False, 
                        min_freq: float | None = None, 
                        max_freq: float | None = None,
                        melodia_trick: bool = False,
@@ -35,18 +36,17 @@ def transcribe_to_midi(audio_file: str, overwrite: bool = False,
     logger.info("[PIPELINE] Step 3: Transcribing audio to MIDI with Basic-Pitch...")
     logger.info("This may take a moment...")
 
-    # Define the output path for the MIDI file
     p = Path(audio_file)
-    output_path = p.with_suffix(".mid")
-    generated_file = output_path.with_name(f"{p.stem}_basic_pitch.mid")
+    output_path = p.with_name(f"{p.stem}_basic_pitch.mid")
 
     if melodia_trick:
         logger.info("--- Using melodia_trick ---")
-    if not output_path or overwrite:
-        # The predict_and_save function from Basic-Pitch handles the entire process:
-        # 1. Loads the pre-trained model.
-        # 2. Runs inference on the audio file.
-        # 3. Saves the output to the specified MIDI file path.
+    
+    if not output_path.exists() or overwrite:
+        if output_path.exists() and overwrite:
+            logger.info(f"Overwrite enabled. Removing existing intermediate file: {output_path}")
+            output_path.unlink()
+
         predict_and_save(
             audio_path_list=[audio_file],
             model_or_model_path=ICASSP_2022_MODEL_PATH,
@@ -62,17 +62,6 @@ def transcribe_to_midi(audio_file: str, overwrite: bool = False,
             minimum_note_length=(min_note_len_ms / 1000),
             melodia_trick = melodia_trick
         )
-
-
-        # Before renaming, check if the destination file exists and remove it if overwrite is True.
-        if output_path.exists() and overwrite:
-            logger.info(f"Overwrite enabled. Removing existing file: {output_path}")
-            output_path.unlink()
-
-        if generated_file.exists():
-            generated_file.rename(output_path)
-        else:
-            raise FileNotFoundError(f"Basic-Pitch did not produce the expected output file: {generated_file}")
 
         logger.info(f"--- MIDI transcription successfully generated: {output_path} ---")
     else:
