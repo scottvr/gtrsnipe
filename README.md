@@ -4,7 +4,7 @@
 ## V0.1.1
 Convert to and from .mid, .abc, .vex, and .tab files. 
 
-## V0.2.0]
+## V0.2.0
 Transcribe music for guitar, capable of converting audio files (.mp3, .wav), MIDI (.mid), and various text-based formats (.tab, .vex, .abc) into high-quality ASCII tablature. [Read about the current state of these new features](https://github.com/scottvr/gtrsnipe/wiki/v0.2.0)
 
 ### What?
@@ -256,3 +256,4 @@ Available Tunings:
 # Other Examples
 
 [All other examples and detailed usage information has been moved to the Wiki](https://github.com/scottvr/gtrsnipe/wiki)
+
