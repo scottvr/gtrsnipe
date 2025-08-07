@@ -50,7 +50,6 @@ def setup_parser() -> ArgumentParser:
     )
 
     pipeline_group = parser.add_argument_group('Audio-to-MIDI Pipeline Options')
-    pipeline_group.add_argument('--stem', action='store_true', help='Step 1: Enables source separation (Demucs) to isolate a guitar stem.')
     pipeline_group.add_argument('--nr', action='store_true', help='Step 2: Enables noise/reverb reduction on the audio stem.')
     pipeline_group.add_argument(
         '--remove-fx',
@@ -58,17 +57,17 @@ def setup_parser() -> ArgumentParser:
         help="Pre-process audio with a distortion recovery model before pitch detection."
     )
     pipeline_group.add_argument(
-        '--stem-name', 
+        '--stem-track', 
         type=str, 
-        default='guitar',
-        choices=['guitar', 'bass', 'drums', 'vocals', 'other'],
+        default=None,
+        choices=['guitar', 'bass', 'drums', 'vocals', 'piano', 'other'],
         help="The instrument stem to isolate with Demucs. 'guitar' defaults to the 'other' stem."
     )
     pipeline_group.add_argument(
         '--demucs-model',
         type=str,
         default='htdemucs_6s',
-        help="The demucs model to use for separation (e.g., htdemucs, htdemucs_ft)."
+        help="The demucs model to use for separation (e.g., htdemucs, htdemucs_fti, htdemucs_6s, mdx_extra)."
     )
     pipeline_group.add_argument(
         '--constrain-frequency',
@@ -113,7 +112,7 @@ def setup_parser() -> ArgumentParser:
     pipeline_group.add_argument(
         '--melodia-trick',
         action='store_true',
-        help="Basic-Pitch's minimum note length in milliseconds to keep."
+        help="Enable Basic-Pitch's 'melodia trick'; whatever that is."
     )
 
 
@@ -318,6 +317,17 @@ def setup_parser() -> ArgumentParser:
         type=float,
         default=0.0,
         help='Penalty applied to fingerings that use a barre/single finger (default: 0.0).'
+    )
+    mapper_group.add_argument(
+        '--let-ring-bonus',
+        type=float,
+        default=0.0,
+        help='Bonus awarded for fingerings that allow previous notes to ring out (default: 0.0).'
+    )
+    mapper_group.add_argument(
+        '--count-fret-span-across-neighbors',
+        action='store_true',
+        help='Penalize fingerings with an unplayable fret span between consecutive notes.'
     )
 
     return parser
