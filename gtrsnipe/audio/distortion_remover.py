@@ -141,7 +141,7 @@ class HiFiGanVocoder:
         logger.info(f"--- Resynthesized audio saved to: {output_path} ---")
         return str(output_path)
 
-def _run_denoiser(audio_file: str) -> Tuple[torch.Tensor, int]:
+def _run_denoiser(audio_file: str) -> Tuple[torch.Tensor | None, int | None]:
     logger.info("[Stage 1/2] Applying ONNX denoiser...")
     HOP_SIZE, FFT_SIZE, DENOISER_SR = 480, 960, 48000
 
@@ -150,7 +150,7 @@ def _run_denoiser(audio_file: str) -> Tuple[torch.Tensor, int]:
         ort_session = ort.InferenceSession(DENOISER_MODEL_PATH, sess_options, providers=["CPUExecutionProvider"])
     except Exception as e:
         logger.error(f"Failed to load ONNX model at '{DENOISER_MODEL_PATH}'. Error: {e}")
-        return audio_file
+        return None, None
 
     ort_session = ort.InferenceSession(str(DENOISER_MODEL_PATH), providers=["CPUExecutionProvider"]) 
     input_audio, sr = torchaudio.load(audio_file)
@@ -185,16 +185,17 @@ def _run_denoiser(audio_file: str) -> Tuple[torch.Tensor, int]:
 
     
 def remove_distortion_effects(audio_file: str) -> str:
-    """
-    Applies a two-stage process to remove distortion from an audio file.
-    """
-    # Stage 1: Create a cleaner waveform using the denoiser
+    """Applies a two-stage process to remove distortion from an audio file."""
+    # Stage 1: Get the clean audio tensor and its sample rate
     denoised_tensor, denoised_sr = _run_denoiser(audio_file)
     
-    # Stage 2: Initialize the vocoder and use it to polish the result
+    if denoised_tensor is None or denoised_sr is None:
+        logger.error("Denoising failed. Skipping distortion removal.")
+        return audio_file # Return the original file to continue the pipeline
+
+    # Stage 2: Initialize the vocoder and synthesize from the in-memory tensor
     vocoder = HiFiGanVocoder()
     output_dir = Path(audio_file).parent
     final_file = vocoder.synthesize_from_tensor(denoised_tensor, denoised_sr, output_dir)
     
     return final_file
-
