@@ -4,7 +4,7 @@ import logging
 from ...core.types import MusicalEvent, Song, Track, TimeSignature
 
 logger = logging.getLogger(__name__)
-class midiGenerator:
+class MidiGenerator:
     """
     Generates a MIDIFile object from a format-agnostic Song object.
     """

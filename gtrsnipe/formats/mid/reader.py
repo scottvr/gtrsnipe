@@ -34,7 +34,6 @@ class MidiReader:
             logger.info("--- Attempting to parse with primary library (py-midi)... ---")
             return MidiReader._parse_with_py_midi(midi_path, track_number_to_select)
         except Exception as e:
-            # This block no longer exits, it logs a warning and proceeds to the fallback.
             logger.warning(
                 "The primary 'py-midi' parser failed. This can happen with rare or unusual MIDI files, "
                 "or if a sanity check fails."
@@ -49,7 +48,7 @@ class MidiReader:
                 logger.error("All MIDI parsers failed. The file may be corrupt or in an unsupported format.")
                 # Log the full traceback for debugging if needed
                 traceback.print_exc()
-                raise e_fallback # Re-raise the final exception
+                raise e_fallback 
 
     @staticmethod
     def _parse_with_py_midi(
@@ -208,7 +207,6 @@ class MidiReader:
         except Exception as e:
             raise IOError(f"Mido could not open or parse the file: {e}") from e
 
-        song.tempo = 120.0  # Default tempo
         song.time_signature = "4/4"
         ticks_per_beat = midi_file.ticks_per_beat
 
