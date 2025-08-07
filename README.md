@@ -9,7 +9,7 @@ Transcribe music for guitar, capable of converting audio files (.mp3, .wav), MID
 
 ### What?
 
-gtrsnipe is a versatile music transcription tool. Its primary function is to create playable guitar tablature from a variety of sources. It features a sophisticated audio-to-tab pipeline that can take a mixed audio track, isolate the guitar part, and transcribe it into a tab.
+gtrsnipe is a guitar transcription tool. Its primary function is to create playable guitar tablature from a variety of sources. It now features a fledgling audio-to-tab pipeline that can take a mixed audio track, isolate the guitar part, and transcribe it into a tab.
 
 It can also convert existing MIDI files into text-based notations or, in reverse, generate a playable MIDI file from a text-based tab.
 
@@ -254,4 +254,5 @@ Available Tunings:
 ```
 
 # Other Examples
+
 [All other examples and detailed usage information has been moved to the Wiki](https://github.com/scottvr/gtrsnipe/wiki)
