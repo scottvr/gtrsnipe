@@ -96,8 +96,7 @@ Instrument Options:
 **Audio Pipeline Arguments**
 - `--stem`: Step 1: Enables source separation (Demucs) to isolate an instrument stem.
 - `--nr`: Step 2: Enables noise/reverb reduction on the audio stem.
-- `--p2m`: Step 3: Enables pitch-to-MIDI conversion on the audio stem.
-- `--stem-name {guitar,bass,drums,vocals,other}`: The instrument stem to isolate with Demucs. 'guitar' defaults to the 'other' stem, which is often where guitars are found in a mix.
+- `--stem-track {guitar,bass,drums,vocals,other}`: The instrument stem to isolate with Demucs. 'guitar' defaults to the 'other' stem, which is often where guitars are found in a mix.
 - `--demucs-model MODEL_NAME`: The Demucs model to use for separation (e.g., htdemucs, htdemucs_ft). See below for a full list.
 
 
