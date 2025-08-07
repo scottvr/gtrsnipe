@@ -1,25 +1,37 @@
 # gtrsnipe 
 (pronounced "guttersnipe")
 
+## V0.1.1
 Convert to and from .mid, .abc, .vex, and .tab files. 
+
+## V0.2.0]
+Transcribe music for guitar, capable of converting audio files (.mp3, .wav), MIDI (.mid), and various text-based formats (.tab, .vex, .abc) into high-quality ASCII tablature. [Read about the current state of these new features](https://github.com/scottvr/gtrsnipe/wiki/v0.2.0)
 
 ### What?
 
-**gtrsnipe** will convert MIDI (from a .mid file) into text-based transcriptions (ASCII tab, VexTab, and ABC notation) arranged for 6-string guitar.
+gtrsnipe is a versatile music transcription tool. Its primary function is to create playable guitar tablature from a variety of sources. It features a sophisticated audio-to-tab pipeline that can take a mixed audio track, isolate the guitar part, and transcribe it into a tab.
 
-**gtrsnipe** can also convert these text-based notations into a playable MIDI file from a .vex, .abc, or .tab file. Note that since standard ASCII .tab does not encode rhythmic information, **gtrsnipe** tries to infer an approximation of this based on the spacing between notes (and the number of `-` characters between fretted notes) and since tabs found in the wild are all over the place in this respect, YMMV. 
+It can also convert existing MIDI files into text-based notations or, in reverse, generate a playable MIDI file from a text-based tab.
 
-Note that to strike a balance between readability and compactness, **gtrsnipe** uses a logarithmic spacing algorithm when generating ASCII tabs from MIDI to try and encode as much of this information as possible given the format, so tabs that were originally created by **gtrsnipe** will often fare better in the final playback of a generated midi than ones posted to usenet in the 1990's, but of course if it was generated with gtrsnipe, you already had a mid, vex, or abc of the song which already had rhythmic information to start with so re-midifying from a gtrsnipe tab is kinda pointless, isn't it? 
+At its core, gtrsnipe uses an intelligent fretboard mapper that analyzes notes and chords to find comfortable and logical fingerings on the guitar neck. [This process is highly customizable](https://github.com/scottvr/gtrsnipe/wiki/1.-FretboardMapper-Algorithm-Configuration-and-Tunables), allowing you to fine-tune the output to match your personal playing style and preferences.
 
-By default **gtrsnipe** will try to infer hammer-on/pull-off performance technique articulations based on the timing of the notes. You can disable this (for straight-picking transcriptions) with `--no-articulations`. Additionally, there is a `--single-string` option for transcriptions that might be best represented on one string with taps/hammer-ons/pull-offs. Best for pieces/segments you know should be played in this manner.
+-----
+## The Audio-to-Tablature Pipeline
 
-**gtrsnipe** tries to intelligently find the best neck and fingering positions using a note to fretboard mapper and a scoring algorithm that is unavoidably shaped by my *subjective* opinions and skills as a player but it  does its best to avoid *objectively* impossible fingerings.
+For audio files, gtrsnipe uses a multi-stage pipeline to process the sound and transcribe the notes. Each stage can be enabled or disabled via command-line flags.
 
-The `--nudge` option exists because MIDI track start times can sometimes also be all over the place and is designed to help you make your ascii TAB more visually appealing, though not necessarily accurate in terms of how many "rest" measures there may be before the transcription begins. See example usage below.
+```mermaid
+flowchart TD
+    A["Audio File (.mp3, .wav)"] -->|"--stem-track"| B["Demucs Source Separation"]
+    B -->|"--nr,--remove-fx"| C["Noise & Reverb Reduction"]
+    C --> D["Basic-Pitch Transcription"]
+    D --> E{"GtrSnipe Core Mapper"}
+    E --> F["ASCII Tablature (.tab)"]
+```
 
-The parameter `--max-line-wdith` exists primarily to constrain a tab staff to a certain width suitable for printing on your medium of choice. The default is `40` which ensures a measure fits on standard portrait-orientation 8.5x11" paper, but you are free to make it wider for your computer display or wide-format printing, smaller fonts, etc.
+---
 
-## Installation
+# Installation
 
 ### Prerequisites
 
@@ -27,86 +39,193 @@ You must have a working Python programming language environment installed (from 
 
 ### Procedure
 
+It is highly recommended to install gtrsnipe within a python virtual environment.
+
 ```
 git clone https://github.com/scottvr/gtrsnipe
 cd gtrsnipe
 python -mvenv .venv
 ```
+Activate the environment:
 
-on Windows:
+on Windows: `.venv\Scripts\activate`
+on MacOS/Linux: `. .venv/bin/activate`
 
-```
-.venv\Scripts\activate
-```
-
-or in bash:
+Then, install the project and its dependencies:
 
 ```
-. .venv/bin/activate
+pip install -e .
 ```
 
-Then, 
+## Usage 
+
+The installation process makes gtrsnipe available as a command within your activgated virtual environment.
+
+### Command-line help
 
 ```
-pip install .
+uusage: gtrsnipe [-h] [-i INPUT] [-o OUTPUT] [--capo CAPO]
+                [--tuning {STANDARD,E_FLAT,DROP_D,OPEN_G,BASS_STANDARD,BASS_DROP_D,BASS_E_FLAT,SEVEN_STRING_STANDARD,BARITONE_B,BARITONE_A,BARITONE_C,C_SHARP,OPEN_C6,DROP_C,PIANO}]
+                [--bass] [--num-strings {4,5,6,7}] [--max-fret MAX_FRET] [--mono-lowest-only] [--nr] [--remove-fx]
+                [--stem-track {guitar,bass,drums,vocals,piano,other}] [--demucs-model DEMUCS_MODEL] [--constrain-frequency]
+                [--min-note-override MIN_NOTE_OVERRIDE] [--max-note-override MAX_NOTE_OVERRIDE] [--low-pass-filter] [--onset-threshold ONSET_THRESHOLD]
+                [--frame-threshold FRAME_THRESHOLD] [--min-note-len-ms MIN_NOTE_LEN_MS] [--melodia-trick] [--nudge NUDGE] [-y] [--track TRACK] [--analyze]
+                [--transpose TRANSPOSE] [--no-articulations] [--staccato] [--max-line-width MAX_LINE_WIDTH] [--single-string {1,2,3,4,5,6}] [--constrain-pitch]    
+                [--pitch-mode {drop,normalize}] [--debug] [--list-tunings] [--show-tuning TUNING_NAME] [--fret-span-penalty FRET_SPAN_PENALTY]
+                [--movement-penalty MOVEMENT_PENALTY] [--string-switch-penalty STRING_SWITCH_PENALTY] [--high-fret-penalty HIGH_FRET_PENALTY]
+                [--low-string-high-fret-multiplier LOW_STRING_HIGH_FRET_MULTIPLIER] [--unplayable-fret-span UNPLAYABLE_FRET_SPAN]
+                [--sweet-spot-bonus SWEET_SPOT_BONUS] [--sweet-spot-low SWEET_SPOT_LOW] [--sweet-spot-high SWEET_SPOT_HIGH] [--ignore-open]
+                [--legato-time-threshold LEGATO_TIME_THRESHOLD] [--tapping-run-threshold TAPPING_RUN_THRESHOLD] [--pre-quantize] [--dedupe]
+                [--quantization-resolution {0.0125,0.0625,0.125,0.25,0.5,1.0}] [--prefer-open] [--fretted-open-penalty FRETTED_OPEN_PENALTY]
+                [--barre-bonus BARRE_BONUS] [--barre-penalty BARRE_PENALTY] [--let-ring-bonus LET_RING_BONUS] [--count-fret-span-across-neighbors]
+
 ```
 
+**options:**
+-   `-h, --help`            show this help message and exit
+-  `-i INPUT, --input INPUT`
+                        Path to the input file (.mid, .mp3, .wav, etc.).
+-  `-o OUTPUT, --output OUTPUT`
+                        Path to the output file (.tab, .mid, etc.).
+-  `--nudge NUDGE`         An integer to shift the transcription's start time to the right. Each unit corresponds to roughly a 16th note.
+-  `-y, --yes`             Automatically overwrite the output file if it already exists.
+-  `--track TRACK`         The track number (1-based) to select from a multi-track MIDI file. If not set, all tracks are processed. For a multitrack midi, you will   
+                        want to select a single instrument track to transcribe.
+-  `--analyze`             Analyze the input MIDI file to find the pitch range and suggest suitable tunings, then exit.
+-  `--transpose TRANSPOSE`
+                        Transpose the music up or down by N semitones (e.g., 2 for up, -3 for down).
+-  `--no-articulations`    Transcribe with no legato, taps, hammer-ons, pull-offs, etc.
+-  `--staccato`            Do not extend note durations to the start of the next note, instead giving each note an 1/8 note duration. When converting from ASCII      
+                        tab.
+-  `--max-line-width MAX_LINE_WIDTH`
+                        Max number of vertical columns per line of ASCII tab. (default: 40)
+-  `--single-string {1,2,3,4,5,6}`
+                        Force all notes onto a single string (1-6, high e to low E). Ideal for transcribing legato/tapping runs.
+-  `--constrain-pitch`     Constrain notes to the playable range of the tuning specified by --tuning.
+-  `--pitch-mode {drop,normalize}`
+                        Used with --constrain-pitch. 'drop' (default) discards out-of-range notes. 'normalize' transposes out-of-range notes by octaves until      
+                        they fit.
+-  `--debug`               Enable detailed debug logging messages.
 
-## Basic Usage Help
 
-The installation process makes gtrsnipe available as a command within your venv.
+**Audio-to-MIDI Pipeline Options:**
+-  `--nr`                  Step 2: Enables noise/reverb reduction on the audio stem.
+-  `--remove-fx`           Pre-process audio with a distortion recovery model before pitch detection.
+-  `--stem-track {guitar,bass,drums,vocals,piano,other}`
+                        The instrument stem to isolate with Demucs. 'guitar' defaults to the 'other' stem.
+-  `--demucs-model DEMUCS_MODEL`
+                        The demucs model to use for separation (e.g., htdemucs, htdemucs_fti, htdemucs_6s, mdx_extra).
+-  `--constrain-frequency`
+                        Constrain pitch detection to the frequency range of the selected tuning.
+-  `--low-pass-filter`     Apply a low-pass filter to the audio stem based on the instrument's max frequency.
+-  `--onset-threshold ONSET_THRESHOLD`
+                        Basic-Pitch model's note onset threshold (0.0 to 1.0).
+-  `--frame-threshold FRAME_THRESHOLD`
+                        Basic-Pitch model's note frame threshold (0.0 to 1.0).
+-  `--min-note-len-ms MIN_NOTE_LEN_MS`
+                        Basic-Pitch's minimum note length in milliseconds to keep.
+-  `--melodia-trick`       Enable Basic-Pitch's 'melodia trick'; whatever that is.
 
-```
-usage: gtrsnipe [-h] [--nudge NUDGE] [-y] [--track TRACK]
-                [--transpose TRANSPOSE] [--no-articulations] [--staccato]
-                [--max-line-width MAX_LINE_WIDTH] [--bass]
-                [--num-strings {4,5,6,7}] [--single-string {1,2,3,4,5,6}]
-                [--debug] [--list-tunings] [--show-tuning TUNING_NAME]
-                [--tuning {STANDARD, E_FLAT, DROP_D, ... ]
-                [--max-fret MAX_FRET]
-                input_file output_file
-
-Convert music files between binary MIDI .mid and ASCII .tab .vex, and .abc notation formats, in any direction.
-
-positional arguments:
-  input_file          Path to the input music file
-  output_file         Path to save the output music file
-
-options:
-  -h, --help            show this help message and exit
-  --nudge NUDGE         An integer to shift the transcription's start time to
-                        the right. Each unit corresponds to roughly a 16th
-                        note.
-  -y, --yes             Automatically overwrite the output file if it already exists.
-  --track TRACK         The track number (1-based) to select from a multi-
-                        track MIDI file. If not set, all tracks are processed.
-                        For a multitrack midi, you will want to select a
-                        single instrument track to transcribe.
-  --transpose TRANSPOSE
-                        Transpose the music up or down by N semitones (e.g., 2
-                        for up, -3 for down).
-  --no-articulations    Transcribe with no legato, taps, hammer-ons, pull-
-                        offs, etc.
-  --staccato            Do not extend note durations to the start of the next note for a sustained feel,
-                        instead giving each note an 1/8 note duration. When converting *from* ASCII tab.
-  --max-line-width MAX_LINE_WIDTH
-                        Max number of vertical columns per line of ASCII tab.
-                        (default: 40)
-  --bass                Enable bass mode. Automatically uses bass tuning and a
-                        4-string staff.
-  --num-strings {4,5,6,7}
-                        Force the number of strings on the tab staff (4, 5, 6,
-                        or 7). Defaults to 4 for bass and 6 for guitar.
-  --single-string {1,2,3,4,5,6}
-                      Force all notes onto a single string (1-6, high e to low E). Ideal for transcribing legato/tapping runs.
-  --debug             Enable detailed debug logging messages.
-
-Tuning Information:
-  --list-tunings        List all available tuning names and exit.
-  --show-tuning TUNING_NAME
+**Tuning Information:**
+-  `--list-tunings`        List all available tuning names and exit.
+-  `--show-tuning TUNING_NAME`
                         Show the notes for a specific tuning and exit.
 
-```
+**Mapper Tuning/Configuration (Advanced):**
+-  `--fret-span-penalty FRET_SPAN_PENALTY`
+                        Penalty for wide fret stretches (default: 100.0).
+-  `--movement-penalty MOVEMENT_PENALTY`
+                        Penalty for hand movement between chords (default: 3.0).
+-  `--string-switch-penalty STRING_SWITCH_PENALTY`
+                        Penalty for switching strings (default: 5.0).
+-  `--high-fret-penalty HIGH_FRET_PENALTY`
+                        Penalty for playing high on the neck (default: 5).
+-  `--low-string-high-fret-multiplier LOW_STRING_HIGH_FRET_MULTIPLIER`
+                        Multiplier penalty for playing high on the neck on low strings (default: 10).
+-  `--unplayable-fret-span UNPLAYABLE_FRET_SPAN`
+                        Fret span considered unplayable (default: 4).
+-  `--sweet-spot-bonus SWEET_SPOT_BONUS`
+                        Bonus for playing in the ideal lower fret range.
+-  `--sweet-spot-low SWEET_SPOT_LOW`
+                        Lowest fret of the "sweet spot" (default 0 - open)
+-  `--sweet-spot-high SWEET_SPOT_HIGH`
+                        Highest fret of the "sweet spot" (default 12)
+-  `--ignore-open`         Don't consider open when calculating shape score.
+-  `--legato-time-threshold LEGATO_TIME_THRESHOLD`
+                        Max time in beats between notes for a legato phrase (h/p) (default: 0.5).
+-  `--tapping-run-threshold TAPPING_RUN_THRESHOLD`
+                        Min number of notes in a run to be considered for tapping (default: 2).
+-  `--pre-quantize`        Force a pre-quantization pass, snapping all notes to the quantization grid before mapping.
+-  `--dedupe`              Enable de-duplication of notes with the same pitch within a chord. Useful for cleaning up MIDI from non-guitar sources.
+-  `--quantization-resolution {0.0125,0.0625,0.125,0.25,0.5,1.0}`
+                        Quantization resolution. Used by the mapper to determine simultaneous sounding of notes (chords) and by the ascii tab generator mainly     
+                        for spacing purposes.
+-  `--prefer-open`         Prefer open strings over their fretted equivalents (e.g., open B over G-string fret 4).
+-  `--fretted-open-penalty FRETTED_OPEN_PENALTY`
+                        The penalty score applied to fretted notes that could be open strings (default: 20.0).
+-  `--barre-bonus BARRE_BONUS`
+                        Bonus awarded to fingerings that use a barre/single finger (default: 0.0).
+-  `--barre-penalty BARRE_PENALTY`
+                        Penalty applied to fingerings that use a barre/single finger (default: 0.0).
+-  `--let-ring-bonus LET_RING_BONUS`
+                        Bonus awarded for fingerings that allow previous notes to ring out (default: 0.0).
+-  `--count-fret-span-across-neighbors`
+                        Penalize fingerings with an unplayable fret span between consecutive notes.
+
+**Instrument Options**
+-   `--capo CAPO`           Specify a capo position. All fret numbers will be relative to the capo.
+-   `--tuning {STANDARD,E_FLAT,DROP_D,OPEN_G,BASS_STANDARD,BASS_DROP_D,BASS_E_FLAT,SEVEN_STRING_STANDARD,BARITONE_B,BARITONE_A,BARITONE_C,C_SHARP,OPEN_C6,DROP_C,PIANO}`
+                        Specify the guitar tuning or "PIANO" for full-range midi passthrough. (default: STANDARD).
+-   `--bass`                Enable bass mode. Automatically uses bass tuning and a 4-string staff.
+-   `--num-strings {4,5,6,7}`
+                        Force the number of strings on the tab staff (4, 5, 6, or 7). Defaults to 4 for bass and 6 for guitar.
+-   `--max-fret MAX_FRET`   Maximum fret number on the virtual guitar neck (default: 24).
+-   `--mono-lowest-only`    Force monophonic output by keeping only the lowest note in any chord.
+-   `--min-note-override MIN_NOTE_OVERRIDE`
+                        Override the calculated lowest note for frequency constraining (e.g., 'E2'). Requires --constrain-frequency.
+-   `--max-note-override MAX_NOTE_OVERRIDE`
+                        Override the calculated highest note for frequency constraining (e.g., 'E4'). Requires --constrain-frequency.
+
+
+## Usage Examples
+
+**Full audio-to-tab transcription**
+
+Run the complete pipeline on a mixed audio file to generate a tab tuned to Drop D.
+
+[]`gtrsnipe -i x:\S.O.D.mp3 -o march_of_the_S.O.D.tab --bass --stem --stem-name bass --p2m --tuning DROP_D  -y`](https://github.com/scottvr/gtrsnipe/wiki/v0.2.0)
+
+**Audio-to-MIDI only**
+
+Extract the guitar part from a song and save it as a MIDI file, stopping the pipeline there.
+
+`gtrsnipe -i "another_song.wav" -o "guitar_part.mid" --stem --p2m`
+
+**Transcribing from Clean Audio**
+
+If you already have a clean, isolated guitar track, you can skip the demucs and noise reduction steps.
+
+`gtrsnipe -i "my_clean_riff.wav" -o "my_riff.tab" --p2m`
+
+**MIDI-to-Tab (Classic V1 Functionality)**
+
+[]`gtrsnipe -i "MrCrowley.mid" -o "mrcrowley.tab" --track 5`](https://github.com/scottvr/gtrsnipe/wiki/2.-Example-%E2%80%90-Mr-Crowley-organ-intro)
+
+## Advanced Usage: Mapper & Demucs Tuning
+
+The real power of gtrsnipe comes from its customizability. You can fine-tune the fretboard mapping algorithm and the audio separation models to get the perfect transcription. [Detailed documentation with troubleshooting examples are being created in the wiki.](https://github.com/scottvr/gtrsnipe/wiki/FretboardMapper-Algorithm-Configuration-and-Tunables)
+
+**Demucs Model Selection** `(--demucs-model)`
+
+Demucs is a state-of-the-art music source separation model. Several models are available, each with specific characteristics. Choosing the right one can significantly improve the quality of the isolated audio stem.
+
+- **htdemucs**: The default Hybrid Transformer Demucs model. A great all-rounder.
+- **htdemucs_ft**: A version of htdemucs fine-tuned on extra data. May offer better quality at the cost of speed.
+- **htdemucs_6s**: A 6-source version that can additionally attempt to separate piano and guitar, though quality may vary.
+- **hdemucs_mmi**: The v3 Hybrid Demucs model, retrained on more data.
+- **mdx / mdx_extra**: Models known for high performance, trained on the MusDB HQ dataset.
+- **mdx_q / mdx_extra_q**: Quantized (smaller, faster) versions of the mdx models, which may have slightly reduced quality.
+
 
 ### Current Supported Tunings
 
@@ -134,504 +253,5 @@ Available Tunings:
 - BARITONE_C            : C4 G3 Eb3 Bb2 F2 C2
 ```
 
-### Usage Examples  
-
-Transcribing this organ intro for my classical guitar, where the "sweet spot" is lower on the neck:
-
-```
-$ gtrsnipe MrCrowleyOrganIntro.mid mrcrowley-organ.tab --track 5 --sweet-spot-high 8 --max-line-width 120
-Converting 'MrCrowleyOrganIntro.mid' (mid) to 'mrcrowley-organ.tab' (tab)...
---- Selecting track 5 of 7 ---
---- Chord-Aware Mapper initialized. ---
-Successfully saved to mrcrowley-organ.tab
-```
-
-That command extracts track 5 (the organ track) from a multi-track MIDI file found on the Internet, prefers frets between open and 8th when mapping notes to frets, and outputs the measures up to 120 characters per line. Here's what the output looks like:
-
-```
-// Title: MrCrowley-OrganIntro
-// Tempo: 120.0 BPM
-// Time: 4/4
-// Tuning: STANDARD
-
-e|-------------------|-----------------------|--1----------------|--3--------------------|--5----------------|
-B|--6----------------|--5--------------------|--1----------------|--5--------------1---p0|--5----------------|
-G|--7----------------|--5--------------------|--2-----0---h2----4|--5--------------------|--5-----4---h5----7|
-D|--7---------------5|--7--------------7---p5|--3----------------|--5-----5--------------|--7----------------|
-A|--5-----7---h8-----|--7-----7--------------|--3----------------|--3---------3----------|--7----------------|
-E|-------------------|--5---------5----------|--1----------------|-----------------------|--5----------------|
-
-e|--7-------------|-------------1--|--3----1----0----1|--5-------------|----------------|-------------------|
-B|--8-------------|-------------1--|--3----1----0----1|--6-------------|--5-------------|--6----------------|
-G|--9-------------|--5-----7-------|------------------|--7-------------|--6-------------|--7----------------|
-D|--9----9--------|--7-----8----3--|--5----3----2----3|--7-------------|--------3---p2--|--7---------------5|
-A|--7---------7---|----------------|------------------|----------------|----------------|--5-----7---h8-----|
-E|----------------|--5-----6----1--|--3----1----0----1|--5-------------|----------------|-------------------|
-
-e|-----------------------|--1----------------|--3--------------------|--5----------------|--7-------------|
-B|--5--------------------|--1----------------|--5--------------1---p0|--5----------------|--8-------------|
-G|--5--------------------|--2-----0---h2----4|--5--------------------|--5-----4---h5----7|--9-------------|
-D|--7--------------7---p5|--3----------------|--5-----5--------------|--7----------------|--9----9--------|
-A|--7-----7--------------|--3----------------|--3---------3----------|--7----------------|--7---------7---|
-E|--5---------5----------|--1----------------|-----------------------|--5----------------|----------------|
-
-e|-------------1--|--3----1----0----1|--5-------------|----------------|
-B|-------------1--|--3----1----0----1|--6-------------|--5-------------|
-G|--5-----7-------|------------------|--7-------------|--6-------------|
-D|--7-----8----3--|--5----3----2----3|--7-------------|----------------|
-A|----------------|------------------|----------------|----------------|
-E|--5-----6----1--|--3----1----0----1|--5-------------|----------------|
-```
-
-When transcribing a bass part, pass the proper tuning and (optionally) the number of strings. Without these arguments, transcribing a bass part will work, but the mapper will transpose to guitar notes and display on six strings. You can simply pass the `--bass` option as a shortcut for 4-strings, standard bass tuning. Passing a --tuning BASS_* tuning will by default render your tab with four strings, but you can override this with `--num-strings 5`, for example.
-
-```
-$ gtrsnipe SmellsLikeTeenSpirit.mid --track 6 teenspirit-bass.tab --no-articulations --nudge 14 --tuning BASS_E_FLAT
-Converting 'SmellsLikeTeenSpirit.mid' (mid) to 'teenspirit-bass.tab' (tab)...
---- Selecting track 6 of 11 ---
---- Nudging all events forward by 3.5 beats ---
---- Chord-Aware Mapper initialized. ---
-Successfully saved to teenspirit-bass.tab
-
-$ cat teenspirit-bass.tab
-// Title: SmellsLikeTeenSpirit
-// Tempo: 120.0 BPM
-// Time: 4/4
-// Tuning (High to Low): Gb2 Db2 Ab1 Eb1
-
-G|----------------|----------------|----------------|----------------|----------------|----------------|
-D|----------------|----------------|----------------|----------------|----------------|----------------|
-A|----------------|----------------|----------------|----------------|----------------|----------------|
-E|----------------|----------------|----------------|----------------|----------------|----------------|
-
-G|---------------------------------|---------------------------------|---------------------------------|
-D|---------------------------------|---------------------------------|---------------------------------|
-A|------------------------2---2----|------------------------5---5----|------------------------2---2----|
-E|--2----2--2----2--2--2----------2|--5----5--5----5--5--5----------5|--2----2--2----2--2--2----------2|
-
-G|---------------------------------|---------------------------------|---------------------------------|
-D|---------------------------------|---------------------------------|---------------------------------|
-A|------------------------5---5----|------------------------2---2----|------------------------5---5----|
-E|--5----5--5----5--5--5----------5|--2----2--2----2--2--2----------2|--5----5--5----5--5--5----------5|
-
-G|---------------------------------|---------------------------------|-------------------------------|
-D|---------------------------------|---------------------------------|-------------------------------|
-A|------------------------2---2----|------------------------5---5----|------------------2---2---2---2|
-E|--2----2--2----2--2--2----------2|--5----5--5----5--5--5----------5|--2---2---2---2----------------|
-```
-
-## Advanced Usage: Fretboard Mapper Tuning
-
-The following options can be used to tweak the fretboard positioning/fingering algorithm:
-
-```
-Mapper Tuning/Configuration (Advanced):
-  --tuning {STANDARD,E_FLAT,DROP_D,OPEN_G,BASS_STANDARD,BASS_DROP_D,BASS_E_FLAT,SEVEN_STRING_STANDARD,SEVEN_STRING_DROP_A,BARITONE_B,BARITONE_A,OPEN_C,OPEN_C6}
-                        Specify the guitar tuning (default: STANDARD).
-  --max-fret MAX_FRET   Maximum fret number on the virtual guitar neck
-                        (default: 24).
-  --fret-span-penalty FRET_SPAN_PENALTY
-                        Penalty for wide fret stretches (default: 100.0).
-  --movement-penalty MOVEMENT_PENALTY
-                        Penalty for hand movement between chords (default:
-                        3.0).
-  --string-switch-penalty STRING_SWITCH_PENALTY
-                        Penalty for switching strings (default: 5.0).
-  --high-fret-penalty HIGH_FRET_PENALTY
-                        Penalty for playing high on the neck (default: 5).
-  --low-string-high-fret-multiplier LOW_STRING_HIGH_FRET_MULTIPLIER
-                        Multiplier penalty for playing high on the neck on low
-                        strings (default: 10).
-  --unplayable-fret-span UNPLAYABLE_FRET_SPAN
-                        Fret span considered unplayable (default: 4).
-  --sweet-spot-bonus SWEET_SPOT_BONUS
-                        Bonus for playing in the ideal lower fret range.
-  --sweet-spot-low SWEET_SPOT_LOW
-                        Lowest fret of the "sweet spot" (default 0 - open)
-  --sweet-spot-high SWEET_SPOT_HIGH
-                        Highest fret of the "sweet spot" (default 12)
-  --ignore-open         Don't consider open when calculating shape score.
-  --legato-time-threshold LEGATO_TIME_THRESHOLD
-                        Max time in beats between notes for a legato phrase
-                        (For h/p when infer articulation is enabled (default)) (default: 0.5).
-  --tapping-run-threshold TAPPING_RUN_THRESHOLD
-                        Min number of notes in a run to be considered for
-                        tapping (when infer articulation is enabled (default)) (default: 2).    
-```
-
-`--debug` can be used to show the scoring calculations to gain understanding of how your tweaks affect the results.
-
-### Effects of mapper tunables
-
-`--ignore-open` can make a surprising amount of difference without having to tweak scoring weights.
-Compare the first few measures of MrCrowley from earlier:
-
-Normal transcription:
-```
-e|-------------------|-----------------------|--1----------------|--3--------------------|--5----------------|
-B|--6----------------|--5--------------------|--1----------------|--5--------------1---p0|--5----------------|
-G|--7----------------|--5--------------------|--2-----0---h2----4|--5--------------------|--5-----4---h5----7|
-D|--7---------------5|--7--------------7---p5|--3----------------|--5-----5--------------|--7----------------|
-A|--5-----7---h8-----|--7-----7--------------|--3----------------|--3---------3----------|--7----------------|
-E|-------------------|--5---------5----------|--1----------------|-----------------------|--5----------------|
-```
-
-with `--ignore-open`:
-```
-e|--1----------------|--0--------------------|--1----------------|--3--------------------|--5----------------|
-B|--3----------------|--1--------------------|--1----------------|--5--------------1---p0|--5----------------|
-G|--2----------------|--2--------------2---p0|--2-----0---h2----4|--5--------------------|--5-----4---h5----7|
-D|--0-----2---h3----5|--2-----2--------------|--3----------------|--5-----5--------------|--7----------------|
-A|-------------------|--0---------0----------|--3----------------|--3---------3----------|--7----------------|
-E|-------------------|-----------------------|--1----------------|-----------------------|--5----------------|
-```
-
-
-If you know you want to play a piece in a certain position, tweak the "sweet spot". For example is a  transcription of a Bach Cello piece, Suite No. 1 in G major - BWV 1007 (Prelude), check out this section:
-
-```
-e|------------------------------------------------|
-B|------------------------------------------------|
-G|------------------------------------------------|
-D|--------4--6--7--4--------------4--6--7--4--1---|
-A|--0--4--------------4--2--0--4-----------------4|
-E|------------------------------------------------|
-
-e|------------------------------------------------|
-B|------------------------------------------------|
-G|------------------------------------------------|
-D|------------------------------------------------|
-A|--3--6--3--6--9--6--9--6--3--6--3--6--9--6--9--6|
-E|------------------------------------------------|
-
-e|------------------------------------------------|
-B|------------------------------------------------|
-G|------------------------------------------------|
-D|------------------------------------------------|
-A|--7--6--4--7--6--7--9--6--7--6--4--2--0---------|
-E|-----------------------------------------4--2--0|
-```
-
-The default scoring doesn't work perfectly for this piece, imo. To my ears and hands, there is too much playing on a single string, and on my classical guitar, those 3-6-9 fret spans are impossible for me to play comfortably. So, let's remove the penalty for switching strings and see what happens to that `3-6-3-6-9 ...` measure:
-
-```
-e|------------------------------------------------|
-B|------------------------------------------------|
-G|------------------------------------------------|
-D|--------------4-----4-----------------4-----4---|
-A|-----6-----6-----6-----6-----6-----6-----6-----6|
-E|--8-----8-----------------8-----8---------------|
-```
-
-OK, that's better; a little easier to fret, but it is bit high up on the neck for my taste. Let's try tweaking the default "sweet-spot" from the first 12 frets, to just the first four frets plus the open string.
-
-with `--sweet-spot-low 0`, `--sweet-spot-high 4`, and `--string-switch-penalty 0`,
-the measure comes out exactly how I would have transcribed it manually:
-```
-e|------------------------------------------------|
-B|------------------------------------------------|
-G|------------------------------------------------|
-D|-----1-----1--4--1--4--1-----1-----1--4--1--4--1|
-A|--3-----3-----------------3-----3---------------|
-E|------------------------------------------------|
-```
-
-Here is the full command-line use to get this full transcription:
-```
-$ gtrsnipe csx.mid csx.tab --string-switch-penalty 0 --no-articulations --sweet-spot-high 4 -y 
-$ cat ./csx.tab
-
-e|------------------------------------------------|
-B|------------------------------------------------|
-G|--------1-----1-----1-----------1-----1-----1---|
-D|-----------4-----------------------4------------|
-A|-----2-----------2-----2-----2-----------2-----2|
-E|--0-----------------------0---------------------|
-
-e|------------------------------------------------|
-B|------------------------------------------------|
-G|--------2--1--2-----2-----------2--1--2-----2---|
-D|------------------------------------------------|
-A|-----4-----------4-----4-----4-----------4-----4|
-E|--0-----------------------0---------------------|
-
-e|------------------------------------------------|
-B|------------------------------------------------|
-G|--------2--1--2-----2-----------2--1--2-----2---|
-D|-----1-----------1-----1-----1-----------1-----1|
-A|------------------------------------------------|
-E|--0-----------------------0---------------------|
-
-e|------------------------------------------------|
-B|------------------------------------------------|
-G|--------1-----1-----1-----------1-----1-----1---|
-D|-----2-----4-----2-----2-----2-----4-----2-----1|
-A|------------------------------------------------|
-E|--0-----------------------0---------------------|
-
-e|------------------------------------------------|
-B|------------------------------------------------|
-G|--------1-----1---------------------------------|
-D|-----------4-----2--1--2-----2--1--2------------|
-A|-----4--------------------4--------------2--1---|
-E|--0-----------------------------------4--------4|
-
-e|------------------------------------------------|
-B|------------------------------------------------|
-G|------------------------------------------------|
-D|-----2--4--2--4--2--4--2-----2--4--2--4--2--4--2|
-A|--1-----------------------1---------------------|
-E|------------------------------------------------|
-
-e|------------------------------------------------|
-B|------------------------------------------------|
-G|--------4--3--4---------------------------------|
-D|--1--4-----------4--2--4--1--4--2--4-----1------|
-A|--------------------------------------2-----4--2|
-E|------------------------------------------------|
-
-e|------------------------------------------------|
-B|------------------------------------------------|
-G|------------------------------------------------|
-D|--------2--1--2-----2-----------2--1--2-----2---|
-A|--4-----------------------4---------------------|
-E|-----4-----------4-----4-----4-----------4-----4|
-
-e|------------------------------------------------|
-B|------------------------------------------------|
-G|-----------------------------------4--3--1------|
-D|--------------------------2--1--------------4--2|
-A|--4--1--2--4--2--1--------------4---------------|
-E|--------------------4--2------------------------|
-
-e|------------------------------------------------|
-B|------------------------------------------------|
-G|-----------4-----4------------------------------|
-D|--1-----------4-----1--4--------1--4--2--1------|
-A|-----4--2-----------------2--4--------------4--2|
-E|------------------------------------------------|
-
-e|------------------------------------------------|
-B|------------------------------------------------|
-G|--------------------------1---------------------|
-D|--3-----0-----0-----3-----------0-----0-----3---|
-A|-----2-----4-----2-----2-----2-----4-----2-----2|
-E|------------------------------------------------|
-
-e|------------------------------------------------|
-B|------------------------------------------------|
-G|-----------1--2--------------------1--2---------|
-D|--------4--------4--------------4--------4--1---|
-A|--0--4--------------4--2--0--4-----------------4|
-E|------------------------------------------------|
-
-e|------------------------------------------------|
-B|------------------------------------------------|
-G|------------------------------------------------|
-D|-----1-----1--4--1--4--1-----1-----1--4--1--4--1|
-A|--3-----3-----------------3-----3---------------|
-E|------------------------------------------------|
-
-e|------------------------------------------------|
-B|------------------------------------------------|
-G|------------------------------------------------|
-D|--2--1-----2--1--2--4--1--2--1------------------|
-A|--------4-----------------------4--2--0---------|
-E|-----------------------------------------4--2--0|
-
-e|------------------------------------------------|
-B|------------------------------------------------|
-G|------------------------------------------------|
-D|--1-----------------------1---------------------|
-A|-----0--2--0--2--0--2--0-----0--2--0--2--0--2--0|
-E|------------------------------------------------|
-
-e|------------------------------------------------|
-B|------------------------------------------------|
-G|------------------------------------------------|
-D|--------0-----0-----0-----------0-----0-----0---|
-A|-----------4-----------------------4------------|
-E|--0--4-----------4-----4--0--4-----------4-----4|
-
-e|------------------------------------------------|
-B|------------------------------------------------|
-G|------------------------------------------------|
-D|------------------------------------------------|
-A|-----0--4--2--4--0--4--0-----0--4--2--4--0--4--0|
-E|--0-----------------------0---------------------|
-
-e|------------------------------------------------|
-B|------------------------------------------------|
-G|--------2--1--2-----2-----------2--1--2-----2---|
-D|-----1-----------1-----1-----1-----------1-----1|
-A|------------------------------------------------|
-E|--0-----------------------0---------------------|
-
-e|------------------------------------------------|
-B|------------------------------------------------|
-G|--------1-----1---------------------------------|
-D|-----------4-----2--1--------------------1------|
-A|-----2-----------------4--2--0--------------4--2|
-E|--0-----------------------------4--2--0---------|
-
-e|------------------------------------------------|
-B|------------------------------------------------|
-G|------------------------------------------------|
-D|-----------1--2-----1--2-----------1--2-----1--2|
-A|--1-----4--------4--------1-----4--------4------|
-E|-----2-----------------------2------------------|
-
-e|------------------------------------------------|
-B|------------------------------------------------|
-G|------------------------------------------------|
-D|--------------1--------1--------------1--------1|
-A|--0-----2--4-----2--4-----0-----2--4-----2--4---|
-E|-----2-----------------------2------------------|
-
-e|--------------------------------------------|
-B|--------------------------------------------|
-G|-----------------3--4-----------------------|
-D|-----------1--4-------------------------1--2|
-A|--0-----2----------------------0--2--4------|
-E|-----2-------------------2--4---------------|
-
-e|------------------------------------------------|
-B|------------------------------------------------|
-G|-----------------------1--2--------------1--2--4|
-D|--4--1--------1--2--4--------4--1--2--4---------|
-A|--------2--4------------------------------------|
-E|------------------------------------------------|
-
-e|------------------------------------------------|
-B|------------------------------------------------|
-G|--5--4--3--4--4--2--1--2--2---------------------|
-D|-----------------------------4--1---------------|
-A|-----------------------------------4--2--------0|
-E|-----------------------------------------2--4---|
-
-e|------------------------------------------------|
-B|------------------------------------------------|
-G|-----------------1--2-----1---------------------|
-D|-----------1--4--------4-----2------------------|
-A|--2-----2-----------------------2--0------------|
-E|-----2--------------------------------4--0--2--4|
-
-e|------------------------------------------------|
-B|------------------------------------------------|
-G|--------------------1-----3--1------------------|
-D|--------------2--4-----2--------4--5--5--4--3--4|
-A|--2--------2------------------------------------|
-E|-----0--4---------------------------------------|
-
-e|------------------------------------------------|
-B|------------------------------------------------|
-G|-----------------------------------------3--4--3|
-D|--4--2--1--2--2--------------------2--4---------|
-A|-----------------4--1--------1--4---------------|
-E|-----------------------4--2---------------------|
-
-e|------------------------------------------------|
-B|------------------------------------------------|
-G|--4---------------------------------------------|
-D|-----4--1-----1--4-----1--------------------1---|
-A|-----------4--------2--------2--1--------------4|
-E|--------------------------2--------4--2--0------|
-
-e|----------------------------------------------|
-B|----------------------------------------------|
-G|------2--1-----------------2--1---------------|
-D|------------4--2--1--------------4--2--1------|
-A|--2------------------4--2-----------------4--2|
-E|----------------------------------------------|
-
-e|------------------------------------------------|
-B|------------------------------------------------|
-G|-----1------------------------------------------|
-D|--------4--2--1--------------4--2--1------------|
-A|--0--------------4--2--0--------------4--2--0---|
-E|--------------------------4--------------------4|
-
-e|------------------------------------------------|
-B|------------------------------------------------|
-G|------------------------------------------------|
-D|-----2--1-----1--4-----4-----4--1--4--2--4-----4|
-A|-----------4--------2-----4-----------------4---|
-E|--2---------------------------------------------|
-
-e|------------------------------------------------|
-B|------------------------------------------------|
-G|------------------------------------------------|
-D|--1--4-----4--2--4-----4--1--4-----4--2--4-----4|
-A|--------2-----------4-----------2-----------4---|
-E|------------------------------------------------|
-
-e|------------------------------------------------|
-B|------------------------------------------------|
-G|--------------------------------------1---------|
-D|--1--4-----4-----4--1--4--2--4--4--4-----4-----4|
-A|--------2-----4-----------------------------2---|
-E|------------------------------------------------|
-
-e|------------------------------------------------|
-B|------------------------------------------------|
-G|--------1-----2-----------1-----2-----4-----1---|
-D|--4--4-----4-----4-----4-----4-----4-----4-----4|
-A|--------------------2---------------------------|
-E|------------------------------------------------|
-
-e|------------------------------------------------|
-B|------------------------------------------------|
-G|--2-----1-----2-----------1-----------1---------|
-D|-----4-----4-----4--4--4-----4--4--4-----4--2--4|
-A|------------------------------------------------|
-E|------------------------------------------------|
-
-e|------------------------------------------------|
-B|------------------------------------------------|
-G|------------------------------------------------|
-D|--4--4--2--4--4--4--1--4--2--4--1--4--2--4-----4|
-A|--------------------------------------------4---|
-E|------------------------------------------------|
-
-e|------------------------------------------------|
-B|------------------------------------------------|
-G|--------------------------------------------0---|
-D|--1--4--------0-----1-----2-----3-----4---------|
-A|--------2--4-----2-----2-----2-----2-----2-----2|
-E|------------------------------------------------|
-
-e|------------------------------------------------|
-B|--------------------------1-----2-----3-----4---|
-G|--1-----2-----3-----4---------------------------|
-D|------------------------------------------------|
-A|-----2-----2-----2-----2-----2-----2-----2-----2|
-E|------------------------------------------------|
-
-e|--0-----------0-----0-----0-----------0-----0---|
-B|------------------------------------------------|
-G|-----1-----1-----1-----1-----1-----1-----1-----1|
-D|------------------------------------------------|
-A|--------2-----------------------2---------------|
-E|------------------------------------------------|
-
-e|--0---------------------------------------------|
-B|--------------5-----5-----5-----------5-----5---|
-G|------------------------------------------------|
-D|-----4-----4-----4-----4-----4-----4-----4-----4|
-A|--------2-----------------------2---------------|
-E|------------------------------------------------|
-
-e|------------------------------------------------|
-B|--4-----------4-----4-----4-----------4-----4---|
-G|-----2-----2-----2-----2-----2-----2-----2-----2|
-D|------------------------------------------------|
-A|--------2-----------------------2---------------|
-E|------------------------------------------------|
-
-e|--0-------------|
-B|----------------|
-G|----------------|
-D|----------------|
-A|----------------|
-E|----------------|
-```
+# Other Examples
+[All other examples and detailed usage information has been moved to the Wiki](https://github.com/scottvr/gtrsnipe/wiki)

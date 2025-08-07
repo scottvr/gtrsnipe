@@ -26,6 +26,7 @@ class MapperConfig:
     max_fret: int = 24
     tuning: str = "STANDARD"
     num_strings: int =  6
+    capo: int = 0
 
     # from match_events_to_fretboard
     deduplicate_pitches: bool = False
@@ -36,3 +37,16 @@ class MapperConfig:
     # open string preference
     prefer_open: bool = False
     fretted_open_penalty: float = 20.0
+
+    # barre bonus/penalty
+    barre_bonus: float = 0.0
+    barre_penalty: float = 0.0
+
+    # Monophonic mode
+    mono_lowest_only: bool = False
+
+    # Let Ring preference
+    let_ring_bonus: float = 0.0 # also breaks up repetitive fretting of same note on same position, which can be easier to play
+
+    # Diagonal fret span check
+    count_fret_span_across_neighbors: bool = False

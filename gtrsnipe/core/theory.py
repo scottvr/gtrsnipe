@@ -50,3 +50,9 @@ def pitch_to_note_name(pitch: int) -> str:
     note = PITCH_CLASS_MAP[note_class]
     
     return f"{note}{octave}"
+
+def midi_to_hz(midi_note: int, a4_hz: float = 440.0) -> float:
+    """
+    Converts a MIDI note number to its corresponding frequency in Hertz.
+    """
+    return (a4_hz / 32) * (2 ** ((midi_note - 9) / 12))
