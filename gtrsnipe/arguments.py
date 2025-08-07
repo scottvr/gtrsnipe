@@ -48,6 +48,15 @@ def setup_parser() -> ArgumentParser:
         action='store_true',
         help="Force monophonic output by keeping only the lowest note in any chord."
     )
+    instrument_group.add_argument(
+        '--velocity-cutoff',
+        type=int,
+        default=0,
+        choices=range(0, 128),
+        metavar='[0-127]',
+        help='Ignore MIDI notes with a velocity lower than this value (0-127).'
+    )
+
 
     pipeline_group = parser.add_argument_group('Audio-to-MIDI Pipeline Options')
     pipeline_group.add_argument('--nr', action='store_true', help='Step 2: Enables noise/reverb reduction on the audio stem.')
@@ -114,8 +123,13 @@ def setup_parser() -> ArgumentParser:
         action='store_true',
         help="Enable Basic-Pitch's 'melodia trick'; whatever that is."
     )
-
-
+    pipeline_group.add_argument(
+        '--pitch-engine',
+        type=str,
+        default='basic-pitch',
+        choices=['basic-pitch', 'librosa'],
+        help="The pitch detection engine to use ('basic-pitch' or 'librosa')."
+    )
 
     parser.add_argument(
         "--nudge",

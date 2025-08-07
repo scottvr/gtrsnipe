@@ -13,9 +13,35 @@ import sys
 import os
 import logging
 from sys import exit
-import shutil
+import librosa 
 
 logger = logging.getLogger(__name__)
+bp_logger = logging.getLogger('basic_pitch')
+bp_logger.setLevel(logging.ERROR)
+
+
+def filter_by_velocity(song: Song, velocity_cutoff: int) -> Song:
+    """
+    Removes all musical events from a song that are below a certain
+    MIDI velocity threshold.
+    """
+    if velocity_cutoff <= 0:
+        return song
+
+    logger.info(f"--- Filtering out notes with velocity < {velocity_cutoff} ---")
+    
+    notes_before = sum(len(track.events) for track in song.tracks)
+    
+    for track in song.tracks:
+        track.events = [event for event in track.events if event.velocity >= velocity_cutoff]
+
+    notes_after = sum(len(track.events) for track in song.tracks)
+    notes_removed = notes_before - notes_after
+    
+    if notes_removed > 0:
+        logger.info(f"Removed {notes_removed} low-velocity notes.")
+        
+    return song
 
 def pre_quantize_song(song: Song, resolution: float) -> Song:
     """
@@ -98,7 +124,7 @@ class MusicConverter:
     def _generate(self, song: Song, format: str, command_line: str, no_articulations: bool = False, max_line_width = 80,
                   single_string: Optional[int] = None, staccato: bool = False, mapper_config: Optional[MapperConfig] = None) -> object | str:
         if format == 'mid':
-            return mid.midiGenerator.generate(song)
+            return mid.MidiGenerator.generate(song)
         elif format == 'abc':
             return abc.AbcGenerator.generate(song)
         elif format == 'vex':
@@ -208,6 +234,8 @@ def main():
             from .audio.cleaner import cleanup_audio, apply_low_pass_filter
             from .audio.distortion_remover import remove_distortion_effects
             from .audio.pitch_detector import transcribe_to_midi
+            from .audio.pitch_detector_librosa import transcribe_with_librosa
+
 
             
             if args.stem_track:
@@ -226,16 +254,27 @@ def main():
             if args.nr:
                 current_file = cleanup_audio(current_file)
 
-            current_file = transcribe_to_midi(
-                current_file,
-                overwrite=args.yes,
-                min_freq=min_freq,
-                max_freq=max_freq,
-                onset_threshold=args.onset_threshold,
-                frame_threshold=args.frame_threshold,
-                min_note_len_ms=args.min_note_len_ms,
-                melodia_trick=args.melodia_trick,
-            )
+            if args.pitch_engine == 'basic-pitch':
+                current_file = transcribe_to_midi(
+                    current_file,
+                    overwrite=args.yes,
+                    min_freq=min_freq,
+                    max_freq=max_freq,
+                    onset_threshold=args.onset_threshold,
+                    frame_threshold=args.frame_threshold,
+                    min_note_len_ms=args.min_note_len_ms,
+                    melodia_trick=args.melodia_trick,
+                )
+            elif args.pitch_engine == 'librosa':
+                # Note: fmin and fmax could be derived from --constrain-frequency
+                # for a more integrated solution.
+                current_file = transcribe_with_librosa(
+                    current_file,
+                    fmin_hz=librosa.note_to_hz('C1'), # Example range for bass
+                    fmax_hz=librosa.note_to_hz('G4')
+                )
+            
+
 
         
         # --- Final Conversion (The "Last Mile") ---
@@ -337,6 +376,8 @@ def main():
 
 
         logger.info(f"Converting '{args.input}' ({format_to_parse}) to '{args.output}' ({to_format})...")
+        
+        song = filter_by_velocity(song, args.velocity_cutoff)
 
         if args.pre_quantize and mapper_config:
             logger.info(f"Pre-quantizing before any fretboard mapping.")
