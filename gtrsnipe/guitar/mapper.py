@@ -70,7 +70,7 @@ class GuitarMapper:
             pitch += 12
         return pitch
 
-    def _score_fingering(self, fingering: Fingering, prev_fingering: Optional[Fingering]) -> float:
+    def _score_fingering(self, fingering: Fingering, prev_fingering: Optional[Fingering], prev_prev_fingering: Optional[Fingering]) -> float:
         """Scores a fingering based on internal shape, position, and transition cost."""
         
         # 1. Internal Shape Score (Compactness)
@@ -124,6 +124,37 @@ class GuitarMapper:
             prev_strings_used = {pos.string for pos in prev_fingering}
             string_changes = len(strings_used.symmetric_difference(prev_strings_used))
             score -= string_changes * self.config.string_switch_penalty
+
+            # Penalize fingerings that require an impossible stretch from the previous note.
+            if self.config.count_fret_span_across_neighbors:
+                all_frets = [pos.fret for pos in fingering if pos.fret > 0]
+                prev_frets = [pos.fret for pos in prev_fingering if pos.fret > 0]
+                
+                # Include the "previous-previous" frets if let-ring is on ---
+                # This checks the span of the full three-note context.
+                if self.config.let_ring_bonus > 0 and prev_prev_fingering:
+                    prev_prev_frets = [pos.fret for pos in prev_prev_fingering if pos.fret > 0]
+                    prev_frets.extend(prev_prev_frets)
+
+                if all_frets and prev_frets:
+                    # Calculate the maximum span between any note in the previous fingering
+                    # and any note in the current fingering.
+                    min_fret_combined = min(all_frets + prev_frets)
+                    max_fret_combined = max(all_frets + prev_frets)
+                    diagonal_span = max_fret_combined - min_fret_combined
+                    
+                    if diagonal_span > self.config.unplayable_fret_span:
+                        # Apply a heavy penalty to effectively disqualify this fingering.
+                        score -= 1000 
+
+            # Reward fingerings that leave the previous note's string open.
+            if self.config.let_ring_bonus > 0:
+                # Find which strings from the previous fingering are now free.
+                ringing_strings = prev_strings_used - strings_used
+                if ringing_strings:
+                    # Apply a bonus for each string that is now allowed to ring out.
+                    score += len(ringing_strings) * self.config.let_ring_bonus
+
         if self.config.prefer_open:
             # Create a set of open string pitches for fast lookups
             open_pitches_set = set(self.open_string_pitches)
@@ -142,7 +173,7 @@ class GuitarMapper:
         return score    
     
     
-    def _find_optimal_fingering(self, notes: List[MusicalEvent], prev_fingering: Optional[Fingering]) -> Optional[Fingering]:
+    def _find_optimal_fingering(self, notes: List[MusicalEvent], prev_fingering: Optional[Fingering], prev_prev_fingering: Optional[Fingering]) -> Optional[Fingering]:
         note_positions = []
         for note in notes:
             norm_pitch = self._normalize_pitch(note.pitch)            
@@ -159,7 +190,7 @@ class GuitarMapper:
             if len(strings_used) != len(fingering):
                 continue
 
-            score = self._score_fingering(fingering, prev_fingering)
+            score = self._score_fingering(fingering, prev_fingering, prev_prev_fingering)
             
             logger.debug(f"considering score: {score} {fingering}")
             if score > max_score:
@@ -241,12 +272,13 @@ class GuitarMapper:
 
             multi_string_events = []
             last_fingering: Optional[Fingering] = None
+            prev_prev_fingering: Optional[Fingering] = None
+
             for note_group in time_groups:
-                group_to_finger = note_group
-                if self.config.mono_lowest_only and len(note_group) > 1:
-                    lowest_note = min(note_group, key=lambda note: note.pitch)
-                    group_to_finger = [lowest_note]
-                    
+            #    group_to_finger = note_group
+            #    if self.config.mono_lowest_only and len(note_group) > 1:
+            #        lowest_note = min(note_group, key=lambda note: note.pitch)
+            #        group_to_finger = [lowest_note]
                 quantized_beat = quantize_time(note_group[0].time)
                 for note in note_group:
                     note.time = quantized_beat
@@ -262,7 +294,7 @@ class GuitarMapper:
 
                     group_to_finger = deduplicated_note_group
 
-                fingering = self._find_optimal_fingering(group_to_finger, last_fingering)
+                fingering = self._find_optimal_fingering(group_to_finger, last_fingering, prev_prev_fingering)
                 if fingering:
                     # The fingering corresponds to the deduplicated notes.
                     # We need to apply it back to the correct note events.
@@ -270,6 +302,7 @@ class GuitarMapper:
                         note_event.fret = fingering[i].fret
                         note_event.string = fingering[i].string
                     multi_string_events.extend(group_to_finger)
+                    prev_prev_fingering = last_fingering
                     last_fingering = fingering
                 else:
                     logger.warning(f"Could not find a playable fingering for notes at time {note_group[0].time}")
