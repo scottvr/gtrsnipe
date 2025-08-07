@@ -5,12 +5,14 @@ from ....guitar.mapper import GuitarMapper
 from ..tab_types import TabScore, TabMeasure, TabNote
 from itertools import groupby
 import logging
+import sys
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
 class AsciiTabGenerator:
     @staticmethod
-    def generate(song: Song, max_line_width: int = 40, default_note_length: str = "1/16", 
+    def generate(song: Song, command_line: str, max_line_width: int = 40, default_note_length: str = "1/16", 
                  no_articulations: bool = False, 
                  single_string: Optional[int] = None, mapper_config: Optional[MapperConfig] = None, **kwargs) -> str:
         """
@@ -44,7 +46,7 @@ class AsciiTabGenerator:
         except (ValueError, ZeroDivisionError):
             base_unit_in_beats = 0.25 # Default to a 16th note
 
-        return AsciiTabGenerator._format_score(score, max_line_width, base_unit_in_beats, mapper_config)
+        return AsciiTabGenerator._format_score(score, command_line, max_line_width, base_unit_in_beats, mapper_config)
 
     @staticmethod
     def _get_quantized_spacing(time_delta: float, base_unit_in_beats: float) -> int:
@@ -100,7 +102,23 @@ class AsciiTabGenerator:
         last_event_time = 0.0
         
         sorted_notes = sorted(measure.notes, key=lambda n: n.beat_in_measure)
-        
+
+        if config.mono_lowest_only:
+            filtered_notes = []
+            # Group notes by their precise beat in the measure
+            for time, notes_in_group in groupby(sorted_notes, key=lambda n: n.beat_in_measure):
+                notes = list(notes_in_group)
+                if len(notes) > 1:
+                    # If it's a chord, find and keep only the lowest note
+                    # Negate the string number to correctly prioritize lower-pitched strings (higher string numbers).
+                    lowest_note = min(notes, key=lambda note: (-note.position.string, -note.position.fret))
+                    filtered_notes.append(lowest_note)
+                else:
+                    # If it's a single note, keep it
+                    filtered_notes.append(notes[0])
+            # The list of notes to render is now the filtered monophonic list
+            sorted_notes = filtered_notes
+
         notes_by_time_iter = groupby(sorted_notes, key=lambda n: n.beat_in_measure)
 
         # Pre-process groups to handle unplayable chords
@@ -180,7 +198,7 @@ class AsciiTabGenerator:
         return True
     
     @staticmethod
-    def _format_score(score: TabScore, max_line_width: int, base_unit_in_beats: float, config: MapperConfig) -> str:
+    def _format_score(score: TabScore, command_line: str, max_line_width: int, base_unit_in_beats: float, config: MapperConfig) -> str:
         """Formats the complete score, breaking lines based on character width."""
         
         try:
@@ -218,7 +236,13 @@ class AsciiTabGenerator:
                           f"// Capo: {config.capo}st Fret" if config.capo == 1 else
                           f"// Capo: {config.capo}th Fret")
 
-        header.append("") # Add a blank line after the header info
+        if command_line:
+            # Clean up the command for display (optional, but nice)
+            executable_name = Path(sys.argv[0]).name
+            display_command = command_line.replace(sys.argv[0], executable_name)
+            header.append(f"// Transcribed with: {display_command}")
+
+        header.append("") # Add a blank line after the heade1r info
 
         body = []
         # 'ljust' is no longer needed as all names are a single character
