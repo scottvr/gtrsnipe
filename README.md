@@ -193,7 +193,7 @@ uusage: gtrsnipe [-h] [-i INPUT] [-o OUTPUT] [--capo CAPO]
 
 Run the complete pipeline on a mixed audio file to generate a tab tuned to Drop D.
 
-[]`gtrsnipe -i x:\S.O.D.mp3 -o march_of_the_S.O.D.tab --bass --stem --stem-name bass --p2m --tuning DROP_D  -y`](https://github.com/scottvr/gtrsnipe/wiki/v0.2.0)
+[`gtrsnipe -i x:\S.O.D.mp3 -o march_of_the_S.O.D.tab --bass --stem --stem-name bass --p2m --tuning DROP_D  -y`](https://github.com/scottvr/gtrsnipe/wiki/v0.2.0)
 
 **Audio-to-MIDI only**
 
@@ -256,4 +256,5 @@ Available Tunings:
 # Other Examples
 
 [All other examples and detailed usage information has been moved to the Wiki](https://github.com/scottvr/gtrsnipe/wiki)
+
 
