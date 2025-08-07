@@ -209,7 +209,7 @@ If you already have a clean, isolated guitar track, you can skip the demucs and 
 
 **MIDI-to-Tab (Classic V1 Functionality)**
 
-[]`gtrsnipe -i "MrCrowley.mid" -o "mrcrowley.tab" --track 5`](https://github.com/scottvr/gtrsnipe/wiki/2.-Example-%E2%80%90-Mr-Crowley-organ-intro)
+[`gtrsnipe -i "MrCrowley.mid" -o "mrcrowley.tab" --track 5`](https://github.com/scottvr/gtrsnipe/wiki/2.-Example-%E2%80%90-Mr-Crowley-organ-intro)
 
 ## Advanced Usage: Mapper & Demucs Tuning
 
@@ -256,5 +256,6 @@ Available Tunings:
 # Other Examples
 
 [All other examples and detailed usage information has been moved to the Wiki](https://github.com/scottvr/gtrsnipe/wiki)
+
 
 
