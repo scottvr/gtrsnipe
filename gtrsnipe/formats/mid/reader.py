@@ -31,22 +31,21 @@ class MidiReader:
     @staticmethod
     def parse(midi_path: str, track_number_to_select: Optional[int]) -> Song:
         try:
-            logger.info("--- Attempting to parse with primary library (py-midi)... ---")
-            return MidiReader._parse_with_py_midi(midi_path, track_number_to_select)
+            logger.info("--- Attempting to parse with primary library (mido)... ---")
+            return MidiReader._parse_with_mido(midi_path, track_number_to_select)
         except Exception as e:
             logger.warning(
-                "The primary 'py-midi' parser failed. This can happen with rare or unusual MIDI files, "
+                "The primary 'mido' parser failed. This can happen with rare or unusual MIDI files, "
                 "or if a sanity check fails."
             )
             logger.warning(f"  └─ Details: {e}")
             
             # Attempt the fallback parser
             try:
-                logger.info("--- Attempting to parse with fallback library (mido)... ---")
-                return MidiReader._parse_with_mido(midi_path, track_number_to_select)
+                logger.info("--- Attempting to parse with fallback library (py-midi)... ---")
+                return MidiReader._parse_with_py_midi(midi_path, track_number_to_select)
             except Exception as e_fallback:
                 logger.error("All MIDI parsers failed. The file may be corrupt or in an unsupported format.")
-                # Log the full traceback for debugging if needed
                 traceback.print_exc()
                 raise e_fallback 
 
@@ -88,7 +87,6 @@ class MidiReader:
             ticks_per_beat = 480
 
         for i, track_data in zip(track_indices, tracks_to_process):
-            # --- STAGE 1: Check for explicit library errors via stderr ---
             error_buffer = io.StringIO()
             with redirect_stderr(error_buffer):
                 try:
