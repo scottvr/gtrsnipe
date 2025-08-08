@@ -193,19 +193,19 @@ uusage: gtrsnipe [-h] [-i INPUT] [-o OUTPUT] [--capo CAPO]
 
 Run the complete pipeline on a mixed audio file to generate a tab tuned to Drop D.
 
-[`gtrsnipe -i x:\S.O.D.mp3 -o march_of_the_S.O.D.tab --bass --stem --stem-name bass --p2m --tuning DROP_D  -y`](https://github.com/scottvr/gtrsnipe/wiki/v0.2.0)
+[`gtrsnipe -i x:\S.O.D.mp3 -o march_of_the_S.O.D.tab --bass --stem --stem-name bass --tuning DROP_D  -y`](https://github.com/scottvr/gtrsnipe/wiki/v0.2.0)
 
 **Audio-to-MIDI only**
 
 Extract the guitar part from a song and save it as a MIDI file, stopping the pipeline there.
 
-`gtrsnipe -i "another_song.wav" -o "guitar_part.mid" --stem --p2m`
+`gtrsnipe -i "another_song.wav" -o "guitar_part.mid" --stem`
 
 **Transcribing from Clean Audio**
 
 If you already have a clean, isolated guitar track, you can skip the demucs and noise reduction steps.
 
-`gtrsnipe -i "my_clean_riff.wav" -o "my_riff.tab" --p2m`
+`gtrsnipe -i "my_clean_riff.wav" -o "my_riff.tab"`
 
 **MIDI-to-Tab (Classic V1 Functionality)**
 
@@ -256,6 +256,7 @@ Available Tunings:
 # Other Examples
 
 [All other examples and detailed usage information has been moved to the Wiki](https://github.com/scottvr/gtrsnipe/wiki)
+
 
 
 
