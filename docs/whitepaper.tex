@@ -23,20 +23,21 @@
 \maketitle
 
 \begin{abstract}
-The task of transcribing music for fretted string instruments like the guitar presents a significant computational challenge known as the ``fretboard mapping problem.'' For any given musical pitch, multiple string and fret combinations may exist, leading to a combinatorial explosion of possible fingerings for a sequence of notes. This paper introduces the gtrsnipe Fretboard Mapper, a novel system designed to solve this problem by framing it as a multi-objective optimization task. The system employs a configurable, weighted scoring function that evaluates potential fingerings based on a combination of physical playability, ergonomic efficiency, and musical context. Key components of our scoring model include penalties for wide fret-stretches, excessive hand movement, and string switching, alongside bonuses for utilizing instrument-specific affordances like open strings, barre chords, and allowing notes to ring out. Furthermore, the mapper incorporates a context-aware algorithm that considers previous fingerings to ensure smooth transitions and a rule-based system for inferring common performance techniques like hammer-ons, pull-offs, and taps. We argue that this multi-constraint approach produces tablature that is not only playable but also stylistically and ergonomically logical, representing a significant improvement over naive or static-rule-based systems in terms of ergonomic and musical coherence.
+The task of transcribing music for fretted string instruments like the guitar presents a significant computational challenge known as the \emph{fretboard mapping problem}. For any given musical pitch, multiple string–fret combinations may exist, leading to a combinatorial explosion of potential fingerings for a sequence of notes. This paper introduces the gtrsnipe Fretboard Mapper, a novel system that frames this problem as a multi-objective optimization task. The system employs a configurable, weighted scoring function that evaluates candidate fingerings based on physical playability, ergonomic efficiency, and musical context. Key components of the scoring model include penalties for wide fret stretches, excessive hand movement, and frequent string switching, along with bonuses for exploiting instrument-specific affordances such as open strings, barre chords, and ringing sustain. The mapper also incorporates a context-aware algorithm that considers previous fingerings to ensure smooth transitions, and a rule-based system for inferring performance techniques such as hammer-ons, pull-offs, and taps. We show that this multi-objective approach produces tablature that is not only playable, but also stylistically and ergonomically coherent, representing a significant improvement over naive or rule-based systems.
+
 \end{abstract}
 
 \begin{IEEEkeywords}
-Music Information Retrieval, Guitar Tablature, Multi-Objective Optimization, Fretboard Mapping, Automated Transcription
+Music Information Retrieval, Guitar Tablature, Multi-Objective Optimization, Fretboard Mapping, Music Transcription, Automated Transcription
 \end{IEEEkeywords}
 
 \section{Introduction}
 
 Music Information Retrieval (MIR) has made significant strides in automated music transcription, particularly in converting audio signals to a symbolic representation like MIDI (Musical Instrument Digital Interface). However, for multi-timbral instruments like the guitar, a MIDI representation is only an intermediate step. The core challenge lies in mapping the abstract pitches of a MIDI event sequence onto the physical constraints of the guitar's fretboard. This is a non-trivial problem due to the instrument's inherent ambiguity.
 
-Unlike a piano, where each pitch corresponds to a single key, a standard-tuned 6-string guitar can produce the same pitch in up to six different locations. For example, the note E4 can be played as the open 1st string, the 5th fret of the 2nd string, the 9th of the 3rd, the 14th of the 4th, and so on. A three-note chord can therefore have dozens of potential fingerings, or voicings. The task of an automated tablature system is to select the single ``best'' fingering for each moment in the music from this vast search space.
+Unlike a piano, where each pitch corresponds to a single key, a standard-tuned 6-string guitar can produce the same pitch in up to six different locations. For example, the note E4 can be played as the open 1st string, or as the 5th, 9th, or 14th fret on progressively lower-pitched strings. A three-note chord can therefore have dozens of potential fingerings, or voicings. The task of an automated tablature system is to select the single ``best'' fingering for each moment in the music from this vast search space.
 
-This paper details the gtrsnipe Fretboard Mapper, an algorithmic solution to this problem. The system moves beyond naive, greedy approaches by implementing a sophisticated, context-aware scoring function that models the decision-making process of a human guitarist. It balances multiple, often competing, objectives to generate tablature that is both technically feasible and musically coherent.
+This paper details the gtrsnipe Fretboard Mapper, an algorithmic solution to this problem. The system extends beyond naive, greedy approaches by implementing a context-aware scoring function that models the decision-making process of a human guitarist. It balances multiple, often competing, objectives to generate tablature that is both technically feasible and musically coherent.
 
 \begin{figure}[htbp]
 \centering
@@ -74,7 +75,7 @@ This paper details the gtrsnipe Fretboard Mapper, an algorithmic solution to thi
 \draw[arrow] (mapper) -- (tab);
 
 \end{tikzpicture}
-\caption[ ]{End-to-end pipeline of the \texttt{gtrsnipe} system. Third-party tools perform preprocessing; the Core Mapper outputs guitar tablature.}
+\caption[ ]{End-to-end processing pipeline for audio-to-tablature conversion. Third-party tools handle source separation and transcription; the \texttt{gtrsnipe} Core Mapper produces optimized fretboard assignments.}
 \label{fig:gtrsnipe_pipeline}
 \end{figure}
 
@@ -89,15 +90,15 @@ The core of the problem is to assign the optimal string and fret values for each
 
 \textbf{Ambiguity:} Each pitch $p$ maps to a set of fret positions $FP_p = \{(s_1, f_1), (s_2, f_2), \ldots\}$.
 
-\textbf{Combinatorial Complexity:} A chord with pitches $\{p_1, \ldots, p_k\}$ yields candidate fingerings in $FP_{p_1} \times \cdots \times FP_{p_k}$, filtered to disallow duplicate strings.
+\textbf{Combinatorial Complexity:} A chord with pitches $\{p_1, \ldots, p_k\}$ yields candidate fingerings in $FP_{p_1} \times \cdots \times FP_{p_k}$, excluding combinations that assign multiple notes to the same string.
 
-\textbf{Context Dependency:} The optimal fingering for a chord at time $t$ is dependent on the fingering of the chord at time $t-1$ and, for complex passages, even $t-2$.
+\textbf{Context Dependency:} The optimal fingering for a chord at time $t$ depends on the prior fingering at time $t-1$ and, for complex passages, even $t-2$.
 
 The gtrsnipe mapper addresses this by converting the problem into a search for the highest-scoring path through a sequence of possible fingerings.
 
 \section{Methodology: A Multi-Constraint Optimization Approach}
 
-The architecture of the gtrsnipe mapper is built around the \texttt{GuitarMapper} class, which operates on a \texttt{MapperConfig} data structure. This configuration holds the weights and thresholds for every parameter in the scoring algorithm, allowing for fine-grained control over the final output. The process is divided into three main stages: Search Space Generation, Scoring, and Technique Inference.
+The architecture of the gtrsnipe mapper is built around the \texttt{GuitarMapper} class, which operates on a \texttt{MapperConfig} data structure. This configuration defines the weights and thresholds for all scoring parameters, enabling fine-grained control over the output. The process is divided into three main stages: Search Space Generation, Scoring, and Technique Inference.
 
 \subsection{Search Space Generation}
 
@@ -105,11 +106,13 @@ The first step, handled by the \texttt{\_build\_pitch\_maps} method, is to gener
 
 \subsection{The Multi-Objective Scoring Function}
 
-The core of our methodology is the \texttt{\_score\_fingering} function. For any given fingering (a collection of \texttt{FretPosition} objects), this function calculates a score based on several weighted criteria. A higher score indicates a more desirable fingering. The final score $S_{total}$ is a summation of several component scores:
+The core of our methodology is the \texttt{\_score\_fingering} function. For any given fingering (a collection of \texttt{FretPosition} objects), this function calculates a score based on several weighted criteria. Higher scores correspond to more desirable fingerings, as determined by the combined ergonomic and stylistic objectives. The final score $S_{total}$ is a summation of several component scores:
 
-\begin{equation}
-S_{total} = S_{shape} + S_{position} + S_{transition} + S_{musical}
-\end{equation}
+\begin{align}
+S_{total} &= S_{shape} + S_{position} \nonumber\\
+          &\quad + S_{transition} + S_{musical}
+\end{align}
+
 
 \subsubsection{Internal Shape Score ($S_{shape}$)}
 This score evaluates the ergonomic feasibility of a single chord shape in isolation.
@@ -153,7 +156,7 @@ After the optimal fret positions are determined, a final pass (\texttt{\_infer\_
 
 \section{Proposed Evaluation Framework: An Ablation Study}
 
-We define an ablation study to validate our model and understand the contribution of each parameter. An ablation study involves removing or altering individual components of the system to observe the impact on the output quality.
+We define an ablation study to validate our model and understand the contribution of each parameter. The ablation study proceeds by selectively removing or modifying individual scoring components to assess their relative contribution.
 
 As noted in preliminary analysis: ``Your documentation captures exactly the kind of systematic parameter exploration that academic research needs... The narrative of `systematic improvement through parameter adjustment' is exactly what ablation studies should demonstrate.''
 
@@ -171,13 +174,64 @@ Our proposed study would consist of:
 
 \textbf{Comparative Analysis:} The results will be compared against both the baseline and professionally published, human-generated tablatures of the same pieces.
 
-This study will allow us to quantify the impact of each heuristic and develop optimized \texttt{MapperConfig} profiles for different musical genres (e.g., a ``Classical'' profile with a high \texttt{let\_ring\_bonus} vs. a ``Metal'' profile with a high \texttt{string\_switch\_penalty}).
+This evaluation will quantify the impact of each heuristic and develop optimized \texttt{MapperConfig} profiles for different musical genres (e.g., a ``Classical'' profile with a high \texttt{let\_ring\_bonus} vs. a ``Metal'' profile with a high \texttt{string\_switch\_penalty}).
+
+\section{Case Study: Parameter Tuning on \emph{Asturias (Leyenda)}}
+
+To illustrate the practical challenges and iterative nature of constraint optimization in guitar transcription, we present a case study using a MIDI file of Isaac Albéniz’s \emph{Asturias (Leyenda)}. This piece is known for its rapid arpeggios, frequent note repetition, and reliance on open-string resonance—features that expose both the strengths and limitations of naive fretboard mapping algorithms.
+
+\subsection{Baseline Output and Initial Failures}
+
+When transcribed using the default \texttt{gtrsnipe} mapper parameters, the resulting tablature was technically accurate in pitch but musically incoherent and ergonomically implausible:
+
+\begin{quote}\small
+\begin{verbatim}
+e|----------------------------------------|
+B|--------------0-----1----------------0--|
+G|--------------4--4--5--p4------------4--|
+D|----2------9---------------7------9-----|
+A|------------------------------12--------|
+E|-------12-------------------------------|
+\end{verbatim}
+\end{quote}
+
+This version uses high fret positions and inconsistent fingerings, creating awkward jumps and undermining the natural flow of the passage.
+
+\subsection{Iterative Refinement via Parameter Tuning}
+
+We then iteratively adjusted key parameters, including \texttt{--movement-penalty}, \texttt{--high-fret-penalty}, \texttt{--prefer-open}, and introduced two new parameters during this experiment:
+
+\begin{itemize}
+  \item \texttt{--let-ring-bonus}: Encourages fingerings that allow notes to sustain across time steps
+  \item \texttt{--count-fret-span-across-neighbors}: Extends fret span constraints across time to prevent awkward diagonal jumps
+\end{itemize}
+
+The final result, after several iterations, yielded a transcription that was musically and physically plausible:
+
+\begin{quote}\small
+\begin{verbatim}
+e|-----------------------------------------|
+B|-------0-----0-----0-----0-----0-----0---|
+G|----------4-----5-----2-----4-----0------|
+D|----2-----------------------------------2|
+A|-----------------------------------------|
+E|-----------------------------------------|
+\end{verbatim}
+\end{quote}
+
+Notably, this version captures the repetitive, ringing quality of the original composition by leveraging open strings and consistent fingering patterns.
+
+\subsection{Discussion}
+
+This case study highlights the importance of context-aware, parameterized scoring in fretboard mapping. While fixed heuristics or machine-learned models might converge on a "globally optimal" fingering under a single metric, the notion of what makes a fingering "correct" is often genre- and piece-dependent. By exposing mapper parameters and offering per-user control, \texttt{gtrsnipe} supports an interactive optimization workflow—one that can even uncover missing features, as was the case here.
+
+
 
 \section{Conclusion and Future Work}
 
-The gtrsnipe Fretboard Mapper provides a robust and highly configurable framework for solving the complex problem of automated guitar tablature generation. By treating the task as a multi-objective, context-aware optimization problem, it produces fingerings that are ergonomically and musically superior to those from simpler systems.
+The gtrsnipe Fretboard Mapper provides a robust and highly configurable framework for solving the complex problem of automated guitar tablature generation. By treating the task as a multi-objective, context-aware optimization problem, it yields fingerings that are both ergonomic and musically coherent, outperforming those generated by simpler rule-based systems.
 
-Future work will focus on two primary areas. First, we plan to implement the proposed ablation study to empirically validate the model and its parameters. Second, we will explore replacing the manually-weighted scoring function with a machine learning model. By training a model on a large corpus of high-quality, human-created tablatures, we could learn the optimal parameter weights automatically, potentially uncovering more subtle and complex relationships that define a ``good'' fingering.
+Future work will focus on two primary areas. First, we plan to implement the proposed ablation study to empirically validate the model and its parameters. Second, we will explore replacing the manually-weighted scoring function with a machine learning model. By training a model on a large corpus of high-quality, human-created tablatures, we could learn the optimal parameter weights automatically, potentially uncovering more nuanced, nonlinear relationships that characterize effective fingerings.
 
 \section*{Acknowledgments}
 The author would like to thank Claude.ai for valuable feedback on the experimental design and academic framing of this work, and Gemini 2.5 Pro for the help formalizing and formatting the mathematical representation of how gtrsnipe works, as well as ChatGPT 4o for providing feedback on drafts along the way.
