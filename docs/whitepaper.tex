@@ -11,7 +11,8 @@
 \usepackage{tikz}
 \usepackage{makecell}
 \usetikzlibrary{shapes.multipart, arrows.meta, positioning}
-
+\urlstyle{same}
+\IEEEpeerreviewmaketitle
 
 \title{WORKING DRAFT: Multi-Objective Optimization for Automated Guitar Tablature: The gtrsnipe Fretboard Mapper}
 
@@ -214,7 +215,7 @@ This crucial component makes the algorithm context-aware by evaluating the cost 
 
 \textbf{String Switch Penalty:} Penalizes fingerings that involve changing sets of strings, encouraging more fluid, contiguous playing.
 
-\textbf{Diagonal Span Constraint:} A key innovation (\texttt{count\_fret\_span\_across\_neighbors}) that penalizes fingerings where the stretch between a note in the current fingering and a note in the previous fingering is unplayable. This prevents awkward jumps that are not captured by analyzing chords in isolation.
+\textbf{Diagonal Span Constraint:} A key innovation (\texttt{diagonal\_span\_penalty}) that penalizes fingerings where the stretch between a note in the current fingering and a note in the previous fingering is unplayable. This prevents awkward jumps that are not captured by analyzing chords in isolation.
 
 \subsubsection{Musical and Stylistic Score ($S_{musical}$)}
 This component rewards choices that align with common musical practices.
@@ -289,7 +290,7 @@ We then iteratively adjusted key parameters, including \texttt{--movement-penalt
 
 \begin{itemize}
   \item \texttt{--let-ring-bonus}: Encourages fingerings that allow notes to sustain across time steps
-  \item \texttt{--count-fret-span-across-neighbors}: Extends fret span constraints across time to prevent awkward diagonal jumps
+  \item \texttt{--diagonal-span-penalty}: Extends fret span constraints across time to prevent awkward diagonal jumps
 \end{itemize}
 
 The final result, after several iterations (See Table~\ref{tab:leyenda_tuning} for a summary of parameter changes across iterations), yielded a transcription that was musically and physically plausible:
@@ -333,7 +334,7 @@ Added \texttt{--let-ring-bonus} &
 Encourages natural sustain; better musicality, but fret span violations emerge. \\
 \hline
 5 &
-Added \texttt{--count-fret-span-across-neighbors}; considers previous two positions &
+Added \texttt{--diagonal-span-penalty}; considers previous two positions &
 Avoids diagonal jumps; captures sustained ringing patterns without losing playability. \\
 \hline
 Final &
