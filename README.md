@@ -77,7 +77,7 @@ uusage: gtrsnipe [-h] [-i INPUT] [-o OUTPUT] [--capo CAPO]
                 [--sweet-spot-bonus SWEET_SPOT_BONUS] [--sweet-spot-low SWEET_SPOT_LOW] [--sweet-spot-high SWEET_SPOT_HIGH] [--ignore-open]
                 [--legato-time-threshold LEGATO_TIME_THRESHOLD] [--tapping-run-threshold TAPPING_RUN_THRESHOLD] [--pre-quantize] [--dedupe]
                 [--quantization-resolution {0.0125,0.0625,0.125,0.25,0.5,1.0}] [--prefer-open] [--fretted-open-penalty FRETTED_OPEN_PENALTY]
-                [--barre-bonus BARRE_BONUS] [--barre-penalty BARRE_PENALTY] [--let-ring-bonus LET_RING_BONUS] [--count-fret-span-across-neighbors]
+                [--barre-bonus BARRE_BONUS] [--barre-penalty BARRE_PENALTY] [--let-ring-bonus LET_RING_BONUS] [--diagonal-span-penalty]
 
 ```
 
@@ -169,7 +169,7 @@ uusage: gtrsnipe [-h] [-i INPUT] [-o OUTPUT] [--capo CAPO]
                         Penalty applied to fingerings that use a barre/single finger (default: 0.0).
 -  `--let-ring-bonus LET_RING_BONUS`
                         Bonus awarded for fingerings that allow previous notes to ring out (default: 0.0).
--  `--count-fret-span-across-neighbors`
+-  `--diagonal-span-penalty`
                         Penalize fingerings with an unplayable fret span between consecutive notes.
 
 **Instrument Options**

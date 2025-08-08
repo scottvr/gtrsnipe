@@ -435,7 +435,7 @@ def main():
                 barre_penalty=args.barre_penalty,  
                 mono_lowest_only=args.mono_lowest_only,
                 let_ring_bonus=args.let_ring_bonus,
-                count_fret_span_across_neighbors=args.count_fret_span_across_neighbors,
+                diagonal_span_penalty=args.diagonal_span_penalty,
             )
 
 

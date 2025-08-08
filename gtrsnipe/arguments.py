@@ -340,7 +340,7 @@ def setup_parser() -> ArgumentParser:
         help='Bonus awarded for fingerings that allow previous notes to ring out (default: 0.0).'
     )
     mapper_group.add_argument(
-        '--count-fret-span-across-neighbors',
+        '--diagonal-span-penalty',
         action='store_true',
         help='Penalize fingerings with an unplayable fret span between consecutive notes.'
     )

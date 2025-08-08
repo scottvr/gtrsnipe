@@ -126,7 +126,7 @@ class GuitarMapper:
             score -= string_changes * self.config.string_switch_penalty
 
             # Penalize fingerings that require an impossible stretch from the previous note.
-            if self.config.count_fret_span_across_neighbors:
+            if self.config.diagonal_span_penalty:
                 all_frets = [pos.fret for pos in fingering if pos.fret > 0]
                 prev_frets = [pos.fret for pos in prev_fingering if pos.fret > 0]
                 

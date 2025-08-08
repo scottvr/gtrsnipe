@@ -49,4 +49,4 @@ class MapperConfig:
     let_ring_bonus: float = 0.0 # also breaks up repetitive fretting of same note on same position, which can be easier to play
 
     # Diagonal fret span check
-    count_fret_span_across_neighbors: bool = False
+    diagonal_span_penalty: bool = False
