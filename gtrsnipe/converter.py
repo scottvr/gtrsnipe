@@ -188,7 +188,7 @@ def main():
             parser.error("--tuning PIANO can only be used with MIDI output (e.g., a .mid file).")
 
  
-        if args.constrain_frequency:
+        if not args.no_constrain_frequency:
             logger.info("--- Calculating frequency range based on selected tuning ---")
             try:
                 tuning_notes = Tuning[args.tuning.upper()].value
@@ -197,7 +197,7 @@ def main():
                 min_pitch = min(open_string_pitches)
                 max_pitch = max(open_string_pitches) + args.max_fret
 
-                if args.constrain_frequency and args.min_note_override:
+                if not args.no_constrain_frequency and args.min_note_override:
                     try:
                         override_pitch = note_name_to_pitch(args.min_note_override)
                         logger.info(f"Overriding minimum pitch from {pitch_to_note_name(min_pitch)} to {pitch_to_note_name(override_pitch)}.")
@@ -205,7 +205,7 @@ def main():
                     except ValueError:
                         logger.error(f"Invalid note name for --min-note-override: '{args.min_note_override}'")
 
-                if args.constrain_frequency and args.max_note_override:
+                if not args.no_constrain_frequency and args.max_note_override:
                     try:
                         override_pitch = note_name_to_pitch(args.max_note_override)
                         logger.info(f"Overriding maximum pitch from {pitch_to_note_name(max_pitch)} to {pitch_to_note_name(override_pitch)}.")
@@ -213,8 +213,10 @@ def main():
                     except ValueError:
                         logger.error(f"Invalid note name for --max-note-override: '{args.max_note_override}'")
 
-                if args.constrain_frequency:
+                if not args.no_constrain_frequency:
+                    
                     min_freq = midi_to_hz(min_pitch)
+                    
 
                 max_freq = midi_to_hz(max_pitch)
                 
