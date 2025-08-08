@@ -325,57 +325,6 @@ def main():
 
         mapper_config = None
         
-        if not is_piano_mode:   
-            mapper_config = MapperConfig(
-                max_fret=args.max_fret,
-                tuning=tuning_name,
-                num_strings=num_strings,
-                fret_span_penalty=args.fret_span_penalty,
-                movement_penalty=args.movement_penalty,
-                string_switch_penalty=args.string_switch_penalty,
-                high_fret_penalty=args.high_fret_penalty,
-                low_string_high_fret_multiplier=args.low_string_high_fret_multiplier,
-                sweet_spot_bonus=args.sweet_spot_bonus,
-                sweet_spot_low=args.sweet_spot_low,
-                sweet_spot_high=args.sweet_spot_high,
-                unplayable_fret_span=args.unplayable_fret_span,
-                prefer_open=args.prefer_open,
-                fretted_open_penalty=args.fretted_open_penalty,
-                ignore_open=args.ignore_open,
-                legato_time_threshold=args.legato_time_threshold,
-                tapping_run_threshold=args.tapping_run_threshold,
-                deduplicate_pitches=args.dedupe,
-                quantization_resolution=args.quantization_resolution,
-                capo=args.capo,
-                barre_bonus=args.barre_bonus,  
-                barre_penalty=args.barre_penalty,  
-                mono_lowest_only=args.mono_lowest_only,
-                let_ring_bonus=args.let_ring_bonus,
-                count_fret_span_across_neighbors=args.count_fret_span_across_neighbors,
-            )
-
-
-        output_data = converter.convert(
-            song=song,
-            command_line=command_line,
-            from_format=format_to_parse,
-            to_format=to_format,
-            nudge=args.nudge,
-            transpose=args.transpose,
-            max_line_width=args.max_line_width,
-            no_articulations=args.no_articulations,
-            single_string=args.single_string,
-            mapper_config=mapper_config
-        )
-    
-        output_path = Path(args.output)
-        if output_path.exists() and not args.yes:
-            logger.error(f"Error: Output file '{output_path}' already exists.")
-            logger.error("Use the -y or --yes flag to allow overwriting.")
-            exit(1)
-
-
-        logger.info(f"Converting '{args.input}' ({format_to_parse}) to '{args.output}' ({to_format})...")
         
         song = filter_by_velocity(song, args.velocity_cutoff)
 
@@ -459,11 +408,64 @@ def main():
                     logger.error(f"Error: Tuning '{args.tuning}' not found.")
                     exit(1) 
 
+        if not is_piano_mode:   
+            mapper_config = MapperConfig(
+                max_fret=args.max_fret,
+                tuning=tuning_name,
+                num_strings=num_strings,
+                fret_span_penalty=args.fret_span_penalty,
+                movement_penalty=args.movement_penalty,
+                string_switch_penalty=args.string_switch_penalty,
+                high_fret_penalty=args.high_fret_penalty,
+                low_string_high_fret_multiplier=args.low_string_high_fret_multiplier,
+                sweet_spot_bonus=args.sweet_spot_bonus,
+                sweet_spot_low=args.sweet_spot_low,
+                sweet_spot_high=args.sweet_spot_high,
+                unplayable_fret_span=args.unplayable_fret_span,
+                prefer_open=args.prefer_open,
+                fretted_open_penalty=args.fretted_open_penalty,
+                ignore_open=args.ignore_open,
+                legato_time_threshold=args.legato_time_threshold,
+                tapping_run_threshold=args.tapping_run_threshold,
+                deduplicate_pitches=args.dedupe,
+                quantization_resolution=args.quantization_resolution,
+                capo=args.capo,
+                barre_bonus=args.barre_bonus,  
+                barre_penalty=args.barre_penalty,  
+                mono_lowest_only=args.mono_lowest_only,
+                let_ring_bonus=args.let_ring_bonus,
+                count_fret_span_across_neighbors=args.count_fret_span_across_neighbors,
+            )
+
+
+        output_data = converter.convert(
+            song=song,
+            command_line=command_line,
+            from_format=format_to_parse,
+            to_format=to_format,
+            nudge=args.nudge,
+            transpose=args.transpose,
+            max_line_width=args.max_line_width,
+            no_articulations=args.no_articulations,
+            single_string=args.single_string,
+            mapper_config=mapper_config
+        )
+    
+        output_path = Path(args.output)
+        if output_path.exists() and not args.yes:
+            logger.error(f"Error: Output file '{output_path}' already exists.")
+            logger.error("Use the -y or --yes flag to allow overwriting.")
+            exit(1)
+
+
+        logger.info(f"Converting '{args.input}' ({format_to_parse}) to '{args.output}' ({to_format})...")
+
         if to_format == 'mid':
             if isinstance(output_data, MidiUtilFile):
                 save_midi_file(output_data, args.output)
         else:
-            if isinstance(output_data, str):                save_text_file(output_data, args.output)
+            if isinstance(output_data, str):                
+                save_text_file(output_data, args.output)
 
     except Exception as e:
         logger.error(f"An error occurred: {e}", exc_info=args.debug)
