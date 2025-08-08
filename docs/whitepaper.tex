@@ -7,7 +7,9 @@
 \usepackage{cite}
 \usepackage{url}
 \usepackage{hyperref}
+\usepackage{tabularx}
 \usepackage{tikz}
+\usepackage{makecell}
 \usetikzlibrary{shapes.multipart, arrows.meta, positioning}
 
 
@@ -96,9 +98,80 @@ The core of the problem is to assign the optimal string and fret values for each
 
 The gtrsnipe mapper addresses this by converting the problem into a search for the highest-scoring path through a sequence of possible fingerings.
 
+\subsection{Formalization of the Scoring Function}
+
+Let the sequence of assigned fretboard positions be \( T = \{t_1, t_2, \dots, t_n\} \), where each \( t_i \) is a note-to-position mapping. The total score is computed as:
+
+\begin{align}
+S_{\text{total}} = \sum_{i=1}^{n} \Big[
+& w_{\text{span}} \cdot \Delta_{\text{span}}(t_i) +
+  w_{\text{move}} \cdot \Delta_{\text{move}}(t_i, t_{i-1}) + \nonumber \\
+& w_{\text{string}} \cdot \Delta_{\text{string}}(t_i, t_{i-1}) +
+  w_{\text{diag}} \cdot \Delta_{\text{diag}}(t_i, t_{i-2}) + \nonumber \\
+& w_{\text{high}} \cdot \delta_{\text{high}}(t_i) +
+  w_{\text{open}} \cdot \delta_{\text{fretted}}(t_i) - \nonumber \\
+& w_{\text{let}} \cdot \delta_{\text{let\_ring}}(t_i) -
+  w_{\text{sweet}} \cdot \delta_{\text{sweet\_spot}}(t_i) + \nonumber \\
+& w_{\text{barre}} \cdot \delta_{\text{barre}}(t_i) \Big]
+\label{eq:score}
+\end{align}
+
+Here:
+\begin{itemize}
+\item \( \Delta_{\text{span}} \): Fret span for chord or note group at time \( i \)
+\item \( \Delta_{\text{move}} \): Horizontal shift from prior hand position
+\item \( \Delta_{\text{string}} \): Number of strings changed between events
+\item \( \Delta_{\text{diag}} \): Stretch cost across time + string
+\item \( \delta_{\text{fretted}} \): 1 if fretted note used instead of available open
+\item \( \delta_{\text{let\_ring}} \): 1 if open string can continue ringing
+\item \( \delta_{\text{high}} \): 1 if fret exceeds high-fret threshold
+\item \( \delta_{\text{sweet\_spot}} \): 1 if all frets are in configured comfort zone
+\item \( \delta_{\text{barre}} \): 1 if fingering forms a barre
+\end{itemize}
+
+The optimization objective is to:
+\begin{equation}
+\max_T S_{\text{total}} \quad \text{s.t. playability constraints}
+\end{equation}
+
+\begin{table}[htbp]
+\caption{Scoring Weights and Corresponding CLI Flags in \texttt{gtrsnipe}}
+\label{tab:score_weights}
+\centering
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\linewidth}{|c|>{\scriptsize\ttfamily}p{2.5cm}|X|}
+\hline
+\textbf{Symbol} & \textbf{CLI Flag} & \textbf{Description} \\
+\hline
+\( w_{\text{span}} \) & --fret-span-penalty & Penalizes wide fret spans in chords \\
+\hline
+\( w_{\text{move}} \) & --movement-penalty & Penalizes horizontal hand shifts \\
+\hline
+\( w_{\text{string}} \) & \makecell[tl]{--string-switch-\\penalty} & Penalizes unnecessary string changes \\
+\hline
+\( w_{\text{diag}} \) & \makecell[tl]{--diagonal-span-\\penalty} & Penalizes jumps across time and strings \\
+\hline
+\( w_{\text{high}} \) & --high-fret-penalty & Penalizes use of high frets \\
+\hline
+\( w_{\text{open}} \) & \makecell[tl]{--fretted-open\\-penalty} & Penalizes fretted notes when open string is available \\
+\hline
+\( w_{\text{let}} \) & --let-ring-bonus & Rewards sustained notes via open string reuse \\
+\hline
+\( w_{\text{sweet}} \) & --sweet-spot-bonus & Rewards fingerings within ergonomic range \\
+\hline
+\( w_{\text{barre}} \) & --barre-bonus & Rewards or penalizes barre chords \\
+\hline
+\end{tabularx}
+\end{table}
+
+
+
+
 \section{Methodology: A Multi-Constraint Optimization Approach}
 
 The architecture of the gtrsnipe mapper is built around the \texttt{GuitarMapper} class, which operates on a \texttt{MapperConfig} data structure. This configuration defines the weights and thresholds for all scoring parameters, enabling fine-grained control over the output. The process is divided into three main stages: Search Space Generation, Scoring, and Technique Inference.
+
+
 
 \subsection{Search Space Generation}
 
@@ -150,6 +223,20 @@ This component rewards choices that align with common musical practices.
 
 \textbf{Open String Preference:} Penalizes using a fretted note when the same pitch could be played as an open string, controlled by the \texttt{prefer\_open} flag and \texttt{fretted\_open\_penalty}.
 
+\subsection{Candidate Evaluation Example}
+
+To illustrate how the scoring function evaluates candidate fingerings for a single chord event, we log each fingering's computed score before selecting the best-scoring assignment:
+
+\begin{quote}\small\ttfamily
+considering score: -1000.0 (0,1), (1,3), (2,2), (5,10) \\
+considering score: -299.5 (0,1), (1,3), (2,2), (3,0) \\
+considering score: -350.0 (2,10), (3,12), (4,12), (5,10) \\
+\textbf{best score: -199.5} (1,6), (2,7), (3,7), (4,5)
+\end{quote}
+
+Each tuple represents a string–fret assignment (\texttt{FretPosition(string, fret)}), and the scores reflect the weighted cost components described in Section~II. (Fingerings violating hard constraints such as overlapping strings or span limits are assigned a sentinel cost of -1000.)
+
+
 \subsection{Technique Inference}
 
 After the optimal fret positions are determined, a final pass (\texttt{\_infer\_techniques\_from\_positions}) analyzes the resulting sequence to infer performance articulations. By examining the time delta, pitch delta, and string continuity between consecutive notes, it applies labels for hammer-ons, pull-offs, and taps, adding a layer of musical expressiveness to the final tablature. This is achieved through a set of heuristics, such as identifying a fast-ascending pitch sequence on a single string as a hammer-on.
@@ -158,7 +245,6 @@ After the optimal fret positions are determined, a final pass (\texttt{\_infer\_
 
 We define an ablation study to validate our model and understand the contribution of each parameter. The ablation study proceeds by selectively removing or modifying individual scoring components to assess their relative contribution.
 
-As noted in preliminary analysis: ``Your documentation captures exactly the kind of systematic parameter exploration that academic research needs... The narrative of `systematic improvement through parameter adjustment' is exactly what ablation studies should demonstrate.''
 
 Our proposed study would consist of:
 
@@ -203,10 +289,11 @@ We then iteratively adjusted key parameters, including \texttt{--movement-penalt
 
 \begin{itemize}
   \item \texttt{--let-ring-bonus}: Encourages fingerings that allow notes to sustain across time steps
-  \item \texttt{--diagonal-span-penalty}: Extends fret span constraints across time to prevent awkward diagonal jumps
+  \item \texttt{--count-fret-span-across-neighbors}: Extends fret span constraints across time to prevent awkward diagonal jumps
 \end{itemize}
 
-The final result, after several iterations, yielded a transcription that was musically and physically plausible:
+The final result, after several iterations (See Table~\ref{tab:leyenda_tuning} for a summary of parameter changes across iterations), yielded a transcription that was musically and physically plausible:
+
 
 \begin{quote}\small
 \begin{verbatim}
@@ -220,6 +307,43 @@ E|-----------------------------------------|
 \end{quote}
 
 Notably, this version captures the repetitive, ringing quality of the original composition by leveraging open strings and consistent fingering patterns.
+
+\begin{table}[htbp]
+\caption{Iterative Refinement of \texttt{gtrsnipe} Parameters on \emph{Asturias (Leyenda)}}
+\centering
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{|c|p{3.3cm}|p{3.3cm}|}
+\hline
+\textbf{Attempt} & \textbf{Key Parameters Changed} & \textbf{Outcome / Notes} \\
+\hline
+Baseline &
+Default parameters &
+Technically accurate but musically incoherent; high fret jumps, awkward transitions. \\
+\hline
+2 &
+\texttt{--prefer-open}, \texttt{--movement-penalty}, \texttt{--sweet-spot-low} adjusted &
+Lowered positions toward nut; more ergonomic, but note repetition undermines sustain. \\
+\hline
+3 &
+Expanded \texttt{--sweet-spot-low} to 0 &
+Improved fingering locality, but still fails to preserve ringing sustain. \\
+\hline
+4 &
+Added \texttt{--let-ring-bonus} &
+Encourages natural sustain; better musicality, but fret span violations emerge. \\
+\hline
+5 &
+Added \texttt{--count-fret-span-across-neighbors}; considers previous two positions &
+Avoids diagonal jumps; captures sustained ringing patterns without losing playability. \\
+\hline
+Final &
+Removed sweet spot bounds; kept ringing and span constraints &
+Produces a musically idiomatic and ergonomically valid transcription. \\
+\hline
+\end{tabular}
+\label{tab:leyenda_tuning}
+\end{table}
+
 
 \subsection{Discussion}
 
