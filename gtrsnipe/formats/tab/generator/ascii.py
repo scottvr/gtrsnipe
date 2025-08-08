@@ -79,21 +79,36 @@ class AsciiTabGenerator:
         if not all_events: return score
         
         beats_per_measure = time_sig_tuple[0]
-        last_event = max(all_events, key=lambda e: e.time)
-        total_measures = int(last_event.time / beats_per_measure) + 1
-        for _ in range(total_measures):
-            score.measures.append(TabMeasure([], time_sig_tuple))
+        # Sort all events by time to process them in chronological order
+        all_events.sort(key=lambda e: e.time)
+
+        current_measure_num = -1
 
         for event in all_events:
             if event.string is None or event.fret is None: continue
+        
             beat_time = event.time
             measure_num = int(beat_time / beats_per_measure)
-            beat_in_measure = beat_time % beats_per_measure
-            note = TabNote(position=FretPosition(event.string, event.fret), technique=Technique(event.technique) if event.technique else None, beat_in_measure=beat_in_measure, duration=event.duration)
-            if measure_num < len(score.measures):
-                score.measures[measure_num].notes.append(note)
-        return score
+        
+            # --- FIX: Create measures only when they are needed ---
+            if measure_num > current_measure_num:
+                # Add any empty measures between the last note and this one
+                for i in range(measure_num - current_measure_num):
+                    score.measures.append(TabMeasure([], time_sig_tuple))
+                current_measure_num = measure_num
 
+            beat_in_measure = beat_time % beats_per_measure
+            note = TabNote(
+                position=FretPosition(event.string, event.fret), 
+                technique=Technique(event.technique) if event.technique else None, 
+                beat_in_measure=beat_in_measure, 
+                duration=event.duration
+            )
+        
+            if score.measures:
+                score.measures[-1].notes.append(note)
+            
+        return score
 
     @staticmethod
     def _format_single_measure(measure: TabMeasure, base_unit_in_beats: float, config: MapperConfig) -> List[str]:
@@ -164,7 +179,6 @@ class AsciiTabGenerator:
         if final_max_len < min_measure_width:
             final_max_len = min_measure_width
         
-        # This loop is now corrected to use config.num_strings
         for j in range(config.num_strings):
             padding = final_max_len - len(measure_lines[j])
             measure_lines[j] += ('-' * padding)
