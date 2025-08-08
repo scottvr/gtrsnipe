@@ -7,6 +7,9 @@
 \usepackage{cite}
 \usepackage{url}
 \usepackage{hyperref}
+\usepackage{tikz}
+\usetikzlibrary{shapes.multipart, arrows.meta, positioning}
+
 
 \title{WORKING DRAFT: Multi-Objective Optimization for Automated Guitar Tablature: The gtrsnipe Fretboard Mapper}
 
@@ -34,6 +37,47 @@ Music Information Retrieval (MIR) has made significant strides in automated musi
 Unlike a piano, where each pitch corresponds to a single key, a standard-tuned 6-string guitar can produce the same pitch in up to six different locations. For example, the note E4 can be played as the open 1st string, the 5th fret of the 2nd string, the 9th of the 3rd, the 14th of the 4th, and so on. A three-note chord can therefore have dozens of potential fingerings, or voicings. The task of an automated tablature system is to select the single ``best'' fingering for each moment in the music from this vast search space.
 
 This paper details the gtrsnipe Fretboard Mapper, an algorithmic solution to this problem. The system moves beyond naive, greedy approaches by implementing a sophisticated, context-aware scoring function that models the decision-making process of a human guitarist. It balances multiple, often competing, objectives to generate tablature that is both technically feasible and musically coherent.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  node distance=1.2cm and 1.0cm,
+  every node/.style={font=\small},
+  file/.style={rectangle, draw, rounded corners, minimum width=2.8cm, minimum height=0.9cm, fill=white},
+  thirdparty/.style={rectangle, draw, fill=gray!15, minimum width=2.8cm, minimum height=1.0cm},
+  gtrsnipe/.style={rectangle, draw, fill=blue!10, thick, minimum width=2.8cm, minimum height=1.0cm},
+  output/.style={rectangle, draw, rounded corners, minimum width=2.8cm, minimum height=0.9cm, fill=white},
+  arrow/.style={-{Latex}, thick}
+]
+
+% First row
+\node[file] (audio) {Audio File\\\texttt{(.mp3, .wav)}};
+\node[thirdparty, right=of audio] (demucs) {Demucs\\Source Separation};
+
+% Second row (below demucs)
+\node[thirdparty, below=of demucs] (nr) {Noise \& Reverb\\Reduction};
+
+% Third row (to left of nr)
+\node[thirdparty, left=of nr] (pitch) {Basic-Pitch\\Transcription};
+
+% Fourth row (below pitch)
+\node[gtrsnipe, below=of pitch] (mapper) {GtrSnipe\\Core Mapper};
+
+% Final output (to right of mapper)
+\node[output, right=of mapper] (tab) {ASCII Tablature\\\texttt{(.tab)}};
+
+% Arrows
+\draw[arrow] (audio) -- node[above, font=\scriptsize]{--stem-track} (demucs);
+\draw[arrow] (demucs) -- node[right, font=\scriptsize]{--nr, --remove-fx} (nr);
+\draw[arrow] (nr) -- (pitch);
+\draw[arrow] (pitch) -- (mapper);
+\draw[arrow] (mapper) -- (tab);
+
+\end{tikzpicture}
+\caption[ ]{End-to-end pipeline of the \texttt{gtrsnipe} system. Third-party tools perform preprocessing; the Core Mapper outputs guitar tablature.}
+\label{fig:gtrsnipe_pipeline}
+\end{figure}
+
 
 \section{The Fretboard Mapping Problem: Formulation}
 

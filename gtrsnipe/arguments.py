@@ -21,7 +21,7 @@ def setup_parser() -> ArgumentParser:
         default='STANDARD',
         choices=['STANDARD', 'E_FLAT', 'DROP_D', 'OPEN_G', 'BASS_STANDARD', 'BASS_DROP_D', 
                  'BASS_E_FLAT', 'SEVEN_STRING_STANDARD', 'BARITONE_B', 'BARITONE_A', 
-                 'BARITONE_C', 'C_SHARP', 'OPEN_C6', 'DROP_C', 'PIANO'],
+                 'BARITONE_C', 'C_SHARP_STANDARD', 'OPEN_C6', 'DROP_C', 'PIANO'],
         help='Specify the guitar tuning or "PIANO" for full-range midi passthrough. (default: STANDARD).'
     )
     instrument_group.add_argument(
@@ -79,7 +79,8 @@ def setup_parser() -> ArgumentParser:
         help="The demucs model to use for separation (e.g., htdemucs, htdemucs_fti, htdemucs_6s, mdx_extra)."
     )
     pipeline_group.add_argument(
-        '--constrain-frequency',
+        '--no-constrain-frequency',
+        default=False,
         action='store_true',
         help="Constrain pitch detection to the frequency range of the selected tuning."
     )
