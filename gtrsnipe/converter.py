@@ -214,9 +214,9 @@ def main():
                         logger.error(f"Invalid note name for --max-note-override: '{args.max_note_override}'")
 
                 if not args.no_constrain_frequency:
-                    
+
                     min_freq = midi_to_hz(min_pitch)
-                    
+
 
                 max_freq = midi_to_hz(max_pitch)
                 
@@ -241,7 +241,6 @@ def main():
 
             
             if args.stem_track:
-                logger.info(f"DEBUG: stem_track = {args.stem_track}")
                 current_file = separate_instrument(current_file, 
                                                    instrument=args.stem_track,
                                                    model_name=args.demucs_model)
