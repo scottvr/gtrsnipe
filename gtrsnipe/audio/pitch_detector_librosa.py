@@ -14,7 +14,7 @@ def transcribe_with_librosa(audio_file: str, fmin_hz: float | None, fmax_hz: flo
     Creates a simple, monophonic MIDI file from an audio file using librosa,
     constrained by the provided frequency range.
     """
-    logger.info("--- Transcribing with simple engine (librosa/pYIN)... ---")
+    logger.info("--- Detecting pitch with simple engine (librosa/pYIN)... ---")
     
     # Use provided frequency constraints, or fall back to a safe default for bass.
     fmin = fmin_hz if fmin_hz is not None else librosa.note_to_hz('E1')
@@ -53,7 +53,7 @@ def transcribe_with_librosa(audio_file: str, fmin_hz: float | None, fmax_hz: flo
 
                 # Estimate velocity from the max RMS in the segment
                 note_rms = rms[start_frame:end_frame]
-                velocity = int(np.max(note_rms) * 127)
+                velocity = int(np.max(note_rms) * 127) + 40
                 velocity = max(0, min(127, velocity)) # Clamp to valid MIDI range
 
                 events.append(
@@ -62,6 +62,7 @@ def transcribe_with_librosa(audio_file: str, fmin_hz: float | None, fmax_hz: flo
                 )
     estimated_tempo = estimate_tempo(audio_file)
 
+    logger.info("--- Transcribing to MIDI ---")
     track = Track(events=events, instrument_name="Synth Bass 1")
     song = Song(tracks=[track], tempo=estimated_tempo, time_signature="4/4") 
 

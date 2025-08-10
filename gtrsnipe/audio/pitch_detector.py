@@ -33,7 +33,7 @@ def transcribe_to_midi(audio_file: str,
     Returns:
         The file path to the generated .mid file.
     """
-    logger.info("[PIPELINE] Step 3: Transcribing audio to MIDI with Basic-Pitch...")
+    logger.info("Transcribing audio to MIDI with Basic-Pitch...")
     logger.info("This may take a moment...")
 
     p = Path(audio_file)

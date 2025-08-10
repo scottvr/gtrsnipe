@@ -214,16 +214,14 @@ def main():
                         logger.error(f"Invalid note name for --max-note-override: '{args.max_note_override}'")
 
                 if not args.no_constrain_frequency:
-
                     min_freq = midi_to_hz(min_pitch)
-
-
                 max_freq = midi_to_hz(max_pitch)
                 
                 logger.info(
                     f"Constraining frequency to {min_freq:.2f} Hz - {max_freq:.2f} Hz "
                     f"({pitch_to_note_name(min_pitch)} to {pitch_to_note_name(max_pitch)})"
                 )
+
             except KeyError:
                 logger.error(f"Tuning '{args.tuning}' not found. Cannot calculate frequency range.")
                 exit(1)
@@ -235,8 +233,10 @@ def main():
             from .audio.separator import separate_instrument
             from .audio.cleaner import cleanup_audio, apply_low_pass_filter
             from .audio.distortion_remover import remove_distortion_effects
-            from .audio.pitch_detector import transcribe_to_midi
-            from .audio.pitch_detector_librosa import transcribe_with_librosa
+            if args.pitch_engine == "basic-pitch": 
+                from .audio.pitch_detector import transcribe_to_midi
+            else:
+                from .audio.pitch_detector_librosa import transcribe_with_librosa
 
 
             
@@ -271,8 +271,8 @@ def main():
                 # for a more integrated solution.
                 current_file = transcribe_with_librosa(
                     current_file,
-                    fmin_hz=librosa.note_to_hz('C1'), # Example range for bass
-                    fmax_hz=librosa.note_to_hz('G4')
+                    fmin_hz=min_freq or librosa.note_to_hz('C1'),
+                    fmax_hz=max_freq or librosa.note_to_hz('G4')
                 )
             
 
