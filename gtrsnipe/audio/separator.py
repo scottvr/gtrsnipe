@@ -22,7 +22,7 @@ def separate_instrument(audio_file: str, instrument: str = "guitar", model_name:
     # We map our "guitar" input to "other" for demucs.
     target_stem = "other" if instrument == "guitar" and model_name not in 'htdemucs_6s' else instrument
     
-    logger.info(f"[PIPELINE] Step 1: Isolating '{target_stem}' stem with Demucs...")
+    logger.info(f"Isolating '{target_stem}' stem with Demucs...")
     logger.info("This may take a moment depending on the file size and your hardware...")
 
     # Define the output directory for separated files
