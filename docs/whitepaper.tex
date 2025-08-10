@@ -26,7 +26,7 @@
 \maketitle
 
 \begin{abstract}
-The task of transcribing music for fretted string instruments like the guitar presents a significant computational challenge known as the \emph{fretboard mapping problem}. For any given musical pitch, multiple string–fret combinations may exist, leading to a combinatorial explosion of potential fingerings for a sequence of notes. This paper introduces the gtrsnipe Fretboard Mapper, a novel system that frames this problem as a multi-objective optimization task. The system employs a configurable, weighted scoring function that evaluates candidate fingerings based on physical playability, ergonomic efficiency, and musical context. Key components of the scoring model include penalties for wide fret stretches, excessive hand movement, and frequent string switching, along with bonuses for exploiting instrument-specific affordances such as open strings, barre chords, and ringing sustain. The mapper also incorporates a context-aware algorithm that considers previous fingerings to ensure smooth transitions, and a rule-based system for inferring performance techniques such as hammer-ons, pull-offs, and taps. We show that this multi-objective approach produces tablature that is not only playable, but also stylistically and ergonomically coherent, representing a significant improvement over naive or rule-based systems.
+The task of transcribing music for fretted string instruments like the guitar presents a significant computational challenge known as the \emph{fretboard mapping problem} \cite{mapping-problem}. For any given musical pitch, multiple string–fret combinations may exist, leading to a combinatorial explosion of potential fingerings for a sequence of notes. This paper introduces the gtrsnipe Fretboard Mapper, a novel system that frames this problem as a multi-objective optimization task. The system employs a configurable, weighted scoring function that evaluates candidate fingerings based on physical playability, ergonomic efficiency, and musical context. Key components of the scoring model include penalties for wide fret stretches, excessive hand movement, and frequent string switching, along with bonuses for exploiting instrument-specific affordances such as open strings, barre chords, and ringing sustain. The mapper also incorporates a context-aware algorithm that considers previous fingerings to ensure smooth transitions, and a rule-based system for inferring performance techniques such as hammer-ons, pull-offs, and taps. We show that this multi-objective approach produces tablature that is not only playable, but also stylistically and ergonomically coherent, representing a significant improvement over naive or rule-based systems.
 
 \end{abstract}
 
@@ -363,9 +363,8 @@ The author would like to thank Claude.ai for valuable feedback on the experiment
 
 \begin{thebibliography}{1}
 
-\bibitem{ref1}
-[Future references to related work in MIR, guitar tablature generation, and multi-objective optimization would go here]
-
+\bibitem{mapping-problem}
+https://appliedguitartheory.com/lessons/fretboard-mapping/
 \end{thebibliography}
 
 \end{document}
