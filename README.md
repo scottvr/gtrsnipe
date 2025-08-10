@@ -237,23 +237,15 @@ If you already have a clean, isolated guitar track, you can skip the demucs and 
 
 [`gtrsnipe -i "MrCrowley.mid" -o "mrcrowley.tab" --track 5`](https://github.com/scottvr/gtrsnipe/wiki/2.-Example-%E2%80%90-Mr-Crowley-organ-intro)
 
-## Advanced Usage: Mapper & Demucs Tuning
+# Other Examples
+
+[All other examples and detailed usage information has been moved to the Wiki](https://github.com/scottvr/gtrsnipe/wiki)
+
+## Advanced Usage: Mapper Tuning
 
 The real power of gtrsnipe comes from its customizability. You can fine-tune the fretboard mapping algorithm and the audio separation models to get the perfect transcription. [Detailed documentation with troubleshooting examples are being created in the wiki.](https://github.com/scottvr/gtrsnipe/wiki/FretboardMapper-Algorithm-Configuration-and-Tunables)
 
-**Demucs Model Selection** `(--demucs-model)`
-
-Demucs is a state-of-the-art music source separation model. Several models are available, each with specific characteristics. Choosing the right one can significantly improve the quality of the isolated audio stem.
-
-- **htdemucs**: The default Hybrid Transformer Demucs model. A great all-rounder.
-- **htdemucs_ft**: A version of htdemucs fine-tuned on extra data. May offer better quality at the cost of speed.
-- **htdemucs_6s**: A 6-source version that can additionally attempt to separate piano and guitar, though quality may vary.
-- **hdemucs_mmi**: The v3 Hybrid Demucs model, retrained on more data.
-- **mdx / mdx_extra**: Models known for high performance, trained on the MusDB HQ dataset.
-- **mdx_q / mdx_extra_q**: Quantized (smaller, faster) versions of the mdx models, which may have slightly reduced quality.
-
-
-### Current Supported Tunings
+### Current Supported Instrument Tunings
 
 ```
 $ gtrsnipe  --list-tunings                                                   
@@ -279,9 +271,18 @@ Available Tunings:
 - BARITONE_C            : C4 G3 Eb3 Bb2 F2 C2
 ```
 
-# Other Examples
+### Demucs Model for stem separation
 
-[All other examples and detailed usage information has been moved to the Wiki](https://github.com/scottvr/gtrsnipe/wiki)
+**Demucs Model Selection** `(--demucs-model)`
+
+Demucs is a state-of-the-art music source separation model. Several models are available, each with specific characteristics. Choosing the right one can significantly improve the quality of the isolated audio stem.
+
+- **htdemucs**: The default Hybrid Transformer Demucs model. A great all-rounder.
+- **htdemucs_ft**: A version of htdemucs fine-tuned on extra data. May offer better quality at the cost of speed.
+- **htdemucs_6s**: A 6-source version that can additionally attempt to separate piano and guitar, though quality may vary.
+- **hdemucs_mmi**: The v3 Hybrid Demucs model, retrained on more data.
+- **mdx / mdx_extra**: Models known for high performance, trained on the MusDB HQ dataset.
+- **mdx_q / mdx_extra_q**: Quantized (smaller, faster) versions of the mdx models, which may have slightly reduced quality.
 
 
 
