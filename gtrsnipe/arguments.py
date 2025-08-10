@@ -127,7 +127,7 @@ def setup_parser() -> ArgumentParser:
     pipeline_group.add_argument(
         '--pitch-engine',
         type=str,
-        default='basic-pitch',
+        default='librosa',
         choices=['basic-pitch', 'librosa'],
         help="The pitch detection engine to use ('basic-pitch' or 'librosa')."
     )
