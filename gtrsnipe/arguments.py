@@ -303,7 +303,8 @@ def setup_parser() -> ArgumentParser:
         help='Min number of notes in a run to be considered for tapping (default: 2).'
     )
     mapper_group.add_argument(
-        '--pre-quantize',
+        '--no-pre-quantize',
+        default=False,
         action='store_true',
         help='Force a pre-quantization pass, snapping all notes to the quantization grid before mapping.'
     )

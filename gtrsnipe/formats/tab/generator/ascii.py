@@ -98,8 +98,11 @@ class AsciiTabGenerator:
         return score
 
     @staticmethod
-    def _format_single_measure(measure: TabMeasure, base_unit_in_beats: float, config: MapperConfig) -> List[str]:
+    def _format_single_measure(measure: TabMeasure, base_unit_in_beats: float, config: MapperConfig, measure_index: int) -> List[str]:
         """Formats a single measure using dynamic rhythmic spacing."""
+        note_beats = [round(n.beat_in_measure, 2) for n in measure.notes]
+        print(f"DEBUG FORMATTER: Formatting Measure {measure_index + 1} with beats: {note_beats}")
+
         measure_lines = ["-"] * config.num_strings
         if not measure.notes:
             # Handle empty measures
@@ -271,8 +274,8 @@ class AsciiTabGenerator:
         # 'ljust' is no longer needed as all names are a single character
         tab_lines = [f"{name}|" for name in string_names]
 
-        for measure in score.measures:
-            measure_content = AsciiTabGenerator._format_single_measure(measure, base_unit_in_beats, config)
+        for m_idx, measure in enumerate(score.measures):
+            measure_content = AsciiTabGenerator._format_single_measure(measure, base_unit_in_beats, config, m_idx)
             
             if len(tab_lines[0]) + len(measure_content[0]) + 1 > max_line_width:
                 body.extend(tab_lines)

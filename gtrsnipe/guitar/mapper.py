@@ -275,6 +275,15 @@ class GuitarMapper:
             prev_prev_fingering: Optional[Fingering] = None
 
             for note_group in time_groups:
+                if len(note_group) > self.config.num_strings:
+                    logger.warning(
+                        f"Found an unplayable chord with {len(note_group)} notes at time "
+                        f"{note_group[0].time:.2f}. Keeping the lowest {self.config.num_strings} notes."
+                    )
+                    # Sort the notes by pitch (lowest first) and keep only as many as there are strings
+                    note_group = sorted(note_group, key=lambda event: event.pitch)[:self.config.num_strings]
+
+                print(f"DEBUG MAPPER: Found {len(time_groups)} distinct time groups (chords) to process.")
             #    group_to_finger = note_group
             #    if self.config.mono_lowest_only and len(note_group) > 1:
             #        lowest_note = min(note_group, key=lambda note: note.pitch)

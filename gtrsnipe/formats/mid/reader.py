@@ -29,6 +29,18 @@ class MidiReader:
     """
 
     @staticmethod
+    def _get_correct_beat_time(ticks: int, ticks_per_beat: int, 
+                               midi_tempo_usec: int, song_tempo_bpm: float) -> float:
+        """
+        Converts a tick value to a musical beat time using the song's actual tempo.
+        """
+        # 1. Convert ticks to absolute seconds using the file's internal tempo
+        time_in_seconds = mido.tick2second(ticks, ticks_per_beat, midi_tempo_usec)
+        # 2. Convert seconds to musical beats using the song's *actual* tempo
+        time_in_beats = time_in_seconds * (song_tempo_bpm / 60.0)
+        return time_in_beats
+
+    @staticmethod
     def parse(midi_path: str, track_number_to_select: Optional[int], units: str) -> Song:
         try:
             logger.info("--- Attempting to parse with primary library (mido)... ---")
@@ -197,16 +209,19 @@ class MidiReader:
 
     @staticmethod
     def _parse_with_mido(
-        midi_path: str, track_number_to_select: Optional[int], units: str="beats"
+        midi_path: str, track_number_to_select: Optional[int]
     ) -> Song:
         song = Song()
         try:
             midi_file = mido.MidiFile(midi_path)
         except Exception as e:
             raise IOError(f"Mido could not open or parse the file: {e}") from e
-
+       
         song.time_signature = "4/4"
-        #ticks_per_beat = midi_file.ticks_per_beat
+        ticks_per_beat = midi_file.ticks_per_beat if midi_file.ticks_per_beat > 0 else 480
+
+        # Default to 120 BPM (500,000 usec/beat) if no tempo message is found.
+        midi_tempo_usec = 500000
 
         if midi_file.tracks:
             for event in midi_file.tracks[0]:
@@ -227,44 +242,36 @@ class MidiReader:
             track = Track()
             active_notes: Dict[int, Dict] = {}
             absolute_time_ticks = 0
-            current_time_sec = 0.0
-
-            current_tempo = 500000 # MIDI default tempo in microseconds per beat
-            ticks_per_beat = midi_file.ticks_per_beat
 
             temp_track_name = None
             temp_instrument_name = None
 
             for event in track_data:
                 absolute_time_ticks += event.time
-                delta_seconds = mido.tick2second(event.time, ticks_per_beat, current_tempo)
-                current_time_sec += delta_seconds
 
-                beat_time = event.time / ticks_per_beat
+                if event.is_meta and event.type == "set_tempo":
+                    song.tempo = mido.tempo2bpm(event.tempo)
+                    midi_tempo_usec = event.tempo
 
-                if event.is_meta and event.type == 'set_tempo':
-                    current_tempo = event.tempo
-        
+                
                 elif event.type == "note_on" and event.velocity > 0:
+                    beat_time = MidiReader._get_correct_beat_time(
+                        absolute_time_ticks, ticks_per_beat, midi_tempo_usec, song.tempo
+                    )
                     active_notes[event.note] = { 
-                        "time_sec": current_time_sec, 
-                        "velocity": event.velocity,
-                        "time": beat_time  }
+                        "time": beat_time, 
+                        "velocity": event.velocity
+                    }
 
                 elif event.type == "note_off" or (event.type == "note_on" and event.velocity == 0):
                     if event.note in active_notes:
+                        beat_time = MidiReader._get_correct_beat_time(
+                            absolute_time_ticks, ticks_per_beat, midi_tempo_usec, song.tempo
+                        )
                         start_event = active_notes.pop(event.note)
-
-                        if units == 'seconds':
-                            start_time = start_event["time_sec"]
-                            duration = current_time_sec - start_time
-                        else: # Default to beats
-                            start_time = start_event["time"] / ticks_per_beat
-                            duration = (absolute_time_ticks / ticks_per_beat) - start_time
-                            
                 
                         track.events.append(
-                            MusicalEvent(time=start_time, pitch=event.note, 
+                            MusicalEvent(time=beat_time, pitch=event.note, 
                                 duration=duration, velocity=start_event["velocity"])
                         )
             

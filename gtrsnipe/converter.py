@@ -193,7 +193,7 @@ class MusicConverter:
         return output_data
 
 
-    def _parse(self, data: str, format: str, track_num: Optional[int], staccato: bool = False,  units: str = 'beats') -> Song:
+    def _parse(self, data: str, format: str, track_num: Optional[int], staccato: bool = False,  units: str = 'beats', quantization_resolution=0.125) -> Song:
         if format == 'mid':
             return mid.MidiReader.parse(data, track_number_to_select=track_num, units=units)
         elif format == 'abc':
@@ -207,7 +207,7 @@ class MusicConverter:
         elif format == 'tab':
             with open(data, 'r') as f:
                 content = f.read()
-            return tab.AsciiTabParser.parse(content, staccato=staccato)
+            return tab.AsciiTabParser.parse(content, staccato=staccato, quantization_resolution=quantization_resolution)
         else:
             raise ValueError(f"Unsupported input format: {format}")
 
@@ -406,7 +406,7 @@ def main():
         else:
             # Otherwise, we parse normally
             logger.info(f"--- Parsing '{current_file}' as a {format_to_parse} file for final conversion ---")
-            song = converter._parse(current_file, format_to_parse, args.track, staccato=args.staccato)
+            song = converter._parse(current_file, format_to_parse, args.track, staccato=args.staccato, quantization_resolution=args.quantization_resolution)
         
         if not song:
             logger.error(f"Failed to parse {format_to_parse} file or file is empty.")
@@ -511,7 +511,7 @@ def main():
         
         song = filter_by_velocity(song, args.velocity_cutoff)
 
-        if args.pre_quantize and mapper_config:
+        if not args.no_pre_quantize and mapper_config:
             logger.info(f"Pre-quantizing before any fretboard mapping.")
             song = pre_quantize_song(song, args.quantization_resolution)    
         
@@ -615,7 +615,7 @@ def main():
                 exit(1)
 
 
-            logger.info(f"iSaving '{args.input}' ({format_to_parse}) to '{args.output}' ({to_format})...")
+            logger.info(f"Saving '{args.input}' ({format_to_parse}) to '{args.output}' ({to_format})...")
 
             if to_format == 'mid':
                 if isinstance(output_data, MidiUtilFile):

@@ -21,7 +21,7 @@ class AsciiTabParser:
     inferring rhythm from note spacing.
     """
     @staticmethod
-    def parse(tab_string: str, staccato: bool = False) -> Song:
+    def parse(tab_string: str, staccato: bool = False, quantization_resolution: float = 0.125) -> Song:
         logger.debug("Starting ASCII Tab parsing.")
         song = Song()
         track = Track()
@@ -87,10 +87,7 @@ class AsciiTabParser:
 
         print(f"DEBUG PARSER: Number of raw events found = {len(temp_events)}")
 
-        # The time value of a single character space in the tab.
-        # This should correspond to your --quantization-resolution argument.
-        # A 16th note (0.25 beats) is a common and effective default.
-        TIME_PER_CHAR_IN_BEATS = 0.25
+        TIME_PER_CHAR_IN_BEATS = quantization_resolution
 
         if not temp_events:
             logger.warning("No notes found in tab string.")
