@@ -21,7 +21,7 @@ def estimate_tempo(audio_file: str, sr: int | None = 22050) -> float:
     
     # Use librosa's beat tracking function to estimate the tempo
     # It returns an array, but we typically just need the first estimate.
-    tempo_estimate = librosa.beat.tempo(y=y, sr=sr)[0]
+    tempo_estimate = round(librosa.beat.tempo(y=y, sr=sr)[0], 3)
     
-    logger.info(f"Estimated tempo: {tempo_estimate:.2f} BPM")
+    logger.info(f"Estimated tempo: {tempo_estimate:.3f} BPM")
     return float(tempo_estimate)

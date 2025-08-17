@@ -40,27 +40,14 @@ class AsciiTabGenerator:
         score = AsciiTabGenerator._create_score_from_song(mapped_song)
         
         # Calculate the base unit in beats to pass to the formatter
-        try:
-            num, den = map(int, default_note_length.split('/'))
-            base_unit_in_beats = (num / den) * 4
-        except (ValueError, ZeroDivisionError):
-            base_unit_in_beats = 0.25 # Default to a 16th note
+        #try:
+        #    num, den = map(int, default_note_length.split('/'))
+        #    base_unit_in_beats = (num / den) * 4
+        #except (ValueError, ZeroDivisionError):
+        #    base_unit_in_beats = 0.25 # Default to a 16th note
+        base_unit_in_beats = mapper_config.quantization_resolution
 
         return AsciiTabGenerator._format_score(score, command_line, max_line_width, base_unit_in_beats, mapper_config)
-
-    @staticmethod
-    def _get_quantized_spacing(time_delta: float, base_unit_in_beats: float) -> int:
-        """Converts a time delta in beats to a number of dashes relative to a base unit."""
-        if base_unit_in_beats <= 0: return 2 # Safety check
-
-        # Calculate how many 'base units' fit into the time delta
-        relative_duration = time_delta / base_unit_in_beats
-        
-        # Fewer dashes for a more compact tab
-        if relative_duration <= 1.0: return 2 # 1 unit of time
-        if relative_duration <= 2.0: return 3 # 2 units of time
-        if relative_duration <= 4.0: return 4 # 4 units of time
-        return 5 # More than 4 units
 
     @staticmethod
     def _create_score_from_song(song: Song) -> TabScore:
@@ -85,12 +72,12 @@ class AsciiTabGenerator:
         current_measure_num = -1
 
         for event in all_events:
+            print(f"DEBUG TAB GEN: Note time={event.time:<10.4f} Pitch={event.pitch}")
             if event.string is None or event.fret is None: continue
         
             beat_time = event.time
             measure_num = int(beat_time / beats_per_measure)
         
-            # --- FIX: Create measures only when they are needed ---
             if measure_num > current_measure_num:
                 # Add any empty measures between the last note and this one
                 for i in range(measure_num - current_measure_num):
@@ -112,12 +99,17 @@ class AsciiTabGenerator:
 
     @staticmethod
     def _format_single_measure(measure: TabMeasure, base_unit_in_beats: float, config: MapperConfig) -> List[str]:
-        """Formats a single measure and returns its string lines."""
-        measure_lines = [""] * config.num_strings
-        last_event_time = 0.0
-        
+        """Formats a single measure using dynamic rhythmic spacing."""
+        measure_lines = ["-"] * config.num_strings
+        if not measure.notes:
+            # Handle empty measures
+            padding = measure.time_signature[0] * 4 # Default padding for empty measure
+            for i in range(config.num_strings):
+                measure_lines[i] = '-' * padding
+            return measure_lines
+            
         sorted_notes = sorted(measure.notes, key=lambda n: n.beat_in_measure)
-
+    
         if config.mono_lowest_only:
             filtered_notes = []
             # Group notes by their precise beat in the measure
@@ -133,35 +125,44 @@ class AsciiTabGenerator:
                     filtered_notes.append(notes[0])
             # The list of notes to render is now the filtered monophonic list
             sorted_notes = filtered_notes
-
+    
         notes_by_time_iter = groupby(sorted_notes, key=lambda n: n.beat_in_measure)
-
-        # Pre-process groups to handle unplayable chords
-        events_to_render = []
-        for time, notes_in_group_iter in notes_by_time_iter:
-            notes = list(notes_in_group_iter)
-            if AsciiTabGenerator._is_chord_playable(notes, config):
-                events_to_render.append({'time': time, 'notes': notes})
-            else:
-                # Unplayable chord: break it into individual, slightly offset notes
-                for i, note in enumerate(notes):
-                    events_to_render.append({'time': time + (i * 0.01), 'notes': [note]})
-
-        for event in events_to_render:
+        
+        # --- 1. Find the Smallest Rhythmic Unit for this Measure ---
+        events = [{'time': time, 'notes': list(notes)} for time, notes in notes_by_time_iter]
+        smallest_time_delta = float('inf')
+        last_event_time_for_calc = 0.0
+    
+        if len(events) > 1:
+            for i in range(1, len(events)):
+                delta = events[i]['time'] - events[i-1]['time']
+                if 0 < delta < smallest_time_delta:
+                    smallest_time_delta = delta
+        
+        # If all notes are on the same beat or only one event, use a default unit (e.g., 16th note)
+        if smallest_time_delta == float('inf'):
+            smallest_time_delta = base_unit_in_beats # Defaults to 16th note duration
+    
+        # --- 2. Build the Measure String ---
+        last_event_time = 0.0
+        for event in events:
             time = event['time']
             notes_in_chord = event['notes']
-
+    
             time_delta = time - last_event_time
-            spacing = AsciiTabGenerator._get_quantized_spacing(time_delta, base_unit_in_beats=base_unit_in_beats)
             
+            # Calculate spacing based on the smallest unit for this measure
+            # The number of dashes is the time delta divided by our quantum unit
+            spacing = int(round(time_delta / smallest_time_delta)) if smallest_time_delta > 0 else 1
+            
+            # Get the length of the longest current string line to align notes
             max_len = max(len(s) for s in measure_lines) if any(measure_lines) else 0
             start_pos = max_len + spacing
-
+    
             for note in notes_in_chord:
                 str_idx = note.position.string
-                # Add a check to prevent index errors if mapper produces an invalid note
                 if str_idx >= len(measure_lines):
-                    logger.warning(f"Note with string index {str_idx} is out of bounds for a {len(measure_lines)}-string instrument. Skipping.")
+                    logger.warning(f"Note with string index {str_idx} out of bounds. Skipping.")
                     continue
                 
                 fret = str(note.position.fret)
@@ -169,22 +170,30 @@ class AsciiTabGenerator:
                 symbol = tech_map.get(note.technique.value) if note.technique else None
                 note_text = f"{symbol or ''}{fret}" if symbol else fret
                 
-                padding = start_pos - len(measure_lines[str_idx])
-                measure_lines[str_idx] += ('-' * padding) + note_text
+                # Add padding to align the note correctly
+                padding_needed = start_pos - len(measure_lines[str_idx])
+                measure_lines[str_idx] += ('-' * padding_needed) + note_text
             
             last_event_time = time
         
-        final_max_len = max(len(s) for s in measure_lines) if measure_lines else 0
-        min_measure_width = measure.time_signature[0] * 4
-        if final_max_len < min_measure_width:
-            final_max_len = min_measure_width
+        # --- 3. Final Padding to Fill the Measure ---
+        # Calculate the total expected duration of the measure in beats
+        total_measure_beats = (measure.time_signature[0] / measure.time_signature[1]) * 4
         
+        # Calculate the total length this represents in our dynamic spacing units
+        total_measure_units = int(round(total_measure_beats / smallest_time_delta)) if smallest_time_delta > 0 else 16
+        
+        final_max_len = max(len(s) for s in measure_lines) if measure_lines else 0
+        
+        # Use the greater of the rendered content or the expected total length
+        final_len = max(final_max_len, total_measure_units)
+    
         for j in range(config.num_strings):
-            padding = final_max_len - len(measure_lines[j])
+            padding = final_len - len(measure_lines[j])
             measure_lines[j] += ('-' * padding)
         
         return measure_lines
-
+    
     @staticmethod
     def _is_chord_playable(notes: List[TabNote], config: MapperConfig) -> bool:
         """Checks if a chord is physically playable."""

@@ -17,10 +17,19 @@ class MidiGenerator:
         # Use the aliased name for clarity
         midi_file = MidiUtilFile(num_tracks, removeDuplicates=False, deinterleave=False)
 
+        
+
         # Set tempo and time signature on the first track at time 0
         track = 0
         time = 0
-        midi_file.addTempo(track, time, song.tempo)
+        if song.tempo_events:
+            for event in song.tempo_events:
+                # Add a tempo change at the time (in beats) specified by the event
+                midi_file.addTempo(track=0, time=event.time, tempo=event.bpm)
+        else:
+            # Fall back to a single global tempo
+            midi_file.addTempo(track=0, time=0, tempo=song.tempo)
+
         
         try:
             num, den = map(int, song.time_signature.split('/'))

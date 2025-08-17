@@ -29,7 +29,7 @@ class MidiReader:
     """
 
     @staticmethod
-    def parse(midi_path: str, track_number_to_select: Optional[int]) -> Song:
+    def parse(midi_path: str, track_number_to_select: Optional[int], units: str) -> Song:
         try:
             logger.info("--- Attempting to parse with primary library (mido)... ---")
             return MidiReader._parse_with_mido(midi_path, track_number_to_select)
@@ -197,7 +197,7 @@ class MidiReader:
 
     @staticmethod
     def _parse_with_mido(
-        midi_path: str, track_number_to_select: Optional[int]
+        midi_path: str, track_number_to_select: Optional[int], units: str="beats"
     ) -> Song:
         song = Song()
         try:
@@ -206,7 +206,7 @@ class MidiReader:
             raise IOError(f"Mido could not open or parse the file: {e}") from e
 
         song.time_signature = "4/4"
-        ticks_per_beat = midi_file.ticks_per_beat
+        #ticks_per_beat = midi_file.ticks_per_beat
 
         if midi_file.tracks:
             for event in midi_file.tracks[0]:
@@ -227,48 +227,47 @@ class MidiReader:
             track = Track()
             active_notes: Dict[int, Dict] = {}
             absolute_time_ticks = 0
+            current_time_sec = 0.0
+
+            current_tempo = 500000 # MIDI default tempo in microseconds per beat
+            ticks_per_beat = midi_file.ticks_per_beat
 
             temp_track_name = None
             temp_instrument_name = None
 
             for event in track_data:
                 absolute_time_ticks += event.time
+                delta_seconds = mido.tick2second(event.time, ticks_per_beat, current_tempo)
+                current_time_sec += delta_seconds
 
-                if event.is_meta:
-                    if event.type == 'track_name':
-                        temp_track_name = event.name
-                    elif event.type == 'instrument_name':
-                        temp_instrument_name = event.name
-                    elif event.type == "set_tempo":
-                        song.tempo = mido.tempo2bpm(event.tempo)
+                beat_time = event.time / ticks_per_beat
 
+                if event.is_meta and event.type == 'set_tempo':
+                    current_tempo = event.tempo
+        
                 elif event.type == "note_on" and event.velocity > 0:
-                    beat_time = absolute_time_ticks / ticks_per_beat
-                    active_notes[event.note] = {
-                        "time": beat_time,
+                    active_notes[event.note] = { 
+                        "time_sec": current_time_sec, 
                         "velocity": event.velocity,
-                    }
-                elif event.type == "note_off" or (
-                    event.type == "note_on" and event.velocity == 0
-                ):
+                        "time": beat_time  }
+
+                elif event.type == "note_off" or (event.type == "note_on" and event.velocity == 0):
                     if event.note in active_notes:
-                        beat_time = absolute_time_ticks / ticks_per_beat
                         start_event = active_notes.pop(event.note)
-                        duration = beat_time - start_event["time"]
 
-                        # Ensure duration is not negative or zero
-                        if duration <= 0:
-                            duration = 0.25  # Give it a small default duration
-
+                        if units == 'seconds':
+                            start_time = start_event["time_sec"]
+                            duration = current_time_sec - start_time
+                        else: # Default to beats
+                            start_time = start_event["time"] / ticks_per_beat
+                            duration = (absolute_time_ticks / ticks_per_beat) - start_time
+                            
+                
                         track.events.append(
-                            MusicalEvent(
-                                time=start_event["time"],
-                                pitch=event.note,
-                                velocity=start_event["velocity"],
-                                duration=duration,
-                            )
+                            MusicalEvent(time=start_time, pitch=event.note, 
+                                duration=duration, velocity=start_event["velocity"])
                         )
-
+            
             # Handle any hanging notes at the end of the track
             track_end_time_beats = absolute_time_ticks / ticks_per_beat
             for pitch, start_event in list(active_notes.items()):

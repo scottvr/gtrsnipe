@@ -71,6 +71,11 @@ class Track:
     events: List[MusicalEvent] = field(default_factory=list)
     instrument_name: str = "Acoustic Grand Piano"
 
+
+@dataclass 
+class TempoEvent: 
+    time: float
+    bpm: float
 @dataclass
 class Song:
     """A universal, format-agnostic representation of a song."""
@@ -78,3 +83,4 @@ class Song:
     tempo: float = 120.0
     time_signature: str = "4/4"
     title: str = "Untitled"
+    tempo_events: List[TempoEvent] = field(default_factory=list)

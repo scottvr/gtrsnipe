@@ -279,9 +279,9 @@ class GuitarMapper:
             #    if self.config.mono_lowest_only and len(note_group) > 1:
             #        lowest_note = min(note_group, key=lambda note: note.pitch)
             #        group_to_finger = [lowest_note]
-                quantized_beat = quantize_time(note_group[0].time)
-                for note in note_group:
-                    note.time = quantized_beat
+#                quantized_beat = quantize_time(note_group[0].time)
+#                for note in note_group:
+#                    note.time = quantized_beat
                 group_to_finger = note_group
                 if self.config.deduplicate_pitches:
                     unique_pitches = {}
