@@ -41,7 +41,7 @@ class MidiReader:
         return time_in_beats
 
     @staticmethod
-    def parse(midi_path: str, track_number_to_select: Optional[int], units: str) -> Song:
+    def parse(midi_path: str, track_number_to_select: Optional[int]) -> Song:
         try:
             logger.info("--- Attempting to parse with primary library (mido)... ---")
             return MidiReader._parse_with_mido(midi_path, track_number_to_select)
@@ -216,20 +216,19 @@ class MidiReader:
             midi_file = mido.MidiFile(midi_path)
         except Exception as e:
             raise IOError(f"Mido could not open or parse the file: {e}") from e
-       
+        
         song.time_signature = "4/4"
         ticks_per_beat = midi_file.ticks_per_beat if midi_file.ticks_per_beat > 0 else 480
-
-        # Default to 120 BPM (500,000 usec/beat) if no tempo message is found.
         midi_tempo_usec = 500000
-
+    
         if midi_file.tracks:
             for event in midi_file.tracks[0]:
                 if event.is_meta and event.type == "set_tempo":
                     song.tempo = mido.tempo2bpm(event.tempo)
+                    midi_tempo_usec = event.tempo
                 elif event.is_meta and event.type == "time_signature":
                     song.time_signature = f"{event.numerator}/{event.denominator}"
-
+    
         tracks_to_process = midi_file.tracks
         if track_number_to_select is not None:
             if not (1 <= track_number_to_select <= len(midi_file.tracks)):
@@ -237,60 +236,66 @@ class MidiReader:
                     f"Invalid track number '{track_number_to_select}'. File has {len(midi_file.tracks)} tracks."
                 )
             tracks_to_process = [midi_file.tracks[track_number_to_select - 1]]
-
+    
         for track_data in tracks_to_process:
             track = Track()
-            active_notes: Dict[int, Dict] = {}
+            active_notes: Dict[int, List[Dict]] = {}
             absolute_time_ticks = 0
-
             temp_track_name = None
             temp_instrument_name = None
-
+    
             for event in track_data:
                 absolute_time_ticks += event.time
-
+    
                 if event.is_meta and event.type == "set_tempo":
                     song.tempo = mido.tempo2bpm(event.tempo)
                     midi_tempo_usec = event.tempo
-
-                
-                elif event.type == "note_on" and event.velocity > 0:
+    
+                if event.type == "note_on" and event.velocity > 0:
                     beat_time = MidiReader._get_correct_beat_time(
                         absolute_time_ticks, ticks_per_beat, midi_tempo_usec, song.tempo
                     )
-                    active_notes[event.note] = { 
-                        "time": beat_time, 
-                        "velocity": event.velocity
-                    }
-
+                    if event.note not in active_notes:
+                        active_notes[event.note] = []
+                    active_notes[event.note].append({
+                        "time": beat_time,
+                        "velocity": event.velocity,
+                    })
+    
                 elif event.type == "note_off" or (event.type == "note_on" and event.velocity == 0):
-                    if event.note in active_notes:
+                    if event.note in active_notes and active_notes[event.note]:
                         beat_time = MidiReader._get_correct_beat_time(
                             absolute_time_ticks, ticks_per_beat, midi_tempo_usec, song.tempo
                         )
-                        start_event = active_notes.pop(event.note)
-                
+                        start_event = active_notes[event.note].pop(0)
+                        duration = beat_time - start_event["time"]
+                    
                         track.events.append(
-                            MusicalEvent(time=beat_time, pitch=event.note, 
-                                duration=duration, velocity=start_event["velocity"])
+                            MusicalEvent(
+                                time=start_event["time"], 
+                                pitch=event.note, 
+                                duration=max(0.25, duration), 
+                                velocity=start_event["velocity"]
+                            )
                         )
             
-            # Handle any hanging notes at the end of the track
-            track_end_time_beats = absolute_time_ticks / ticks_per_beat
-            for pitch, start_event in list(active_notes.items()):
-                duration = track_end_time_beats - start_event["time"]
-                track.events.append(
-                    MusicalEvent(
-                        time=start_event["time"],
-                        pitch=pitch,
-                        velocity=start_event["velocity"],
-                        duration=max(0.25, duration),
+            track_end_time_beats = MidiReader._get_correct_beat_time(
+                absolute_time_ticks, ticks_per_beat, midi_tempo_usec, song.tempo
+            )
+            for pitch, hanging_notes_list in list(active_notes.items()):
+                for start_event in hanging_notes_list:
+                    duration = track_end_time_beats - start_event["time"]
+                    track.events.append(
+                        MusicalEvent(
+                            time=start_event["time"],
+                            pitch=pitch,
+                            velocity=start_event["velocity"],
+                            duration=max(0.25, duration),
+                        )
                     )
-                )
-
+    
             track.instrument_name = temp_track_name or temp_instrument_name or track.instrument_name
-
             if track.events:
                 song.tracks.append(track)
-
+    
         return song
