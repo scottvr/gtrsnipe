@@ -17,12 +17,26 @@ import os
 import logging
 from sys import exit
 import librosa 
+import copy
 
 logger = logging.getLogger(__name__)
 bp_logger = logging.getLogger('basic_pitch')
 bp_logger.setLevel(logging.ERROR)
 
 SAMPLE_RATE=44100
+
+def print_song_state(song: Song, num_notes: int, stage: str):
+    """A helper function to print the number of notes and the first few notes at any stage."""
+    all_events = [event for track in song.tracks for event in track.events]
+    all_events.sort(key=lambda e: e.time)
+    logger.debug(f"\n--- DEBUG STATE AT: {stage} ---")
+    logger.debug(f"Total notes: {len(all_events)}")
+    if all_events:
+        logger.debug(f"First {num_notes} notes (Time, Pitch (Note), Velocity):")
+        for event in all_events[:num_notes]:
+            logger.debug(f"  T:{event.time:<7.2f} P:{event.pitch:<4}({pitch_to_note_name(event.pitch)}) V:{event.velocity}")
+    logger.debug("-----------------------------------\n")
+
 
 def filter_by_velocity(song: Song, velocity_cutoff: int) -> Song:
     """
@@ -195,7 +209,7 @@ class MusicConverter:
 
     def _parse(self, data: str, format: str, track_num: Optional[int], staccato: bool = False,  units: str = 'beats', quantization_resolution=0.125) -> Song:
         if format == 'mid':
-            return mid.MidiReader.parse(data, track_number_to_select=track_num, units=units)
+            return mid.MidiReader.parse(data, track_number_to_select=track_num)
         elif format == 'abc':
             with open(data, 'r') as f:
                 content = f.read()
@@ -261,6 +275,8 @@ def main():
  
     SAMPLE_RATE=44100
 
+    tuning_name = None
+
     try:
         current_file = args.input
         original_from_format = Path(args.input).suffix.lower()
@@ -268,19 +284,49 @@ def main():
         KNOWN_NON_AUDIO_FORMATS = ['.mid', '.abc', '.vex', '.tab']
         is_audio_input = original_from_format not in KNOWN_NON_AUDIO_FORMATS
 
-
         min_freq = None
         max_freq = None
  
-        is_piano_mode = args.tuning.upper() == 'PIANO'
-        if is_piano_mode and to_format != 'mid':
+        tuning_name = tuning_name or args.tuning.upper()
+        num_strings = args.num_strings
+        
+        is_piano_mode = tuning_name == 'PIANO'
+        if is_piano_mode:
             parser.error("--tuning PIANO can only be used with MIDI output (e.g., a .mid file).")
+
+    
+        if num_strings is not None and tuning_name == 'STANDARD':
+            if num_strings == 7:
+                tuning_name = 'SEVEN_STRING_STANDARD'
+            elif num_strings == 4:
+                tuning_name = 'BASS_STANDARD'
+        # Handle the --bass shortcut.
+        elif args.bass:
+            tuning_name = 'BASS_STANDARD'
+            args.tuning = tuning_name
+
+        if num_strings is None:
+            try:
+                num_strings = len(Tuning[tuning_name].value)
+            except KeyError:
+                num_strings = 6 
+    
+        try:
+            actual_tuning_strings = len(Tuning[tuning_name].value)
+            if num_strings != actual_tuning_strings:
+                parser.error(
+                    f"Mismatch between --num-strings ({num_strings}) and tuning '{tuning_name}' "
+                    f"(which has {actual_tuning_strings} strings). Please specify a compatible tuning."
+                )
+        except KeyError:
+            # This will catch invalid tuning names passed with --tuning
+            parser.error(f"Tuning '{tuning_name}' not found. Use --list-tunings to see available options.")
 
  
         if not args.no_constrain_frequency:
             logger.info("--- Calculating frequency range based on selected tuning ---")
             try:
-                tuning_notes = Tuning[args.tuning.upper()].value
+                tuning_notes = Tuning[tuning_name].value
                 open_string_pitches = [note_name_to_pitch(n) for n in tuning_notes]
                 
                 min_pitch = min(open_string_pitches)
@@ -302,8 +348,7 @@ def main():
                     except ValueError:
                         logger.error(f"Invalid note name for --max-note-override: '{args.max_note_override}'")
 
-                if not args.no_constrain_frequency:
-                    min_freq = midi_to_hz(min_pitch)
+                min_freq = midi_to_hz(min_pitch)
                 max_freq = midi_to_hz(max_pitch)
                 
                 logger.info(
@@ -408,6 +453,8 @@ def main():
             logger.info(f"--- Parsing '{current_file}' as a {format_to_parse} file for final conversion ---")
             song = converter._parse(current_file, format_to_parse, args.track, staccato=args.staccato, quantization_resolution=args.quantization_resolution)
         
+        print_song_state(song, 5, "After Parsing") 
+        
         if not song:
             logger.error(f"Failed to parse {format_to_parse} file or file is empty.")
             exit(1)
@@ -430,50 +477,17 @@ def main():
 
         song.title = Path(os.path.basename(args.input)).stem 
 
-        tuning_name = args.tuning
-        num_strings = args.num_strings
-    
-        if num_strings is not None and tuning_name == 'STANDARD':
-            if num_strings == 7:
-                tuning_name = 'SEVEN_STRING_STANDARD'
-            elif num_strings == 4:
-                tuning_name = 'BASS_STANDARD'
-        # Handle the --bass shortcut.
-        elif args.bass and tuning_name == 'STANDARD':
-            tuning_name = 'BASS_STANDARD'
-
-        if num_strings is None:
-            try:
-                num_strings = len(Tuning[tuning_name].value)
-            except KeyError:
-                num_strings = 6 
-    
-        try:
-            actual_tuning_strings = len(Tuning[tuning_name].value)
-            if num_strings != actual_tuning_strings:
-                parser.error(
-                    f"Mismatch between --num-strings ({num_strings}) and tuning '{tuning_name}' "
-                    f"(which has {actual_tuning_strings} strings). Please specify a compatible tuning."
-                )
-        except KeyError:
-            # This will catch invalid tuning names passed with --tuning
-            parser.error(f"Tuning '{tuning_name}' not found. Use --list-tunings to see available options.")
 
         if args.dynamic_quantize and is_audio_input:
             logger.info("--- Performing dynamic beat quantization ---")
-            # 1. Load the ORIGINAL audio to get the beat grid
             y, sr = librosa.load(args.input, sr=SAMPLE_RATE)
             
-            # 2. Get the beat timestamps in seconds
             _, beat_frames = librosa.beat.beat_track(y=y, sr=sr)
             beat_times = librosa.frames_to_time(beat_frames, sr=sr)
             
-            # 3. Re-quantize all notes in the song to this dynamic grid
-            # The song.events are already in seconds thanks to our parser change.
             for track in song.tracks:
                 track.events = quantize_notes_to_dynamic_beats(track.events, beat_times)
             
-            # 4. Set the song's tempo to the global estimate
             song.tempo = librosa.beat.tempo(y=y, sr=sr)[0]
             logger.info(f"--- Dynamic quantization complete. Global tempo set to {song.tempo:.2f} BPM. ---")
 
@@ -510,10 +524,14 @@ def main():
             )
         
         song = filter_by_velocity(song, args.velocity_cutoff)
+        
+        print_song_state(song, 5, "After Velocity Filter")
 
         if not args.no_pre_quantize and mapper_config:
             logger.info(f"Pre-quantizing before any fretboard mapping.")
             song = pre_quantize_song(song, args.quantization_resolution)    
+            
+            print_song_state(song, 5, "After Pre-Quantization")
         
         if not is_piano_mode:
             if args.analyze:
@@ -596,8 +614,11 @@ def main():
             output_path = Path(output_path_str)
             to_format = output_path.suffix.lstrip('.').lower()
 
+            song_for_conversion = copy.deepcopy(song)  
+            print_song_state(song_for_conversion, 5, "Before Final Convert/Map")
+
             output_data = converter.convert(
-                song=song,
+                song=song_for_conversion,
                 command_line=command_line,
                 from_format=format_to_parse,
                 to_format=to_format,
