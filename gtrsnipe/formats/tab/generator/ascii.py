@@ -72,7 +72,6 @@ class AsciiTabGenerator:
         current_measure_num = -1
 
         for event in all_events:
-            print(f"DEBUG TAB GEN: Note time={event.time:<10.4f} Pitch={event.pitch}")
             if event.string is None or event.fret is None: continue
         
             beat_time = event.time
@@ -100,9 +99,6 @@ class AsciiTabGenerator:
     @staticmethod
     def _format_single_measure(measure: TabMeasure, base_unit_in_beats: float, config: MapperConfig, measure_index: int) -> List[str]:
         """Formats a single measure using dynamic rhythmic spacing."""
-        note_beats = [round(n.beat_in_measure, 2) for n in measure.notes]
-        print(f"DEBUG FORMATTER: Formatting Measure {measure_index + 1} with beats: {note_beats}")
-
         measure_lines = ["-"] * config.num_strings
         if not measure.notes:
             # Handle empty measures
