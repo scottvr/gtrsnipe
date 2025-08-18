@@ -22,7 +22,7 @@ For audio files, gtrsnipe uses a multi-stage pipeline to process the sound and t
 
 ```mermaid
 flowchart TD
-    A["Audio File (.mp3, .wav)"] -->|"--stem-track"| B["Demucs Source Separation"]
+    A["Audio File (.mp3, .wav)"] -->|"--stem"| B["Demucs Source Separation"]
     B -->|"--nr,--remove-fx"| C["Noise & Reverb Reduction"]
     C --> D["Basic-Pitch Transcription"]
     D --> E{"GtrSnipe Core Mapper"}
@@ -283,6 +283,7 @@ Demucs is a state-of-the-art music source separation model. Several models are a
 - **hdemucs_mmi**: The v3 Hybrid Demucs model, retrained on more data.
 - **mdx / mdx_extra**: Models known for high performance, trained on the MusDB HQ dataset.
 - **mdx_q / mdx_extra_q**: Quantized (smaller, faster) versions of the mdx models, which may have slightly reduced quality.
+
 
 
 
