@@ -20,24 +20,8 @@ class AsciiTabParser:
     Parses an ASCII tablature string into a format-agnostic Song object,
     inferring rhythm from note spacing.
     """
-
     @staticmethod
-    def _spacing_to_beats(spacing: int, base_unit_in_beats: float) -> float:
-        """The inverse of the generator's _get_quantized_spacing logic."""
-        relative_duration = 1.0
-        if spacing <= 2:    # e.g., "-f-" has a spacing of 2
-            relative_duration = 1.0
-        elif spacing == 3:  # e.g., "-f--" has a spacing of 3
-            relative_duration = 2.0
-        elif spacing == 4:  # e.g., "-f---" has a spacing of 4
-            relative_duration = 4.0
-        else:  # spacing >= 5
-            relative_duration = 6.0  # Approximation for "> 4 units"
-
-        return relative_duration * base_unit_in_beats
-
-    @staticmethod
-    def parse(tab_string: str, staccato: bool = False) -> Song:
+    def parse(tab_string: str, staccato: bool = False, quantization_resolution: float = 0.125) -> Song:
         logger.debug("Starting ASCII Tab parsing.")
         song = Song()
         track = Track()
@@ -48,19 +32,43 @@ class AsciiTabParser:
 
         lines = tab_string.split('\n')
         tab_lines = [line for line in lines if re.match(r'^[eBGDAE]\|', line.strip())]
-        if not tab_lines or len(tab_lines) % 6 != 0:
-            logger.warning("Tab parsing failed: Invalid or empty tab lines.")
+
+        # 1. First, simply check if any tab lines were found at all.
+        if not tab_lines:
+            logger.warning("Tab parsing failed: No valid tab lines found in the input.")
             return song
 
-        full_strings = [""] * 6
-        num_page_lines = len(tab_lines) // 6
+        # 2. Dynamically determine the number of strings per block.
+        # We do this by counting lines until we see a repeated string name (like a second 'G|').
+        num_strings = 0
+        seen_starts = set()
+        for line in tab_lines:
+            # Get the starting character (e.g., 'G')
+            start_char = line.strip()[0].upper()
+            if start_char in seen_starts:
+                break # We've found the start of the next page, so we know the string count.
+            seen_starts.add(start_char)
+            num_strings += 1
+
+        if num_strings == 0:
+            logger.warning("Tab parsing failed: Could not determine the number of strings.")
+            return song
+
+        logger.debug(f"Dynamically detected {num_strings} strings per block.")
+
+        # 3. Use the dynamic num_strings value to parse correctly.
+        full_strings = [""] * num_strings
+        num_page_lines = len(tab_lines) // num_strings
         for i in range(num_page_lines):
-            for j in range(6):
-                line_content_raw = tab_lines[i * 6 + j].strip().split('|', 1)
-                if len(line_content_raw) > 1:
-                    tab_part = line_content_raw[1].replace('|', '')
-                    full_strings[j] += tab_part
-       
+            for j in range(num_strings):
+                line_index = i * num_strings + j
+                # Safety check in case of malformed tabs with incomplete last pages
+                if line_index < len(tab_lines):
+                    line_content_raw = tab_lines[line_index].strip().split('|', 1)
+                    if len(line_content_raw) > 1:
+                        tab_part = line_content_raw[1].replace('|', '')
+                        full_strings[j] += tab_part
+
         # --- Pass 1: A more robust method to find all note events ---
         temp_events: List[_TabEvent] = []
         for string_idx, line in enumerate(full_strings):
@@ -74,32 +82,41 @@ class AsciiTabParser:
                     elif tech_char == 'p': tech = "pull-off"
                 temp_events.append(_TabEvent(char_idx, string_idx, fret, tech))
         
+
         logger.debug(f"Found {len(temp_events)} raw note events in the tab string.")
 
-        # --- Pass 2: Calculate timing and add events directly to the track ---
-        current_beat = 0.0
-        last_char_idx = 0
-        BASE_UNIT_IN_BEATS = 0.25
+        print(f"DEBUG PARSER: Number of raw events found = {len(temp_events)}")
 
-        events_by_char_idx = groupby(sorted(temp_events, key=lambda e: e.char_idx), key=lambda e: e.char_idx)
-        
-        for char_idx, group_iter in events_by_char_idx:
-            spacing = char_idx - last_char_idx
-            if spacing < 0: continue # Should not happen with sorted input, but a safeguard
-            
-            time_delta = AsciiTabParser._spacing_to_beats(spacing, BASE_UNIT_IN_BEATS)
-            current_beat += time_delta
-            
-            for temp_event in group_iter:
-                pitch = AsciiTabParser._tab_pos_to_midi(temp_event.string_idx, temp_event.fret)
+        TIME_PER_CHAR_IN_BEATS = quantization_resolution
+
+        if not temp_events:
+            logger.warning("No notes found in tab string.")
+        else:
+            # We don't need to group by index anymore; we can process each note directly.
+            for temp_event in temp_events:
+                # The note's time is its character index multiplied by the time per character.
+                note_time = temp_event.char_idx * TIME_PER_CHAR_IN_BEATS
+
+                pitch = AsciiTabParser._tab_pos_to_midi(temp_event.string_idx, temp_event.fret, num_strings)
+                
+                # A reasonable default duration is one time step.
+                # The legato pass will adjust this later.
+                duration = TIME_PER_CHAR_IN_BEATS
+
                 event = MusicalEvent(
-                    time=current_beat, pitch=pitch, duration=0.5, velocity=90,
-                    string=temp_event.string_idx, fret=temp_event.fret, technique=temp_event.technique
+                    time=note_time,
+                    pitch=pitch,
+                    duration=duration,
+                    velocity=90,
+                    string=temp_event.string_idx,
+                    fret=temp_event.fret,
+                    technique=temp_event.technique
                 )
                 track.events.append(event)
-            last_char_idx = char_idx
         
-        logger.debug(f"Finished parsing. Total notes: {len(track.events)}. Final beat count: {current_beat:.2f}")
+            # Recalculate the final beat for logging purposes if needed
+            last_event_time = max(e.time for e in track.events) if track.events else 0.0
+            logger.debug(f"Finished parsing. Total notes: {len(track.events)}. Final beat count: {last_event_time:.2f}")
 
         # --- Pass 3: If staccato is enabled, modify the events now in the track ---
         if not staccato and len(track.events) > 1:
@@ -129,6 +146,25 @@ class AsciiTabParser:
         return song
 
     @staticmethod
-    def _tab_pos_to_midi(string_idx: int, fret: int) -> int:
-        open_string_pitches = [64, 59, 55, 50, 45, 40]
+    def _tab_pos_to_midi(string_idx: int, fret: int, num_strings: int) -> int:
+        """Converts a string/fret position to a MIDI pitch based on the instrument type."""
+        # Standard 6-String Guitar Tuning (High to Low)
+        guitar_tuning = [64, 59, 55, 50, 45, 40] 
+        # Standard 4-String Bass Tuning (High to Low)
+        bass_tuning = [43, 38, 33, 28] # G2, D2, A1, E1
+    
+        open_string_pitches = []
+        if num_strings == 4:
+            open_string_pitches = bass_tuning
+        elif num_strings == 6:
+            open_string_pitches = guitar_tuning
+        else:
+            # Default to guitar tuning if the string count is unusual
+            open_string_pitches = guitar_tuning
+    
+        # Ensure we don't go out of bounds if string_idx is too high
+        if string_idx >= len(open_string_pitches):
+            logger.error(f"Invalid string index {string_idx} for a {num_strings}-string instrument.")
+            return 0 # Return a default, silent pitch
+    
         return open_string_pitches[string_idx] + fret

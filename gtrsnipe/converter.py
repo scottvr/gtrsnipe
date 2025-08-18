@@ -6,18 +6,36 @@ from .core.config import MapperConfig
 from .utils.io import save_text_file, save_midi_file
 from .arguments import setup_parser
 from .utils.logger import setup_logger
+from .audio.dynamic_tempo import analyze_dynamic_tempo
 from argparse import ArgumentParser
 from typing import Optional
 from pathlib import Path
+from .core.types import MusicalEvent
+import numpy as np
 import sys
 import os
 import logging
 from sys import exit
 import librosa 
+import copy
 
 logger = logging.getLogger(__name__)
 bp_logger = logging.getLogger('basic_pitch')
 bp_logger.setLevel(logging.ERROR)
+
+SAMPLE_RATE=44100
+
+def print_song_state(song: Song, num_notes: int, stage: str):
+    """A helper function to print the number of notes and the first few notes at any stage."""
+    all_events = [event for track in song.tracks for event in track.events]
+    all_events.sort(key=lambda e: e.time)
+    logger.debug(f"\n--- DEBUG STATE AT: {stage} ---")
+    logger.debug(f"Total notes: {len(all_events)}")
+    if all_events:
+        logger.debug(f"First {num_notes} notes (Time, Pitch (Note), Velocity):")
+        for event in all_events[:num_notes]:
+            logger.debug(f"  T:{event.time:<7.2f} P:{event.pitch:<4}({pitch_to_note_name(event.pitch)}) V:{event.velocity}")
+    logger.debug("-----------------------------------\n")
 
 
 def filter_by_velocity(song: Song, velocity_cutoff: int) -> Song:
@@ -45,7 +63,7 @@ def filter_by_velocity(song: Song, velocity_cutoff: int) -> Song:
 
 def pre_quantize_song(song: Song, resolution: float) -> Song:
     """
-    Applies "heavy-handed" quantization to all events in a song.
+    Applies heavy-handed quantization to all events in a song.
 
     This function iterates through every note and snaps its start time to the
     nearest quantization grid line defined by the resolution.
@@ -60,6 +78,91 @@ def pre_quantize_song(song: Song, resolution: float) -> Song:
                 event.time = quantized_time
                 notes_adjusted += 1
     logger.info(f"Adjusted the timing of {notes_adjusted} notes.")
+    return song
+
+def quantize_notes_to_dynamic_beats(events: list[MusicalEvent], beat_times: np.ndarray) -> list[MusicalEvent]:
+    """
+    Re-calculates note timings based on a dynamic beat grid.
+    Assumes initial event.time is in seconds.
+    """
+    if not beat_times.any():
+        return events # Return original events if no beats were found
+
+    for event in events:
+        note_time_sec = event.time
+        note_duration_sec = event.duration
+
+        # Find the index of the beat that occurs just before or at the note's start time
+        beat_index = np.searchsorted(beat_times, note_time_sec, side='right') - 1
+
+        if beat_index < 0:
+            # Note occurs before the very first detected beat
+            new_time = 0.0
+            new_duration = note_duration_sec / (beat_times[1] - beat_times[0]) # Use first beat's duration as estimate
+        elif beat_index >= len(beat_times) - 1:
+            # Note occurs after the last detected beat
+            new_time = float(beat_index)
+            new_duration = note_duration_sec / (beat_times[-1] - beat_times[-2]) # Use last beat's duration
+        else:
+            # This is the normal case for most notes
+            # Get the timestamps of the surrounding beats
+            start_beat_time = beat_times[beat_index]
+            end_beat_time = beat_times[beat_index + 1]
+            
+            beat_duration_sec = end_beat_time - start_beat_time
+            if beat_duration_sec <= 0: # Avoid division by zero
+                beat_duration_sec = 0.5 # Fallback duration
+
+            # Calculate the note's fractional position within this beat
+            fractional_pos = (note_time_sec - start_beat_time) / beat_duration_sec
+            
+            # The new time is the beat index + its fraction
+            new_time = beat_index + fractional_pos
+            
+            # The new duration is its duration in seconds divided by the beat's duration
+            new_duration = note_duration_sec / beat_duration_sec
+            
+        event.time = new_time
+        event.duration = new_duration
+
+    return events
+
+def dynamic_quantize_song(intermediate_midi_path: str, processed_audio_path: str, args) -> Song:
+    """
+    Loads an intermediate MIDI, detects beats from audio, and returns a requantized Song.
+    """
+    logger.info("--- Performing dynamic beat quantization ---")
+    
+    # 1. Load the PROCESSED audio to get the beat grid
+    y, sr = librosa.load(processed_audio_path, sr=SAMPLE_RATE)
+    
+    # 2. Get the beat timestamps in seconds
+    _, beat_frames = librosa.beat.beat_track(y=y, sr=sr)
+    beat_times = librosa.frames_to_time(beat_frames, sr=sr)
+    
+    # 3. Parse the intermediate MIDI file, getting timings in SECONDS
+    temp_converter = MusicConverter()
+    song = temp_converter._parse(intermediate_midi_path, 'mid', args.track, units='seconds')
+
+    # 4. Re-quantize all notes in the song to this dynamic grid
+    for track in song.tracks:
+        track.events = quantize_notes_to_dynamic_beats(track.events, beat_times)
+
+    # 5. Analyze the beat grid to find tempo changes
+    song.tempo_events = analyze_dynamic_tempo(beat_times, song.time_signature)
+    
+    # 6. Set the song's initial tempo to the first detected tempo event or global average
+    if song.tempo_events:
+        song.tempo = song.tempo_events[0].bpm
+    else:
+        song.tempo = librosa.beat.tempo(y=y, sr=sr)[0]
+
+    logger.info(f"--- Dynamic quantization complete. Initial tempo set to {song.tempo:.2f} BPM. ---")
+    return song 
+    # 5. Set the song's tempo to the global estimate
+    song.tempo = librosa.beat.tempo(y=y, sr=sr)[0]
+    logger.info(f"--- Dynamic quantization complete. Global tempo set to {song.tempo:.2f} BPM. ---")
+    
     return song
 
 class MusicConverter:
@@ -83,6 +186,7 @@ class MusicConverter:
                     logger.info("--- Lowest note detected is Eb2. Automatically switching to E_FLAT tuning. ---")
                     mapper_config.tuning = 'E_FLAT'
         
+
         if transpose != 0 and song.tracks:
             logger.info(f"--- Transposing all events by {transpose} semitones ---")
             for track in song.tracks:
@@ -103,7 +207,7 @@ class MusicConverter:
         return output_data
 
 
-    def _parse(self, data: str, format: str, track_num: Optional[int], staccato: bool = False) -> Song:
+    def _parse(self, data: str, format: str, track_num: Optional[int], staccato: bool = False,  units: str = 'beats', quantization_resolution=0.125) -> Song:
         if format == 'mid':
             return mid.MidiReader.parse(data, track_number_to_select=track_num)
         elif format == 'abc':
@@ -117,7 +221,7 @@ class MusicConverter:
         elif format == 'tab':
             with open(data, 'r') as f:
                 content = f.read()
-            return tab.AsciiTabParser.parse(content, staccato=staccato)
+            return tab.AsciiTabParser.parse(content, staccato=staccato, quantization_resolution=quantization_resolution)
         else:
             raise ValueError(f"Unsupported input format: {format}")
 
@@ -168,30 +272,61 @@ def main():
 
     log_level = logging.DEBUG if args.debug else logging.INFO
     setup_logger(log_level)
-   
-    to_format = args.output.split('.')[-1]
  
+    SAMPLE_RATE=44100
+
+    tuning_name = None
+
     try:
         current_file = args.input
         original_from_format = Path(args.input).suffix.lower()
-        output_ext = Path(args.output).suffix.lower()
+        #output_ext = Path(args.output).suffix.lower()
         KNOWN_NON_AUDIO_FORMATS = ['.mid', '.abc', '.vex', '.tab']
         is_audio_input = original_from_format not in KNOWN_NON_AUDIO_FORMATS
 
-
         min_freq = None
         max_freq = None
-        SAMPLE_RATE=44100
  
-        is_piano_mode = args.tuning.upper() == 'PIANO'
-        if is_piano_mode and to_format != 'mid':
+        tuning_name = tuning_name or args.tuning.upper()
+        num_strings = args.num_strings
+        
+        is_piano_mode = tuning_name == 'PIANO'
+        if is_piano_mode:
             parser.error("--tuning PIANO can only be used with MIDI output (e.g., a .mid file).")
+
+    
+        if num_strings is not None and tuning_name == 'STANDARD':
+            if num_strings == 7:
+                tuning_name = 'SEVEN_STRING_STANDARD'
+            elif num_strings == 4:
+                tuning_name = 'BASS_STANDARD'
+        # Handle the --bass shortcut.
+        elif args.bass:
+            tuning_name = 'BASS_STANDARD'
+            args.tuning = tuning_name
+
+        if num_strings is None:
+            try:
+                num_strings = len(Tuning[tuning_name].value)
+            except KeyError:
+                num_strings = 6 
+    
+        try:
+            actual_tuning_strings = len(Tuning[tuning_name].value)
+            if num_strings != actual_tuning_strings:
+                parser.error(
+                    f"Mismatch between --num-strings ({num_strings}) and tuning '{tuning_name}' "
+                    f"(which has {actual_tuning_strings} strings). Please specify a compatible tuning."
+                )
+        except KeyError:
+            # This will catch invalid tuning names passed with --tuning
+            parser.error(f"Tuning '{tuning_name}' not found. Use --list-tunings to see available options.")
 
  
         if not args.no_constrain_frequency:
             logger.info("--- Calculating frequency range based on selected tuning ---")
             try:
-                tuning_notes = Tuning[args.tuning.upper()].value
+                tuning_notes = Tuning[tuning_name].value
                 open_string_pitches = [note_name_to_pitch(n) for n in tuning_notes]
                 
                 min_pitch = min(open_string_pitches)
@@ -213,8 +348,7 @@ def main():
                     except ValueError:
                         logger.error(f"Invalid note name for --max-note-override: '{args.max_note_override}'")
 
-                if not args.no_constrain_frequency:
-                    min_freq = midi_to_hz(min_pitch)
+                min_freq = midi_to_hz(min_pitch)
                 max_freq = midi_to_hz(max_pitch)
                 
                 logger.info(
@@ -227,18 +361,33 @@ def main():
                 exit(1)
         
 
+        processed_audio_for_beats = ""
+
         # --- Audio Pipeline Execution ---
         if is_audio_input:
             logger.info("--- Audio input detected. Starting audio-to-MIDI pipeline. ---")
             from .audio.separator import separate_instrument
             from .audio.cleaner import cleanup_audio, apply_low_pass_filter
             from .audio.distortion_remover import remove_distortion_effects
+
+            processed_audio_for_beats = current_file
+
             if args.pitch_engine == "basic-pitch": 
-                from .audio.pitch_detector import transcribe_to_midi
+                from .audio.pitch_detector_bp import transcribe_to_midi_with_bp
             else:
-                from .audio.pitch_detector_librosa import transcribe_with_librosa
+                from .audio.pitch_detector_lr import transcribe_to_midi_with_lr
 
-
+            # Determine the correct path for the intermediate MIDI file.
+            intermediate_midi_path = None
+            # Check if any of the requested outputs is a midi file.
+            for out_path in args.output:
+                if Path(out_path).suffix.lower() == '.mid':
+                    intermediate_midi_path = out_path
+                    break
+            
+            # If no MIDI output was requested, create a temporary path.
+            if intermediate_midi_path is None:
+                intermediate_midi_path = Path(args.input).with_suffix('.mid').name
             
             if args.stem_track:
                 current_file = separate_instrument(current_file, 
@@ -255,9 +404,22 @@ def main():
             if args.nr:
                 current_file = cleanup_audio(current_file)
 
+            # Determine the correct path for the intermediate MIDI file.
+            intermediate_midi_path = None
+            # Check if any of the requested outputs is a midi file.
+            for out_path in args.output:
+                if Path(out_path).suffix.lower() == '.mid':
+                    intermediate_midi_path = out_path
+                    break
+            
+            # If no MIDI output was requested, create a temporary path.
+            if intermediate_midi_path is None:
+                intermediate_midi_path = Path(args.input).with_suffix('.mid').name
+
             if args.pitch_engine == 'basic-pitch':
-                current_file = transcribe_to_midi(
+                current_file = transcribe_to_midi_with_bp(
                     current_file,
+                    final_output_path=intermediate_midi_path,
                     overwrite=args.yes,
                     min_freq=min_freq,
                     max_freq=max_freq,
@@ -269,69 +431,107 @@ def main():
             elif args.pitch_engine == 'librosa':
                 # Note: fmin and fmax could be derived from --constrain-frequency
                 # for a more integrated solution.
-                current_file = transcribe_with_librosa(
+                current_file = transcribe_to_midi_with_lr(
                     current_file,
+                    intermediate_midi_path,
                     fmin_hz=min_freq or librosa.note_to_hz('C1'),
                     fmax_hz=max_freq or librosa.note_to_hz('G4')
                 )
-            
 
 
-        
+
         # --- Final Conversion (The "Last Mile") ---
         # At this point, current_file is the path to a MIDI file (either original input or from the pipeline)
+
         converter = MusicConverter()
         format_to_parse = Path(current_file).suffix.lstrip('.')
+        if args.dynamic_quantize and is_audio_input:
+            # If dynamic quantize is on, we build the Song object here
+            song = dynamic_quantize_song(current_file, processed_audio_for_beats, args)
+        else:
+            # Otherwise, we parse normally
+            logger.info(f"--- Parsing '{current_file}' as a {format_to_parse} file for final conversion ---")
+            song = converter._parse(current_file, format_to_parse, args.track, staccato=args.staccato, quantization_resolution=args.quantization_resolution)
         
-        # Step A: Parse the file into a Song object
-        logger.info(f"--- Parsing '{current_file}' as a {format_to_parse} file for final conversion ---")
-        song = converter._parse(current_file, format_to_parse, args.track, staccato=args.staccato)
+        print_song_state(song, 5, "After Parsing") 
+        
         if not song:
             logger.error(f"Failed to parse {format_to_parse} file or file is empty.")
             exit(1)
+
+        if args.first_note_is_downbeat:
+            all_events = [event for track in song.tracks for event in track.events]
+            if all_events:
+                # Find the time of the very first note across all tracks
+                first_note_time = min(event.time for event in all_events)
+                
+                # If there's leading silence, shift the entire song
+                if first_note_time > 0:
+                    logger.info(f"--- First note is downbeat: Shifting timeline by {-first_note_time:.3f} beats ---")
+                    for track in song.tracks:
+                        for event in track.events:
+                            event.time -= first_note_time
 
         initial_note_count = sum(len(track.events) for track in song.tracks)
         logger.info(f"Parsed {initial_note_count} initial notes from the input file.")
 
         song.title = Path(os.path.basename(args.input)).stem 
 
-        tuning_name = args.tuning
-        num_strings = args.num_strings
-    
-        if num_strings is not None and tuning_name == 'STANDARD':
-            if num_strings == 7:
-                tuning_name = 'SEVEN_STRING_STANDARD'
-            elif num_strings == 4:
-                tuning_name = 'BASS_STANDARD'
-        # Handle the --bass shortcut.
-        elif args.bass and tuning_name == 'STANDARD':
-            tuning_name = 'BASS_STANDARD'
 
-        if num_strings is None:
-            try:
-                num_strings = len(Tuning[tuning_name].value)
-            except KeyError:
-                num_strings = 6 
-    
-        try:
-            actual_tuning_strings = len(Tuning[tuning_name].value)
-            if num_strings != actual_tuning_strings:
-                parser.error(
-                    f"Mismatch between --num-strings ({num_strings}) and tuning '{tuning_name}' "
-                    f"(which has {actual_tuning_strings} strings). Please specify a compatible tuning."
-                )
-        except KeyError:
-            # This will catch invalid tuning names passed with --tuning
-            parser.error(f"Tuning '{tuning_name}' not found. Use --list-tunings to see available options.")
+        if args.dynamic_quantize and is_audio_input:
+            logger.info("--- Performing dynamic beat quantization ---")
+            y, sr = librosa.load(args.input, sr=SAMPLE_RATE)
+            
+            _, beat_frames = librosa.beat.beat_track(y=y, sr=sr)
+            beat_times = librosa.frames_to_time(beat_frames, sr=sr)
+            
+            for track in song.tracks:
+                track.events = quantize_notes_to_dynamic_beats(track.events, beat_times)
+            
+            song.tempo = librosa.beat.tempo(y=y, sr=sr)[0]
+            logger.info(f"--- Dynamic quantization complete. Global tempo set to {song.tempo:.2f} BPM. ---")
+
 
         mapper_config = None
         
+        if not is_piano_mode:   
+            mapper_config = MapperConfig(
+                max_fret=args.max_fret,
+                tuning=tuning_name,
+                num_strings=num_strings,
+                fret_span_penalty=args.fret_span_penalty,
+                movement_penalty=args.movement_penalty,
+                string_switch_penalty=args.string_switch_penalty,
+                high_fret_penalty=args.high_fret_penalty,
+                low_string_high_fret_multiplier=args.low_string_high_fret_multiplier,
+                sweet_spot_bonus=args.sweet_spot_bonus,
+                sweet_spot_low=args.sweet_spot_low,
+                sweet_spot_high=args.sweet_spot_high,
+                unplayable_fret_span=args.unplayable_fret_span,
+                prefer_open=args.prefer_open,
+                fretted_open_penalty=args.fretted_open_penalty,
+                ignore_open=args.ignore_open,
+                legato_time_threshold=args.legato_time_threshold,
+                tapping_run_threshold=args.tapping_run_threshold,
+                deduplicate_pitches=args.dedupe,
+                quantization_resolution=args.quantization_resolution,
+                capo=args.capo,
+                barre_bonus=args.barre_bonus,  
+                barre_penalty=args.barre_penalty,  
+                mono_lowest_only=args.mono_lowest_only,
+                let_ring_bonus=args.let_ring_bonus,
+                diagonal_span_penalty=args.diagonal_span_penalty,
+            )
         
         song = filter_by_velocity(song, args.velocity_cutoff)
+        
+        print_song_state(song, 5, "After Velocity Filter")
 
-        if args.pre_quantize and mapper_config:
+        if not args.no_pre_quantize and mapper_config:
             logger.info(f"Pre-quantizing before any fretboard mapping.")
             song = pre_quantize_song(song, args.quantization_resolution)    
+            
+            print_song_state(song, 5, "After Pre-Quantization")
         
         if not is_piano_mode:
             if args.analyze:
@@ -409,64 +609,43 @@ def main():
                     logger.error(f"Error: Tuning '{args.tuning}' not found.")
                     exit(1) 
 
-        if not is_piano_mode:   
-            mapper_config = MapperConfig(
-                max_fret=args.max_fret,
-                tuning=tuning_name,
-                num_strings=num_strings,
-                fret_span_penalty=args.fret_span_penalty,
-                movement_penalty=args.movement_penalty,
-                string_switch_penalty=args.string_switch_penalty,
-                high_fret_penalty=args.high_fret_penalty,
-                low_string_high_fret_multiplier=args.low_string_high_fret_multiplier,
-                sweet_spot_bonus=args.sweet_spot_bonus,
-                sweet_spot_low=args.sweet_spot_low,
-                sweet_spot_high=args.sweet_spot_high,
-                unplayable_fret_span=args.unplayable_fret_span,
-                prefer_open=args.prefer_open,
-                fretted_open_penalty=args.fretted_open_penalty,
-                ignore_open=args.ignore_open,
-                legato_time_threshold=args.legato_time_threshold,
-                tapping_run_threshold=args.tapping_run_threshold,
-                deduplicate_pitches=args.dedupe,
-                quantization_resolution=args.quantization_resolution,
-                capo=args.capo,
-                barre_bonus=args.barre_bonus,  
-                barre_penalty=args.barre_penalty,  
-                mono_lowest_only=args.mono_lowest_only,
-                let_ring_bonus=args.let_ring_bonus,
-                diagonal_span_penalty=args.diagonal_span_penalty,
+        logger.info("--- Generating output files ---")
+        for output_path_str in args.output:
+            output_path = Path(output_path_str)
+            to_format = output_path.suffix.lstrip('.').lower()
+
+            song_for_conversion = copy.deepcopy(song)  
+            print_song_state(song_for_conversion, 5, "Before Final Convert/Map")
+
+            output_data = converter.convert(
+                song=song_for_conversion,
+                command_line=command_line,
+                from_format=format_to_parse,
+                to_format=to_format,
+                nudge=args.nudge,
+                transpose=args.transpose,
+                max_line_width=args.max_line_width,
+                no_articulations=args.no_articulations,
+                single_string=args.single_string,
+                mapper_config=mapper_config
             )
-
-
-        output_data = converter.convert(
-            song=song,
-            command_line=command_line,
-            from_format=format_to_parse,
-            to_format=to_format,
-            nudge=args.nudge,
-            transpose=args.transpose,
-            max_line_width=args.max_line_width,
-            no_articulations=args.no_articulations,
-            single_string=args.single_string,
-            mapper_config=mapper_config
-        )
     
-        output_path = Path(args.output)
-        if output_path.exists() and not args.yes:
-            logger.error(f"Error: Output file '{output_path}' already exists.")
-            logger.error("Use the -y or --yes flag to allow overwriting.")
-            exit(1)
+            if output_path.exists() and not args.yes:
+                logger.error(f"Error: Output file '{output_path}' already exists.")
+                logger.error("Use the -y or --yes flag to allow overwriting.")
+                exit(1)
 
 
-        logger.info(f"Converting '{args.input}' ({format_to_parse}) to '{args.output}' ({to_format})...")
+            logger.info(f"Saving '{args.input}' ({format_to_parse}) to '{args.output}' ({to_format})...")
 
-        if to_format == 'mid':
-            if isinstance(output_data, MidiUtilFile):
-                save_midi_file(output_data, args.output)
-        else:
-            if isinstance(output_data, str):                
-                save_text_file(output_data, args.output)
+            if to_format == 'mid':
+                if isinstance(output_data, MidiUtilFile):
+                    save_midi_file(output_data, str(output_path))
+            else:
+                if isinstance(output_data, str):                
+                    save_text_file(output_data, str(output_path))
+
+            logger.info(f"Successfully saved {output_path_str}")
 
     except Exception as e:
         logger.error(f"An error occurred: {e}", exc_info=args.debug)

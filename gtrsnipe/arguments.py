@@ -5,8 +5,13 @@ def setup_parser() -> ArgumentParser:
     parser = ArgumentParser(description="Convert music files between various formats, including audio to MIDI to tab.")
     
     parser.add_argument('-i', '--input', help='Path to the input file (.mid, .mp3, .wav, etc.).')
-    parser.add_argument('-o', '--output', help='Path to the output file (.tab, .mid, etc.).')
-
+    parser.add_argument(
+        '-o', '--output',
+        required=True,
+        nargs='+', 
+        help='Path(s) to the output file(s) (e.g., -o out.mid -o out.tab).'
+    )
+    
     instrument_group = parser.add_argument_group("Instrument Options")
     instrument_group.add_argument(
         '--capo',
@@ -137,6 +142,11 @@ def setup_parser() -> ArgumentParser:
         type=int,
         default=0,
         help="An integer to shift the transcription's start time to the right. Each unit corresponds to roughly a 16th note."
+    )
+    parser.add_argument(
+        '--first-note-is-downbeat',
+        action='store_true',
+        help="Shift the entire timeline so that the first note of the song starts at beat 0."
     )
     parser.add_argument(
         '-y', '--yes',
@@ -293,7 +303,8 @@ def setup_parser() -> ArgumentParser:
         help='Min number of notes in a run to be considered for tapping (default: 2).'
     )
     mapper_group.add_argument(
-        '--pre-quantize',
+        '--no-pre-quantize',
+        default=False,
         action='store_true',
         help='Force a pre-quantization pass, snapping all notes to the quantization grid before mapping.'
     )
@@ -307,7 +318,7 @@ def setup_parser() -> ArgumentParser:
         '--quantization-resolution',
         type=float,
         default=0.125,
-        choices=[0.0125, 0.0625, 0.125, 0.25, 0.5, 1.0],
+        choices=[0.0125, 0.025, 0.0625, 0.125, 0.25, 0.5, 1.0],
         help="Quantization resolution. Used by the mapper to determine simultaneous sounding of notes (chords) and by the ascii tab generator mainly for spacing purposes."
     )
     mapper_group.add_argument(
@@ -343,6 +354,11 @@ def setup_parser() -> ArgumentParser:
         '--diagonal-span-penalty',
         action='store_true',
         help='Penalize fingerings with an unplayable fret span between consecutive notes.'
+    )
+    mapper_group.add_argument(
+        '--dynamic-quantize',
+        action='store_true',
+        help='Quantize notes to a dynamic beat grid detected from the audio.'
     )
 
     return parser

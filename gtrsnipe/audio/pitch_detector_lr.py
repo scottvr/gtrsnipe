@@ -9,7 +9,7 @@ from .tempo_detector import estimate_tempo
 
 logger = logging.getLogger(__name__)
 
-def transcribe_with_librosa(audio_file: str, fmin_hz: float | None, fmax_hz: float | None) -> str:
+def transcribe_to_midi_with_lr(audio_file: str, final_output_path: str, fmin_hz: float | None, fmax_hz: float | None) -> str:
     """
     Creates a simple, monophonic MIDI file from an audio file using librosa,
     constrained by the provided frequency range.
@@ -27,7 +27,7 @@ def transcribe_with_librosa(audio_file: str, fmin_hz: float | None, fmax_hz: flo
     f0, voiced_flag, voiced_probs = librosa.pyin(y, fmin=float(fmin), fmax=float(fmax))    
     # 2. Detect note onset times
     onset_frames = librosa.onset.onset_detect(y=y, sr=sr, units='frames')
-    onset_times = librosa.frames_to_time(onset_frames, sr=sr)
+    #onset_times = librosa.frames_to_time(onset_frames, sr=sr)
     
     # 3. Estimate loudness (RMS energy) to approximate velocity
     rms = librosa.feature.rms(y=y)[0]
@@ -61,13 +61,12 @@ def transcribe_with_librosa(audio_file: str, fmin_hz: float | None, fmax_hz: flo
                                  duration=duration, velocity=velocity)
                 )
     estimated_tempo = estimate_tempo(audio_file)
-
-    logger.info("--- Transcribing to MIDI ---")
+    
     track = Track(events=events, instrument_name="Synth Bass 1")
     song = Song(tracks=[track], tempo=estimated_tempo, time_signature="4/4") 
 
     p = Path(audio_file)
-    output_path = p.with_name(f"{p.stem}_librosa.mid")
+    output_path = Path(final_output_path)
     
     midi_data = MidiGenerator.generate(song)
     save_midi_file(midi_data, str(output_path))
