@@ -25,7 +25,7 @@ bp_logger.setLevel(logging.ERROR)
 
 SAMPLE_RATE=44100
 
-def print_song_state(song: Song, num_notes: int, stage: str):
+def debug_song_state(song: Song, num_notes: int, stage: str):
     """A helper function to print the number of notes and the first few notes at any stage."""
     all_events = [event for track in song.tracks for event in track.events]
     all_events.sort(key=lambda e: e.time)
@@ -453,7 +453,7 @@ def main():
             logger.info(f"--- Parsing '{current_file}' as a {format_to_parse} file for final conversion ---")
             song = converter._parse(current_file, format_to_parse, args.track, staccato=args.staccato, quantization_resolution=args.quantization_resolution)
         
-        print_song_state(song, 5, "After Parsing") 
+        debug_song_state(song, 5, "After Parsing") 
         
         if not song:
             logger.error(f"Failed to parse {format_to_parse} file or file is empty.")
@@ -525,13 +525,13 @@ def main():
         
         song = filter_by_velocity(song, args.velocity_cutoff)
         
-        print_song_state(song, 5, "After Velocity Filter")
+        debug_song_state(song, 5, "After Velocity Filter")
 
         if not args.no_pre_quantize and mapper_config:
             logger.info(f"Pre-quantizing before any fretboard mapping.")
             song = pre_quantize_song(song, args.quantization_resolution)    
             
-            print_song_state(song, 5, "After Pre-Quantization")
+            debug_song_state(song, 5, "After Pre-Quantization")
         
         if not is_piano_mode:
             if args.analyze:
@@ -610,12 +610,19 @@ def main():
                     exit(1) 
 
         logger.info("--- Generating output files ---")
+        print(f"DEBUG: Starting loop for outputs: {args.output}")
+        
         for output_path_str in args.output:
+            print(f"\nDEBUG: TOP OF LOOP. Current file: '{output_path_str}'")
             output_path = Path(output_path_str)
             to_format = output_path.suffix.lstrip('.').lower()
 
+            print(f"DEBUG:   - Determined format: '{to_format}'")
+            print(f"DEBUG:   - Path object for saving: '{output_path}'")
+
             song_for_conversion = copy.deepcopy(song)  
-            print_song_state(song_for_conversion, 5, "Before Final Convert/Map")
+            config_for_conversion = copy.deepcopy(mapper_config)
+            debug_song_state(song_for_conversion, 5, "Before Final Convert/Map")
 
             output_data = converter.convert(
                 song=song_for_conversion,
@@ -627,7 +634,7 @@ def main():
                 max_line_width=args.max_line_width,
                 no_articulations=args.no_articulations,
                 single_string=args.single_string,
-                mapper_config=mapper_config
+                mapper_config=config_for_conversion
             )
     
             if output_path.exists() and not args.yes:
@@ -635,8 +642,7 @@ def main():
                 logger.error("Use the -y or --yes flag to allow overwriting.")
                 exit(1)
 
-
-            logger.info(f"Saving '{args.input}' ({format_to_parse}) to '{args.output}' ({to_format})...")
+            logger.info(f"Saving '{args.input}' ({format_to_parse}) to '{output_path_str}' ({to_format})...")
 
             if to_format == 'mid':
                 if isinstance(output_data, MidiUtilFile):

@@ -8,7 +8,7 @@ def setup_parser() -> ArgumentParser:
     parser.add_argument(
         '-o', '--output',
         required=True,
-        nargs='+', 
+        action='append', 
         help='Path(s) to the output file(s) (e.g., -o out.mid -o out.tab).'
     )
     
