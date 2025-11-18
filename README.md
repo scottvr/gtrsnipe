@@ -1,5 +1,6 @@
 # gtrsnipe 
 (pronounced "guttersnipe")
+[see the wiki for detailed example use cases](https://github.com/scottvr/gtrsnipe/wiki)
 
 ## V0.1.1
 Convert to and from .mid, .abc, .vex, and .tab files. 
@@ -283,6 +284,7 @@ Demucs is a state-of-the-art music source separation model. Several models are a
 - **hdemucs_mmi**: The v3 Hybrid Demucs model, retrained on more data.
 - **mdx / mdx_extra**: Models known for high performance, trained on the MusDB HQ dataset.
 - **mdx_q / mdx_extra_q**: Quantized (smaller, faster) versions of the mdx models, which may have slightly reduced quality.
+
 
 
 
