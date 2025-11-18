@@ -60,7 +60,7 @@ pip install -e .
 
 ## Usage 
 
-The installation process makes gtrsnipe available as a command within your activgated virtual environment.
+The installation process makes gtrsnipe available as a command within your activated virtual environment.
 
 ### Command-line help
 
@@ -284,6 +284,7 @@ Demucs is a state-of-the-art music source separation model. Several models are a
 - **hdemucs_mmi**: The v3 Hybrid Demucs model, retrained on more data.
 - **mdx / mdx_extra**: Models known for high performance, trained on the MusDB HQ dataset.
 - **mdx_q / mdx_extra_q**: Quantized (smaller, faster) versions of the mdx models, which may have slightly reduced quality.
+
 
 
 
