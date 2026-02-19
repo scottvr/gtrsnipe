@@ -144,8 +144,9 @@ gtrsnipe -i input.mid --fret-span-penalty -10 ...
 
 
 **Audio-to-MIDI Pipeline Options:**
--  `--nr`                  Step 2: Enables noise/reverb reduction on the audio stem.
--  `--remove-fx`           Pre-process audio with a distortion recovery model before pitch detection.
+-  `--nr`                  (Experimental. Enables noise/reverb reduction on the audio stem.)
+-  `--remove-fx`           Pre-process audio with a distortion recovery model before pitch detection."
+                           (Experimental. Requires onnxruntime and the 'denoiser_model.onnx' model file in the current directory.)
 -  `--stem-track {guitar,bass,drums,vocals,piano,other}`
                         The instrument stem to isolate with Demucs. 'guitar' defaults to the 'other' stem.
 -  `--demucs-model DEMUCS_MODEL`
