@@ -69,6 +69,7 @@ def setup_parser() -> ArgumentParser:
         '--remove-fx',
         action='store_true',
         help="Pre-process audio with a distortion recovery model before pitch detection."
+            "(Experimental. Requires onnxruntime and the 'denoiser_model.onnx' model file in the current directory.)"
     )
     pipeline_group.add_argument(
         '--stem-track', 
@@ -200,6 +201,7 @@ def setup_parser() -> ArgumentParser:
              "Used when the input has many out-of-range notes that would otherwise be dropped."
     )   
     
+
     parser.add_argument(
         '--debug',
         action='store_true',

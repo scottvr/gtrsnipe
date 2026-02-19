@@ -27,8 +27,8 @@ dependencies = [
     "soundfile",
     "scipy",
 #    "onnxruntime",
-    "torch",
-    "torchaudio",
+#    "torch",
+#    "torchaudio",
 ]
 
 [project.scripts]
