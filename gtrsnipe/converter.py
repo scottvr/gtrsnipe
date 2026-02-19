@@ -573,21 +573,28 @@ def main():
             constrain_open_notes = [note_name_to_pitch(n) for n in Tuning[args.tuning.upper()].value]
             min_range = min(constrain_open_notes)
             max_range = max(constrain_open_notes) + args.max_fret
+            pitch_shifted = 0
 
             for track in song.tracks:
                 if args.normalize_pitch:
                     for event in track.events:
-                        while event.pitch > max_range: event.pitch -= 12
-                        while event.pitch < min_range: event.pitch += 12
+                        while event.pitch > max_range: 
+                            event.pitch -= 12
+                            pitch_shifted = pitch_shifted + 1
+                        while event.pitch < min_range: 
+                            event.pitch += 12
+                            pitch_shifted = pitch_shifted + 1
+                    logger.info(f"--- Pitch normalization active: All notes constrained to {args.tuning} range ---")
                 else:
-                    # If not normalizing, we drop out-of-range notes and log how many were discarded.
+                    logger.info(f"--- Pitch normalization NOT active: Dropping notes outside of {args.tuning} range ---")
                     track.events = [e for e in track.events if min_range <= e.pitch <= max_range]
 
             final_note_count = sum(len(track.events) for track in song.tracks)
             notes_discarded = initial_note_count - final_note_count
-            logger.info(f"--- Constrained notes to tuning range ({pitch_to_note_name(min_range)} to {pitch_to_note_name(max_range)}). ---")
             if notes_discarded > 0:
-                logger.info(f"--- Dropped {notes_discarded} out-of-range notes. ---")
+                logger.info(f"--- Dropped {notes_discarded} out-of-range notes (Playable range: {pitch_to_note_name(min_range)} - {pitch_to_note_name(max_range)}) ---")
+            elif pitch_shifted > 0:
+                logger.info(f"--- Shifted {pitch_shifted} notes by octaves to fit ---")
 
             exit(1) 
 
