@@ -2,11 +2,19 @@
 (pronounced "guttersnipe")
 [see the wiki for detailed example use cases](https://github.com/scottvr/gtrsnipe/wiki)
 
-## V0.1.1
+## v0.1.1
 Convert to and from .mid, .abc, .vex, and .tab files. 
 
-## V0.2.0
+## v0.2.0
 Transcribe music for guitar, capable of converting audio files (.mp3, .wav), MIDI (.mid), and various text-based formats (.tab, .vex, .abc) into high-quality ASCII tablature. [Read about the current state of these new features](https://github.com/scottvr/gtrsnipe/wiki/v0.2.0)
+
+## v0.2.1
+Performance fixes, which also allowed removal of redundant switches.
+`--constrain-pitch` becomes `--normalize-pitch`
+`--pitch-mode` is gone, with its old `drop` behavior being default
+and `--normalize-pitch` has the same effect as the old ``--pitch-mode drop` (when it was used in conjuction with `--constrain-pitch`)
+
+Realizing I was doing this in two different places in two different ways allowed me to notice the silly repetitive and redundant logic around those two switches, which then showed how I was also normalizing inside the fretmapper's fingering optimizer, which is where the combinatorial explosion lives. It was fast before, but only because our computers today are so fast.  
 
 ### What?
 
@@ -71,7 +79,7 @@ uusage: gtrsnipe [-h] [-i INPUT] [-o OUTPUT] [--capo CAPO]
                 [--stem-track {guitar,bass,drums,vocals,piano,other}] [--demucs-model DEMUCS_MODEL] [--constrain-frequency]
                 [--min-note-override MIN_NOTE_OVERRIDE] [--max-note-override MAX_NOTE_OVERRIDE] [--low-pass-filter] [--onset-threshold ONSET_THRESHOLD]
                 [--frame-threshold FRAME_THRESHOLD] [--min-note-len-ms MIN_NOTE_LEN_MS] [--melodia-trick] [--nudge NUDGE] [-y] [--track TRACK] [--analyze]
-                [--transpose TRANSPOSE] [--no-articulations] [--staccato] [--max-line-width MAX_LINE_WIDTH] [--single-string {1,2,3,4,5,6}] [--constrain-pitch]    
+                [--transpose TRANSPOSE] [--no-articulations] [--staccato] [--max-line-width MAX_LINE_WIDTH] [--single-string {1,2,3,4,5,6}] [--normalize-pitch]    
                 [--pitch-mode {drop,normalize}] [--debug] [--list-tunings] [--show-tuning TUNING_NAME] [--fret-span-penalty FRET_SPAN_PENALTY]
                 [--movement-penalty MOVEMENT_PENALTY] [--string-switch-penalty STRING_SWITCH_PENALTY] [--high-fret-penalty HIGH_FRET_PENALTY]
                 [--low-string-high-fret-multiplier LOW_STRING_HIGH_FRET_MULTIPLIER] [--unplayable-fret-span UNPLAYABLE_FRET_SPAN]
@@ -84,7 +92,7 @@ uusage: gtrsnipe [-h] [-i INPUT] [-o OUTPUT] [--capo CAPO]
 
 ### A Note on Bonuses and Penalties: Inverting Scoring Behavior
 
-All scoring parameters, whether they end in -bonus or -penalty, are simply numerical weights. The suffix is used to indicate the parameter's default behavior—penalties are subtracted from the score, and bonuses are added.
+All scoring parameters, whether they end in -bonus or -penalty, are simply numerical weights. The suffix is used to indicate the parameter's default behavior   penalties are subtracted from the score, and bonuses are added.
 
 You can invert the behavior of any scoring parameter by providing a negative value. This allows for a high degree of customization.
 
@@ -128,9 +136,9 @@ gtrsnipe -i input.mid --fret-span-penalty -10 ...
                         Max number of vertical columns per line of ASCII tab. (default: 40)
 -  `--single-string {1,2,3,4,5,6}`
                         Force all notes onto a single string (1-6, high e to low E). Ideal for transcribing legato/tapping runs.
--  `--constrain-pitch`     Constrain notes to the playable range of the tuning specified by --tuning.
+-  `--normalize-pitch`     Constrain notes to the playable range of the tuning specified by --tuning.
 -  `--pitch-mode {drop,normalize}`
-                        Used with --constrain-pitch. 'drop' (default) discards out-of-range notes. 'normalize' transposes out-of-range notes by octaves until      
+                        Used with --normalize-pitch. 'drop' (default) discards out-of-range notes. 'normalize' transposes out-of-range notes by octaves until      
                         they fit.
 -  `--debug`               Enable detailed debug logging messages.
 

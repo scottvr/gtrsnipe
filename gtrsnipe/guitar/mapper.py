@@ -58,18 +58,6 @@ class GuitarMapper:
                 logger.warning(f"Note with pitch {event.pitch} is unplayable on string {string_index+1} (fret {fret}) and was dropped.")
         return mapped_events
 
-    def _normalize_pitch(self, pitch: int) -> int:
-        """Transposes a pitch by octaves until it is within the playable range of the instrument."""
-        # Get the min and max pitches once to avoid recalculating in the loop
-        min_pitch = min(self.pitch_to_positions.keys())
-        max_pitch = max(self.pitch_to_positions.keys())
-        
-        while pitch > max_pitch:
-            pitch -= 12
-        while pitch < min_pitch:
-            pitch += 12
-        return pitch
-
     def _score_fingering(self, fingering: Fingering, prev_fingering: Optional[Fingering], prev_prev_fingering: Optional[Fingering]) -> float:
         """Scores a fingering based on internal shape, position, and transition cost."""
         
@@ -176,8 +164,7 @@ class GuitarMapper:
     def _find_optimal_fingering(self, notes: List[MusicalEvent], prev_fingering: Optional[Fingering], prev_prev_fingering: Optional[Fingering]) -> Optional[Fingering]:
         note_positions = []
         for note in notes:
-            norm_pitch = self._normalize_pitch(note.pitch)            
-            positions = self.pitch_to_positions.get(norm_pitch)
+            positions = self.pitch_to_positions.get(note.pitch)
             if not positions: return None
             note_positions.append(positions)
 

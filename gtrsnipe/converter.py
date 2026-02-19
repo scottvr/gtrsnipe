@@ -558,6 +558,7 @@ def main():
                 logger.info(f"Lowest Note:  {min_pitch} ({pitch_to_note_name(min_pitch)})")
                 logger.info(f"Highest Note: {max_pitch} ({pitch_to_note_name(max_pitch)})")
                 logger.info("\n--- Tuning Suggestions ---")
+
                 if not suggested_tunings:
                     logger.info("Could not find any standard tunings that fit this song's pitch range.")
                 else:
@@ -566,48 +567,28 @@ def main():
                     for tuning, low_note in suggested_tunings:
                         print(f"- {tuning.name} (Lowest note: {pitch_to_note_name(low_note)})")
                 exit(0)
-            if args.constrain_pitch:
-                max_fret = args.max_fret
-                try:
-                    # Use the tuning from the --tuning argument
-                    constrain_tuning_name = args.tuning.upper()
-                    constrain_tuning = Tuning[constrain_tuning_name]
 
-                    constrain_open_notes = [note_name_to_pitch(n) for n in constrain_tuning.value]
-                    min_range = min(constrain_open_notes)
-                    max_range = max(constrain_open_notes) + max_fret
+            initial_note_count = sum(len(track.events) for track in song.tracks)
+        
+            constrain_open_notes = [note_name_to_pitch(n) for n in Tuning[args.tuning.upper()].value]
+            min_range = min(constrain_open_notes)
+            max_range = max(constrain_open_notes) + args.max_fret
 
-                    logger.info(f"Constraining notes to '{constrain_tuning_name}' range (Mode: {args.pitch_mode})")
+            for track in song.tracks:
+                if args.normalize_pitch:
+                    for event in track.events:
+                        while event.pitch > max_range: event.pitch -= 12
+                        while event.pitch < min_range: event.pitch += 12
+                else # If not normalizing, we drop out-of-range notes and log how many were discarded.
+                    track.events = [e for e in track.events if min_range <= e.pitch <= max_range]
 
-                    if args.pitch_mode == 'normalize':
-                        notes_normalized = 0
-                        for track in song.tracks:
-                            for event in track.events:
-                                # Check if the note is outside the playable range
-                                if event.pitch > max_range or event.pitch < min_range:
-                                    notes_normalized += 1
-                                        # While the note is too high, transpose it down by one octave
-                                    while event.pitch > max_range:
-                                        event.pitch -= 12
-                                            # While the note is too low, transpose it up by one octave
-                                        while event.pitch < min_range:
-                                            event.pitch += 12
-                        if notes_normalized > 0:
-                            logger.info(f"Normalized {notes_normalized} out-of-range note(s) by octaves to fit the range.")
+            final_note_count = sum(len(track.events) for track in song.tracks)
+            notes_discarded = initial_note_count - final_note_count
+            logger.info(f"--- Constrained notes to tuning range ({pitch_to_note_name(min_range)} to {pitch_to_note_name(max_range)}). ---")
+            if notes_discarded > 0:
+                logger.info(f"--- Dropped {notes_discarded} out-of-range notes. 0---")
 
-                    elif args.pitch_mode == 'drop':
-                        original_note_count = sum(len(track.events) for track in song.tracks)
-                        for track in song.tracks:
-                            track.events = [e for e in track.events if min_range <= e.pitch <= max_range]
-
-                        new_note_count = sum(len(track.events) for track in song.tracks)
-                        notes_discarded = original_note_count - new_note_count
-                        if notes_discarded > 0:
-                            logger.info(f"Discarded {notes_discarded} out-of-range note(s).")
-
-                except KeyError:
-                    logger.error(f"Error: Tuning '{args.tuning}' not found.")
-                    exit(1) 
+            exit(1) 
 
         logger.info("--- Generating output files ---")
         print(f"DEBUG: Starting loop for outputs: {args.output}")

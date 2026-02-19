@@ -194,20 +194,12 @@ def setup_parser() -> ArgumentParser:
         help="Force all notes onto a single string (1-6, high e to low E). Ideal for transcribing legato/tapping runs."
     )
     parser.add_argument(
-        '--constrain-pitch',
+        '--normalize-pitch',
         action='store_true',
-        help='Constrain notes to the playable range of the tuning specified by --tuning.'
+        help="Shift notes (+12 or -12) until they fit within the specified tuning and max fret range."
+             "Used when the input has many out-of-range notes that would otherwise be dropped."
     )   
     
-    parser.add_argument(
-        '--pitch-mode',
-        type=str,
-        default='drop',
-        choices=['drop', 'normalize'],
-        help="Used with --constrain-pitch. 'drop' (default) discards out-of-range notes. "
-             "'normalize' transposes out-of-range notes by octaves until they fit."
-    )
-
     parser.add_argument(
         '--debug',
         action='store_true',
