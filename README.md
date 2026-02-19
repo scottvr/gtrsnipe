@@ -240,7 +240,7 @@ If you already have a clean, isolated guitar track, you can skip the demucs and 
 
 # Other Examples
 
-[All other examples and detailed usage information has been moved to the Wiki](https://github.com/scottvr/gtrsnipe/wiki)
+[All other examples and detailed usage information has been moved to the Wiki](<https://github.com/scottvr/gtrsnipe/wiki/0.-GTRSnipe-(aka-%22guttersnipe%22)>)
 
 ## Advanced Usage: Mapper Tuning
 
@@ -284,6 +284,7 @@ Demucs is a state-of-the-art music source separation model. Several models are a
 - **hdemucs_mmi**: The v3 Hybrid Demucs model, retrained on more data.
 - **mdx / mdx_extra**: Models known for high performance, trained on the MusDB HQ dataset.
 - **mdx_q / mdx_extra_q**: Quantized (smaller, faster) versions of the mdx models, which may have slightly reduced quality.
+
 
 
 
