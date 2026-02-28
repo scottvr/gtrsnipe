@@ -29,15 +29,6 @@ At its core, gtrsnipe uses an intelligent fretboard mapper that analyzes notes a
 
 For audio files, gtrsnipe uses a multi-stage pipeline to process the sound and transcribe the notes. Each stage can be enabled or disabled via command-line flags.
 
-```mermaid
-flowchart TD
-    A["Audio File (.mp3, .wav)"] -->|"--stem"| B["Demucs Source Separation"]
-    B -->|"--nr,--remove-fx"| C["Noise & Reverb Reduction"]
-    C --> D["Basic-Pitch Transcription"]
-    D --> E{"GtrSnipe Core Mapper"}
-    E --> F["ASCII Tablature (.tab)"]
-```
-
 ---
 
 # Installation
