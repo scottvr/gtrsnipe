@@ -244,7 +244,8 @@ If you already have a clean, isolated guitar track, you can skip the demucs and 
 
 ## Advanced Usage: Mapper Tuning
 
-The real power of gtrsnipe comes from its customizability. You can fine-tune the fretboard mapping algorithm and the audio separation models to get the perfect transcription. [Detailed documentation with troubleshooting examples are being created in the wiki.](https://github.com/scottvr/gtrsnipe/wiki/FretboardMapper-Algorithm-Configuration-and-Tunables)
+The real power of gtrsnipe comes from its customizability. You can fine-tune the fretboard mapping algorithm and the audio separation models to get the perfect transcription. [Detailed documentation with troubleshooting examples are being created in the wiki.](https://github.com/scottvr/gtrsnipe/wik/FretboardMapper-Algorithm-Configuration-and-Tunables)
+
 
 ### Current Supported Instrument Tunings
 
