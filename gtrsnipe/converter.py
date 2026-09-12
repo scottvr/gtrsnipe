@@ -596,20 +596,13 @@ def main():
             elif pitch_shifted > 0:
                 logger.info(f"--- Shifted {pitch_shifted} notes by octaves to fit ---")
 
-            exit(1) 
-
         logger.info("--- Generating output files ---")
-        print(f"DEBUG: Starting loop for outputs: {args.output}")
-        
+
         for output_path_str in args.output:
-            print(f"\nDEBUG: TOP OF LOOP. Current file: '{output_path_str}'")
             output_path = Path(output_path_str)
             to_format = output_path.suffix.lstrip('.').lower()
 
-            print(f"DEBUG:   - Determined format: '{to_format}'")
-            print(f"DEBUG:   - Path object for saving: '{output_path}'")
-
-            song_for_conversion = copy.deepcopy(song)  
+            song_for_conversion = copy.deepcopy(song)
             config_for_conversion = copy.deepcopy(mapper_config)
             debug_song_state(song_for_conversion, 5, "Before Final Convert/Map")
 
