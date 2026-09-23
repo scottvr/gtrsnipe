@@ -1,5 +1,10 @@
 import logging
 from pathlib import Path
+from importlib.util import find_spec
+
+if find_spec("basic_pitch") is None:
+    raise ImportError("The 'basic_pitch' library is required for this module. Try reinstalling gtrsnipe with [all] extras")
+
 from basic_pitch.inference import predict
 from basic_pitch import ICASSP_2022_MODEL_PATH
 

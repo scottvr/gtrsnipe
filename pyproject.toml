@@ -21,15 +21,10 @@ dependencies = [
     "MIDIFile",
     "midiutil",
     "mido",
-    "demucs",
-    "basic-pitch",
     "noisereduce",
     "librosa",
     "soundfile",
     "scipy",
-#    "onnxruntime",
-#    "torch",
-#    "torchaudio",
 ]
 
 [project.scripts]
@@ -41,3 +36,18 @@ gtrsnipe = "gtrsnipe.converter:main"
 [tool.setuptools.packages.find]
 include = ["gtrsnipe"]
 exclude = ["separated", "docs"]
+
+[project.optional-dependencies]
+torch = [
+    "torch",
+    "torchaudio",
+]
+onnx = [
+    "onnxruntime",
+]
+all = [
+    "gtrsnipe[torch]",
+    "gtrsnipe[onnx]",
+    "demucs",
+    "basic-pitch",
+]

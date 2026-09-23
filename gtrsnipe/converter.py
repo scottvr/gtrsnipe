@@ -18,6 +18,7 @@ import logging
 from sys import exit
 import librosa 
 import copy
+from importlib.util import find_spec
 
 logger = logging.getLogger(__name__)
 bp_logger = logging.getLogger('basic_pitch')
@@ -368,12 +369,15 @@ def main():
             logger.info("--- Audio input detected. Starting audio-to-MIDI pipeline. ---")
             from .audio.separator import separate_instrument
             from .audio.cleaner import cleanup_audio, apply_low_pass_filter
-            from .audio.distortion_remover import remove_distortion_effects
+            if find_spec("torch") is not None:
+                from .audio.distortion_remover import remove_distortion_effects
 
             processed_audio_for_beats = current_file
 
             if args.pitch_engine == "basic-pitch": 
-                from .audio.pitch_detector_bp import transcribe_to_midi_with_bp
+#                from .audio.pitch_detector_bp import transcribe_to_midi_with_bp
+                logger.info("--- Basic-Pitch is experimental. Using librosa.pYIN for pitch detection instead ---")
+                from .audio.pitch_detector_lr import transcribe_to_midi_with_lr
             else:
                 from .audio.pitch_detector_lr import transcribe_to_midi_with_lr
 
@@ -416,18 +420,22 @@ def main():
             if intermediate_midi_path is None:
                 intermediate_midi_path = Path(args.input).with_suffix('.mid').name
 
-            if args.pitch_engine == 'basic-pitch':
-                current_file = transcribe_to_midi_with_bp(
-                    current_file,
-                    final_output_path=intermediate_midi_path,
-                    overwrite=args.yes,
-                    min_freq=min_freq,
-                    max_freq=max_freq,
-                    onset_threshold=args.onset_threshold,
-                    frame_threshold=args.frame_threshold,
-                    min_note_len_ms=args.min_note_len_ms,
-                    melodia_trick=args.melodia_trick,
-                )
+            # temporarily disable basic-pitch option until we can resolve some issues with it. 
+            # For now, librosa's pyin works for monophonic basslines
+            if False:
+                pass
+            #if args.pitch_engine == 'basic-pitch':
+            #    current_file = transcribe_to_midi_with_bp(
+            #        current_file,
+            #        final_output_path=intermediate_midi_path,
+            #        overwrite=args.yes,
+            #        min_freq=min_freq,
+            #        max_freq=max_freq,
+            #        onset_threshold=args.onset_threshold,
+            #        frame_threshold=args.frame_threshold,
+            #        min_note_len_ms=args.min_note_len_ms,
+            #        melodia_trick=args.melodia_trick,
+            #    )
             elif args.pitch_engine == 'librosa':
                 # Note: fmin and fmax could be derived from --constrain-frequency
                 # for a more integrated solution.

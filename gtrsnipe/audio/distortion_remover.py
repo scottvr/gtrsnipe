@@ -1,10 +1,21 @@
 import logging
 from pathlib import Path
+from importlib.util import find_spec
+
+if find_spec("torch") is None:
+    raise ImportError("torch is not installed. pip install gtrsnipe[all].")
 import torch
+if find_spec("torchaudio") is None:
+    raise ImportError("torchaudio is not installed. pip install gtrsnipe[all].")
 import torchaudio
 from torch.nn import functional as F
-from typing import TypedDict, List, Tuple
+
+
+if find_spec("onnxruntime") is None:
+    raise ImportError("onnxruntime is not installed. pip install gtrsnipe[all].")
 import onnxruntime as ort
+
+from typing import TypedDict, List, Tuple
 import numpy as np
 import json
 import os
