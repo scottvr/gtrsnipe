@@ -16,7 +16,6 @@ import sys
 import os
 import logging
 from sys import exit
-import librosa 
 import copy
 from importlib.util import find_spec
 
@@ -25,6 +24,20 @@ bp_logger = logging.getLogger('basic_pitch')
 bp_logger.setLevel(logging.ERROR)
 
 SAMPLE_RATE=44100
+
+
+def _require_extra(extra: str, feature: str, *, cli: bool):
+    """Report a missing optional dependency group with an install hint.
+
+    CLI callers get a clean SystemExit (no traceback); library callers get an
+    ImportError so a consuming process isn't killed.
+    """
+    msg = (f"Feature {feature!r} needs optional dependencies that aren't installed.\n"
+           f"  Install them with:  pip install 'gtrsnipe[{extra}]'")
+    if cli:
+        logger.error(msg)
+        raise SystemExit(1)
+    raise ImportError(msg)
 
 def debug_song_state(song: Song, num_notes: int, stage: str):
     """A helper function to print the number of notes and the first few notes at any stage."""
@@ -133,7 +146,12 @@ def dynamic_quantize_song(intermediate_midi_path: str, processed_audio_path: str
     Loads an intermediate MIDI, detects beats from audio, and returns a requantized Song.
     """
     logger.info("--- Performing dynamic beat quantization ---")
-    
+
+    try:
+        import librosa
+    except ImportError:
+        _require_extra('audio', 'dynamic beat quantization', cli=True)
+
     # 1. Load the PROCESSED audio to get the beat grid
     y, sr = librosa.load(processed_audio_path, sr=SAMPLE_RATE)
     
@@ -367,6 +385,10 @@ def main():
         # --- Audio Pipeline Execution ---
         if is_audio_input:
             logger.info("--- Audio input detected. Starting audio-to-MIDI pipeline. ---")
+            try:
+                import librosa
+            except ImportError:
+                _require_extra('audio', 'audio input transcription', cli=True)
             from .audio.separator import separate_instrument
             from .audio.cleaner import cleanup_audio, apply_low_pass_filter
             if find_spec("torch") is not None:

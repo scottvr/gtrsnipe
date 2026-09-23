@@ -10,21 +10,20 @@ authors = [
   { name="ScottVR", email="scottvr@gmail.com" },
 ]
 readme = "README.md" 
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
 ]
 
-# List your project's dependencies here.
+# Core deps: must stay torch/tensorflow/numba-free so `pip install gtrsnipe`
+# resolves and runs the MIDI/tab/abc/vex pipeline on any CPU-only box.
+# Audio features live behind the [audio]/[separation] extras below.
 dependencies = [
     "MIDIFile",
     "midiutil",
-    "mido",
-    "noisereduce",
-    "librosa",
-    "soundfile",
-    "scipy",
+    "mido>=1.3",
+    "numpy>=2.1",
 ]
 
 [project.scripts]
@@ -38,16 +37,19 @@ include = ["gtrsnipe"]
 exclude = ["separated", "docs"]
 
 [project.optional-dependencies]
-torch = [
-    "torch",
-    "torchaudio",
+# librosa pYIN bass path (audio -> MIDI -> tab). Best-effort on Python 3.14
+# (numba/llvmlite have no cp314 wheel yet); use 3.10-3.13 for this extra.
+audio = [
+    "librosa>=0.10",
+    "soundfile",
+    "scipy",
+    "noisereduce",
 ]
-onnx = [
-    "onnxruntime",
+# Optional stem isolation; demucs pulls torch (3.10-3.13 only).
+separation = [
+    "demucs",
 ]
 all = [
-    "gtrsnipe[torch]",
-    "gtrsnipe[onnx]",
-    "demucs",
-    "basic-pitch",
+    "gtrsnipe[audio]",
+    "gtrsnipe[separation]",
 ]
