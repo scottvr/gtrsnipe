@@ -2,19 +2,14 @@
 (pronounced "guttersnipe")
 [see the wiki for detailed example use cases](https://github.com/scottvr/gtrsnipe/wiki)
 
-## v0.1.1
-Convert to and from .mid, .abc, .vex, and .tab files. 
+Convert to and from .mid, .abc, .vex, and .tab files. (and more.)
 
-## v0.2.0
+## v0.3.0
+Released 2026-09-23. See [CHANGELOG](https://github.com/scottvr/gtrsnipe/blob/main/CHANGELOG.md)
+
+## v0.2.0 - experimentaal features added!
 Transcribe music for guitar, capable of converting audio files (.mp3, .wav), MIDI (.mid), and various text-based formats (.tab, .vex, .abc) into high-quality ASCII tablature. [Read about the current state of these new features](https://github.com/scottvr/gtrsnipe/wiki/v0.2.0)
-
-## v0.2.1
-Performance fixes, which also allowed removal of redundant switches.
-`--constrain-pitch` becomes `--normalize-pitch`
-`--pitch-mode` is gone, with its old `drop` behavior being default
-and `--normalize-pitch` has the same effect as the old ``--pitch-mode drop` (when it was used in conjuction with `--constrain-pitch`)
-
-Realizing I was doing this in two different places in two different ways allowed me to notice the silly repetitive and redundant logic around those two switches, which then showed how I was also normalizing inside the fretmapper's fingering optimizer, which is where the combinatorial explosion lives. It was fast before, but only because our computers today are so fast.  
+  
 
 ### What?
 
