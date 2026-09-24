@@ -65,6 +65,29 @@ pip install -e '.[all]'          # both
 
 The installation process makes gtrsnipe available as a command within your activated virtual environment.
 
+## Player / Visualizer
+
+`gtrsnipe-play` renders a song as a live ASCII fretboard instead of writing a
+file. It reuses the same parsers and the Viterbi fretboard mapper, so it accepts
+every supported input format — with the same rhythm caveats (precise timing from
+MIDI, approximate from ASCII tab). A 5-fret window auto-follows the playing up
+and down the neck; open strings are shown at the nut.
+
+```bash
+# Play a MIDI file at its own tempo
+gtrsnipe-play song.mid
+
+# Steady eighth-note metronome at 90 BPM
+gtrsnipe-play song.mid --clock metronome --grid 0.5 --tempo 90
+
+# Step through it by hand (press any key to advance, q to quit)
+gtrsnipe-play riff.tab --clock step
+```
+
+Key options: `--clock {tempo,metronome,step}`, `--tempo BPM`, `--grid BEATS`
+(metronome step size), `--window N` (visible fret count), plus the usual
+`--tuning`, `--num-strings`, `--max-fret`, `--capo`, and `--optimizer`.
+
 ### Command-line help
 
 ```

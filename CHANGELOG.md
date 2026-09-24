@@ -3,6 +3,19 @@
 All notable changes to gtrsnipe are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- **Player / fretboard visualizer** (`gtrsnipe-play`). Renders any supported
+  input (MIDI/ABC/VexTab/ASCII-tab) as a time-driven ASCII fretboard: an
+  auto-following 5-fret window that tracks the playing up and down the neck.
+  Three timing modes via `--clock`: `tempo` (at the song's tempo), `metronome`
+  (a fixed `--grid` beat step), and `step` (advance manually with a keypress,
+  quit with `q`). Reuses the existing parser + Viterbi mapper unchanged; the
+  timeline, clock, and renderer layers are decoupled so browser/Qt renderers
+  can be added later without touching the core. Rhythm fidelity follows the
+  input — precise from MIDI, approximate from ASCII tab.
+
 ## [0.3.0] — 2026-09-23
 
 Release plan and design docs live in [`docs/dev/`](docs/dev/RELEASE-PLAN-v0.3.0.md).
