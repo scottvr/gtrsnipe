@@ -53,3 +53,15 @@ all = [
     "gtrsnipe[audio]",
     "gtrsnipe[separation]",
 ]
+# Dev/test tooling (torch-free, so the core merge-gate job stays CPU-only).
+test = [
+    "pytest>=8",
+    "pytest-cov",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "audio: requires the [audio] extra (librosa/soundfile/scipy/noisereduce)",
+    "separation: requires the [separation] extra (demucs/torch)",
+]
