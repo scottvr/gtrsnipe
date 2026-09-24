@@ -3,7 +3,7 @@
 All notable changes to gtrsnipe are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased] — v0.3.0 (planned)
+## [0.3.0] — 2026-09-23
 
 Release plan and design docs live in [`docs/dev/`](docs/dev/RELEASE-PLAN-v0.3.0.md).
 
@@ -36,10 +36,34 @@ Release plan and design docs live in [`docs/dev/`](docs/dev/RELEASE-PLAN-v0.3.0.
   `--melodia-trick`). The librosa engine is the supported audio path.
 
 ### Fixed
-- Output-corrupting f-string bugs (VexTab title, ABC instrument name), ABC key /
-  measure fidelity, tab out-of-bounds silent note, MIDI time-signature
-  denominator, VexTab legato-chain note dropping, capo ordinal suffix. See
-  [`docs/dev/AUDIT-findings.md`](docs/dev/AUDIT-findings.md).
+- Output-corrupting f-string bugs: VexTab title and ABC instrument name emitted
+  the literal placeholder text (`{song.title}`, `(track.instrument_name)`)
+  instead of the real values.
+- Tab out-of-bounds string index: a negative index silently wrote a note onto
+  the wrong string; both bounds are now guarded.
+- MIDI time-signature denominator: non-power-of-2 signatures (e.g. 4/6) were
+  silently truncated to a wrong denominator; they now warn and fall back to 4/4.
+- Tab measure sizing now honors the time-signature denominator (correct bar
+  lines for 6/8, 3/8, 2/2), matching the ABC generator.
+- ABC header validity: the `T:` (title) line now precedes `K:` (which closes the
+  header); the instrument name is emitted as a comment rather than an invalid
+  body `T:`.
+- Capo ordinal suffix (`3rd`/`21st`/`22nd`, not `3th`/`21th`/`22th`).
+- Note-name↔pitch round-trip for negative octaves (e.g. `C-1`, MIDI 0).
+- Double-quantization on the `--dynamic-quantize` audio path (a second pass
+  re-quantized already-quantized events against a grid recomputed from the raw
+  input).
+- Crash on `--dedupe` (an undefined `_normalize_pitch` helper).
+- Removed a stray `DEBUG PARSER` `print()` from the tab parser.
+
+See [`docs/dev/AUDIT-findings.md`](docs/dev/AUDIT-findings.md).
+
+### Known limitations
+- **VexTab** does not yet emit hammer-on/pull-off/tap articulation symbols or
+  rests for time gaps between notes (the ASCII tab generator does). Tracked for a
+  future release.
+- **ABC** key signature is always emitted as `K:C` (the `Song` model carries no
+  key), and accidentals are spelled as sharps regardless of key.
 
 ## [0.2.2] — 2026-09-12
 
