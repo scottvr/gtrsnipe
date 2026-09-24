@@ -115,11 +115,12 @@ def build_timeline(song: Song, mapper_config: MapperConfig,
 def play_file(input_path: str, *, clock: str = "tempo",
               tempo: Optional[float] = None, grid_beats: float = 0.5,
               window_size: int = DEFAULT_WINDOW_SIZE,
+              track: Optional[int] = None,
               mapper_config: Optional[MapperConfig] = None,
               player: Optional[Player] = None) -> int:
     """Parse, map, and play a file in the terminal. Returns a process exit code."""
     cfg = mapper_config or MapperConfig()
-    song = parse_and_map(input_path, cfg)
+    song = parse_and_map(input_path, cfg, track=track)
     timeline = build_timeline(song, cfg, window_size=window_size)
     if not timeline:
         sys.stderr.write("Nothing to play: no notes could be mapped.\n")
@@ -146,6 +147,8 @@ def _build_arg_parser() -> argparse.ArgumentParser:
                    help="Metronome step in beats (default: 0.5 = eighth note).")
     p.add_argument("--window", type=int, default=DEFAULT_WINDOW_SIZE,
                    help=f"Visible fret window size (default: {DEFAULT_WINDOW_SIZE}).")
+    p.add_argument("--track", type=int, default=None,
+                   help="For MIDI input: 1-indexed track to play (default: all).")
     p.add_argument("--tuning", default="STANDARD", help="Tuning name.")
     p.add_argument("--num-strings", type=int, default=6)
     p.add_argument("--max-fret", type=int, default=24)
@@ -170,7 +173,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     try:
         return play_file(
             args.input, clock=args.clock, tempo=args.tempo,
-            grid_beats=args.grid, window_size=args.window,
+            grid_beats=args.grid, window_size=args.window, track=args.track,
             mapper_config=cfg, player=player,
         )
     except KeyboardInterrupt:  # pragma: no cover - interactive

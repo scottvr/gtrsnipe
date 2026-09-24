@@ -98,6 +98,25 @@ def test_build_timeline_from_mapped_song():
     assert len(frames) == 2
 
 
+def test_track_is_threaded_from_cli_to_parser(monkeypatch):
+    # --track must reach parse_and_map (which forwards it to the MIDI reader),
+    # matching the converter's long-standing --track behavior.
+    import gtrsnipe.player.app as app
+
+    captured = {}
+
+    def fake_parse_and_map(path, cfg, *, track=None, no_articulations=True):
+        captured["track"] = track
+        return Song(tracks=[Track(events=[
+            MusicalEvent(0, 60, 0.5, 100, string=0, fret=3)])])
+
+    monkeypatch.setattr(app, "parse_and_map", fake_parse_and_map)
+    # A single-frame song + step clock returns immediately (no key read needed).
+    rc = app.main(["song.mid", "--track", "2", "--clock", "step"])
+    assert rc == 0
+    assert captured["track"] == 2
+
+
 def test_play_file_returns_1_when_nothing_maps(tmp_path, monkeypatch):
     # Force an empty timeline; play_file should report failure cleanly.
     import gtrsnipe.player.app as app

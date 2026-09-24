@@ -85,8 +85,9 @@ gtrsnipe-play riff.tab --clock step
 ```
 
 Key options: `--clock {tempo,metronome,step}`, `--tempo BPM`, `--grid BEATS`
-(metronome step size), `--window N` (visible fret count), plus the usual
-`--tuning`, `--num-strings`, `--max-fret`, `--capo`, and `--optimizer`.
+(metronome step size), `--window N` (visible fret count), `--track N` (select a
+single MIDI track, 1-indexed, same as the converter), plus the usual `--tuning`,
+`--num-strings`, `--max-fret`, `--capo`, and `--optimizer`.
 
 ### Command-line help
 
