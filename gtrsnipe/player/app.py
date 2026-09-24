@@ -17,6 +17,7 @@ from ..guitar.mapper import GuitarMapper
 from .clock import make_clock
 from .frame import Frame
 from .render.ascii import AsciiFretboardRenderer
+from .render.scrolltab import ScrollingTabRenderer
 from .timeline import DEFAULT_WINDOW_SIZE, TimelineBuilder
 
 CLEAR = "\033[2J\033[H"  # clear screen + cursor home
@@ -69,16 +70,16 @@ class Player:
         self.read_key = read_key
         self.clear = clear
 
-    def _paint(self, frame: Frame, index: int, total: int) -> None:
+    def _paint(self, timeline: Sequence[Frame], index: int) -> None:
         if self.clear:
             self.writer(CLEAR)
-        self.writer(self.renderer.render_with_status(frame, index, total) + "\n")
+        self.writer(self.renderer.paint(timeline, index) + "\n")
 
     def run(self, timeline: Sequence[Frame], clock, tempo_bpm: float) -> None:
         schedule = clock.schedule(timeline, tempo_bpm)
         n = len(schedule)
         for i, (frame, delay) in enumerate(schedule):
-            self._paint(frame, i, n)
+            self._paint(timeline, i)
             if i == n - 1:
                 break
             if delay is None:
@@ -154,12 +155,18 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--max-fret", type=int, default=24)
     p.add_argument("--capo", type=int, default=0)
     p.add_argument("--optimizer", choices=["viterbi", "greedy"], default="viterbi")
+    p.add_argument("--view", choices=["fretboard", "tab"], default="fretboard",
+                   help="fretboard = animated neck; tab = horizontally scrolling "
+                        "tab staff (Guitar-Hero style). Default: fretboard.")
     p.add_argument("--orientation", choices=["horizontal", "vertical"],
                    default="horizontal",
-                   help="Fretboard layout: strings as rows (horizontal) or "
+                   help="Fretboard view only: strings as rows (horizontal) or "
                         "frets top-to-bottom (vertical). Default: horizontal.")
     p.add_argument("--hand", choices=["right", "left"], default="right",
-                   help="Mirror the neck for left-handed players (default: right).")
+                   help="Fretboard view only: mirror the neck for left-handed "
+                        "players (default: right).")
+    p.add_argument("--width", type=int, default=48,
+                   help="Tab view only: viewport width in columns (default: 48).")
     p.add_argument("--no-clear", action="store_true",
                    help="Do not clear the screen between frames (scrolls).")
     return p
@@ -174,8 +181,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         capo=args.capo,
         optimizer=args.optimizer,
     )
-    renderer = AsciiFretboardRenderer(cfg, orientation=args.orientation,
-                                      handed=args.hand)
+    if args.view == "tab":
+        renderer = ScrollingTabRenderer(cfg, width=args.width)
+    else:
+        renderer = AsciiFretboardRenderer(cfg, orientation=args.orientation,
+                                          handed=args.hand)
     player = Player(renderer, clear=not args.no_clear)
     try:
         return play_file(

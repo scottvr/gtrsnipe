@@ -6,5 +6,6 @@ fretboard renderer; browser / Qt renderers can join here later without touching
 the timeline or clock layers.
 """
 from .ascii import AsciiFretboardRenderer
+from .scrolltab import ScrollingTabRenderer
 
-__all__ = ["AsciiFretboardRenderer"]
+__all__ = ["AsciiFretboardRenderer", "ScrollingTabRenderer"]

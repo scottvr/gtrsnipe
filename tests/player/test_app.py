@@ -144,3 +144,19 @@ def test_play_file_end_to_end_with_injected_player(tmp_path):
     rc = play_file(str(abc), clock="step", mapper_config=MapperConfig(), player=p)
     assert rc == 0
     assert writes, "expected frames to be painted"
+
+
+def test_play_file_with_scrolling_tab_view(tmp_path):
+    from gtrsnipe.player.app import Player
+    from gtrsnipe.player.render.scrolltab import ScrollingTabRenderer
+
+    abc = tmp_path / "scale.abc"
+    abc.write_text("X:1\nT:Scale\nM:4/4\nL:1/4\nK:C\nCDEF|GABc|\n")
+    writes = []
+    p = Player(ScrollingTabRenderer(MapperConfig()),
+               writer=writes.append, sleep=lambda s: None,
+               read_key=lambda: "\n", clear=False)
+    rc = play_file(str(abc), clock="metronome", mapper_config=MapperConfig(), player=p)
+    assert rc == 0
+    # The scrolling renderer paints a playhead each frame.
+    assert any("v" in w for w in writes)

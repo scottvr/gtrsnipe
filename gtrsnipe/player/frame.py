@@ -26,11 +26,15 @@ class Frame:
             auto-follow viewport is showing. Open strings (fret 0) are always
             rendered regardless of the window, so this range covers only
             *fretted* notes and never dips below fret 1.
+        pitches: The sounding MIDI pitches during this frame. Presentation
+            layers (renderers) ignore this; the audio sink uses it to emit
+            note-on/off. Defaults to empty so diagram-only callers need not set it.
     """
     time: float
     duration: float
     positions: Tuple[FretPosition, ...]
     window: Tuple[int, int]
+    pitches: Tuple[int, ...] = ()
 
     @property
     def window_low(self) -> int:

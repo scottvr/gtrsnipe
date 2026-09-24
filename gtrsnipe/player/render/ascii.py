@@ -143,3 +143,7 @@ class AsciiFretboardRenderer:
         footer = (f"[{index + 1}/{total}]  beat {frame.time:.2f}  "
                   f"frets {frame.window[0]}-{frame.window[1]}")
         return f"{board}\n{footer}"
+
+    def paint(self, timeline, index: int) -> str:
+        """Uniform player entry point: paint the single frame at ``index``."""
+        return self.render_with_status(timeline[index], index, len(timeline))

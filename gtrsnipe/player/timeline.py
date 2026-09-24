@@ -54,9 +54,11 @@ class TimelineBuilder:
             positions = tuple(sorted(
                 {FretPosition(e.string, e.fret) for e in group}
             ))
+            pitches = tuple(sorted({e.pitch for e in group}))
             frames.append(Frame(time=gtime, duration=0.0,
                                 positions=positions,
-                                window=(1, self.window_size)))
+                                window=(1, self.window_size),
+                                pitches=pitches))
             # Fallback duration for the final frame: the longest note in the
             # group (never below the quantization grid).
             group_durations.append(max((e.duration for e in group), default=qr))
