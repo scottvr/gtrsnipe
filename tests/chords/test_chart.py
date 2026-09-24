@@ -1,10 +1,18 @@
 """Tests for the chord-sheet builder and its CLI."""
 import pytest
 
+import pytest
+
 from gtrsnipe.chords import cli
-from gtrsnipe.chords.chart import _chord_window, build_chord_sheet
+from gtrsnipe.chords.chart import (
+    _canonical_positions,
+    _chord_window,
+    build_chord_sheet,
+)
+from gtrsnipe.core.chords import identify
 from gtrsnipe.core.config import MapperConfig
 from gtrsnipe.core.types import FretPosition, MusicalEvent, Song, Track
+from gtrsnipe.guitar.mapper import GuitarMapper
 
 
 def ev(t, p, d=4):
@@ -36,6 +44,45 @@ def test_chord_window_contains_fretted_notes():
 def test_chord_window_wide_chord_expands():
     lo, hi = _chord_window([FretPosition(0, 3), FretPosition(5, 10)])
     assert lo <= 3 and hi >= 10
+
+
+# -- canonical voicing (regression: whole-bar union produced unplayable shapes) --
+
+CHORD_CASES = [
+    ("C", [60, 64, 67], 60),
+    ("Am", [57, 60, 64], 57),
+    ("E7", [64, 68, 71, 74], 64),
+    ("Gmaj7", [55, 59, 62, 66], 55),
+    ("Bm7", [59, 62, 66, 69], 59),
+    ("C5", [60, 67], 60),
+]
+TUNINGS = ["STANDARD", "BARITONE_B", "DROP_D", "OPEN_G"]
+
+
+@pytest.mark.parametrize("pitches,bass", [(p, b) for _, p, b in CHORD_CASES])
+@pytest.mark.parametrize("tuning", TUNINGS)
+def test_canonical_voicing_is_playable_and_compact(pitches, bass, tuning):
+    chord = identify(pitches, bass=bass)
+    mapper = GuitarMapper(MapperConfig(tuning=tuning, num_strings=6))
+    positions = _canonical_positions(chord, mapper)
+    # Every chord tone placed...
+    assert len(positions) == len(chord.intervals), f"{chord.name} in {tuning} dropped notes"
+    # ...on distinct strings...
+    strings = [p.string for p in positions]
+    assert len(set(strings)) == len(strings)
+    # ...within a hand-sized fret span (the bug produced 9-fret spreads).
+    frets = [p.fret for p in positions]
+    assert max(frets) - min(frets) <= 4, f"{chord.name} in {tuning} span too wide"
+
+
+def test_canonical_voicing_prefers_tighter_over_lower():
+    # Regression: the octave search must not return the first *complete* voicing
+    # if a higher register gives a much tighter (real) chord shape.
+    chord = identify([64, 68, 71, 74], bass=64)  # E7
+    mapper = GuitarMapper(MapperConfig(tuning="BARITONE_B", num_strings=6))
+    positions = _canonical_positions(chord, mapper)
+    frets = [p.fret for p in positions]
+    assert max(frets) - min(frets) <= 4
 
 
 # -- build_chord_sheet ------------------------------------------------------

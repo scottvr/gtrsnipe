@@ -37,12 +37,22 @@ CHORD_TEMPLATES: List[Tuple[frozenset, str]] = [
 ]
 
 
+# Interval set for each quality suffix, for realizing a chord as pitches.
+QUALITY_INTERVALS = {suffix: tuple(sorted(template))
+                     for template, suffix in CHORD_TEMPLATES}
+
+
 @dataclass(frozen=True)
 class Chord:
     """A named chord: root, quality suffix, and (if inverted) a bass note."""
     root: int                       # pitch class 0-11
     quality: str                    # "" (major), "m", "5", "7", ...
     bass: Optional[int] = None      # pitch class of the lowest note, if not the root
+
+    @property
+    def intervals(self) -> Tuple[int, ...]:
+        """Semitone offsets of the chord tones from the root (root-position)."""
+        return QUALITY_INTERVALS.get(self.quality, (0,))
 
     @property
     def name(self) -> str:

@@ -23,7 +23,9 @@ This project adheres to [Semantic Versioning](https://semver.org/).
   measure (pitch classes unioned across the bar, weighted by duration, with the
   bass note resolving inversions/slash chords) and emits a Markdown/ASCII chord
   sheet: a bar-by-bar progression grid plus an ASCII diagram for each unique
-  chord, voiced in the song's tuning via the existing mapper. Chord naming lives
+  chord. Diagrams use a compact, playable root-position voicing generated in the
+  song's tuning (the lowest tight-span register the mapper can finger), not the
+  literal bar contents. Chord naming lives
   in `gtrsnipe.core.chords` (pure pitch-class template matching: triads, power
   chords, 6/7/maj7/m7/m7b5, sus2/sus4, dim/aug/dim7). Extended chords (9/11/13)
   and enharmonic key-aware spelling (sharps only) are deferred.
