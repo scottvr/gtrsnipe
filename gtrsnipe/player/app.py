@@ -14,6 +14,7 @@ from typing import Callable, List, Optional, Sequence
 from ..core.config import MapperConfig
 from ..core.types import MusicalEvent, Song
 from ..guitar.mapper import GuitarMapper
+from .audio import AudioSink, NullSink, make_audio_sink
 from .clock import make_clock
 from .frame import Frame
 from .render.ascii import AsciiFretboardRenderer
@@ -59,16 +60,18 @@ class Player:
         read_key: called to advance a manual (step) clock; return 'q' to quit
     """
 
-    def __init__(self, renderer: AsciiFretboardRenderer, *,
+    def __init__(self, renderer, *,
                  writer: Callable[[str], object] = None,
                  sleep: Callable[[float], object] = time.sleep,
                  read_key: Callable[[], str] = _default_read_key,
-                 clear: bool = True):
+                 clear: bool = True,
+                 audio: Optional[AudioSink] = None):
         self.renderer = renderer
         self.writer = writer or sys.stdout.write
         self.sleep = sleep
         self.read_key = read_key
         self.clear = clear
+        self.audio = audio or NullSink()
 
     def _paint(self, timeline: Sequence[Frame], index: int) -> None:
         if self.clear:
@@ -78,15 +81,19 @@ class Player:
     def run(self, timeline: Sequence[Frame], clock, tempo_bpm: float) -> None:
         schedule = clock.schedule(timeline, tempo_bpm)
         n = len(schedule)
-        for i, (frame, delay) in enumerate(schedule):
-            self._paint(timeline, i)
-            if i == n - 1:
-                break
-            if delay is None:
-                if self.read_key() == "q":
+        try:
+            for i, (frame, delay) in enumerate(schedule):
+                self._paint(timeline, i)
+                self.audio.update(frame.pitches)
+                if i == n - 1:
                     break
-            else:
-                self.sleep(delay)
+                if delay is None:
+                    if self.read_key() == "q":
+                        break
+                else:
+                    self.sleep(delay)
+        finally:
+            self.audio.close()
 
 
 def parse_and_map(input_path: str, mapper_config: MapperConfig, *,
@@ -167,6 +174,15 @@ def _build_arg_parser() -> argparse.ArgumentParser:
                         "players (default: right).")
     p.add_argument("--width", type=int, default=48,
                    help="Tab view only: viewport width in columns (default: 48).")
+    p.add_argument("--audio", choices=["none", "midi", "fluidsynth"], default="none",
+                   help="Make sound while playing: 'midi' streams to a MIDI port "
+                        "(route it to a DAW/synth), 'fluidsynth' uses a SoundFont. "
+                        "Default: none (needs the [play] or [synth] extra).")
+    p.add_argument("--midi-port", default=None,
+                   help="MIDI output port name for --audio midi (default: first "
+                        "available, else a virtual 'gtrsnipe' port).")
+    p.add_argument("--soundfont", default=None,
+                   help="Path to a .sf2 SoundFont for --audio fluidsynth.")
     p.add_argument("--no-clear", action="store_true",
                    help="Do not clear the screen between frames (scrolls).")
     return p
@@ -186,7 +202,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     else:
         renderer = AsciiFretboardRenderer(cfg, orientation=args.orientation,
                                           handed=args.hand)
-    player = Player(renderer, clear=not args.no_clear)
+    try:
+        audio = make_audio_sink(args.audio, midi_port=args.midi_port,
+                                soundfont=args.soundfont)
+    except (RuntimeError, ValueError) as e:
+        sys.stderr.write(f"{e}\n")
+        return 1
+    player = Player(renderer, clear=not args.no_clear, audio=audio)
     try:
         return play_file(
             args.input, clock=args.clock, tempo=args.tempo,

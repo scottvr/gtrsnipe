@@ -146,6 +146,53 @@ def test_play_file_end_to_end_with_injected_player(tmp_path):
     assert writes, "expected frames to be painted"
 
 
+def test_run_drives_audio_and_closes():
+    from gtrsnipe.player.audio import AudioSink
+
+    class RecSink(AudioSink):
+        def __init__(self):
+            super().__init__()
+            self.updates = []
+            self.closed = False
+        def update(self, pitches, velocity=96):
+            self.updates.append(tuple(pitches))
+        def close(self):
+            self.closed = True
+
+    tl = [Frame(0, 1.0, (FretPosition(0, 3),), (1, 5), pitches=(60,)),
+          Frame(1, 1.0, (FretPosition(0, 5),), (1, 5), pitches=(62,))]
+    sink = RecSink()
+    p = Player(AsciiFretboardRenderer(MapperConfig()),
+               writer=lambda s: None, sleep=lambda s: None,
+               read_key=lambda: "\n", clear=False, audio=sink)
+    p.run(tl, RealtimeClock(), tempo_bpm=120)
+    assert sink.updates == [(60,), (62,)]
+    assert sink.closed
+
+
+def test_run_closes_audio_even_if_painting_raises():
+    from gtrsnipe.player.audio import AudioSink
+
+    class RecSink(AudioSink):
+        def __init__(self):
+            super().__init__()
+            self.closed = False
+        def close(self):
+            self.closed = True
+
+    class BoomRenderer:
+        def paint(self, timeline, index):
+            raise RuntimeError("boom")
+
+    sink = RecSink()
+    p = Player(BoomRenderer(), writer=lambda s: None, sleep=lambda s: None,
+               read_key=lambda: "\n", clear=False, audio=sink)
+    tl = [Frame(0, 1.0, (FretPosition(0, 3),), (1, 5), pitches=(60,))]
+    with pytest.raises(RuntimeError):
+        p.run(tl, RealtimeClock(), tempo_bpm=120)
+    assert sink.closed  # finally-block cleanup ran
+
+
 def test_play_file_with_scrolling_tab_view(tmp_path):
     from gtrsnipe.player.app import Player
     from gtrsnipe.player.render.scrolltab import ScrollingTabRenderer

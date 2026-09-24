@@ -51,9 +51,20 @@ audio = [
 separation = [
     "demucs",
 ]
+# Player audio: stream MIDI to a port (DAW/VST host or system synth). mido is
+# already a core dep; python-rtmidi is the sending backend.
+play = [
+    "python-rtmidi",
+]
+# Self-contained SoundFont synthesis for the player (no external host needed).
+synth = [
+    "pyfluidsynth",
+]
 all = [
     "gtrsnipe[audio]",
     "gtrsnipe[separation]",
+    "gtrsnipe[play]",
+    "gtrsnipe[synth]",
 ]
 # Dev/test tooling (torch-free, so the core merge-gate job stays CPU-only).
 test = [
