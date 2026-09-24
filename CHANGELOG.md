@@ -15,6 +15,10 @@ This project adheres to [Semantic Versioning](https://semver.org/).
   timeline, clock, and renderer layers are decoupled so browser/Qt renderers
   can be added later without touching the core. Rhythm fidelity follows the
   input — precise from MIDI, approximate from ASCII tab.
+  - `--track N` selects a single MIDI track (1-indexed), matching the converter.
+  - `--orientation {horizontal,vertical}` rotates the board (frets as columns,
+    or chord-diagram style top-to-bottom); `--hand {right,left}` mirrors the
+    neck for left-handed players.
 
 ## [0.3.0] — 2026-09-23
 

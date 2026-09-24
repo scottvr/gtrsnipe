@@ -84,9 +84,20 @@ gtrsnipe-play song.mid --clock metronome --grid 0.5 --tempo 90
 gtrsnipe-play riff.tab --clock step
 ```
 
+Layout can be rotated and mirrored:
+
+```bash
+# Vertical, chord-diagram style (frets top-to-bottom)
+gtrsnipe-play song.mid --orientation vertical
+
+# Left-handed (mirrors the neck)
+gtrsnipe-play song.mid --hand left
+```
+
 Key options: `--clock {tempo,metronome,step}`, `--tempo BPM`, `--grid BEATS`
 (metronome step size), `--window N` (visible fret count), `--track N` (select a
-single MIDI track, 1-indexed, same as the converter), plus the usual `--tuning`,
+single MIDI track, 1-indexed, same as the converter), `--orientation
+{horizontal,vertical}`, `--hand {right,left}`, plus the usual `--tuning`,
 `--num-strings`, `--max-fret`, `--capo`, and `--optimizer`.
 
 ### Command-line help

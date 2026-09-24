@@ -154,6 +154,12 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--max-fret", type=int, default=24)
     p.add_argument("--capo", type=int, default=0)
     p.add_argument("--optimizer", choices=["viterbi", "greedy"], default="viterbi")
+    p.add_argument("--orientation", choices=["horizontal", "vertical"],
+                   default="horizontal",
+                   help="Fretboard layout: strings as rows (horizontal) or "
+                        "frets top-to-bottom (vertical). Default: horizontal.")
+    p.add_argument("--hand", choices=["right", "left"], default="right",
+                   help="Mirror the neck for left-handed players (default: right).")
     p.add_argument("--no-clear", action="store_true",
                    help="Do not clear the screen between frames (scrolls).")
     return p
@@ -168,7 +174,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         capo=args.capo,
         optimizer=args.optimizer,
     )
-    renderer = AsciiFretboardRenderer(cfg)
+    renderer = AsciiFretboardRenderer(cfg, orientation=args.orientation,
+                                      handed=args.hand)
     player = Player(renderer, clear=not args.no_clear)
     try:
         return play_file(

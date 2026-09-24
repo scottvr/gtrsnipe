@@ -76,3 +76,79 @@ def test_chord_marks_multiple_strings():
     positions = [FretPosition(0, 3), FretPosition(1, 5), FretPosition(2, 5)]
     out = std_renderer().render(frame(positions, window=(1, 5)))
     assert out.count(ACTIVE) == 3
+
+
+# -- orientation / handedness ----------------------------------------------
+
+import pytest
+
+from gtrsnipe.player.render.ascii import AsciiFretboardRenderer
+
+
+def rend(orientation="horizontal", handed="right"):
+    return AsciiFretboardRenderer(
+        MapperConfig(tuning="STANDARD", num_strings=6),
+        orientation=orientation, handed=handed)
+
+
+def test_invalid_orientation_rejected():
+    with pytest.raises(ValueError):
+        rend(orientation="diagonal")
+
+
+def test_invalid_hand_rejected():
+    with pytest.raises(ValueError):
+        rend(handed="both")
+
+
+def test_horizontal_left_reverses_fret_order():
+    out = rend(handed="left").render(frame([FretPosition(0, 3)], window=(1, 5)))
+    header = out.splitlines()[0].split()
+    assert header == ["5", "4", "3", "2", "1"]  # nut on the right, frets descend
+
+
+def test_horizontal_left_puts_nut_on_the_right():
+    # Open string marker sits at the end of the row, not right after the label.
+    out = rend(handed="left").render(frame([FretPosition(4, 0)], window=(1, 5)))
+    a_row = out.splitlines()[5]  # header + E,B,G,D, then A
+    assert a_row.rstrip().endswith(ACTIVE)
+
+
+def test_vertical_frets_run_top_to_bottom():
+    out = rend(orientation="vertical").render(
+        frame([FretPosition(0, 3)], window=(3, 7)))
+    # Gutter fret numbers, in order, down the left edge below the divider.
+    lines = out.splitlines()
+    body = lines[3:]  # header, open row, divider, then fret rows
+    fret_nums = [int(line.split()[0]) for line in body]
+    assert fret_nums == [3, 4, 5, 6, 7]
+
+
+def test_vertical_right_low_string_on_left():
+    out = rend(orientation="vertical", handed="right").render(
+        frame([FretPosition(0, 3)], window=(1, 5)))
+    labels = out.splitlines()[0].split()
+    assert labels == ["E", "A", "D", "G", "B", "E"]  # low E ... high e
+
+
+def test_vertical_left_flips_string_order():
+    out = rend(orientation="vertical", handed="left").render(
+        frame([FretPosition(0, 3)], window=(1, 5)))
+    labels = out.splitlines()[0].split()
+    assert labels == ["E", "B", "G", "D", "A", "E"]  # high e ... low E
+
+
+def test_vertical_nut_line_only_when_window_touches_fret_one():
+    at_nut = rend(orientation="vertical").render(
+        frame([FretPosition(0, 3)], window=(1, 5)))
+    up_neck = rend(orientation="vertical").render(
+        frame([FretPosition(0, 9)], window=(8, 12)))
+    assert "===" in at_nut          # solid nut line
+    assert "===" not in up_neck     # no nut up the neck
+    assert "---" in up_neck         # light divider instead
+
+
+def test_vertical_marks_active_positions():
+    out = rend(orientation="vertical").render(
+        frame([FretPosition(4, 0), FretPosition(3, 2)], window=(1, 5)))
+    assert out.count(ACTIVE) == 2
