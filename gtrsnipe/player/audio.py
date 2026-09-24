@@ -28,11 +28,30 @@ class AudioSink:
         self._active = set()
 
     def update(self, pitches: Iterable[int], velocity: int = DEFAULT_VELOCITY) -> None:
-        """Sound exactly ``pitches``: release notes that stopped, strike new ones."""
+        """Sound exactly ``pitches``: release notes that stopped, strike new ones.
+
+        Diff semantics — a pitch already ringing is left untouched (held). Use
+        this when consecutive calls represent a continuously-evolving sonority.
+        """
         new = set(pitches)
         for p in self._active - new:
             self._note_off(p)
         for p in new - self._active:
+            self._note_on(p, velocity)
+        self._active = new
+
+    def attack(self, pitches: Iterable[int], velocity: int = DEFAULT_VELOCITY) -> None:
+        """Re-articulate: release everything ringing, then strike ``pitches``.
+
+        The player calls this once per frame. In the timeline model each frame is
+        a fresh onset group, so a pitch repeated in the next frame is a genuine
+        re-attack (e.g. four repeated quarter-notes) and must sound again — the
+        diff in :meth:`update` would wrongly merge them into one held note.
+        """
+        new = set(pitches)
+        for p in self._active:
+            self._note_off(p)
+        for p in new:
             self._note_on(p, velocity)
         self._active = new
 
@@ -120,10 +139,17 @@ class FluidSynthSink(AudioSink):
         self.channel = channel
         self._fs = fluidsynth.Synth()
         self._fs.start()
-        sfid = self._fs.sfload(soundfont)
-        if sfid == -1:
-            raise RuntimeError(f"Could not load SoundFont: {soundfont}")
-        self._fs.program_select(channel, sfid, 0, 0)
+        try:
+            sfid = self._fs.sfload(soundfont)
+            if sfid == -1:
+                raise RuntimeError(f"Could not load SoundFont: {soundfont}")
+            self._fs.program_select(channel, sfid, 0, 0)
+        except Exception:
+            # start() already allocated the native synth/driver; release it so a
+            # failed construction doesn't leak it (no close() can run — we raise).
+            self._fs.delete()
+            self._fs = None
+            raise
 
     def _note_on(self, pitch, velocity):
         self._fs.noteon(self.channel, int(pitch), int(velocity))

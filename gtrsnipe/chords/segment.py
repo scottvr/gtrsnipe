@@ -57,16 +57,37 @@ def segment_by_measure(
         return []
 
     bpm = beats_per_measure(song.time_signature)
+    onsets = [e.time for e in events]
     end_beat = max(e.time + max(e.duration, 0.0) for e in events)
-    n_measures = max(1, math.ceil((end_beat - 1e-9) / bpm))
+
+    # Cover every measure any note touches: a leading pickup (negative onset), the
+    # last sounding beat, and an onset landing exactly on a measure boundary.
+    first_measure = min(0, math.floor(min(onsets) / bpm))
+    last_measure = max(
+        math.ceil((end_beat - 1e-9) / bpm) - 1,   # measure of the last sounding beat
+        math.floor(max(onsets) / bpm),            # measure of the last onset
+        first_measure,
+    )
 
     spans: List[ChordSpan] = []
-    for m in range(n_measures):
+    for m in range(first_measure, last_measure + 1):
         lo = m * bpm
         hi = lo + bpm
-        in_measure = [e for e in events if lo <= e.time < hi]
+        in_measure = [e for e in events if _touches_measure(e, lo, hi)]
         spans.append(_span_for_measure(m, lo, hi, in_measure, chord_tone_threshold))
     return spans
+
+
+def _touches_measure(event, lo: float, hi: float) -> bool:
+    """True if the event onsets in [lo, hi) or sustains across into it.
+
+    Onset-in-measure covers normal (and zero-duration boundary) notes; the
+    sustain test carries a note that started earlier but is still ringing.
+    """
+    dur = max(event.duration, 0.0)
+    onset_here = lo <= event.time < hi
+    sustains_through = event.time < lo and (event.time + dur) > lo
+    return onset_here or sustains_through
 
 
 def _span_for_measure(index, start, end, events, threshold) -> ChordSpan:
@@ -74,14 +95,17 @@ def _span_for_measure(index, start, end, events, threshold) -> ChordSpan:
         return ChordSpan(index=index, start_beat=start, chord=None, pitches=())
 
     measure_len = end - start
-    # Total sounding duration per pitch class (clipped to the measure).
+    # Total sounding duration per pitch class, clipped to this measure at BOTH
+    # ends (a note carried across the bar line only counts from `start`).
     pc_duration: dict = defaultdict(float)
     lowest_pitch_for_pc: dict = {}
     for e in events:
-        dur = min(e.time + max(e.duration, 0.0), end) - e.time
+        sound_start = max(e.time, start)
+        sound_end = min(e.time + max(e.duration, 0.0), end)
+        dur = max(sound_end - sound_start, 0.0)
         pc = e.pitch % 12
-        pc_duration[pc] += max(dur, 0.0)
-        # Track the lowest actual pitch seen for each kept pitch class (for voicing).
+        pc_duration[pc] += dur
+        # Track the lowest actual pitch seen for each pitch class (for voicing).
         if pc not in lowest_pitch_for_pc or e.pitch < lowest_pitch_for_pc[pc]:
             lowest_pitch_for_pc[pc] = e.pitch
 
@@ -93,7 +117,9 @@ def _span_for_measure(index, start, end, events, threshold) -> ChordSpan:
         kept = list(pc_duration.keys())
 
     voicing = sorted(lowest_pitch_for_pc[pc] for pc in kept)
-    bass = min(e.pitch for e in events)
+    # Bass is the lowest *kept* chord tone, not the lowest raw event: a dropped
+    # passing tone must not become a spurious slash-chord bass.
+    bass = voicing[0] if voicing else None
     chord = identify(voicing, bass=bass)
     return ChordSpan(index=index, start_beat=start, chord=chord,
                      pitches=tuple(voicing))

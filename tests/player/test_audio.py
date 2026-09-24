@@ -51,6 +51,28 @@ def test_only_changed_notes_move():
     assert ("off", 64) not in s.events  # E was held
 
 
+def test_attack_rearticulates_repeated_pitch():
+    # Regression: four repeated quarter-note Cs are four distinct onsets and must
+    # each re-strike; the diff in update() wrongly merged them into one held note.
+    s = FakeSink()
+    s.attack([60])
+    s.attack([60])
+    ons = [e for e in s.events if e[0] == "on" and e[1] == 60]
+    offs = [e for e in s.events if e[0] == "off" and e[1] == 60]
+    assert len(ons) == 2      # struck twice
+    assert len(offs) == 1     # released once between the two strikes
+
+
+def test_attack_releases_gone_and_strikes_new():
+    s = FakeSink()
+    s.attack([60, 64])
+    s.events.clear()
+    s.attack([64, 67])  # every ringing note released, whole new frame struck
+    assert ("off", 60) in s.events and ("off", 64) in s.events
+    ons = {e[1] for e in s.events if e[0] == "on"}
+    assert ons == {64, 67}
+
+
 def test_update_to_empty_releases_all():
     s = FakeSink()
     s.update([60, 64])
@@ -95,6 +117,38 @@ def test_make_audio_sink_fluidsynth_requires_soundfont():
     # No soundfont -> clean RuntimeError before any backend import.
     with pytest.raises(RuntimeError):
         make_audio_sink("fluidsynth", soundfont=None)
+
+
+def test_fluidsynth_releases_synth_if_soundfont_fails(monkeypatch):
+    # Regression: a failed sfload after start() must delete the native synth,
+    # since the constructor raises and close()/_teardown can never run.
+    import sys
+    from gtrsnipe.player.audio import FluidSynthSink
+
+    class FakeSynth:
+        def __init__(self):
+            self.started = False
+            self.deleted = False
+        def start(self):
+            self.started = True
+        def sfload(self, path):
+            return -1  # load failure
+        def delete(self):
+            self.deleted = True
+
+    created = []
+
+    class FakeFluidsynth:
+        @staticmethod
+        def Synth():
+            s = FakeSynth()
+            created.append(s)
+            return s
+
+    monkeypatch.setitem(sys.modules, "fluidsynth", FakeFluidsynth)
+    with pytest.raises(RuntimeError):
+        FluidSynthSink(soundfont="/bad/path.sf2")
+    assert created and created[0].deleted, "leaked the started synth on failure"
 
 
 def test_midi_sink_reports_missing_backend_clearly(monkeypatch):

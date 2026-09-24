@@ -74,6 +74,7 @@ def _chord_window(positions: List[FretPosition], size: int = DIAGRAM_WINDOW) -> 
 
 def _progression_grid(spans: List[ChordSpan], per_line: int) -> str:
     """A monospace bar-by-bar grid of chord labels."""
+    per_line = max(1, per_line)  # 0/negative would make range() raise
     labels = [s.label for s in spans]
     width = max((len(x) for x in labels), default=4)
     cell = lambda x: x.ljust(width)

@@ -84,7 +84,7 @@ class Player:
         try:
             for i, (frame, delay) in enumerate(schedule):
                 self._paint(timeline, i)
-                self.audio.update(frame.pitches)
+                self.audio.attack(frame.pitches)
                 if i == n - 1:
                     break
                 if delay is None:

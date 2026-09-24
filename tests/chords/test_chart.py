@@ -109,6 +109,12 @@ def test_sheet_has_a_diagram_per_unique_chord():
     assert out.count("```") == 3 * 2  # opening+closing per block
 
 
+def test_measures_per_line_zero_does_not_crash():
+    # Regression: --measures-per-line 0 made range() raise ValueError.
+    out = build_chord_sheet(cmaj_am_song(), MapperConfig(), measures_per_line=0)
+    assert "## Progression" in out  # clamped to 1, no crash
+
+
 def test_empty_song_sheet_is_graceful():
     out = build_chord_sheet(Song(tracks=[], title="Empty"), MapperConfig())
     assert "# Empty" in out

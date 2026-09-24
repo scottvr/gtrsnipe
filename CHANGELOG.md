@@ -27,6 +27,11 @@ This project adheres to [Semantic Versioning](https://semver.org/).
     `mido` + `python-rtmidi` (the new `[play]` extra); `fluidsynth` renders a
     SoundFont directly with no external host (`pyfluidsynth`, the `[synth]`
     extra). Missing backends fail with an install hint, not a traceback.
+
+### Known limitations
+- Player audio sustains each note until the next onset (legato); a note's own
+  duration and rests are not yet honored in playback — visuals are unaffected.
+  Honoring true note-offs needs an event-level audio scheduler (roadmap).
 - **Chord charts** (`gtrsnipe-chords`). Segments a song into one chord per
   measure (pitch classes unioned across the bar, weighted by duration, with the
   bass note resolving inversions/slash chords) and emits a Markdown/ASCII chord

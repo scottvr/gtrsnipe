@@ -152,10 +152,10 @@ def test_run_drives_audio_and_closes():
     class RecSink(AudioSink):
         def __init__(self):
             super().__init__()
-            self.updates = []
+            self.attacks = []
             self.closed = False
-        def update(self, pitches, velocity=96):
-            self.updates.append(tuple(pitches))
+        def attack(self, pitches, velocity=96):
+            self.attacks.append(tuple(pitches))
         def close(self):
             self.closed = True
 
@@ -166,7 +166,7 @@ def test_run_drives_audio_and_closes():
                writer=lambda s: None, sleep=lambda s: None,
                read_key=lambda: "\n", clear=False, audio=sink)
     p.run(tl, RealtimeClock(), tempo_bpm=120)
-    assert sink.updates == [(60,), (62,)]
+    assert sink.attacks == [(60,), (62,)]
     assert sink.closed
 
 

@@ -91,6 +91,36 @@ def test_rest_measure_is_no_chord():
     assert spans[2].label == "C"
 
 
+def test_dropped_passing_tone_is_not_the_bass():
+    # Regression: a brief LOW passing note (below the chord, dropped by the
+    # threshold) must not become a spurious slash-chord bass.
+    spans = segment_by_measure(song([
+        ev(0, C, 4), ev(0, E, 4), ev(0, G, 4),  # sustained C major
+        ev(1.0, 44, 0.25),                       # brief G#2, under threshold
+    ]))
+    assert spans[0].label == "C"   # not "C/G#"
+
+
+def test_chord_sustained_across_barline_fills_later_measures():
+    # Regression: a chord held through two bars must read C, C — not C, N.C.
+    spans = segment_by_measure(song([
+        ev(0, C, 8), ev(0, E, 8), ev(0, G, 8),
+    ]))
+    assert [s.label for s in spans] == ["C", "C"]
+
+
+def test_onset_exactly_on_final_barline_is_not_dropped():
+    # Regression: a stab landing exactly on the last measure boundary was rounded
+    # away by n_measures and excluded by the half-open filter.
+    spans = segment_by_measure(song([
+        ev(0, C, 4), ev(0, E, 4), ev(0, G, 4),   # bar 1
+        ev(4, G, 0), ev(4, B, 0), ev(4, D + 12, 0),  # zero-dur stab at beat 4
+    ]))
+    assert len(spans) == 2
+    assert spans[0].label == "C"
+    assert spans[1].label == "G"
+
+
 def test_power_chord_measure():
     spans = segment_by_measure(song([ev(0, C, 4), ev(0, G, 4)]))
     assert spans[0].label == "C5"

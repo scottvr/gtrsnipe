@@ -69,15 +69,24 @@ class ScrollingTabRenderer:
         last_col = max(self._column_of(f.time) for f in timeline)
         length = last_col + 4  # margin for multi-digit frets at the end
         strip = [[FILL] * length for _ in range(n)]
-        for frame in timeline:
-            col = self._column_of(frame.time)
+        # Earliest free column per string, so a fret's digits never overwrite an
+        # earlier note's digits (which produced phantom frets like 12+3 -> "13").
+        # Dense high-fret runs drift a column right rather than corrupt a number.
+        next_free = [0] * n
+        for frame in timeline:  # timeline is time-sorted
+            base = self._column_of(frame.time)
             for pos in frame.positions:
-                if not (0 <= pos.string < n):
+                s = pos.string
+                if not (0 <= s < n):
                     continue
                 text = str(pos.fret)
+                col = max(base, next_free[s])
+                end = col + len(text)
+                if end > len(strip[s]):
+                    strip[s].extend([FILL] * (end - len(strip[s])))
                 for k, ch in enumerate(text):
-                    if col + k < length:
-                        strip[pos.string][col + k] = ch
+                    strip[s][col + k] = ch
+                next_free[s] = end + 1  # keep at least one gap before the next
         self._strip, self._strip_key = strip, key
         return strip
 

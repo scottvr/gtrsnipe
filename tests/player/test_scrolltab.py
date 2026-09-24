@@ -92,6 +92,18 @@ def test_multidigit_fret_rendered():
     assert "12" in out.splitlines()[1]
 
 
+def test_adjacent_multidigit_frets_do_not_form_phantom():
+    # Regression: fret 12 then fret 3 one column apart used to overwrite the '2'
+    # producing a phantom '13'. Both real frets must survive, no '13'.
+    tl = [Frame(0.0, 0.25, (FretPosition(0, 12),), (10, 14)),
+          Frame(0.25, 0.25, (FretPosition(0, 3),), (1, 5))]
+    r = std(width=60, cols_per_beat=4)
+    e_row = r.render(tl, 0).splitlines()[1]  # high-E row
+    assert "12" in e_row
+    assert "3" in e_row
+    assert "13" not in e_row
+
+
 def test_invalid_dimensions_rejected():
     with pytest.raises(ValueError):
         std(width=2)
