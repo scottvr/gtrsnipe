@@ -20,11 +20,6 @@ It can also convert existing MIDI files into text-based notations or, in reverse
 At its core, gtrsnipe uses an intelligent fretboard mapper that analyzes notes and chords to find comfortable and logical fingerings on the guitar neck. [This process is highly customizable](https://github.com/scottvr/gtrsnipe/wiki/1.-FretboardMapper-Algorithm-Configuration-and-Tunables), allowing you to fine-tune the output to match your personal playing style and preferences.
 
 -----
-## The Audio-to-Tablature Pipeline
-
-For audio files, gtrsnipe uses a multi-stage pipeline to process the sound and transcribe the notes. Each stage can be enabled or disabled via command-line flags.
-
----
 
 # Installation
 
