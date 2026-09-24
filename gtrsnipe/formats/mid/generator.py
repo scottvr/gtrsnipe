@@ -1,7 +1,7 @@
 from midiutil import MIDIFile as MidiUtilFile
 import math
 import logging
-from ...core.types import MusicalEvent, Song, Track, TimeSignature
+from ...core.types import Song
 
 logger = logging.getLogger(__name__)
 class MidiGenerator:
@@ -33,11 +33,15 @@ class MidiGenerator:
         
         try:
             num, den = map(int, song.time_signature.split('/'))
-            # For time signature, denominator is expressed as a power of 2 (e.g., 4 becomes 2)
-            den_power_of_2 = int(math.log2(den))
+            # MIDI expresses the denominator as a power of two (4 -> 2, 8 -> 3).
+            # A non-power-of-2 denominator (e.g. 4/6) has no valid MIDI encoding;
+            # int(math.log2(den)) would silently truncate it (6 -> 2 -> writes 4).
+            if num <= 0 or den <= 0 or (den & (den - 1)) != 0:
+                raise ValueError(f"time signature '{song.time_signature}' is not MIDI-representable")
+            den_power_of_2 = den.bit_length() - 1
             midi_file.addTimeSignature(track, time, num, den_power_of_2, 24)
-        except (ValueError, ZeroDivisionError):
-            logger.warning(f"*** WARNING: Could not parse time signature '{song.time_signature}'. Defaulting to 4/4. ***")
+        except (ValueError, ZeroDivisionError) as e:
+            logger.warning(f"*** WARNING: Could not use time signature '{song.time_signature}' ({e}). Defaulting to 4/4. ***")
             midi_file.addTimeSignature(track, time, 4, 2, 24)
 
         # Add notes for each track
