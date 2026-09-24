@@ -25,7 +25,7 @@ def note_name_to_pitch(name: str) -> int:
         'B': 11, 'Cb': 11,
     }
     
-    match = re.match(r'([A-Ga-g])([#b]?)(\d+)', name)
+    match = re.match(r'([A-Ga-g])([#b]?)(-?\d+)', name)
     if not match:
         raise ValueError(f"Invalid note name format: {name}")
 

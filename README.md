@@ -57,6 +57,20 @@ Then, install the project and its dependencies:
 pip install -e .
 ```
 
+The base install is **CPU-only and torch-free** — it covers the full
+MIDI/tab/abc/vex pipeline with no heavy ML dependencies. Audio input
+(audio → MIDI → tab) lives behind optional extras:
+
+```
+pip install -e '.[audio]'        # librosa pYIN bass pipeline (audio input)
+pip install -e '.[separation]'   # demucs stem isolation (pulls torch)
+pip install -e '.[all]'          # both
+```
+
+> **Python version:** 3.10–3.13 are fully supported. Python 3.14 works for the
+> core, but the `[audio]` extra is best-effort there until numba/llvmlite publish
+> 3.14 wheels — use 3.10–3.13 for the librosa audio path.
+
 ## Usage 
 
 The installation process makes gtrsnipe available as a command within your activated virtual environment.
@@ -64,21 +78,41 @@ The installation process makes gtrsnipe available as a command within your activ
 ### Command-line help
 
 ```
-uusage: gtrsnipe [-h] [-i INPUT] [-o OUTPUT] [--capo CAPO]
-                [--tuning {STANDARD,E_FLAT,DROP_D,OPEN_G,BASS_STANDARD,BASS_DROP_D,BASS_E_FLAT,SEVEN_STRING_STANDARD,BARITONE_B,BARITONE_A,BARITONE_C,C_SHARP,OPEN_C6,DROP_C,PIANO}]
-                [--bass] [--num-strings {4,5,6,7}] [--max-fret MAX_FRET] [--mono-lowest-only] [--nr] [--remove-fx]
-                [--stem-track {guitar,bass,drums,vocals,piano,other}] [--demucs-model DEMUCS_MODEL] [--constrain-frequency]
-                [--min-note-override MIN_NOTE_OVERRIDE] [--max-note-override MAX_NOTE_OVERRIDE] [--low-pass-filter] [--onset-threshold ONSET_THRESHOLD]
-                [--frame-threshold FRAME_THRESHOLD] [--min-note-len-ms MIN_NOTE_LEN_MS] [--melodia-trick] [--nudge NUDGE] [-y] [--track TRACK] [--analyze]
-                [--transpose TRANSPOSE] [--no-articulations] [--staccato] [--max-line-width MAX_LINE_WIDTH] [--single-string {1,2,3,4,5,6}] [--normalize-pitch]    
-                [--pitch-mode {drop,normalize}] [--debug] [--list-tunings] [--show-tuning TUNING_NAME] [--fret-span-penalty FRET_SPAN_PENALTY]
+usage: gtrsnipe [-h] [-i INPUT] -o OUTPUT [--capo CAPO]
+                [--tuning {STANDARD,E_FLAT,DROP_D,OPEN_G,BASS_STANDARD,BASS_DROP_D,BASS_E_FLAT,SEVEN_STRING_STANDARD,BARITONE_B,BARITONE_A,BARITONE_C,C_SHARP_STANDARD,OPEN_C6,DROP_C,PIANO}]
+                [--bass] [--num-strings {4,5,6,7}] [--max-fret MAX_FRET] [--mono-lowest-only] [--velocity-cutoff [0-127]] [--nr]
+                [--stem-track {guitar,bass,drums,vocals,piano,other}] [--demucs-model DEMUCS_MODEL] [--no-constrain-frequency]
+                [--min-note-override MIN_NOTE_OVERRIDE] [--max-note-override MAX_NOTE_OVERRIDE] [--low-pass-filter] [--pitch-engine {librosa}]
+                [--nudge NUDGE] [--first-note-is-downbeat] [-y] [--track TRACK] [--analyze]
+                [--transpose TRANSPOSE] [--no-articulations] [--staccato] [--max-line-width MAX_LINE_WIDTH] [--single-string {1,2,3,4,5,6}] [--normalize-pitch]
+                [--debug] [--list-tunings] [--show-tuning TUNING_NAME] [--optimizer {viterbi,greedy}] [--fret-span-penalty FRET_SPAN_PENALTY]
                 [--movement-penalty MOVEMENT_PENALTY] [--string-switch-penalty STRING_SWITCH_PENALTY] [--high-fret-penalty HIGH_FRET_PENALTY]
                 [--low-string-high-fret-multiplier LOW_STRING_HIGH_FRET_MULTIPLIER] [--unplayable-fret-span UNPLAYABLE_FRET_SPAN]
                 [--sweet-spot-bonus SWEET_SPOT_BONUS] [--sweet-spot-low SWEET_SPOT_LOW] [--sweet-spot-high SWEET_SPOT_HIGH] [--ignore-open]
-                [--legato-time-threshold LEGATO_TIME_THRESHOLD] [--tapping-run-threshold TAPPING_RUN_THRESHOLD] [--pre-quantize] [--dedupe]
-                [--quantization-resolution {0.0125,0.0625,0.125,0.25,0.5,1.0}] [--prefer-open] [--fretted-open-penalty FRETTED_OPEN_PENALTY]
+                [--legato-time-threshold LEGATO_TIME_THRESHOLD] [--tapping-run-threshold TAPPING_RUN_THRESHOLD] [--no-pre-quantize] [--dedupe]
+                [--quantization-resolution {0.0125,0.025,0.0625,0.125,0.25,0.5,1.0}] [--prefer-open] [--fretted-open-penalty FRETTED_OPEN_PENALTY]
                 [--barre-bonus BARRE_BONUS] [--barre-penalty BARRE_PENALTY] [--let-ring-bonus LET_RING_BONUS] [--diagonal-span-penalty]
 
+```
+
+### Fretboard optimizer (`--optimizer`)
+
+gtrsnipe chooses where to play each note on the fretboard by maximizing an
+additive playability score (fret span, hand movement, string switching, barre
+shapes, let-ring, and more). Two strategies are available:
+
+- **`viterbi`** (default) — a dynamic-programming / Viterbi trellis search that
+  finds the **globally optimal** fingering sequence for the whole passage. It
+  enumerates every valid (distinct-string) fingering per chord and reuses the
+  exact same scoring function, so its result is provably at least as good as the
+  greedy path. Tie-breaks are deterministic.
+- **`greedy`** — the legacy per-chord choice that never reconsiders earlier
+  notes. Kept for one release for reproducibility; use `--optimizer greedy` to
+  match pre-0.3.0 output.
+
+```
+gtrsnipe -i input.mid -o out.tab                      # viterbi (default)
+gtrsnipe -i input.mid -o out.tab --optimizer greedy   # legacy behavior
 ```
 
 ### A Note on Bonuses and Penalties: Inverting Scoring Behavior
@@ -128,16 +162,13 @@ gtrsnipe -i input.mid --fret-span-penalty -10 ...
 -  `--single-string {1,2,3,4,5,6}`
                         Force all notes onto a single string (1-6, high e to low E). Ideal for transcribing legato/tapping runs.
 -  `--normalize-pitch`     Constrain notes to the playable range of the tuning specified by --tuning.
--  `--pitch-mode {drop,normalize}`
-                        Used with --normalize-pitch. 'drop' (default) discards out-of-range notes. 'normalize' transposes out-of-range notes by octaves until      
-                        they fit.
+-  `--optimizer {viterbi,greedy}`
+                        Fretboard mapping strategy: 'viterbi' (global DP optimum, default) or 'greedy' (legacy per-step choice).
 -  `--debug`               Enable detailed debug logging messages.
 
 
-**Audio-to-MIDI Pipeline Options:**
+**Audio-to-MIDI Pipeline Options:** _(require `pip install 'gtrsnipe[audio]'`; `--stem-track` also needs `[separation]`)_
 -  `--nr`                  (Experimental. Enables noise/reverb reduction on the audio stem.)
--  `--remove-fx`           Pre-process audio with a distortion recovery model before pitch detection."
-                           (Experimental. Requires onnxruntime and the 'denoiser_model.onnx' model file in the current directory.)
 -  `--stem-track {guitar,bass,drums,vocals,piano,other}`
                         The instrument stem to isolate with Demucs. 'guitar' defaults to the 'other' stem.
 -  `--demucs-model DEMUCS_MODEL`
@@ -145,13 +176,8 @@ gtrsnipe -i input.mid --fret-span-penalty -10 ...
 -  `--constrain-frequency`
                         Constrain pitch detection to the frequency range of the selected tuning.
 -  `--low-pass-filter`     Apply a low-pass filter to the audio stem based on the instrument's max frequency.
--  `--onset-threshold ONSET_THRESHOLD`
-                        Basic-Pitch model's note onset threshold (0.0 to 1.0).
--  `--frame-threshold FRAME_THRESHOLD`
-                        Basic-Pitch model's note frame threshold (0.0 to 1.0).
--  `--min-note-len-ms MIN_NOTE_LEN_MS`
-                        Basic-Pitch's minimum note length in milliseconds to keep.
--  `--melodia-trick`       Enable Basic-Pitch's 'melodia trick'; whatever that is.
+-  `--pitch-engine {librosa}`
+                        Pitch detection engine. Currently librosa (pYIN) only; the experimental basic-pitch engine was removed in v0.3.0.
 
 **Tuning Information:**
 -  `--list-tunings`        List all available tuning names and exit.

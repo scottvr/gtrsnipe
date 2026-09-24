@@ -54,7 +54,10 @@ class AbcGenerator:
         note_as_fraction_of_whole = AbcParser._abc_duration_to_beats(default_note_length)
         default_note_len_beats = note_as_fraction_of_whole * 4.0
         
+        # ABC header field order matters: T: (title) must come after X: and
+        # before K:, which terminates the header. Anything after K: is tune body.
         abc_lines.append("X:1")
+        abc_lines.append(f"T:{song.title}")
         abc_lines.append(f"M:{song.time_signature}")
         abc_lines.append(f"L:{default_note_length}")
         abc_lines.append(f"Q:1/4={int(song.tempo)}")
@@ -69,7 +72,10 @@ class AbcGenerator:
         for track in song.tracks:
             if not track.events: continue
             
-            abc_lines.append(f"T:{song.title} {'(track.instrument_name)' if track.instrument_name and track.instrument_name != 'Acoustic Grand Piano' else ''}")
+            # Instrument annotation as an ABC comment (a body T: would be invalid
+            # after K:, and multiple tracks share one tune body here).
+            if track.instrument_name and track.instrument_name != 'Acoustic Grand Piano':
+                abc_lines.append(f"% {track.instrument_name}")
 
             sorted_events = sorted(track.events, key=lambda e: e.time)
             line = ""

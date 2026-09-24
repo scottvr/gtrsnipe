@@ -66,13 +66,7 @@ def setup_parser() -> ArgumentParser:
     pipeline_group = parser.add_argument_group('Audio-to-MIDI Pipeline Options')
     pipeline_group.add_argument('--nr', action='store_true', help='Step 2: Enables noise/reverb reduction on the audio stem.')
     pipeline_group.add_argument(
-        '--remove-fx',
-        action='store_true',
-        help="Pre-process audio with a distortion recovery model before pitch detection."
-            "(Experimental. Requires onnxruntime and the 'denoiser_model.onnx' model file in the current directory.)"
-    )
-    pipeline_group.add_argument(
-        '--stem-track', 
+        '--stem-track',
         type=str, 
         default=None,
         choices=['guitar', 'bass', 'drums', 'vocals', 'piano', 'other'],
@@ -108,34 +102,12 @@ def setup_parser() -> ArgumentParser:
         help="Apply a low-pass filter to the audio stem based on the instrument's max frequency."
     )
     pipeline_group.add_argument(
-        '--onset-threshold',
-        type=float,
-        default=0.5,
-        help="Basic-Pitch model's note onset threshold (0.0 to 1.0)."
-    )
-    pipeline_group.add_argument(
-        '--frame-threshold',
-        type=float,
-        default=0.3,
-        help="Basic-Pitch model's note frame threshold (0.0 to 1.0)."
-    )
-    pipeline_group.add_argument(
-        '--min-note-len-ms',
-        type=float,
-        default=127.70,
-        help="Basic-Pitch's minimum note length in milliseconds to keep."
-    )
-    pipeline_group.add_argument(
-        '--melodia-trick',
-        action='store_true',
-        help="Enable Basic-Pitch's 'melodia trick'; whatever that is."
-    )
-    pipeline_group.add_argument(
         '--pitch-engine',
         type=str,
         default='librosa',
-        choices=['basic-pitch', 'librosa'],
-        help="The pitch detection engine to use ('basic-pitch' or 'librosa')."
+        choices=['librosa'],
+        help="The pitch detection engine to use. Currently 'librosa' (pYIN) only; "
+             "the experimental basic-pitch engine was removed in v0.3.0."
     )
 
     parser.add_argument(
@@ -222,6 +194,14 @@ def setup_parser() -> ArgumentParser:
     )
 
     mapper_group = parser.add_argument_group('Mapper Tuning/Configuration (Advanced)')
+    mapper_group.add_argument(
+        '--optimizer',
+        type=str,
+        default='viterbi',
+        choices=['viterbi', 'greedy'],
+        help="Fretboard mapping strategy: 'viterbi' (global DP optimum, default) "
+             "or 'greedy' (legacy per-step choice)."
+    )
     # Scoring Weights
     mapper_group.add_argument(
         '--fret-span-penalty',

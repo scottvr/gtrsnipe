@@ -1,5 +1,10 @@
 import logging
 from pathlib import Path
+
+from importlib.util import find_spec
+if importlib.util.find_spec("demucs") is None:
+    raise ImportError("The 'demucs' library is required for instrument separation. Try reinstalling gtrsnipe with [all] extras")
+   
 from demucs.separate import main as demucs_run
 
 logger = logging.getLogger(__name__)

@@ -65,7 +65,11 @@ class AsciiTabGenerator:
         all_events = [event for track in song.tracks for event in track.events]
         if not all_events: return score
         
-        beats_per_measure = time_sig_tuple[0]
+        # event.time is in quarter-note beats, so beats-per-measure must account
+        # for the denominator: (num/den)*4. Using the numerator alone mis-sizes
+        # measures for any non-quarter denominator (6/8, 3/8, 2/2).
+        num_ts, den_ts = time_sig_tuple[0], time_sig_tuple[1]
+        beats_per_measure = num_ts * (4.0 / den_ts) if den_ts else float(num_ts)
         # Sort all events by time to process them in chronological order
         all_events.sort(key=lambda e: e.time)
 
@@ -160,7 +164,7 @@ class AsciiTabGenerator:
     
             for note in notes_in_chord:
                 str_idx = note.position.string
-                if str_idx >= len(measure_lines):
+                if not (0 <= str_idx < len(measure_lines)):
                     logger.warning(f"Note with string index {str_idx} out of bounds. Skipping.")
                     continue
                 
@@ -192,33 +196,7 @@ class AsciiTabGenerator:
             measure_lines[j] += ('-' * padding)
         
         return measure_lines
-    
-    @staticmethod
-    def _is_chord_playable(notes: List[TabNote], config: MapperConfig) -> bool:
-        """Checks if a chord is physically playable."""
-        if len(notes) <= 1:
-            return True
 
-        strings_used = set()
-        frets_used = []
-
-        for note in notes:
-            # Check for multiple notes on the same string
-            if note.position.string in strings_used:
-                return False
-            strings_used.add(note.position.string)
-
-            # Collect frets for span calculation (ignore open strings)
-            if note.position.fret > 0:
-                frets_used.append(note.position.fret)
-        
-        # Check fret span
-        if len(frets_used) > 1:
-            if (max(frets_used) - min(frets_used)) > config.unplayable_fret_span:
-                return False
-
-        return True
-    
     @staticmethod
     def _format_score(score: TabScore, command_line: str, max_line_width: int, base_unit_in_beats: float, config: MapperConfig) -> str:
         """Formats the complete score, breaking lines based on character width."""
@@ -254,9 +232,12 @@ class AsciiTabGenerator:
         ]
 
         if config.capo > 0:
-            header.append(f"// Capo: {config.capo}nd Fret" if config.capo == 2 else
-                          f"// Capo: {config.capo}st Fret" if config.capo == 1 else
-                          f"// Capo: {config.capo}th Fret")
+            n = config.capo
+            if 11 <= (n % 100) <= 13:
+                suffix = "th"
+            else:
+                suffix = {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
+            header.append(f"// Capo: {n}{suffix} Fret")
 
         if command_line:
             # Clean up the command for display (optional, but nice)
