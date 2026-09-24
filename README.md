@@ -11,7 +11,7 @@ Released 2026-09-23. See [CHANGELOG](https://github.com/scottvr/gtrsnipe/blob/ma
 Transcribe music for guitar, capable of converting audio files (.mp3, .wav), MIDI (.mid), and various text-based formats (.tab, .vex, .abc) into high-quality ASCII tablature. [Read about the current state of these new features](https://github.com/scottvr/gtrsnipe/wiki/v0.2.0)
   
 
-### What?
+# What?
 
 gtrsnipe is a guitar transcription tool. Its primary function is to create playable guitar tablature from a variety of sources. It now features a fledgling audio-to-tab pipeline that can take a mixed audio track, isolate the guitar part, and transcribe it into a tab.
 
