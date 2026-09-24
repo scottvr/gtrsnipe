@@ -194,6 +194,14 @@ def setup_parser() -> ArgumentParser:
     )
 
     mapper_group = parser.add_argument_group('Mapper Tuning/Configuration (Advanced)')
+    mapper_group.add_argument(
+        '--optimizer',
+        type=str,
+        default='viterbi',
+        choices=['viterbi', 'greedy'],
+        help="Fretboard mapping strategy: 'viterbi' (global DP optimum, default) "
+             "or 'greedy' (legacy per-step choice)."
+    )
     # Scoring Weights
     mapper_group.add_argument(
         '--fret-span-penalty',

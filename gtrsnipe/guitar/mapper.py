@@ -120,6 +120,14 @@ class GuitarMapper:
                 
                 # Include the "previous-previous" frets if let-ring is on ---
                 # This checks the span of the full three-note context.
+                #
+                # LANDMINE GUARD: this is the ONLY place the scorer reads t-2
+                # (prev_prev_fingering). The Viterbi mapper's first-order collapse
+                # is exact only because the score depends on t-2 solely through
+                # this let_ring + diagonal_span gate — see `needs_second_order` in
+                # map_multi_string(). If you add any deeper-history read here,
+                # update needs_second_order (and its test) or global optimality
+                # silently breaks.
                 if self.config.let_ring_bonus > 0 and prev_prev_fingering:
                     prev_prev_frets = [pos.fret for pos in prev_prev_fingering if pos.fret > 0]
                     prev_frets.extend(prev_prev_frets)
@@ -241,11 +249,214 @@ class GuitarMapper:
             
         return events_with_base_techniques
     
+    def _normalize_pitch(self, pitch: int) -> int:
+        """Normalization key used by the --dedupe path to collapse duplicate
+        notes within a chord. Currently the identity (two notes dedupe iff they
+        share the exact MIDI pitch); kept as a hook in case octave/enharmonic
+        folding is wanted later."""
+        return pitch
+
+    def _preprocess_group(self, note_group: List[MusicalEvent]) -> List[MusicalEvent]:
+        """Shared preprocessing for both optimizers: truncate an over-full chord
+        to num_strings (keeping the lowest notes) and optionally deduplicate
+        pitches. Ordering is preserved for determinism."""
+        if len(note_group) > self.config.num_strings:
+            logger.warning(
+                f"Found an unplayable chord with {len(note_group)} notes at time "
+                f"{note_group[0].time:.2f}. Keeping the lowest {self.config.num_strings} notes."
+            )
+            note_group = sorted(note_group, key=lambda event: event.pitch)[:self.config.num_strings]
+
+        if not self.config.deduplicate_pitches:
+            return note_group
+
+        unique_pitches = {}
+        deduplicated_note_group = []
+        for note in note_group:
+            norm_pitch = self._normalize_pitch(note.pitch)
+            if norm_pitch not in unique_pitches:
+                unique_pitches[norm_pitch] = note
+                deduplicated_note_group.append(note)
+        return deduplicated_note_group
+
+    @staticmethod
+    def _cand_key(fingering: Fingering):
+        """Deterministic total order over fingerings (by string then fret)."""
+        return tuple((p.string, p.fret) for p in fingering)
+
+    def generate_candidates(self, group_notes: List[MusicalEvent]) -> List[Fingering]:
+        """Enumerate ALL valid (distinct-string) fingerings for a group via a
+        collision-pruned DFS. No lossy beam: the distinct-string constraint keeps
+        this bounded (<=720 on a 6-string, usually a handful). Returns [] for a
+        dead-end group (any note has no playable position), matching greedy."""
+        note_positions = []
+        for n in group_notes:
+            pos = self.pitch_to_positions.get(n.pitch)
+            if not pos:
+                return []
+            note_positions.append(sorted(pos, key=lambda p: (p.string, p.fret)))
+
+        valid: List[Fingering] = []
+        cap = self.config.hard_enum_cap
+        capped = False
+
+        def dfs(i, chosen, used):
+            nonlocal capped
+            if len(valid) >= cap:
+                capped = True
+                return
+            if i == len(note_positions):
+                valid.append(tuple(chosen))
+                return
+            for p in note_positions[i]:
+                if p.string in used:            # distinct-string prune
+                    continue
+                chosen.append(p)
+                used.add(p.string)
+                dfs(i + 1, chosen, used)
+                chosen.pop()
+                used.discard(p.string)
+
+        dfs(0, [], set())
+        if capped:
+            logger.warning(
+                f"hard_enum_cap ({cap}) hit at time {group_notes[0].time:.2f}; "
+                "fingering for this group may be non-optimal."
+            )
+        valid.sort(key=self._cand_key)          # deterministic DP order
+        return valid
+
+    def map_multi_string(self, time_groups: List[List[MusicalEvent]]) -> List[MusicalEvent]:
+        """Global-optimum fretboard mapping via Viterbi/DP over a trellis.
+
+        Each time-group is a stage whose nodes are its valid fingerings. Edge and
+        emission costs come from the UNMODIFIED _score_fingering, so the DP's
+        objective is identical to greedy's, and its optimum is provably >= greedy.
+        First-order Viterbi is exact unless the scorer's t-2 term is active
+        (let_ring + diagonal_span), in which case an ordered pair-state carries
+        the true f_{t-2}. See DESIGN-viterbi-mapper.md.
+        """
+        NONE = -1  # sentinel index for "no fingering" (absent prev / prev_prev)
+
+        kept: List[List[MusicalEvent]] = []
+        cand: List[List[Fingering]] = []
+        for g in time_groups:
+            g2 = self._preprocess_group(g)
+            cs = self.generate_candidates(g2)
+            if cs:
+                kept.append(g2)
+                cand.append(cs)
+            else:
+                # Dead-end group: notes not emitted, context does not advance
+                # (identical to greedy's None-skip).
+                logger.warning(f"Could not find a playable fingering for notes at time {g[0].time}")
+
+        T = len(cand)
+        if T == 0:
+            return []
+
+        second_order = bool(self.config.diagonal_span_penalty and self.config.let_ring_bonus > 0)
+        sc = self._score_fingering
+
+        BP = [dict() for _ in range(T)]
+
+        # stage 0: virtual predecessor; emission = score(f, None, None)
+        V = {}
+        for j, fj in enumerate(cand[0]):
+            V[(NONE, j)] = sc(fj, None, None)
+            BP[0][(NONE, j)] = None
+
+        # stage 1: prev_prev is still None (matches greedy at t=1)
+        if T > 1:
+            Vn = {}
+            for j, fj in enumerate(cand[1]):
+                for i, fi in enumerate(cand[0]):
+                    if (NONE, i) not in V:
+                        continue
+                    s = V[(NONE, i)] + sc(fj, fi, None)
+                    st = (i, j)
+                    if st not in Vn or s > Vn[st]:
+                        Vn[st] = s
+                        BP[1][st] = (NONE, i)
+            V = Vn
+
+        # stages t >= 2: ordered pair-state (f_{t-1}, f_t)
+        for t in range(2, T):
+            Vn = {}
+            for k, fk in enumerate(cand[t]):
+                for j, fj in enumerate(cand[t - 1]):
+                    best_s = None
+                    best_prev = None
+                    if second_order:
+                        for i, fi in enumerate(cand[t - 2]):
+                            if (i, j) not in V:
+                                continue
+                            s = V[(i, j)] + sc(fk, fj, fi)   # fi is the TRUE f_{t-2}
+                            if best_s is None or s > best_s:
+                                best_s = s
+                                best_prev = (i, j)
+                    else:
+                        # score is independent of f_{t-2}: pick best predecessor,
+                        # then add the (t-2-independent) step cost once.
+                        for i, _fi in enumerate(cand[t - 2]):
+                            if (i, j) not in V:
+                                continue
+                            if best_s is None or V[(i, j)] > best_s:
+                                best_s = V[(i, j)]
+                                best_prev = (i, j)
+                        if best_prev is not None:
+                            best_s += sc(fk, fj, None)
+                    if best_prev is None:
+                        continue
+                    Vn[(j, k)] = best_s
+                    BP[t][(j, k)] = best_prev
+            V = Vn
+
+        if not V:
+            return []
+
+        # termination + traceback (store current-fingering index at each stage)
+        end_state = max(sorted(V, key=lambda s: (s[0], s[1])), key=lambda s: V[s])
+        chosen_idx = [0] * T
+        st = end_state
+        for t in range(T - 1, -1, -1):
+            chosen_idx[t] = st[1]
+            st = BP[t][st]
+
+        # index-aligned write-back
+        out: List[MusicalEvent] = []
+        for t, g2 in enumerate(kept):
+            f = cand[t][chosen_idx[t]]
+            for i, ev in enumerate(g2):
+                ev.fret, ev.string = f[i].fret, f[i].string
+            out.extend(g2)
+        return out
+
+    def _map_multi_string_greedy(self, time_groups: List[List[MusicalEvent]]) -> List[MusicalEvent]:
+        """Legacy greedy per-step mapping, kept behind --optimizer greedy."""
+        multi_string_events = []
+        last_fingering: Optional[Fingering] = None
+        prev_prev_fingering: Optional[Fingering] = None
+
+        for note_group in time_groups:
+            group_to_finger = self._preprocess_group(note_group)
+            fingering = self._find_optimal_fingering(group_to_finger, last_fingering, prev_prev_fingering)
+            if fingering:
+                for i, note_event in enumerate(group_to_finger):
+                    note_event.fret = fingering[i].fret
+                    note_event.string = fingering[i].string
+                multi_string_events.extend(group_to_finger)
+                prev_prev_fingering = last_fingering
+                last_fingering = fingering
+            else:
+                logger.warning(f"Could not find a playable fingering for notes at time {note_group[0].time}")
+        return multi_string_events
+
     def map_events_to_fretboard(self, events: List[MusicalEvent], no_articulations: bool, single_string: Optional[int] = None) -> List[MusicalEvent]:
         if not events: return []
-        
+
         mapped_events: List[MusicalEvent]
-        
+
         if single_string is not None:
             logger.info(f"--- Single-string mode active. Mapping all notes to string {single_string}. ---")
             string_index = single_string - 1
@@ -253,54 +464,13 @@ class GuitarMapper:
         else:
             QUANTIZATION_RESOLUTION = self.config.quantization_resolution
             def quantize_time(beat): return round(beat / QUANTIZATION_RESOLUTION) * QUANTIZATION_RESOLUTION
-            
+
             sorted_events = sorted(events, key=lambda e: e.time)
             time_groups = [list(g) for t, g in groupby(sorted_events, key=lambda e: quantize_time(e.time))]
 
-            multi_string_events = []
-            last_fingering: Optional[Fingering] = None
-            prev_prev_fingering: Optional[Fingering] = None
-
-            for note_group in time_groups:
-                if len(note_group) > self.config.num_strings:
-                    logger.warning(
-                        f"Found an unplayable chord with {len(note_group)} notes at time "
-                        f"{note_group[0].time:.2f}. Keeping the lowest {self.config.num_strings} notes."
-                    )
-                    # Sort the notes by pitch (lowest first) and keep only as many as there are strings
-                    note_group = sorted(note_group, key=lambda event: event.pitch)[:self.config.num_strings]
-
-            #    group_to_finger = note_group
-            #    if self.config.mono_lowest_only and len(note_group) > 1:
-            #        lowest_note = min(note_group, key=lambda note: note.pitch)
-            #        group_to_finger = [lowest_note]
-#                quantized_beat = quantize_time(note_group[0].time)
-#                for note in note_group:
-#                    note.time = quantized_beat
-                group_to_finger = note_group
-                if self.config.deduplicate_pitches:
-                    unique_pitches = {}
-                    deduplicated_note_group = []
-                    for note in note_group:
-                        norm_pitch = self._normalize_pitch(note.pitch)
-                        if norm_pitch not in unique_pitches:
-                            unique_pitches[norm_pitch] = note
-                            deduplicated_note_group.append(note)
-
-                    group_to_finger = deduplicated_note_group
-
-                fingering = self._find_optimal_fingering(group_to_finger, last_fingering, prev_prev_fingering)
-                if fingering:
-                    # The fingering corresponds to the deduplicated notes.
-                    # We need to apply it back to the correct note events.
-                    for i, note_event in enumerate(group_to_finger):
-                        note_event.fret = fingering[i].fret
-                        note_event.string = fingering[i].string
-                    multi_string_events.extend(group_to_finger)
-                    prev_prev_fingering = last_fingering
-                    last_fingering = fingering
-                else:
-                    logger.warning(f"Could not find a playable fingering for notes at time {note_group[0].time}")
-            mapped_events = multi_string_events
+            if self.config.optimizer == "greedy":
+                mapped_events = self._map_multi_string_greedy(time_groups)
+            else:
+                mapped_events = self.map_multi_string(time_groups)
 
         return self._infer_techniques_from_positions(mapped_events, no_articulations, single_string_mode=(single_string is not None))

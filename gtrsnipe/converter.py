@@ -501,6 +501,7 @@ def main():
                 mono_lowest_only=args.mono_lowest_only,
                 let_ring_bonus=args.let_ring_bonus,
                 diagonal_span_penalty=args.diagonal_span_penalty,
+                optimizer=args.optimizer,
             )
         
         song = filter_by_velocity(song, args.velocity_cutoff)
