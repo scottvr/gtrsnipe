@@ -24,7 +24,7 @@ class VextabGenerator:
             measures_per_line = 3
 
         output_parts = [f"options tempo={int(song.tempo)}",
-                        "text Title: {song.title}",
+                        f"text Title: {song.title}",
                         ""]
         
         mapper = GuitarMapper(config=mapper_config)

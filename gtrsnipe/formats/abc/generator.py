@@ -69,7 +69,7 @@ class AbcGenerator:
         for track in song.tracks:
             if not track.events: continue
             
-            abc_lines.append(f"T:{song.title} {'(track.instrument_name)' if track.instrument_name and track.instrument_name != 'Acoustic Grand Piano' else ''}")
+            abc_lines.append(f"T:{song.title} {f'({track.instrument_name})' if track.instrument_name and track.instrument_name != 'Acoustic Grand Piano' else ''}")
 
             sorted_events = sorted(track.events, key=lambda e: e.time)
             line = ""
