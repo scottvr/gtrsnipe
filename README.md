@@ -100,6 +100,32 @@ single MIDI track, 1-indexed, same as the converter), `--orientation
 {horizontal,vertical}`, `--hand {right,left}`, plus the usual `--tuning`,
 `--num-strings`, `--max-fret`, `--capo`, and `--optimizer`.
 
+## Chord charts
+
+`gtrsnipe-chords` breaks a song into one chord per measure and prints a
+songbook-style chord sheet: a bar-by-bar progression grid plus a diagram for
+each unique chord. It reuses the fretboard mapper, so diagrams are voiced in the
+song's own tuning.
+
+```bash
+# Print a chord sheet to the terminal
+gtrsnipe-chords song.mid
+
+# Save it as Markdown
+gtrsnipe-chords song.mid -o song.chords.md
+```
+
+Chord *names* (C, Am, E5, E7, C/E, …) are derived by matching pitch classes to
+chord templates, with the bass note disambiguating inversions and slash chords.
+The diagrams show the chord **as voiced in the input** (the actual octaves,
+mapped in your tuning) rather than canonical open shapes — faithful to the song,
+and the only correct choice for non-standard tunings.
+
+Key options: `-o FILE`, `--measures-per-line N`, `--chord-tone-threshold F`
+(how long a note must sound in a bar to count as a chord tone), `--track N`,
+plus the usual `--tuning`, `--num-strings`, `--capo`, `--optimizer`, and
+`--prefer-open` (bias diagram voicings toward open strings).
+
 ### Command-line help
 
 ```

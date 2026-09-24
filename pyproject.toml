@@ -29,6 +29,7 @@ dependencies = [
 [project.scripts]
 gtrsnipe = "gtrsnipe.converter:main"
 gtrsnipe-play = "gtrsnipe.player.app:main"
+gtrsnipe-chords = "gtrsnipe.chords.cli:main"
 
 [project.urls]
 "Homepage" = "https://github.com/scottvr/gtrsnipe" 
