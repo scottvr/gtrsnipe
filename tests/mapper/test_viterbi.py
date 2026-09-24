@@ -68,6 +68,14 @@ def brute_force_best_J(mapper, events):
 # A short melody whose pitches each have several fretboard positions.
 MELODY = [ev(0, 64), ev(1, 65), ev(2, 67), ev(3, 69)]
 
+# A DISCRIMINATING line: an awkward wide-interval melody where greedy's local
+# choices are strictly worse than the global optimum, so these fixtures can tell
+# a real Viterbi apart from a trivial "pick the first candidate" stub.
+# (Verified: first-order brute=greedy? NO — brute=-24, greedy=-36.)
+DISCRIMINATING = [ev(0, 63), ev(1, 72), ev(2, 62), ev(3, 63)]
+
+ALL_MELODIES = [MELODY, DISCRIMINATING]
+
 
 def test_generate_candidates_are_distinct_string_and_sorted():
     mapper = make_mapper()
@@ -85,30 +93,47 @@ def test_default_optimizer_is_viterbi():
     assert MapperConfig().optimizer == "viterbi"
 
 
-def test_viterbi_matches_bruteforce_first_order():
+@pytest.mark.parametrize("melody", ALL_MELODIES)
+def test_viterbi_matches_bruteforce_first_order(melody):
     mapper = make_mapper()  # default: first-order (no let_ring/diagonal)
-    best = brute_force_best_J(mapper, copy.deepcopy(MELODY))
-    mapped = mapper.map_events_to_fretboard(copy.deepcopy(MELODY), no_articulations=True)
+    best = brute_force_best_J(mapper, copy.deepcopy(melody))
+    mapped = mapper.map_events_to_fretboard(copy.deepcopy(melody), no_articulations=True)
     got = total_J(mapper, realized_fingerings(mapper, mapped))
     assert got == pytest.approx(best), f"viterbi J={got} != brute-force optimum {best}"
 
 
-def test_viterbi_at_least_greedy():
+@pytest.mark.parametrize("melody", ALL_MELODIES)
+def test_second_order_matches_bruteforce(melody):
+    mapper = make_mapper(let_ring_bonus=1.0, diagonal_span_penalty=True)
+    best = brute_force_best_J(mapper, copy.deepcopy(melody))
+    mapped = mapper.map_events_to_fretboard(copy.deepcopy(melody), no_articulations=True)
+    got = total_J(mapper, realized_fingerings(mapper, mapped))
+    assert got == pytest.approx(best), f"pair-state J={got} != brute-force optimum {best}"
+
+
+@pytest.mark.parametrize("melody", ALL_MELODIES)
+def test_viterbi_at_least_greedy(melody):
     g_mapper = make_mapper(optimizer="greedy")
     v_mapper = make_mapper(optimizer="viterbi")
-    g_out = g_mapper.map_events_to_fretboard(copy.deepcopy(MELODY), no_articulations=True)
-    v_out = v_mapper.map_events_to_fretboard(copy.deepcopy(MELODY), no_articulations=True)
+    g_out = g_mapper.map_events_to_fretboard(copy.deepcopy(melody), no_articulations=True)
+    v_out = v_mapper.map_events_to_fretboard(copy.deepcopy(melody), no_articulations=True)
     g_J = total_J(g_mapper, realized_fingerings(g_mapper, g_out))
     v_J = total_J(v_mapper, realized_fingerings(v_mapper, v_out))
     assert v_J >= g_J - 1e-9, f"viterbi J={v_J} < greedy J={g_J}"
 
 
-def test_second_order_matches_bruteforce():
-    mapper = make_mapper(let_ring_bonus=1.0, diagonal_span_penalty=True)
-    best = brute_force_best_J(mapper, copy.deepcopy(MELODY))
-    mapped = mapper.map_events_to_fretboard(copy.deepcopy(MELODY), no_articulations=True)
-    got = total_J(mapper, realized_fingerings(mapper, mapped))
-    assert got == pytest.approx(best), f"pair-state J={got} != brute-force optimum {best}"
+def test_viterbi_strictly_beats_greedy_on_hard_line():
+    """A discriminating case: the global optimum is strictly better than greedy,
+    so this fails against a trivial 'first candidate' stub (see review finding)."""
+    g_mapper = make_mapper(optimizer="greedy")
+    v_mapper = make_mapper(optimizer="viterbi")
+    best = brute_force_best_J(v_mapper, copy.deepcopy(DISCRIMINATING))
+    g_out = g_mapper.map_events_to_fretboard(copy.deepcopy(DISCRIMINATING), no_articulations=True)
+    v_out = v_mapper.map_events_to_fretboard(copy.deepcopy(DISCRIMINATING), no_articulations=True)
+    g_J = total_J(g_mapper, realized_fingerings(g_mapper, g_out))
+    v_J = total_J(v_mapper, realized_fingerings(v_mapper, v_out))
+    assert v_J == pytest.approx(best), f"viterbi J={v_J} != optimum {best}"
+    assert v_J > g_J + 1e-9, f"expected viterbi to strictly beat greedy, got v={v_J} g={g_J}"
 
 
 def test_viterbi_is_deterministic():
@@ -128,6 +153,18 @@ def test_dedupe_path_does_not_crash():
     out = mapper.map_events_to_fretboard(chord, no_articulations=True)
     assert out, "dedupe path should still map notes"
     assert all(e.string is not None and e.fret is not None for e in out)
+
+
+def test_viterbi_handles_chords_matches_bruteforce():
+    # Two multi-note chords -> exercises multi-note candidate generation + DP,
+    # not just the monophonic path.
+    mapper = make_mapper()
+    events = [ev(0, 40), ev(0, 47), ev(0, 52),   # E2 B2 E3
+              ev(1, 45), ev(1, 52), ev(1, 57)]   # A2 E3 A3
+    best = brute_force_best_J(mapper, copy.deepcopy(events))
+    mapped = mapper.map_events_to_fretboard(copy.deepcopy(events), no_articulations=True)
+    got = total_J(mapper, realized_fingerings(mapper, mapped))
+    assert got == pytest.approx(best), f"chord viterbi J={got} != optimum {best}"
 
 
 def test_empty_input_returns_empty():

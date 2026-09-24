@@ -16,11 +16,11 @@ Fingering = Tuple[FretPosition, ...]
 class GuitarMapper:
     def __init__(self, config: MapperConfig):
         self.config = config
-        tuning_str = self.config.tuning.upper()
         try:
             self.tuning = Tuning[self.config.tuning.upper()]
         except KeyError:
             logger.warning(f"Unknown tuning '{self.config.tuning}'. Defaulting to STANDARD.")
+            self.tuning = Tuning.STANDARD
         self.open_string_pitches = [note_name_to_pitch(n) for n in self.tuning.value] 
         self.pitch_to_positions: Dict[int, Set[FretPosition]] = {}
         self._build_pitch_maps()
