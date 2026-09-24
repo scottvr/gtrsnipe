@@ -3,7 +3,7 @@
 All notable changes to gtrsnipe are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.4.0] — 2026-09-24
 
 ### Added
 - **Player / fretboard visualizer** (`gtrsnipe-play`). Renders any supported
@@ -19,6 +19,14 @@ This project adheres to [Semantic Versioning](https://semver.org/).
   - `--orientation {horizontal,vertical}` rotates the board (frets as columns,
     or chord-diagram style top-to-bottom); `--hand {right,left}` mirrors the
     neck for left-handed players.
+  - `--view tab` renders a horizontally-scrolling ASCII tab staff instead of the
+    neck — notes flow right-to-left under a fixed playhead as the clock advances
+    (a "7-bit terminal Guitar Hero"). `--width` sets the viewport columns.
+  - `--audio {midi,fluidsynth}` makes the player emit sound. `midi` streams
+    note-on/off to a MIDI port (route it to a DAW/VST host or system synth) via
+    `mido` + `python-rtmidi` (the new `[play]` extra); `fluidsynth` renders a
+    SoundFont directly with no external host (`pyfluidsynth`, the `[synth]`
+    extra). Missing backends fail with an install hint, not a traceback.
 - **Chord charts** (`gtrsnipe-chords`). Segments a song into one chord per
   measure (pitch classes unioned across the bar, weighted by duration, with the
   bass note resolving inversions/slash chords) and emits a Markdown/ASCII chord

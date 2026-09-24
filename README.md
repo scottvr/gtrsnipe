@@ -94,11 +94,31 @@ gtrsnipe-play song.mid --orientation vertical
 gtrsnipe-play song.mid --hand left
 ```
 
-Key options: `--clock {tempo,metronome,step}`, `--tempo BPM`, `--grid BEATS`
-(metronome step size), `--window N` (visible fret count), `--track N` (select a
-single MIDI track, 1-indexed, same as the converter), `--orientation
-{horizontal,vertical}`, `--hand {right,left}`, plus the usual `--tuning`,
-`--num-strings`, `--max-fret`, `--capo`, and `--optimizer`.
+Or watch a horizontally-scrolling tab staff — notes flow under a playhead as it
+plays, a "7-bit terminal Guitar Hero":
+
+```bash
+gtrsnipe-play song.mid --view tab
+```
+
+To make sound while it plays, stream MIDI to a synth/DAW (route the port), or
+render a SoundFont directly:
+
+```bash
+# Stream MIDI to a port (install: pip install 'gtrsnipe[play]')
+gtrsnipe-play song.mid --audio midi --midi-port "IAC Driver Bus 1"
+
+# Self-contained SoundFont playback (install: pip install 'gtrsnipe[synth]')
+gtrsnipe-play song.mid --audio fluidsynth --soundfont /path/to/font.sf2
+```
+
+Key options: `--view {fretboard,tab}`, `--clock {tempo,metronome,step}`,
+`--tempo BPM`, `--grid BEATS` (metronome step size), `--window N` (visible fret
+count), `--width N` (tab viewport width), `--track N` (select a single MIDI
+track, 1-indexed, same as the converter), `--orientation {horizontal,vertical}`,
+`--hand {right,left}`, `--audio {none,midi,fluidsynth}` (`--midi-port`,
+`--soundfont`), plus the usual `--tuning`, `--num-strings`, `--max-fret`,
+`--capo`, and `--optimizer`.
 
 ## Chord charts
 
