@@ -119,6 +119,33 @@ def test_make_audio_sink_fluidsynth_requires_soundfont():
         make_audio_sink("fluidsynth", soundfont=None)
 
 
+def test_fluidsynth_missing_native_lib_gives_native_hint(monkeypatch):
+    # Regression: pyfluidsynth installed but the native libfluidsynth missing
+    # (import fluidsynth raises ImportError) must NOT tell the user to pip install
+    # pyfluidsynth again — it should point at the C library.
+    import sys
+    import importlib.util
+    from gtrsnipe.player.audio import FluidSynthSink
+
+    monkeypatch.setitem(sys.modules, "fluidsynth", None)  # force ImportError
+    monkeypatch.setattr(importlib.util, "find_spec",
+                        lambda name: object() if name == "fluidsynth" else None)
+    with pytest.raises(RuntimeError, match="native FluidSynth library"):
+        FluidSynthSink(soundfont="x.sf2")
+
+
+def test_fluidsynth_binding_missing_gives_pip_hint(monkeypatch):
+    # The other case: the Python binding itself isn't installed.
+    import sys
+    import importlib.util
+    from gtrsnipe.player.audio import FluidSynthSink
+
+    monkeypatch.setitem(sys.modules, "fluidsynth", None)
+    monkeypatch.setattr(importlib.util, "find_spec", lambda name: None)
+    with pytest.raises(RuntimeError, match="pyfluidsynth"):
+        FluidSynthSink(soundfont="x.sf2")
+
+
 def test_fluidsynth_releases_synth_if_soundfont_fails(monkeypatch):
     # Regression: a failed sfload after start() must delete the native synth,
     # since the constructor raises and close()/_teardown can never run.

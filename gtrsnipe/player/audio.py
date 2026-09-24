@@ -134,6 +134,19 @@ class FluidSynthSink(AudioSink):
         try:
             import fluidsynth
         except ImportError as e:
+            import importlib.util
+            if importlib.util.find_spec("fluidsynth") is not None:
+                # The Python binding IS installed; it's the native C library
+                # (libfluidsynth) that ctypes couldn't load.
+                raise RuntimeError(
+                    "pyfluidsynth is installed, but the native FluidSynth library "
+                    "was not found. Install the C library (not the Python package):\n"
+                    "  macOS (MacPorts): sudo port install fluidsynth\n"
+                    "  macOS (Homebrew): brew install fluid-synth\n"
+                    "  Debian/Ubuntu:    sudo apt install libfluidsynth3\n"
+                    "  If installed but still not found (e.g. MacPorts in /opt/local),"
+                    " set DYLD_FALLBACK_LIBRARY_PATH=/opt/local/lib\n"
+                    f"  (underlying error: {e})") from e
             raise RuntimeError(
                 f"SoundFont synthesis needs 'pyfluidsynth'.\n{_INSTALL_HINT}") from e
         self.channel = channel
