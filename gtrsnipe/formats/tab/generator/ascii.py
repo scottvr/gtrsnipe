@@ -160,7 +160,7 @@ class AsciiTabGenerator:
     
             for note in notes_in_chord:
                 str_idx = note.position.string
-                if str_idx >= len(measure_lines):
+                if not (0 <= str_idx < len(measure_lines)):
                     logger.warning(f"Note with string index {str_idx} out of bounds. Skipping.")
                     continue
                 

@@ -85,8 +85,6 @@ class AsciiTabParser:
 
         logger.debug(f"Found {len(temp_events)} raw note events in the tab string.")
 
-        print(f"DEBUG PARSER: Number of raw events found = {len(temp_events)}")
-
         TIME_PER_CHAR_IN_BEATS = quantization_resolution
 
         if not temp_events:

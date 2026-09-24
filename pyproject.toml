@@ -10,26 +10,20 @@ authors = [
   { name="ScottVR", email="scottvr@gmail.com" },
 ]
 readme = "README.md" 
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
 ]
 
-# List your project's dependencies here.
+# Core deps: must stay torch/tensorflow/numba-free so `pip install gtrsnipe`
+# resolves and runs the MIDI/tab/abc/vex pipeline on any CPU-only box.
+# Audio features live behind the [audio]/[separation] extras below.
 dependencies = [
     "MIDIFile",
     "midiutil",
-    "mido",
-    "demucs",
-    "basic-pitch",
-    "noisereduce",
-    "librosa",
-    "soundfile",
-    "scipy",
-#    "onnxruntime",
-#    "torch",
-#    "torchaudio",
+    "mido>=1.3",
+    "numpy>=2.1",
 ]
 
 [project.scripts]
@@ -41,3 +35,33 @@ gtrsnipe = "gtrsnipe.converter:main"
 [tool.setuptools.packages.find]
 include = ["gtrsnipe"]
 exclude = ["separated", "docs"]
+
+[project.optional-dependencies]
+# librosa pYIN bass path (audio -> MIDI -> tab). Best-effort on Python 3.14
+# (numba/llvmlite have no cp314 wheel yet); use 3.10-3.13 for this extra.
+audio = [
+    "librosa>=0.10",
+    "soundfile",
+    "scipy",
+    "noisereduce",
+]
+# Optional stem isolation; demucs pulls torch (3.10-3.13 only).
+separation = [
+    "demucs",
+]
+all = [
+    "gtrsnipe[audio]",
+    "gtrsnipe[separation]",
+]
+# Dev/test tooling (torch-free, so the core merge-gate job stays CPU-only).
+test = [
+    "pytest>=8",
+    "pytest-cov",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "audio: requires the [audio] extra (librosa/soundfile/scipy/noisereduce)",
+    "separation: requires the [separation] extra (demucs/torch)",
+]
