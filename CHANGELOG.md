@@ -28,6 +28,12 @@ This project adheres to [Semantic Versioning](https://semver.org/).
     SoundFont directly with no external host (`pyfluidsynth`, the `[synth]`
     extra). Missing backends fail with an install hint, not a traceback.
 
+### Fixed
+- **librosa 1.0 compatibility.** The audio-transcription path crashed with
+  `module 'librosa.beat' has no attribute 'tempo'` on modern librosa. Tempo
+  estimation now resolves `librosa.feature.rhythm.tempo` / `librosa.feature.tempo`
+  / `librosa.beat.tempo` across versions (tested end-to-end on librosa 1.0.0).
+
 ### Known limitations
 - Player audio sustains each note until the next onset (legato); a note's own
   duration and rests are not yet honored in playback — visuals are unaffected.

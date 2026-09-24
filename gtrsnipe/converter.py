@@ -171,7 +171,8 @@ def dynamic_quantize_song(intermediate_midi_path: str, processed_audio_path: str
     if song.tempo_events:
         song.tempo = song.tempo_events[0].bpm
     else:
-        song.tempo = librosa.beat.tempo(y=y, sr=sr)[0]
+        from .audio.tempo_detector import librosa_tempo
+        song.tempo = librosa_tempo(y, sr)[0]
 
     logger.info(f"--- Dynamic quantization complete. Initial tempo set to {song.tempo:.2f} BPM. ---")
     return song
