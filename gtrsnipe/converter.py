@@ -17,11 +17,8 @@ import os
 import logging
 from sys import exit
 import copy
-from importlib.util import find_spec
 
 logger = logging.getLogger(__name__)
-bp_logger = logging.getLogger('basic_pitch')
-bp_logger.setLevel(logging.ERROR)
 
 SAMPLE_RATE=44100
 
@@ -177,11 +174,6 @@ def dynamic_quantize_song(intermediate_midi_path: str, processed_audio_path: str
         song.tempo = librosa.beat.tempo(y=y, sr=sr)[0]
 
     logger.info(f"--- Dynamic quantization complete. Initial tempo set to {song.tempo:.2f} BPM. ---")
-    return song 
-    # 5. Set the song's tempo to the global estimate
-    song.tempo = librosa.beat.tempo(y=y, sr=sr)[0]
-    logger.info(f"--- Dynamic quantization complete. Global tempo set to {song.tempo:.2f} BPM. ---")
-    
     return song
 
 class MusicConverter:
@@ -389,45 +381,28 @@ def main():
                 import librosa
             except ImportError:
                 _require_extra('audio', 'audio input transcription', cli=True)
-            from .audio.separator import separate_instrument
-            from .audio.cleaner import cleanup_audio, apply_low_pass_filter
-            if find_spec("torch") is not None:
-                from .audio.distortion_remover import remove_distortion_effects
+            try:
+                from .audio.pitch_detector_lr import transcribe_to_midi_with_lr
+            except ImportError:
+                _require_extra('audio', 'librosa pYIN pitch detection', cli=True)
 
             processed_audio_for_beats = current_file
 
-            if args.pitch_engine == "basic-pitch": 
-#                from .audio.pitch_detector_bp import transcribe_to_midi_with_bp
-                logger.info("--- Basic-Pitch is experimental. Using librosa.pYIN for pitch detection instead ---")
-                from .audio.pitch_detector_lr import transcribe_to_midi_with_lr
-            else:
-                from .audio.pitch_detector_lr import transcribe_to_midi_with_lr
-
-            # Determine the correct path for the intermediate MIDI file.
-            intermediate_midi_path = None
-            # Check if any of the requested outputs is a midi file.
-            for out_path in args.output:
-                if Path(out_path).suffix.lower() == '.mid':
-                    intermediate_midi_path = out_path
-                    break
-            
-            # If no MIDI output was requested, create a temporary path.
-            if intermediate_midi_path is None:
-                intermediate_midi_path = Path(args.input).with_suffix('.mid').name
-            
             if args.stem_track:
-                current_file = separate_instrument(current_file, 
+                try:
+                    from .audio.separator import separate_instrument
+                except ImportError:
+                    _require_extra('separation', 'stem isolation (demucs)', cli=True)
+                current_file = separate_instrument(current_file,
                                                    instrument=args.stem_track,
                                                    model_name=args.demucs_model)
 
-            if args.remove_fx:
-                current_file = remove_distortion_effects(current_file)
-
-
             if args.low_pass_filter and max_freq:
+                from .audio.cleaner import apply_low_pass_filter
                 current_file = apply_low_pass_filter(current_file, cutoff_hz=max_freq, sr=SAMPLE_RATE)
-          
+
             if args.nr:
+                from .audio.cleaner import cleanup_audio
                 current_file = cleanup_audio(current_file)
 
             # Determine the correct path for the intermediate MIDI file.
@@ -437,36 +412,20 @@ def main():
                 if Path(out_path).suffix.lower() == '.mid':
                     intermediate_midi_path = out_path
                     break
-            
+
             # If no MIDI output was requested, create a temporary path.
             if intermediate_midi_path is None:
                 intermediate_midi_path = Path(args.input).with_suffix('.mid').name
 
-            # temporarily disable basic-pitch option until we can resolve some issues with it. 
-            # For now, librosa's pyin works for monophonic basslines
-            if False:
-                pass
-            #if args.pitch_engine == 'basic-pitch':
-            #    current_file = transcribe_to_midi_with_bp(
-            #        current_file,
-            #        final_output_path=intermediate_midi_path,
-            #        overwrite=args.yes,
-            #        min_freq=min_freq,
-            #        max_freq=max_freq,
-            #        onset_threshold=args.onset_threshold,
-            #        frame_threshold=args.frame_threshold,
-            #        min_note_len_ms=args.min_note_len_ms,
-            #        melodia_trick=args.melodia_trick,
-            #    )
-            elif args.pitch_engine == 'librosa':
-                # Note: fmin and fmax could be derived from --constrain-frequency
-                # for a more integrated solution.
-                current_file = transcribe_to_midi_with_lr(
-                    current_file,
-                    intermediate_midi_path,
-                    fmin_hz=min_freq or librosa.note_to_hz('C1'),
-                    fmax_hz=max_freq or librosa.note_to_hz('G4')
-                )
+            # librosa pYIN is the only pitch engine (basic-pitch was removed in v0.3.0).
+            # Note: fmin and fmax could be derived from --constrain-frequency
+            # for a more integrated solution.
+            current_file = transcribe_to_midi_with_lr(
+                current_file,
+                intermediate_midi_path,
+                fmin_hz=min_freq or librosa.note_to_hz('C1'),
+                fmax_hz=max_freq or librosa.note_to_hz('G4')
+            )
 
 
 
@@ -505,22 +464,13 @@ def main():
         initial_note_count = sum(len(track.events) for track in song.tracks)
         logger.info(f"Parsed {initial_note_count} initial notes from the input file.")
 
-        song.title = Path(os.path.basename(args.input)).stem 
+        song.title = Path(os.path.basename(args.input)).stem
 
-
-        if args.dynamic_quantize and is_audio_input:
-            logger.info("--- Performing dynamic beat quantization ---")
-            y, sr = librosa.load(args.input, sr=SAMPLE_RATE)
-            
-            _, beat_frames = librosa.beat.beat_track(y=y, sr=sr)
-            beat_times = librosa.frames_to_time(beat_frames, sr=sr)
-            
-            for track in song.tracks:
-                track.events = quantize_notes_to_dynamic_beats(track.events, beat_times)
-            
-            song.tempo = librosa.beat.tempo(y=y, sr=sr)[0]
-            logger.info(f"--- Dynamic quantization complete. Global tempo set to {song.tempo:.2f} BPM. ---")
-
+        # NOTE: when --dynamic-quantize is set, dynamic_quantize_song() above has
+        # already built and beat-quantized the song from the processed audio. A
+        # second quantization pass previously lived here and re-quantized the
+        # already-quantized events against a grid recomputed from the raw input
+        # (double-quantization) — removed in v0.3.0.
 
         mapper_config = None
         
