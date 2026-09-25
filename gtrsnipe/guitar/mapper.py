@@ -16,12 +16,18 @@ Fingering = Tuple[FretPosition, ...]
 class GuitarMapper:
     def __init__(self, config: MapperConfig):
         self.config = config
-        try:
-            self.tuning = Tuning[self.config.tuning.upper()]
-        except KeyError:
-            logger.warning(f"Unknown tuning '{self.config.tuning}'. Defaulting to STANDARD.")
-            self.tuning = Tuning.STANDARD
-        self.open_string_pitches = [note_name_to_pitch(n) for n in self.tuning.value] 
+        if getattr(config, "custom_tuning", None):
+            # User-defined tuning (--tuning-pitches): note names high->low.
+            self.tuning = None
+            self.tuning_names = tuple(config.custom_tuning)
+        else:
+            try:
+                self.tuning = Tuning[self.config.tuning.upper()]
+            except KeyError:
+                logger.warning(f"Unknown tuning '{self.config.tuning}'. Defaulting to STANDARD.")
+                self.tuning = Tuning.STANDARD
+            self.tuning_names = tuple(self.tuning.value)
+        self.open_string_pitches = [note_name_to_pitch(n) for n in self.tuning_names]
         self.pitch_to_positions: Dict[int, Set[FretPosition]] = {}
         self._build_pitch_maps()
         logger.info("--- Chord-Aware Mapper initialized. ---")

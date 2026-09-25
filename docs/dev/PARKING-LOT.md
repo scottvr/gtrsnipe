@@ -1,4 +1,10 @@
 ## gtrsnipe should support aarabitrary tunings easily
+**[DONE — v0.5.0]** `--tuning-pitches "A1,E2,A2,D3,F#3,B3"` (low→high) + `--drop-low-string N`.
+Custom tunings thread through convert/play/chords; the ASCII-tab parser now decodes in
+the configured tuning (was hardcoded standard — a real bug fix, and it enables re-reading a
+tab under a different tuning). Also added the inverse **`--solve-tuning`** (melody → tuning
+whose all-open tab plays it), the executable form of the copyright reductio.
+
 - we have plenty of useful provided named tunings
 - I had an occasion to want a BARITONE_B tuning, but dropping the low B to an A1 (analogous to drop-d tuning where the low three strings play a power chord in open position.) BARITONE_A is avauilable, and drop d is available for 6 strings or bass, but very quickly I thought oh we should just implement a `--drop-low-string`argument so that the user could do this on a 7-string, and in any (supported) tuning. This may still be a good idea for convenience, but immediately I realized that the ability to do --tuning CUSTOM that used the values spcified by maybe a --tuning-pitches where the user can specifiy a runing of num_strings length, low to high, by named pitch class like `--tuning-pitches A1,E2,A2,D3,F#3,B3`, so they'd then be free to name their own tune.
 

@@ -92,6 +92,30 @@ starts a comment. Works with every command (`gtrsnipe`, `gtrsnipe-play`,
 `gtrsnipe-chords`) — a profile is just saved arguments. `--save-args NAME` writes
 your current (non-default) options to a profile for next time.
 
+## Custom tunings & the tuning solver
+
+Beyond the named tunings, define your own with `--tuning-pitches` (low string to
+high), or nudge an existing one with `--drop-low-string`:
+
+```bash
+gtrsnipe -i piece.mid -o piece.tab --tuning-pitches "A1,E2,A2,D3,F#3,B3"
+gtrsnipe -i piece.mid -o piece.tab --tuning BARITONE_B --drop-low-string 2
+```
+
+Custom tunings work everywhere (convert, `--play`, chord charts) and — since the
+ASCII-tab parser now decodes in the configured tuning — you can *re-read* a tab in
+a different tuning to hear what the same fingering becomes.
+
+The **inverse** is `--solve-tuning`: give it a melody and it finds a tuning under
+which an all-open-string tab plays it — the tab shows only open strings while the
+tune lives entirely in the tuning:
+
+```bash
+gtrsnipe --solve-tuning "C4,C4,G4,G4,A4,A4,G4"                        # print tuning + tab
+gtrsnipe --solve-tuning "C4,C4,G4,G4,A4,A4,G4" --play --audio fluidsynth --soundfont f.sf2  # hear it
+gtrsnipe --solve-tuning "C4,C4,G4,G4,A4,A4,G4" -o twinkle.tab -o twinkle.mid   # write it
+```
+
 ## Player / Visualizer
 
 `gtrsnipe-play` renders a song as a live ASCII fretboard instead of writing a

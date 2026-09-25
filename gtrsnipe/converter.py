@@ -1,10 +1,10 @@
 from .formats import abc, mid, tab, vex
 from .formats.mid.generator import MidiUtilFile
 from .core.theory import note_name_to_pitch, pitch_to_note_name, midi_to_hz
-from .core.types import Song, Tuning
+from .core.types import Song, Tuning, Track
 from .core.config import MapperConfig
 from .utils.io import save_text_file, save_midi_file
-from .arguments import setup_parser, build_mapper_config, apply_profiles
+from .arguments import setup_parser, build_mapper_config, apply_profiles, open_string_pitches_for
 from .utils.logger import setup_logger
 from .audio.dynamic_tempo import analyze_dynamic_tempo
 from argparse import ArgumentParser
@@ -219,7 +219,7 @@ class MusicConverter:
         return output_data
 
 
-    def _parse(self, data: str, format: str, track_num: Optional[int], staccato: bool = False,  units: str = 'beats', quantization_resolution=0.125) -> Song:
+    def _parse(self, data: str, format: str, track_num: Optional[int], staccato: bool = False,  units: str = 'beats', quantization_resolution=0.125, open_string_pitches=None) -> Song:
         if format == 'mid':
             return mid.MidiReader.parse(data, track_number_to_select=track_num)
         elif format == 'abc':
@@ -233,7 +233,9 @@ class MusicConverter:
         elif format == 'tab':
             with open(data, 'r') as f:
                 content = f.read()
-            return tab.AsciiTabParser.parse(content, staccato=staccato, quantization_resolution=quantization_resolution)
+            return tab.AsciiTabParser.parse(content, staccato=staccato,
+                                            quantization_resolution=quantization_resolution,
+                                            open_string_pitches=open_string_pitches)
         else:
             raise ValueError(f"Unsupported input format: {format}")
 
@@ -249,6 +251,69 @@ class MusicConverter:
             return tab.AsciiTabGenerator.generate(song, command_line=command_line, no_articulations=no_articulations, single_string=single_string, max_line_width=max_line_width, mapper_config=mapper_config)
         else:
             raise ValueError(f"Unsupported output format: {format}")
+
+
+def run_solve_tuning(args) -> int:
+    """--solve-tuning: melody -> tuning under which an all-open tab plays it."""
+    from .guitar.tuning_solver import solve_open_string_tuning, format_open_string_tab
+
+    names = [s.strip() for s in args.solve_tuning.split(",") if s.strip()]
+    try:
+        targets = [note_name_to_pitch(n) for n in names]
+    except ValueError as e:
+        logger.error(f"--solve-tuning: bad note name ({e}); use names with octave, e.g. C4,G4.")
+        return 1
+    if not targets:
+        logger.error("--solve-tuning: no target notes given.")
+        return 1
+    try:
+        open_pitches, assignment = solve_open_string_tuning(targets, max_strings=args.max_strings)
+    except ValueError as e:
+        logger.error(f"--solve-tuning: {e}")
+        return 1
+
+    tuning_names = [pitch_to_note_name(p) for p in open_pitches]   # high->low
+    low_to_high = ",".join(reversed(tuning_names))
+    tab = format_open_string_tab(tuning_names, assignment)
+    print(f"Solved tuning (low->high): {low_to_high}")
+    print(f"A {len(open_pitches)}-string guitar tuned thus plays this melody from an "
+          f"all-open-string tab:\n")
+    print(tab)
+    print(f"\nHear it:  gtrsnipe --solve-tuning \"{args.solve_tuning}\" --play --audio fluidsynth --soundfont FONT.sf2")
+
+    # Pre-mapped Song (open strings): pitch = the sounding target; string/fret fixed.
+    events = [MusicalEvent(time=i * 0.5, pitch=p, duration=0.5, velocity=100,
+                           string=assignment[i], fret=0)
+              for i, p in enumerate(targets)]
+    song = Song(tracks=[Track(events=events)], tempo=120.0, title="solved")
+    args.tuning_pitches = low_to_high   # so build_mapper_config sets custom_tuning
+    mapper_config = build_mapper_config(args, tuning="CUSTOM", num_strings=len(open_pitches))
+
+    if args.play:
+        from .player.app import run_player_from_args, audio_from_args, _choose_sink
+        try:
+            audio = audio_from_args(args)
+        except (RuntimeError, ValueError) as e:
+            logger.error(str(e))
+            return 1
+        sink = _choose_sink(args)
+        try:
+            run_player_from_args(song, mapper_config, args, mapped=True, sink=sink, audio=audio)
+        except KeyboardInterrupt:
+            sys.stderr.write("\nStopped.\n")
+        finally:
+            audio.close()
+        return 0
+
+    for out in (args.output or []):
+        p = Path(out)
+        if p.suffix.lower() == ".mid":
+            from .formats.mid.generator import MidiGenerator
+            save_midi_file(MidiGenerator.generate(song), str(p))
+        else:
+            save_text_file(tab + "\n", str(p))
+        logger.info(f"Wrote {out}")
+    return 0
 
 
 def main():
@@ -279,6 +344,10 @@ def main():
             exit(1)
         exit(0)    
     
+    if args.solve_tuning:
+        setup_logger(logging.DEBUG if args.debug else logging.INFO)
+        exit(run_solve_tuning(args) or 0)
+
     if not args.input:
         parser.error("the following argument is required: -i/--input")
     if not args.play and not args.output:
@@ -303,44 +372,53 @@ def main():
  
         tuning_name = tuning_name or args.tuning.upper()
         num_strings = args.num_strings
-        
-        is_piano_mode = tuning_name == 'PIANO'
+
+        # A user-defined tuning (--tuning-pitches / --drop-low-string) bypasses the
+        # named-tuning resolution and validation below.
+        from .arguments import resolve_custom_tuning
+        custom_names = resolve_custom_tuning(args)   # high->low note names, or None
+        is_custom = custom_names is not None
+        if is_custom:
+            tuning_name = "CUSTOM"
+            num_strings = len(custom_names)
+
+        is_piano_mode = (not is_custom) and tuning_name == 'PIANO'
         if is_piano_mode:
             parser.error("--tuning PIANO can only be used with MIDI output (e.g., a .mid file).")
 
-    
-        if num_strings is not None and tuning_name == 'STANDARD':
-            if num_strings == 7:
-                tuning_name = 'SEVEN_STRING_STANDARD'
-            elif num_strings == 4:
+        if not is_custom:
+            if num_strings is not None and tuning_name == 'STANDARD':
+                if num_strings == 7:
+                    tuning_name = 'SEVEN_STRING_STANDARD'
+                elif num_strings == 4:
+                    tuning_name = 'BASS_STANDARD'
+            # Handle the --bass shortcut.
+            elif args.bass:
                 tuning_name = 'BASS_STANDARD'
-        # Handle the --bass shortcut.
-        elif args.bass:
-            tuning_name = 'BASS_STANDARD'
-            args.tuning = tuning_name
+                args.tuning = tuning_name
 
-        if num_strings is None:
+            if num_strings is None:
+                try:
+                    num_strings = len(Tuning[tuning_name].value)
+                except KeyError:
+                    num_strings = 6
+
             try:
-                num_strings = len(Tuning[tuning_name].value)
+                actual_tuning_strings = len(Tuning[tuning_name].value)
+                if num_strings != actual_tuning_strings:
+                    parser.error(
+                        f"Mismatch between --num-strings ({num_strings}) and tuning '{tuning_name}' "
+                        f"(which has {actual_tuning_strings} strings). Please specify a compatible tuning."
+                    )
             except KeyError:
-                num_strings = 6 
-    
-        try:
-            actual_tuning_strings = len(Tuning[tuning_name].value)
-            if num_strings != actual_tuning_strings:
-                parser.error(
-                    f"Mismatch between --num-strings ({num_strings}) and tuning '{tuning_name}' "
-                    f"(which has {actual_tuning_strings} strings). Please specify a compatible tuning."
-                )
-        except KeyError:
-            # This will catch invalid tuning names passed with --tuning
-            parser.error(f"Tuning '{tuning_name}' not found. Use --list-tunings to see available options.")
+                # This will catch invalid tuning names passed with --tuning
+                parser.error(f"Tuning '{tuning_name}' not found. Use --list-tunings to see available options.")
 
  
         if not args.no_constrain_frequency:
             logger.info("--- Calculating frequency range based on selected tuning ---")
             try:
-                tuning_notes = Tuning[tuning_name].value
+                tuning_notes = custom_names if is_custom else Tuning[tuning_name].value
                 open_string_pitches = [note_name_to_pitch(n) for n in tuning_notes]
                 
                 min_pitch = min(open_string_pitches)
@@ -444,7 +522,9 @@ def main():
         else:
             # Otherwise, we parse normally
             logger.info(f"--- Parsing '{current_file}' as a {format_to_parse} file for final conversion ---")
-            song = converter._parse(current_file, format_to_parse, args.track, staccato=args.staccato, quantization_resolution=args.quantization_resolution)
+            song = converter._parse(current_file, format_to_parse, args.track, staccato=args.staccato,
+                                    quantization_resolution=args.quantization_resolution,
+                                    open_string_pitches=open_string_pitches_for(tuning_name, custom_names))
         
         debug_song_state(song, 5, "After Parsing") 
         
@@ -529,7 +609,8 @@ def main():
 
             initial_note_count = sum(len(track.events) for track in song.tracks)
         
-            constrain_open_notes = [note_name_to_pitch(n) for n in Tuning[args.tuning.upper()].value]
+            constrain_tuning_notes = custom_names if is_custom else Tuning[args.tuning.upper()].value
+            constrain_open_notes = [note_name_to_pitch(n) for n in constrain_tuning_notes]
             min_range = min(constrain_open_notes)
             max_range = max(constrain_open_notes) + args.max_fret
             pitch_shifted = 0

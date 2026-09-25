@@ -32,6 +32,14 @@ def add_tuning_args(target) -> None:
     target.add_argument(
         '--max-fret', type=int, default=24,
         help='Maximum fret number on the virtual guitar neck (default: 24).')
+    target.add_argument(
+        '--tuning-pitches', type=str, default=None, metavar='LOW,..,HIGH',
+        help='Define a custom tuning by comma-separated note names, low string to '
+             "high (e.g. 'A1,E2,A2,D3,F#3,B3'). Overrides --tuning.")
+    target.add_argument(
+        '--drop-low-string', type=int, default=0, metavar='SEMITONES',
+        help='Lower the lowest string by N semitones (2 = drop-D style), on any '
+             'tuning / string count.')
 
 
 def add_mapper_args(target) -> None:
@@ -156,6 +164,55 @@ def add_chart_args(target) -> None:
                              "chord tone (default: 0.15).")
 
 
+def parse_tuning_pitches(spec: str) -> tuple:
+    """Parse a `--tuning-pitches` spec (comma-separated notes, low->high) into a
+    validated note-name tuple stored HIGH->low (the convention used everywhere)."""
+    from .core.theory import note_name_to_pitch
+    names_low_to_high = [s.strip() for s in spec.split(",") if s.strip()]
+    if len(names_low_to_high) < 2:
+        raise ValueError("--tuning-pitches needs >=2 comma-separated notes (low to high)")
+    for n in names_low_to_high:
+        note_name_to_pitch(n)  # validate; raises ValueError on a bad name
+    return tuple(reversed(names_low_to_high))
+
+
+def _named_tuning_names(tuning: str):
+    from .core.types import Tuning
+    key = (tuning or "STANDARD").upper()
+    return list(Tuning[key].value) if key in Tuning.__members__ else None
+
+
+def _drop_lowest(names_high_to_low, semitones: int) -> tuple:
+    """Return the tuning with its lowest string lowered by `semitones`."""
+    from .core.theory import note_name_to_pitch, pitch_to_note_name
+    names = list(names_high_to_low)
+    low = names[-1]
+    names[-1] = pitch_to_note_name(note_name_to_pitch(low) - semitones)
+    return tuple(names)
+
+
+def resolve_custom_tuning(args) -> tuple:
+    """The custom tuning (high->low note names) implied by --tuning-pitches and/or
+    --drop-low-string, or None if a plain named tuning is in effect."""
+    spec = getattr(args, "tuning_pitches", None)
+    drop = getattr(args, "drop_low_string", 0) or 0
+    names = parse_tuning_pitches(spec) if spec else None
+    if drop:
+        base = names if names else _named_tuning_names(getattr(args, "tuning", "STANDARD"))
+        if base:
+            names = _drop_lowest(base, drop)
+    return names
+
+
+def open_string_pitches_for(tuning: str, custom=None) -> list:
+    """Open-string MIDI pitches (high->low) for a named or custom tuning; used to
+    decode ASCII tabs in their actual tuning."""
+    from .core.theory import note_name_to_pitch
+    names = list(custom) if custom else (_named_tuning_names(tuning)
+                                         or _named_tuning_names("STANDARD"))
+    return [note_name_to_pitch(n) for n in names]
+
+
 def resolve_num_strings(tuning: str, num_strings) -> int:
     """Infer string count from the tuning when not explicitly set (mirrors the
     converter's inference); falls back to 6 for unknown tunings / PIANO."""
@@ -172,12 +229,18 @@ def build_mapper_config(args, *, tuning: str, num_strings: int) -> MapperConfig:
     """The single MapperConfig builder (was duplicated across three CLIs).
 
     ``tuning`` and ``num_strings`` are passed resolved (callers apply their own
-    bass/num-strings resolution first); every other knob comes from ``args``.
+    bass/num-strings resolution first); every other knob comes from ``args``. A
+    custom tuning (--tuning-pitches / --drop-low-string) overrides both.
     """
+    custom = resolve_custom_tuning(args)
+    if custom:
+        tuning = "CUSTOM"
+        num_strings = len(custom)
     return MapperConfig(
         max_fret=args.max_fret,
         tuning=tuning,
         num_strings=num_strings,
+        custom_tuning=custom,
         fret_span_penalty=args.fret_span_penalty,
         movement_penalty=args.movement_penalty,
         string_switch_penalty=args.string_switch_penalty,
@@ -455,6 +518,22 @@ def setup_parser() -> ArgumentParser:
         '--analyze',
         action='store_true',
         help='Analyze the input MIDI file to find the pitch range and suggest suitable tunings, then exit.'
+    )
+    parser.add_argument(
+        '--solve-tuning',
+        type=str,
+        default=None,
+        metavar='NOTES',
+        help="Inverse solve: given a comma-separated target melody (note names with "
+             "octave, e.g. 'C4,C4,G4,G4,A4,A4,G4'), find a tuning under which an "
+             "all-open-string tab plays it. Prints the tuning; add --play to hear it, "
+             "or -o FILE.tab/.mid to write it. No -i needed."
+    )
+    parser.add_argument(
+        '--max-strings',
+        type=int,
+        default=12,
+        help='Max strings the tuning solver may use (default: 12).'
     )
     parser.add_argument(
         "--transpose",

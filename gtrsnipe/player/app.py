@@ -19,6 +19,7 @@ from ..arguments import (
     add_tuning_args,
     apply_profiles,
     build_mapper_config,
+    open_string_pitches_for,
     resolve_num_strings,
 )
 from ..core.config import MapperConfig
@@ -75,6 +76,8 @@ def parse_and_map(input_path: str, mapper_config: MapperConfig, *,
     song = MusicConverter()._parse(
         input_path, fmt, track,
         quantization_resolution=mapper_config.quantization_resolution,
+        open_string_pitches=open_string_pitches_for(
+            mapper_config.tuning, getattr(mapper_config, "custom_tuning", None)),
     )
     mapper = GuitarMapper(mapper_config)
     for trk in song.tracks:
