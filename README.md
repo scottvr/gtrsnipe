@@ -65,6 +65,95 @@ pip install -e '.[all]'          # both
 
 The installation process makes gtrsnipe available as a command within your activated virtual environment.
 
+## Player / Visualizer
+
+`gtrsnipe-play` renders a song as a live ASCII fretboard instead of writing a
+file. It reuses the same parsers and the Viterbi fretboard mapper, so it accepts
+every supported input format — with the same rhythm caveats (precise timing from
+MIDI, approximate from ASCII tab). A 5-fret window auto-follows the playing up
+and down the neck; open strings are shown at the nut.
+
+```bash
+# Play a MIDI file at its own tempo
+gtrsnipe-play song.mid
+
+# Steady eighth-note metronome at 90 BPM
+gtrsnipe-play song.mid --clock metronome --grid 0.5 --tempo 90
+
+# Step through it by hand (press any key to advance, q to quit)
+gtrsnipe-play riff.tab --clock step
+```
+
+Layout can be rotated and mirrored:
+
+```bash
+# Vertical, chord-diagram style (frets top-to-bottom)
+gtrsnipe-play song.mid --orientation vertical
+
+# Left-handed (mirrors the neck)
+gtrsnipe-play song.mid --hand left
+```
+
+Or watch a horizontally-scrolling tab staff — notes flow under a playhead as it
+plays, a "7-bit terminal Guitar Hero":
+
+```bash
+gtrsnipe-play song.mid --view tab
+```
+
+To make sound while it plays, stream MIDI to a synth/DAW (route the port), or
+render a SoundFont directly:
+
+```bash
+# Stream MIDI to a port (install: pip install 'gtrsnipe[play]')
+gtrsnipe-play song.mid --audio midi --midi-port "IAC Driver Bus 1"
+
+# Self-contained SoundFont playback (install: pip install 'gtrsnipe[synth]')
+gtrsnipe-play song.mid --audio fluidsynth --soundfont /path/to/font.sf2
+
+# Pick the voice by GM name or number; --list-instruments prints them all
+gtrsnipe-play song.mid --audio fluidsynth --soundfont font.sf2 --instrument "nylon"
+```
+
+The display animates between notes (`--fps`, default 12) with a live
+`bar N beat X` readout, so long rests in ensemble MIDI keep scrolling instead of
+looking frozen. On MacPorts, `pyfluidsynth` may need
+`export DYLD_FALLBACK_LIBRARY_PATH=/opt/local/lib` to find the native library.
+
+Key options: `--view {fretboard,tab}`, `--clock {tempo,metronome,step}`,
+`--tempo BPM`, `--grid BEATS` (metronome step size), `--window N` (visible fret
+count), `--width N` (tab viewport width), `--track N` (select a single MIDI
+track, 1-indexed, same as the converter), `--orientation {horizontal,vertical}`,
+`--hand {right,left}`, `--audio {none,midi,fluidsynth}` (`--midi-port`,
+`--soundfont`), plus the usual `--tuning`, `--num-strings`, `--max-fret`,
+`--capo`, and `--optimizer`.
+
+## Chord charts
+
+`gtrsnipe-chords` breaks a song into one chord per measure and prints a
+songbook-style chord sheet: a bar-by-bar progression grid plus a diagram for
+each unique chord. It reuses the fretboard mapper, so diagrams are voiced in the
+song's own tuning.
+
+```bash
+# Print a chord sheet to the terminal
+gtrsnipe-chords song.mid
+
+# Save it as Markdown
+gtrsnipe-chords song.mid -o song.chords.md
+```
+
+Chord *names* (C, Am, E5, E7, C/E, …) are derived by matching pitch classes to
+chord templates, with the bass note disambiguating inversions and slash chords.
+The diagrams show the chord **as voiced in the input** (the actual octaves,
+mapped in your tuning) rather than canonical open shapes — faithful to the song,
+and the only correct choice for non-standard tunings.
+
+Key options: `-o FILE`, `--measures-per-line N`, `--chord-tone-threshold F`
+(how long a note must sound in a bar to count as a chord tone), `--track N`,
+plus the usual `--tuning`, `--num-strings`, `--capo`, `--optimizer`, and
+`--prefer-open` (bias diagram voicings toward open strings).
+
 ### Command-line help
 
 ```

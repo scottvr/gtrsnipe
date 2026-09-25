@@ -3,6 +3,66 @@
 All notable changes to gtrsnipe are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.4.0] — 2026-09-24
+
+### Added
+- **Player / fretboard visualizer** (`gtrsnipe-play`). Renders any supported
+  input (MIDI/ABC/VexTab/ASCII-tab) as a time-driven ASCII fretboard: an
+  auto-following 5-fret window that tracks the playing up and down the neck.
+  Three timing modes via `--clock`: `tempo` (at the song's tempo), `metronome`
+  (a fixed `--grid` beat step), and `step` (advance manually with a keypress,
+  quit with `q`). Reuses the existing parser + Viterbi mapper unchanged; the
+  timeline, clock, and renderer layers are decoupled so browser/Qt renderers
+  can be added later without touching the core. Rhythm fidelity follows the
+  input — precise from MIDI, approximate from ASCII tab.
+  - `--track N` selects a single MIDI track (1-indexed), matching the converter.
+  - `--orientation {horizontal,vertical}` rotates the board (frets as columns,
+    or chord-diagram style top-to-bottom); `--hand {right,left}` mirrors the
+    neck for left-handed players.
+  - `--view tab` renders a horizontally-scrolling ASCII tab staff instead of the
+    neck — notes flow right-to-left under a fixed playhead as the clock advances
+    (a "7-bit terminal Guitar Hero"). `--width` sets the viewport columns.
+  - `--audio {midi,fluidsynth}` makes the player emit sound. `midi` streams
+    note-on/off to a MIDI port (route it to a DAW/VST host or system synth) via
+    `mido` + `python-rtmidi` (the new `[play]` extra); `fluidsynth` renders a
+    SoundFont directly with no external host (`pyfluidsynth`, the `[synth]`
+    extra). Missing backends fail with an install hint, not a traceback.
+  - `--instrument` selects the voice by General MIDI program number (0-127) or
+    name substring (e.g. `nylon`, `distortion guitar`); `--list-instruments`
+    prints the GM set.
+  - Smooth scrolling: the display animates between onsets at `--fps` (default 12)
+    and shows a continuous `bar N/total beat X.x` readout — the bar ratio doubles
+    as a progress bar, and the moving readout means long rests in ensemble MIDI
+    keep visibly playing instead of looking like the app hung.
+
+### Fixed
+- **Last note no longer cut off.** Auto-clock playback marked the final frame
+  with no dwell, so its note was struck and immediately released; every frame
+  now dwells for its duration.
+- **FluidSynth error clarity.** When the native `libfluidsynth` C library is
+  missing (but pyfluidsynth is installed), the error now points at the C library
+  (port/brew/apt) and the MacPorts `DYLD_FALLBACK_LIBRARY_PATH` tip, instead of
+  telling the user to reinstall pyfluidsynth.
+- **librosa 1.0 compatibility.** The audio-transcription path crashed with
+  `module 'librosa.beat' has no attribute 'tempo'` on modern librosa. Tempo
+  estimation now resolves `librosa.feature.rhythm.tempo` / `librosa.feature.tempo`
+  / `librosa.beat.tempo` across versions (tested end-to-end on librosa 1.0.0).
+
+### Known limitations
+- Player audio sustains each note until the next onset (legato); a note's own
+  duration and rests are not yet honored in playback — visuals are unaffected.
+  Honoring true note-offs needs an event-level audio scheduler (roadmap).
+- **Chord charts** (`gtrsnipe-chords`). Segments a song into one chord per
+  measure (pitch classes unioned across the bar, weighted by duration, with the
+  bass note resolving inversions/slash chords) and emits a Markdown/ASCII chord
+  sheet: a bar-by-bar progression grid plus an ASCII diagram for each unique
+  chord. Diagrams use a compact, playable root-position voicing generated in the
+  song's tuning (the lowest tight-span register the mapper can finger), not the
+  literal bar contents. Chord naming lives
+  in `gtrsnipe.core.chords` (pure pitch-class template matching: triads, power
+  chords, 6/7/maj7/m7/m7b5, sus2/sus4, dim/aug/dim7). Extended chords (9/11/13)
+  and enharmonic key-aware spelling (sharps only) are deferred.
+
 ## [0.3.0] — 2026-09-23
 
 Release plan and design docs live in [`docs/dev/`](docs/dev/RELEASE-PLAN-v0.3.0.md).
