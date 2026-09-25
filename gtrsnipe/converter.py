@@ -4,7 +4,7 @@ from .core.theory import note_name_to_pitch, pitch_to_note_name, midi_to_hz
 from .core.types import Song, Tuning
 from .core.config import MapperConfig
 from .utils.io import save_text_file, save_midi_file
-from .arguments import setup_parser
+from .arguments import setup_parser, build_mapper_config
 from .utils.logger import setup_logger
 from .audio.dynamic_tempo import analyze_dynamic_tempo
 from argparse import ArgumentParser
@@ -279,8 +279,10 @@ def main():
             exit(1)
         exit(0)    
     
-    if not args.input or not args.output:
-        parser.error("the following arguments are required for conversion: -i/--input and -o/--output")
+    if not args.input:
+        parser.error("the following argument is required: -i/--input")
+    if not args.play and not args.output:
+        parser.error("provide at least one -o/--output (or use --play to visualize)")
 
     log_level = logging.DEBUG if args.debug else logging.INFO
     setup_logger(log_level)
@@ -409,7 +411,8 @@ def main():
             # Determine the correct path for the intermediate MIDI file.
             intermediate_midi_path = None
             # Check if any of the requested outputs is a midi file.
-            for out_path in args.output:
+            # (args.output is None when --play is used without -o.)
+            for out_path in (args.output or []):
                 if Path(out_path).suffix.lower() == '.mid':
                     intermediate_midi_path = out_path
                     break
@@ -474,36 +477,10 @@ def main():
         # (double-quantization) — removed in v0.3.0.
 
         mapper_config = None
-        
-        if not is_piano_mode:   
-            mapper_config = MapperConfig(
-                max_fret=args.max_fret,
-                tuning=tuning_name,
-                num_strings=num_strings,
-                fret_span_penalty=args.fret_span_penalty,
-                movement_penalty=args.movement_penalty,
-                string_switch_penalty=args.string_switch_penalty,
-                high_fret_penalty=args.high_fret_penalty,
-                low_string_high_fret_multiplier=args.low_string_high_fret_multiplier,
-                sweet_spot_bonus=args.sweet_spot_bonus,
-                sweet_spot_low=args.sweet_spot_low,
-                sweet_spot_high=args.sweet_spot_high,
-                unplayable_fret_span=args.unplayable_fret_span,
-                prefer_open=args.prefer_open,
-                fretted_open_penalty=args.fretted_open_penalty,
-                ignore_open=args.ignore_open,
-                legato_time_threshold=args.legato_time_threshold,
-                tapping_run_threshold=args.tapping_run_threshold,
-                deduplicate_pitches=args.dedupe,
-                quantization_resolution=args.quantization_resolution,
-                capo=args.capo,
-                barre_bonus=args.barre_bonus,  
-                barre_penalty=args.barre_penalty,  
-                mono_lowest_only=args.mono_lowest_only,
-                let_ring_bonus=args.let_ring_bonus,
-                diagonal_span_penalty=args.diagonal_span_penalty,
-                optimizer=args.optimizer,
-            )
+
+        if not is_piano_mode:
+            mapper_config = build_mapper_config(
+                args, tuning=tuning_name, num_strings=num_strings)
         
         song = filter_by_velocity(song, args.velocity_cutoff)
         
@@ -578,29 +555,61 @@ def main():
             elif pitch_shifted > 0:
                 logger.info(f"--- Shifted {pitch_shifted} notes by octaves to fit ---")
 
+        # --- Player mode: visualize instead of writing files (reuses the full
+        # preamble above, so --play inherits audio input, normalize, etc.). ---
+        if args.play:
+            # (PIANO tuning already exits earlier via parser.error, so no guard here.)
+            from .player.app import run_player_from_args, audio_from_args, _choose_sink
+            try:
+                audio = audio_from_args(args)
+            except (RuntimeError, ValueError) as e:
+                logger.error(str(e))
+                return
+            sink = _choose_sink(args)
+            try:
+                run_player_from_args(copy.deepcopy(song), mapper_config, args,
+                                     mapped=False, sink=sink, audio=audio)
+            except KeyboardInterrupt:
+                sys.stderr.write("\nStopped.\n")
+            finally:
+                audio.close()   # release the backend even if map/run raised early
+            return
+
         logger.info("--- Generating output files ---")
 
         for output_path_str in args.output:
             output_path = Path(output_path_str)
-            to_format = output_path.suffix.lstrip('.').lower()
+            name = output_path.name.lower()
+            if name.endswith(".chords") or name.endswith(".chords.md"):
+                to_format = "chords"
+            else:
+                to_format = output_path.suffix.lstrip('.').lower()
 
             song_for_conversion = copy.deepcopy(song)
             config_for_conversion = copy.deepcopy(mapper_config)
             debug_song_state(song_for_conversion, 5, "Before Final Convert/Map")
 
-            output_data = converter.convert(
-                song=song_for_conversion,
-                command_line=command_line,
-                from_format=format_to_parse,
-                to_format=to_format,
-                nudge=args.nudge,
-                transpose=args.transpose,
-                max_line_width=args.max_line_width,
-                no_articulations=args.no_articulations,
-                single_string=args.single_string,
-                mapper_config=config_for_conversion
-            )
-    
+            if to_format == "chords":
+                from .chords.chart import build_chord_sheet
+                output_data = build_chord_sheet(
+                    song_for_conversion, config_for_conversion,
+                    measures_per_line=args.measures_per_line,
+                    chord_tone_threshold=args.chord_tone_threshold,
+                )
+            else:
+                output_data = converter.convert(
+                    song=song_for_conversion,
+                    command_line=command_line,
+                    from_format=format_to_parse,
+                    to_format=to_format,
+                    nudge=args.nudge,
+                    transpose=args.transpose,
+                    max_line_width=args.max_line_width,
+                    no_articulations=args.no_articulations,
+                    single_string=args.single_string,
+                    mapper_config=config_for_conversion
+                )
+
             if output_path.exists() and not args.yes:
                 logger.error(f"Error: Output file '{output_path}' already exists.")
                 logger.error("Use the -y or --yes flag to allow overwriting.")

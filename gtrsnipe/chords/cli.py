@@ -1,16 +1,22 @@
 """CLI for the chord-chart output (`gtrsnipe-chords`).
 
 Parses an input file, breaks it into per-measure chords, and writes a Markdown
-chord sheet to stdout (or a file with ``-o``).
+chord sheet to stdout (or a file with ``-o``). Shares the full tuning + mapper
+option surface with the main tool via :mod:`gtrsnipe.arguments`.
 """
 import argparse
 import sys
 from pathlib import Path
 from typing import Optional, Sequence
 
-from ..core.config import MapperConfig
-from .chart import DEFAULT_MEASURES_PER_LINE, build_chord_sheet
-from .segment import DEFAULT_CHORD_TONE_THRESHOLD
+from ..arguments import (
+    add_chart_args,
+    add_mapper_args,
+    add_tuning_args,
+    build_mapper_config,
+    resolve_num_strings,
+)
+from .chart import build_chord_sheet
 
 
 def _build_arg_parser() -> argparse.ArgumentParser:
@@ -21,21 +27,11 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("input", help="Input file (.mid/.abc/.vex/.tab).")
     p.add_argument("-o", "--output", default=None,
                    help="Write the sheet to a file (default: stdout).")
-    p.add_argument("--measures-per-line", type=int, default=DEFAULT_MEASURES_PER_LINE,
-                   help=f"Bars per progression row (default: {DEFAULT_MEASURES_PER_LINE}).")
-    p.add_argument("--chord-tone-threshold", type=float,
-                   default=DEFAULT_CHORD_TONE_THRESHOLD,
-                   help="Min fraction of a bar a note must sound to count as a "
-                        f"chord tone (default: {DEFAULT_CHORD_TONE_THRESHOLD}).")
     p.add_argument("--track", type=int, default=None,
                    help="For MIDI input: 1-indexed track to analyze (default: all).")
-    p.add_argument("--tuning", default="STANDARD", help="Tuning name.")
-    p.add_argument("--num-strings", type=int, default=6)
-    p.add_argument("--max-fret", type=int, default=24)
-    p.add_argument("--capo", type=int, default=0)
-    p.add_argument("--optimizer", choices=["viterbi", "greedy"], default="viterbi")
-    p.add_argument("--prefer-open", action="store_true",
-                   help="Bias the diagram voicings toward open strings.")
+    add_tuning_args(p.add_argument_group("Instrument"))
+    add_mapper_args(p.add_argument_group("Mapper (advanced)"))
+    add_chart_args(p.add_argument_group("Chord chart"))
     return p
 
 
@@ -45,10 +41,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     # Imported here to avoid a converter<->chords import cycle at package load.
     from ..converter import MusicConverter
 
-    cfg = MapperConfig(
-        tuning=args.tuning, num_strings=args.num_strings,
-        max_fret=args.max_fret, capo=args.capo,
-        optimizer=args.optimizer, prefer_open=args.prefer_open,
+    cfg = build_mapper_config(
+        args, tuning=args.tuning,
+        num_strings=resolve_num_strings(args.tuning, args.num_strings),
     )
     fmt = Path(args.input).suffix.lstrip(".").lower()
     song = MusicConverter()._parse(args.input, fmt, args.track)

@@ -38,7 +38,11 @@ def _bar_beat_footer(beat_time: float, beats_per_measure: float,
     ``total`` set it reads ``bar N/total``, a free progress bar.
     """
     bar, beat = bar_beat(beat_time, beats_per_measure)
-    bar_str = f"{bar}/{total}" if total else f"{bar}"
+    if total:
+        bar = min(bar, total)  # the exclusive end lands on the next downbeat
+        bar_str = f"{bar}/{total}"
+    else:
+        bar_str = f"{bar}"
     return f"bar {bar_str}  beat {beat:.1f}  (t={beat_time:.2f})"
 
 
