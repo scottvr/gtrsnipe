@@ -233,7 +233,7 @@ class AsciiTabGenerator:
             f"// Title: {score.title}",
             f"// Tempo: {int(score.tempo)} BPM",
             f"// Time: {score.time_signature[0]}/{score.time_signature[1]}",
-            f"// Tuning (High to Low): {' '.join(tuning_notes)}",
+            f"// Tuning: {','.join(reversed(tuning_notes))}",
             ""
         ]
 

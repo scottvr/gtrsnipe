@@ -85,6 +85,48 @@ def test_tab_parser_uses_supplied_tuning():
     assert [e.pitch for e in retuned.tracks[0].events] == [62]        # high string -> D4
 
 
+def test_tab_roundtrips_custom_tuning_via_header():
+    # Generate a custom-tuned tab, then re-parse it with NO tuning passed: it must
+    # read the embedded '// Tuning:' header and recover the exact pitches.
+    from gtrsnipe.core.config import MapperConfig
+    from gtrsnipe.core.types import MusicalEvent, Song, Track
+    from gtrsnipe.formats.tab.generator.ascii import AsciiTabGenerator
+    from gtrsnipe.formats.tab.parser import AsciiTabParser
+    cfg = MapperConfig(tuning="CUSTOM", num_strings=6,
+                       custom_tuning=("D2", "A2", "D3", "G3", "A3", "D4"))  # DADGAD
+    pitches = [62, 64, 66, 67, 69]
+    song = Song(tracks=[Track(events=[MusicalEvent(i * 0.5, p, 0.5, 100)
+                                      for i, p in enumerate(pitches)])], tempo=120)
+    tab = AsciiTabGenerator.generate(song, command_line="", mapper_config=cfg)
+    assert "// Tuning: D2,A2,D3,G3,A3,D4" in tab            # low->high header
+    got = sorted(e.pitch for t in AsciiTabParser.parse(tab).tracks for e in t.events)
+    assert got == sorted(pitches)
+
+
+def test_tab_parser_reads_legacy_high_to_low_header():
+    from gtrsnipe.formats.tab.parser import AsciiTabParser
+    tab = ("// Tuning (High to Low): E4 B3 G3 D3 A2 E2\n"
+           "e|--0--|\nB|-----|\nG|-----|\nD|-----|\nA|-----|\nE|-----|\n")
+    assert [e.pitch for e in AsciiTabParser.parse(tab).tracks[0].events] == [64]
+
+
+def test_tab_six_strings_low_e_not_dropped():
+    # Regression: start-char scan uppercased e/E to the same key -> 5 strings, so
+    # low-E notes were silently dropped. Now the low E (index 5) is parsed.
+    from gtrsnipe.formats.tab.parser import AsciiTabParser
+    tab = "e|-----|\nB|-----|\nG|-----|\nD|-----|\nA|-----|\nE|--3--|\n"
+    got = [e.pitch for t in AsciiTabParser.parse(tab).tracks for e in t.events]
+    assert got == [43]   # low E, fret 3 = G2
+
+
+def test_caller_tuning_overrides_header():
+    from gtrsnipe.formats.tab.parser import AsciiTabParser
+    tab = "// Tuning: E2,A2,D3,G3,B3,E4\ne|--0--|\nB|-|\nG|-|\nD|-|\nA|-|\nE|-|\n"
+    # explicit tuning wins over the embedded header (enables tuning-swap re-reads)
+    got = AsciiTabParser.parse(tab, open_string_pitches=[62, 59, 55, 50, 45, 40])
+    assert [e.pitch for e in got.tracks[0].events] == [62]
+
+
 def test_open_string_pitches_for():
     # Returns string index 0 = highest (high->low); names are low->high so reversed.
     assert open_string_pitches_for("STANDARD") == [64, 59, 55, 50, 45, 40]
