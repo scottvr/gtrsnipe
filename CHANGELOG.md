@@ -31,8 +31,9 @@ This project adheres to [Semantic Versioning](https://semver.org/).
     name substring (e.g. `nylon`, `distortion guitar`); `--list-instruments`
     prints the GM set.
   - Smooth scrolling: the display animates between onsets at `--fps` (default 12)
-    and shows a continuous `bar N beat X.x` readout — so long rests in ensemble
-    MIDI keep moving instead of looking like the app hung.
+    and shows a continuous `bar N/total beat X.x` readout — the bar ratio doubles
+    as a progress bar, and the moving readout means long rests in ensemble MIDI
+    keep visibly playing instead of looking like the app hung.
 
 ### Fixed
 - **Last note no longer cut off.** Auto-clock playback marked the final frame

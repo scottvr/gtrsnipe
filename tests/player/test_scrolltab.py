@@ -86,6 +86,14 @@ def test_index_clamped_to_valid_range():
     assert "t=0.00" in r.render(TL, -5).splitlines()[-1]   # first frame at beat 0
 
 
+def test_footer_shows_bar_ratio_as_progress():
+    # bar N/total doubles as a progress bar. TL spans beats 0..4.5 -> 2 bars @4/4.
+    r = std()
+    r.beats_per_measure = 4.0
+    assert "bar 1/2" in r.render_at(TL, 0.0).splitlines()[-1]
+    assert "bar 2/2" in r.render_at(TL, 4.0).splitlines()[-1]
+
+
 def test_render_at_scrolls_continuously_between_onsets():
     # A time between two onsets scrolls to an in-between column (smooth motion),
     # and the footer's bar/beat advances (liveness during rests).

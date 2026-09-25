@@ -19,7 +19,7 @@ from typing import List, Optional
 
 from ...core.config import MapperConfig
 from ...core.types import Tuning
-from ..frame import Frame, _bar_beat_footer
+from ..frame import Frame, _bar_beat_footer, total_bars
 
 ACTIVE = "O"       # a sounding position
 EMPTY = "."        # nothing on this string/fret
@@ -171,4 +171,6 @@ class AsciiFretboardRenderer:
             frame = Frame(time=beat_time, duration=0.0,
                           positions=(), window=(1, 5))
         board = self.render(frame)
-        return f"{board}\n{_bar_beat_footer(beat_time, self.beats_per_measure)}"
+        footer = _bar_beat_footer(beat_time, self.beats_per_measure,
+                                  total_bars(timeline, self.beats_per_measure))
+        return f"{board}\n{footer}"

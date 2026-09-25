@@ -21,14 +21,25 @@ def bar_beat(beat_time: float, beats_per_measure: float) -> Tuple[int, float]:
     return measure + 1, beat_in + 1.0
 
 
-def _bar_beat_footer(beat_time: float, beats_per_measure: float) -> str:
+def total_bars(timeline, beats_per_measure: float) -> int:
+    """Number of bars the timeline spans (for a bar N/total progress readout)."""
+    if beats_per_measure <= 0:
+        beats_per_measure = 4.0
+    end = max((f.time + max(f.duration, 0.0) for f in timeline), default=0.0)
+    return max(1, math.ceil((end - 1e-9) / beats_per_measure))
+
+
+def _bar_beat_footer(beat_time: float, beats_per_measure: float,
+                     total: int = None) -> str:
     """A status line the renderers share: bar/beat plus the raw beat time.
 
     Because it advances continuously, it doubles as a liveness indicator — a
-    moving readout tells the user the player isn't hung during a long rest.
+    moving readout tells the user the player isn't hung during a long rest. With
+    ``total`` set it reads ``bar N/total``, a free progress bar.
     """
     bar, beat = bar_beat(beat_time, beats_per_measure)
-    return f"bar {bar}  beat {beat:.1f}  (t={beat_time:.2f})"
+    bar_str = f"{bar}/{total}" if total else f"{bar}"
+    return f"bar {bar_str}  beat {beat:.1f}  (t={beat_time:.2f})"
 
 
 @dataclass

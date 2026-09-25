@@ -13,7 +13,7 @@ from typing import List, Optional, Sequence
 
 from ...core.config import MapperConfig
 from ...core.types import Tuning
-from ..frame import Frame, _bar_beat_footer
+from ..frame import Frame, _bar_beat_footer, total_bars
 
 DEFAULT_WIDTH = 48          # viewport columns (excluding the string-label gutter)
 DEFAULT_COLS_PER_BEAT = 4   # horizontal density: chars per quarter-note beat
@@ -130,5 +130,6 @@ class ScrollingTabRenderer:
             label = self.labels[s].rjust(label_w)
             rows.append(f"{label} |{''.join(window)}")
 
-        rows.append(_bar_beat_footer(beat_time, self.beats_per_measure))
+        rows.append(_bar_beat_footer(beat_time, self.beats_per_measure,
+                                     total_bars(timeline, self.beats_per_measure)))
         return "\n".join(rows)
