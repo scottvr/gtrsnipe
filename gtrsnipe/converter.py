@@ -411,7 +411,8 @@ def main():
             # Determine the correct path for the intermediate MIDI file.
             intermediate_midi_path = None
             # Check if any of the requested outputs is a midi file.
-            for out_path in args.output:
+            # (args.output is None when --play is used without -o.)
+            for out_path in (args.output or []):
                 if Path(out_path).suffix.lower() == '.mid':
                     intermediate_midi_path = out_path
                     break
@@ -557,9 +558,7 @@ def main():
         # --- Player mode: visualize instead of writing files (reuses the full
         # preamble above, so --play inherits audio input, normalize, etc.). ---
         if args.play:
-            if is_piano_mode:
-                logger.error("--play needs a fretboard tuning, not PIANO.")
-                return
+            # (PIANO tuning already exits earlier via parser.error, so no guard here.)
             from .player.app import run_player_from_args, audio_from_args, _choose_sink
             try:
                 audio = audio_from_args(args)
@@ -572,6 +571,8 @@ def main():
                                      mapped=False, sink=sink, audio=audio)
             except KeyboardInterrupt:
                 sys.stderr.write("\nStopped.\n")
+            finally:
+                audio.close()   # release the backend even if map/run raised early
             return
 
         logger.info("--- Generating output files ---")

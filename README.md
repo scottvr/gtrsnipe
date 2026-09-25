@@ -77,9 +77,10 @@ and down the neck; open strings are shown at the nut.
 > full option set (audio input, `--transpose`, `--normalize-pitch`, every mapper
 > knob). `gtrsnipe-play` remains as a convenience shortcut.
 
-**Playback controls** (interactive terminal): `space` pause/resume (when paused,
-step a note); `.`/`,` step forward/back; `←`/`→` seek ±1 bar; `[`/`]` tempo
-down/up; `g`/`end` jump to start/end; `h` help; `q` quit.
+**Playback controls** (interactive terminal): `space` pause/resume; `.`/`,` step
+forward/back (while paused); `←`/`→` seek ±1 bar; `[`/`]` tempo down/up; `g`/`end`
+jump to start/end; `h` help; `q` quit. (`--clock step` just starts paused — press
+`space` to play or `.` to step.)
 
 ```bash
 # Play a MIDI file at its own tempo

@@ -149,8 +149,12 @@ def run_player(mapped_song: Song, cfg: MapperConfig, *, clock: str = "tempo",
         transport.run(driver)
         return 0
     finally:
-        the_audio.close()
-        the_sink.teardown()
+        # Restore the terminal even if closing audio raises (e.g. a MIDI port
+        # invalidated by a device unplug), so curses never leaves it corrupted.
+        try:
+            the_audio.close()
+        finally:
+            the_sink.teardown()
 
 
 def run_player_from_args(song: Song, cfg: MapperConfig, args, *,
@@ -257,6 +261,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     except KeyboardInterrupt:  # pragma: no cover - interactive
         sys.stderr.write("\nStopped.\n")
         return 130
+    finally:
+        # Release the audio backend even if play_file raised before run_player's
+        # own finally (e.g. a parse error). close() is idempotent.
+        audio.close()
 
 
 if __name__ == "__main__":  # pragma: no cover

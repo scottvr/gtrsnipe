@@ -122,14 +122,33 @@ def test_empty_timeline_is_noop():
 
 # -- step (paused) ----------------------------------------------------------
 
-def test_step_mode_advances_one_frame_per_key():
+def test_step_mode_advances_one_frame_per_dot_key():
     tl = [frame(0, 60), frame(1, 62), frame(2, 64)]
     clk = FakeClock()
-    drv = FakeDriver(clk, keys=[" ", " ", "q"])  # step, step, quit
+    drv = FakeDriver(clk, keys=[".", ".", "q"])  # step, step, quit
     Transport(tl, 120, playing=False, now=clk.now, sleep=clk.sleep).run(drv)
-    # initial frame fired + two steps = frames 0,1,2
+    # initial frame fired + two '.' steps = frames 0,1,2
     assert drv.fired_pitches() == [(60,), (62,), (64,)]
     assert clk.t == 0.0  # step mode never sleeps
+
+
+def test_space_resumes_from_pause():
+    # Regression: space must RESUME continuous play (not single-step forever).
+    tl = [frame(float(i), 60 + i) for i in range(4)]
+    clk = FakeClock()
+    drv = FakeDriver(clk, keys=[" "])  # start paused, space -> resume, plays out
+    Transport(tl, 120, playing=False, now=clk.now, sleep=clk.sleep).run(drv)
+    assert (63,) in drv.fired_pitches()  # reached the last onset -> resumed
+
+
+def test_space_pause_then_resume_round_trip():
+    tl = [frame(float(i), 60 + i) for i in range(6)]
+    clk = FakeClock()
+    # playing -> space pauses -> space resumes -> plays to end
+    drv = FakeDriver(clk, keys=[" ", " "])
+    Transport(tl, 120, playing=True, now=clk.now, sleep=clk.sleep).run(drv)
+    assert drv.silences >= 1                 # paused at least once
+    assert (65,) in drv.fired_pitches()      # but still reached the end
 
 
 def test_step_quit_on_q_stops_early():
@@ -238,6 +257,28 @@ def test_help_overlay_shown():
     t, drv = _paused_transport()
     t._handle_key("h", drv)
     assert getattr(drv, "shown", []) and "keys" in drv.shown[0].lower()
+
+
+def test_seek_while_playing_is_not_clobbered():
+    # Regression: seeking during playback must move the playhead, not be reverted
+    # by the loop's `self.beat_time = t` (computed before the key).
+    tl = [frame(float(i), 60 + i) for i in range(8)]
+    clk = FakeClock()
+    drv = FakeDriver(clk, keys=["right", "q"])  # seek +1 bar early, then quit
+    t = Transport(tl, 120, playing=True, beats_per_measure=4.0,
+                  now=clk.now, sleep=clk.sleep)
+    t.run(drv)
+    assert t.beat_time >= 4.0  # jumped a bar forward, not reverted toward 0
+
+
+def test_help_pauses_and_persists_during_play():
+    # Regression: 'h' while playing must pause (so the overlay isn't repainted
+    # over within the same iteration) and actually show the help.
+    tl = [frame(float(i), 60 + i) for i in range(4)]
+    clk = FakeClock()
+    drv = FakeDriver(clk, keys=["h", "q"])
+    Transport(tl, 120, playing=True, now=clk.now, sleep=clk.sleep).run(drv)
+    assert getattr(drv, "shown", []) and drv.silences >= 1
 
 
 def test_resize_rerenders():

@@ -111,8 +111,8 @@ def add_player_args(target) -> None:
                         help="fretboard = animated neck; tab = scrolling tab staff.")
     target.add_argument("--clock", choices=["tempo", "metronome", "step"],
                         default="tempo",
-                        help="Timing: at-tempo, fixed metronome grid, or start paused "
-                             "for manual spacebar step (default: tempo).")
+                        help="Timing: at-tempo, fixed metronome grid, or 'step' to "
+                             "start paused (space plays, '.' steps). Default: tempo.")
     target.add_argument("--tempo", type=float, default=None, metavar="BPM",
                         help="Override playback tempo in BPM (default: the song's).")
     target.add_argument("--grid", type=float, default=0.5,

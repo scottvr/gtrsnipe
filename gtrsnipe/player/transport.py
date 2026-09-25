@@ -16,8 +16,8 @@ toggles at runtime. Metronome is not a Transport mode — it is a re-timed timel
 
 Runtime controls (media-player + pager convention):
 
-* ``space`` — pause/resume (paused: step one frame forward)
-* ``.`` / ``,`` — step forward / back (paused)
+* ``space`` — pause / resume (toggle)
+* ``.`` / ``,`` — step forward / back (while paused)
 * ``left`` / ``right`` — seek back / forward one bar
 * ``[`` / ``]`` — tempo down / up
 * ``g`` / ``home`` / ``end`` — jump to start / start / end
@@ -43,15 +43,15 @@ TEMPO_STEP = 1.12  # multiplicative tempo nudge per keypress
 HELP_TEXT = """\
 gtrsnipe player — keys
 
-  space    pause / resume  (paused: step forward)
-  . / ,    step forward / back   (paused)
+  space    pause / resume
+  . / ,    step forward / back   (while paused)
   <- / ->  seek back / forward one bar
   [ / ]    tempo down / up
   g / end  jump to start / end
   h / ?    this help
   q        quit
 
-(press any key to continue)"""
+(space resumes)"""
 
 
 def _beats_to_seconds(beats: float, tempo_bpm: float) -> float:
@@ -182,8 +182,10 @@ class Transport:
         if k == "q":
             self._quit = True
         elif k in (" ", "\n", "\r", "p"):
+            # Toggle play/pause. Resuming just clears the flag; the run loop's
+            # paused branch then calls _resume (re-articulate + re-anchor).
             if self.paused:
-                self._step(driver, +1)
+                self.paused = False
             else:
                 self.paused = True
                 driver.silence()
@@ -191,9 +193,9 @@ class Transport:
             self._step(driver, +1)
         elif k == "," and self.paused:
             self._step(driver, -1)
-        elif k in ("left",):
+        elif k == "left":
             self._seek_to(self.beat_time - self.beats_per_measure, driver)
-        elif k in ("right",):
+        elif k == "right":
             self._seek_to(self.beat_time + self.beats_per_measure, driver)
         elif k == "[":
             self._adjust_tempo(1.0 / TEMPO_STEP, driver)
@@ -204,6 +206,9 @@ class Transport:
         elif k == "end":
             self._seek_to(self.end, driver)
         elif k in ("h", "?"):
+            # Pause so the overlay persists (a live render would repaint over it).
+            self.paused = True
+            driver.silence()
             if hasattr(driver, "show"):
                 driver.show(HELP_TEXT)
 
@@ -234,8 +239,10 @@ class Transport:
                 self._handle_key(key, driver)
                 if self._quit:
                     break
-                if self.paused:
-                    continue
+                # Re-evaluate from the new state after ANY key (a seek/jump/tempo
+                # handler moved beat_time/_onset_i/anchor); do NOT fall through to
+                # `self.beat_time = t`, which was computed before the key.
+                continue
 
             self.beat_time = t
             self._fire_due(driver)

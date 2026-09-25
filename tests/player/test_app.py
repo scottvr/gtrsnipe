@@ -65,6 +65,39 @@ def test_driver_render_fire_silence():
 
 # -- parse/map/timeline -----------------------------------------------------
 
+def test_run_player_restores_sink_even_if_audio_close_raises():
+    # Regression: a raising audio.close() must not skip sink.teardown() (terminal
+    # restore), so the nested finally in run_player is required.
+    from gtrsnipe.player.app import map_song, run_player
+    from gtrsnipe.player.sink import Sink
+
+    class BoomAudio(AudioSink):
+        def close(self):
+            raise RuntimeError("midi port died")
+
+    class RecSink(Sink):
+        def __init__(self):
+            self.torn = False
+        def setup(self):
+            pass
+        def write(self, t):
+            pass
+        def read_key(self, blocking):
+            return None
+        def teardown(self):
+            self.torn = True
+
+    cfg = MapperConfig()
+    song = map_song(Song(tracks=[Track(events=[
+        MusicalEvent(0, 60, 0.5, 100, string=0, fret=3)])]), cfg)
+    rec = RecSink()
+    clk = FakeClock()
+    with pytest.raises(RuntimeError):
+        run_player(song, cfg, clock="tempo", audio=BoomAudio(), sink=rec,
+                   now=clk.now, sleep=clk.sleep)
+    assert rec.torn, "sink.teardown() must run even when audio.close() raises"
+
+
 def test_parse_and_map_populates_positions(tmp_path):
     cfg = MapperConfig(tuning="STANDARD", num_strings=6)
     song = parse_and_map(abc_scale(tmp_path), cfg)
@@ -98,11 +131,11 @@ def test_play_file_tempo_plays_and_closes(tmp_path):
 
 def test_play_file_step_mode_steps_then_quits(tmp_path):
     audio = RecordingAudio()
-    sink = PlainSink(writer=lambda s: None, keys=[" ", " ", "q"], clear=False)
+    sink = PlainSink(writer=lambda s: None, keys=[".", ".", "q"], clear=False)
     rc = play_file(abc_scale(tmp_path), clock="step", mapper_config=MapperConfig(),
                    audio=audio, sink=sink)
     assert rc == 0
-    # initial frame + 2 steps = 3 attacks before quit
+    # initial frame + 2 '.' steps = 3 attacks before quit (space now resumes, not steps)
     assert len(audio.attacks) == 3
 
 

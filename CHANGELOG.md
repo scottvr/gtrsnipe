@@ -20,9 +20,9 @@ invocations are unchanged (byte-identical output).**
 - **Full mapper option surface everywhere.** The player and chord charts now
   accept all 33 mapper knobs (`--fret-span-penalty`, `--sweet-spot-*`, `--barre-*`,
   `--let-ring-bonus`, …), not the previous ~6.
-- **Transport controls** in the player: `space` pause/resume (paused: step),
-  `.`/`,` step, `←`/`→` seek ±1 bar, `[`/`]` tempo, `g`/`end` jump, `h` help,
-  `q` quit — with audio resynced on seek/pause.
+- **Transport controls** in the player: `space` pause/resume (toggle), `.`/`,`
+  step (while paused), `←`/`→` seek ±1 bar, `[`/`]` tempo, `g`/`end` jump, `h`
+  help, `q` quit — with audio resynced on seek/pause.
 - **Curses player** on a real terminal: alternate screen (scrollback preserved &
   restored), non-blocking input (live pause during playback), and terminal-resize
   re-layout. Piped/redirected output falls back to a plain stream.
