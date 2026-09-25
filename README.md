@@ -13,6 +13,8 @@ gtrsnipe is a guitar transcription tool. Its primary function is to create playa
 
 It can also convert existing MIDI files into text-based notations or, in reverse, generate a playable MIDI file from a text-based tab.
 
+Beyond writing files, gtrsnipe can **play** a song: `gtrsnipe-play` animates it on an ASCII fretboard or a horizontally-scrolling "Guitar Hero"-style tab staff — optionally with sound (MIDI to a synth/DAW, or a SoundFont) — and `gtrsnipe-chords` breaks a song into a per-measure chord sheet with diagrams. Both reuse the same fretboard mapper, so they work with every supported input format and tuning. (See the sections below.)
+
 At its core, gtrsnipe uses an intelligent fretboard mapper that analyzes notes and chords to find comfortable and logical fingerings on the guitar neck. [This process is highly customizable](https://github.com/scottvr/gtrsnipe/wiki/1.-FretboardMapper-Algorithm-Configuration-and-Tunables), allowing you to fine-tune the output to match your personal playing style and preferences.
 
 -----
@@ -44,18 +46,19 @@ pip install -e .
 ```
 
 The base install is **CPU-only and torch-free** — it covers the full
-MIDI/tab/abc/vex pipeline with no heavy ML dependencies. Audio input
-(audio → MIDI → tab) lives behind optional extras:
+MIDI/tab/abc/vex pipeline (including the player and chord charts) with no heavy
+ML dependencies. Audio features live behind optional extras:
 
 ```
-pip install -e '.[audio]'        # librosa pYIN bass pipeline (audio input)
+pip install -e '.[audio]'        # audio input: librosa pYIN bass pipeline
 pip install -e '.[separation]'   # demucs stem isolation (pulls torch)
-pip install -e '.[all]'          # both
+pip install -e '.[play]'         # player sound out: MIDI to a port (python-rtmidi)
+pip install -e '.[synth]'        # player sound out: SoundFont synth (pyfluidsynth)
+pip install -e '.[all]'          # everything above
 ```
 
-> **Python version:** 3.10–3.13 are fully supported. Python 3.14 works for the
-> core, but the `[audio]` extra is best-effort there until numba/llvmlite publish
-> 3.14 wheels — use 3.10–3.13 for the librosa audio path.
+> **Python version:** 3.10 and newer. On 3.14 the `[audio]` extra may build
+> `llvmlite`/`numba` from source if wheels aren't yet published for your platform.
 
 ## Usage 
 
@@ -112,19 +115,21 @@ gtrsnipe-play song.mid --audio fluidsynth --soundfont font.sf2 --instrument "nyl
 ```
 
 The display animates between notes (`--fps`, default 12) with a live
-`bar N beat X` readout, so long rests in ensemble MIDI keep scrolling instead of
+`bar N/total beat X` readout — the bar ratio doubles as a progress bar, and the
+moving readout means long rests in ensemble MIDI keep scrolling instead of
 looking frozen. On MacPorts, `pyfluidsynth` may need
 `export DYLD_FALLBACK_LIBRARY_PATH=/opt/local/lib` to find the native library.
 
-A deecent soundfont I've used is [NitroFont v3.0](https://github.com/nitro-shoe/NitroFont-Rebooted/releases/tag/v3.0)
+A decent soundfont I've used is [NitroFont v3.0](https://github.com/nitro-shoe/NitroFont-Rebooted/releases/tag/v3.0)
 
 Key options: `--view {fretboard,tab}`, `--clock {tempo,metronome,step}`,
 `--tempo BPM`, `--grid BEATS` (metronome step size), `--window N` (visible fret
 count), `--width N` (tab viewport width), `--track N` (select a single MIDI
 track, 1-indexed, same as the converter), `--orientation {horizontal,vertical}`,
-`--hand {right,left}`, `--audio {none,midi,fluidsynth}` (`--midi-port`,
-`--soundfont`), plus the usual `--tuning`, `--num-strings`, `--max-fret`,
-`--capo`, and `--optimizer`.
+`--hand {right,left}`, `--fps N` (animation smoothness),
+`--audio {none,midi,fluidsynth}` (`--midi-port`, `--soundfont`, `--instrument`
+NAME-or-0..127, `--list-instruments`), plus the usual `--tuning`,
+`--num-strings`, `--max-fret`, `--capo`, and `--optimizer`.
 
 ## Chord charts
 
