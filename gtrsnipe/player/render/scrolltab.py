@@ -13,7 +13,7 @@ from typing import List, Optional, Sequence
 
 from ...core.config import MapperConfig
 from ...core.types import Tuning
-from ..frame import Frame
+from ..frame import Frame, _bar_beat_footer
 
 DEFAULT_WIDTH = 48          # viewport columns (excluding the string-label gutter)
 DEFAULT_COLS_PER_BEAT = 4   # horizontal density: chars per quarter-note beat
@@ -34,6 +34,7 @@ class ScrollingTabRenderer:
         self.config = config or MapperConfig()
         self.width = width
         self.cols_per_beat = cols_per_beat
+        self.beats_per_measure = 4.0   # set by the player from the song's meter
         self.labels = self._string_labels()
         self._strip: Optional[List[List[str]]] = None
         self._strip_key = None
@@ -91,10 +92,18 @@ class ScrollingTabRenderer:
         return strip
 
     def paint(self, timeline: Sequence[Frame], index: int) -> str:
-        """The uniform player entry point: viewport at frame ``index``."""
-        return self.render(timeline, index)
+        """Uniform player entry point: viewport at frame ``index``'s time."""
+        if not timeline:
+            return "(empty)"
+        index = max(0, min(index, len(timeline) - 1))
+        return self.render_at(timeline, timeline[index].time)
 
+    # Back-compat alias for older index-based callers/tests.
     def render(self, timeline: Sequence[Frame], index: int) -> str:
+        return self.paint(timeline, index)
+
+    def render_at(self, timeline: Sequence[Frame], beat_time: float) -> str:
+        """Viewport centered on a continuous ``beat_time`` (enables smooth scroll)."""
         n = len(self.labels)
         label_w = max((len(s) for s in self.labels), default=1)
         gutter = label_w + 2  # "e |"
@@ -102,9 +111,8 @@ class ScrollingTabRenderer:
 
         if not timeline:
             return "(empty)"
-        index = max(0, min(index, len(timeline) - 1))
         strip = self._build_strip(timeline)
-        center = self._column_of(timeline[index].time)
+        center = self._column_of(beat_time)
         start = center - anchor
 
         # Playhead marker line, aligned over the viewport (after the gutter).
@@ -122,6 +130,5 @@ class ScrollingTabRenderer:
             label = self.labels[s].rjust(label_w)
             rows.append(f"{label} |{''.join(window)}")
 
-        footer = (f"[{index + 1}/{len(timeline)}]  beat {timeline[index].time:.2f}")
-        rows.append(footer)
+        rows.append(_bar_beat_footer(beat_time, self.beats_per_measure))
         return "\n".join(rows)

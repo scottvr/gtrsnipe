@@ -20,6 +20,61 @@ DEFAULT_VELOCITY = 96
 _INSTALL_HINT = ("  Install the audio backend with:  pip install 'gtrsnipe[play]'"
                  "  (MIDI out)  or  pip install 'gtrsnipe[synth]'  (SoundFont)")
 
+# General MIDI program names, program 0-127 (index == GM program number).
+GM_INSTRUMENTS = [
+    "Acoustic Grand Piano", "Bright Acoustic Piano", "Electric Grand Piano",
+    "Honky-tonk Piano", "Electric Piano 1", "Electric Piano 2", "Harpsichord",
+    "Clavi", "Celesta", "Glockenspiel", "Music Box", "Vibraphone", "Marimba",
+    "Xylophone", "Tubular Bells", "Dulcimer", "Drawbar Organ", "Percussive Organ",
+    "Rock Organ", "Church Organ", "Reed Organ", "Accordion", "Harmonica",
+    "Tango Accordion", "Acoustic Guitar (nylon)", "Acoustic Guitar (steel)",
+    "Electric Guitar (jazz)", "Electric Guitar (clean)", "Electric Guitar (muted)",
+    "Overdriven Guitar", "Distortion Guitar", "Guitar Harmonics", "Acoustic Bass",
+    "Electric Bass (finger)", "Electric Bass (pick)", "Fretless Bass",
+    "Slap Bass 1", "Slap Bass 2", "Synth Bass 1", "Synth Bass 2", "Violin",
+    "Viola", "Cello", "Contrabass", "Tremolo Strings", "Pizzicato Strings",
+    "Orchestral Harp", "Timpani", "String Ensemble 1", "String Ensemble 2",
+    "Synth Strings 1", "Synth Strings 2", "Choir Aahs", "Voice Oohs",
+    "Synth Voice", "Orchestra Hit", "Trumpet", "Trombone", "Tuba", "Muted Trumpet",
+    "French Horn", "Brass Section", "Synth Brass 1", "Synth Brass 2", "Soprano Sax",
+    "Alto Sax", "Tenor Sax", "Baritone Sax", "Oboe", "English Horn", "Bassoon",
+    "Clarinet", "Piccolo", "Flute", "Recorder", "Pan Flute", "Blown Bottle",
+    "Shakuhachi", "Whistle", "Ocarina", "Lead 1 (square)", "Lead 2 (sawtooth)",
+    "Lead 3 (calliope)", "Lead 4 (chiff)", "Lead 5 (charang)", "Lead 6 (voice)",
+    "Lead 7 (fifths)", "Lead 8 (bass + lead)", "Pad 1 (new age)", "Pad 2 (warm)",
+    "Pad 3 (polysynth)", "Pad 4 (choir)", "Pad 5 (bowed)", "Pad 6 (metallic)",
+    "Pad 7 (halo)", "Pad 8 (sweep)", "FX 1 (rain)", "FX 2 (soundtrack)",
+    "FX 3 (crystal)", "FX 4 (atmosphere)", "FX 5 (brightness)", "FX 6 (goblins)",
+    "FX 7 (echoes)", "FX 8 (sci-fi)", "Sitar", "Banjo", "Shamisen", "Koto",
+    "Kalimba", "Bagpipe", "Fiddle", "Shanai", "Tinkle Bell", "Agogo",
+    "Steel Drums", "Woodblock", "Taiko Drum", "Melodic Tom", "Synth Drum",
+    "Reverse Cymbal", "Guitar Fret Noise", "Breath Noise", "Seashore",
+    "Bird Tweet", "Telephone Ring", "Helicopter", "Applause", "Gunshot",
+]
+
+
+def resolve_instrument(spec) -> int:
+    """Resolve a GM program number from an int (0-127) or a name substring.
+
+    Accepts ``"24"``, ``24``, ``"nylon"``, ``"Distortion Guitar"`` (case-
+    insensitive substring; first match wins). Raises ValueError on no match.
+    """
+    if spec is None:
+        return 0
+    s = str(spec).strip()
+    if s.lstrip("+-").isdigit():
+        n = int(s)
+        if not (0 <= n <= 127):
+            raise ValueError(f"instrument number {n} out of range 0-127")
+        return n
+    low = s.lower()
+    for i, name in enumerate(GM_INSTRUMENTS):
+        if low in name.lower():
+            return i
+    raise ValueError(
+        f"no GM instrument matches {spec!r}; try a number 0-127 or a name "
+        "like 'nylon', 'distortion guitar', 'fretless bass'")
+
 
 class AudioSink:
     """Base sink: diffs pitch sets into note-on/off; subclasses emit the events."""
@@ -75,7 +130,8 @@ class NullSink(AudioSink):
 class MidiOutSink(AudioSink):
     """Stream MIDI note-on/off to an output port."""
 
-    def __init__(self, port_name: Optional[str] = None, channel: int = 0):
+    def __init__(self, port_name: Optional[str] = None, channel: int = 0,
+                 program: int = 0):
         super().__init__()
         try:
             import mido
@@ -84,6 +140,9 @@ class MidiOutSink(AudioSink):
         self._mido = mido
         self.channel = channel
         self._port = self._open_port(port_name)
+        if program:
+            self._port.send(mido.Message(
+                "program_change", program=int(program), channel=channel))
 
     def _open_port(self, port_name: Optional[str]):
         mido = self._mido
@@ -127,7 +186,7 @@ class MidiOutSink(AudioSink):
 class FluidSynthSink(AudioSink):
     """Self-contained SoundFont synthesis via pyfluidsynth."""
 
-    def __init__(self, soundfont: str, channel: int = 0):
+    def __init__(self, soundfont: str, channel: int = 0, program: int = 0):
         super().__init__()
         if not soundfont:
             raise RuntimeError("FluidSynth needs a SoundFont: pass --soundfont PATH.")
@@ -156,7 +215,7 @@ class FluidSynthSink(AudioSink):
             sfid = self._fs.sfload(soundfont)
             if sfid == -1:
                 raise RuntimeError(f"Could not load SoundFont: {soundfont}")
-            self._fs.program_select(channel, sfid, 0, 0)
+            self._fs.program_select(channel, sfid, 0, int(program))
         except Exception:
             # start() already allocated the native synth/driver; release it so a
             # failed construction doesn't leak it (no close() can run — we raise).
@@ -177,13 +236,15 @@ class FluidSynthSink(AudioSink):
 
 
 def make_audio_sink(kind: str, *, midi_port: Optional[str] = None,
-                    soundfont: Optional[str] = None) -> AudioSink:
+                    soundfont: Optional[str] = None,
+                    instrument=None) -> AudioSink:
     """Factory used by the CLI: map an ``--audio`` choice to a sink instance."""
     if kind == "none":
         return NullSink()
+    program = resolve_instrument(instrument)  # validates even for 'none'? only used below
     if kind == "midi":
-        return MidiOutSink(port_name=midi_port)
+        return MidiOutSink(port_name=midi_port, program=program)
     if kind == "fluidsynth":
-        return FluidSynthSink(soundfont=soundfont)
+        return FluidSynthSink(soundfont=soundfont, program=program)
     raise ValueError(f"unknown audio backend {kind!r}; "
                      "choose from none, midi, fluidsynth")

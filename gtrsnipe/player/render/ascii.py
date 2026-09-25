@@ -19,7 +19,7 @@ from typing import List, Optional
 
 from ...core.config import MapperConfig
 from ...core.types import Tuning
-from ..frame import Frame
+from ..frame import Frame, _bar_beat_footer
 
 ACTIVE = "O"       # a sounding position
 EMPTY = "."        # nothing on this string/fret
@@ -43,6 +43,7 @@ class AsciiFretboardRenderer:
         self.config = config or MapperConfig()
         self.orientation = orientation
         self.handed = handed
+        self.beats_per_measure = 4.0   # set by the player from the song's meter
         self.labels = self._string_labels()
 
     def _string_labels(self) -> List[str]:
@@ -147,3 +148,27 @@ class AsciiFretboardRenderer:
     def paint(self, timeline, index: int) -> str:
         """Uniform player entry point: paint the single frame at ``index``."""
         return self.render_with_status(timeline[index], index, len(timeline))
+
+    @staticmethod
+    def _frame_at(timeline, beat_time: float):
+        """The frame sounding at ``beat_time`` (last onset at or before it)."""
+        current = None
+        for f in timeline:
+            if f.time <= beat_time + 1e-9:
+                current = f
+            else:
+                break
+        return current
+
+    def render_at(self, timeline, beat_time: float) -> str:
+        """Render the neck as it stands at a continuous ``beat_time``.
+
+        Between onsets the last struck frame is held; the bar/beat footer keeps
+        advancing so a long rest reads as "playing", not "hung".
+        """
+        frame = self._frame_at(timeline, beat_time)
+        if frame is None:
+            frame = Frame(time=beat_time, duration=0.0,
+                          positions=(), window=(1, 5))
+        board = self.render(frame)
+        return f"{board}\n{_bar_beat_footer(beat_time, self.beats_per_measure)}"

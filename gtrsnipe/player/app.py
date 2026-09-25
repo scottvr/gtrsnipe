@@ -65,33 +65,48 @@ class Player:
                  sleep: Callable[[float], object] = time.sleep,
                  read_key: Callable[[], str] = _default_read_key,
                  clear: bool = True,
-                 audio: Optional[AudioSink] = None):
+                 audio: Optional[AudioSink] = None,
+                 refresh: float = 0.08):
         self.renderer = renderer
         self.writer = writer or sys.stdout.write
         self.sleep = sleep
         self.read_key = read_key
         self.clear = clear
         self.audio = audio or NullSink()
+        self.refresh = refresh  # target seconds between animation redraws
 
-    def _paint(self, timeline: Sequence[Frame], index: int) -> None:
+    def _paint_at(self, timeline: Sequence[Frame], beat_time: float) -> None:
         if self.clear:
             self.writer(CLEAR)
-        self.writer(self.renderer.paint(timeline, index) + "\n")
+        self.writer(self.renderer.render_at(timeline, beat_time) + "\n")
+
+    def _animate(self, timeline: Sequence[Frame], t0: float, t1: float,
+                 seconds: float) -> None:
+        """Redraw the view scrolling from beat ``t0`` toward ``t1`` over
+        ``seconds`` of wall-clock, so motion stays continuous (and a long rest
+        keeps scrolling instead of freezing)."""
+        steps = max(1, round(seconds / self.refresh)) if self.refresh > 0 else 1
+        for k in range(steps):
+            self._paint_at(timeline, t0 + (t1 - t0) * (k / steps))
+            self.sleep(seconds / steps)
 
     def run(self, timeline: Sequence[Frame], clock, tempo_bpm: float) -> None:
         schedule = clock.schedule(timeline, tempo_bpm)
         n = len(schedule)
         try:
             for i, (frame, delay) in enumerate(schedule):
-                self._paint(timeline, i)
-                self.audio.attack(frame.pitches)
-                if i == n - 1:
-                    break
-                if delay is None:
+                self.audio.attack(frame.pitches)  # onset
+                t0 = frame.time
+                t1 = (timeline[i + 1].time if i + 1 < n
+                      else frame.time + max(frame.duration, 0.0))
+                if delay is None:                 # manual advance (step clock)
+                    self._paint_at(timeline, t0)
+                    if i == n - 1:
+                        break                     # nothing to advance to after last
                     if self.read_key() == "q":
                         break
-                else:
-                    self.sleep(delay)
+                else:                             # auto: animate across the dwell
+                    self._animate(timeline, t0, t1, delay)
         finally:
             self.audio.close()
 
@@ -120,6 +135,16 @@ def build_timeline(song: Song, mapper_config: MapperConfig,
     return TimelineBuilder(mapper_config, window_size=window_size).build_from_song(song)
 
 
+def _beats_per_measure(time_signature: str) -> float:
+    """Quarter-note beats per measure from a "num/den" signature (local copy to
+    avoid a player->chords import cycle)."""
+    try:
+        num, den = (int(x) for x in time_signature.split("/"))
+        return num * (4.0 / den) if num > 0 and den > 0 else 4.0
+    except (ValueError, AttributeError):
+        return 4.0
+
+
 def play_file(input_path: str, *, clock: str = "tempo",
               tempo: Optional[float] = None, grid_beats: float = 0.5,
               window_size: int = DEFAULT_WINDOW_SIZE,
@@ -135,6 +160,9 @@ def play_file(input_path: str, *, clock: str = "tempo",
         return 1
     the_clock = make_clock(clock, grid_beats=grid_beats)
     the_player = player or Player(AsciiFretboardRenderer(cfg))
+    # Give the renderer the song's meter so its bar/beat readout is correct.
+    if hasattr(the_player.renderer, "beats_per_measure"):
+        the_player.renderer.beats_per_measure = _beats_per_measure(song.time_signature)
     the_player.run(timeline, the_clock, tempo or song.tempo)
     return 0
 
@@ -144,7 +172,8 @@ def _build_arg_parser() -> argparse.ArgumentParser:
         prog="gtrsnipe-play",
         description="Play/visualize a gtrsnipe Song on an ASCII fretboard.",
     )
-    p.add_argument("input", help="Input file (.mid/.abc/.vex/.tab).")
+    p.add_argument("input", nargs="?", default=None,
+                   help="Input file (.mid/.abc/.vex/.tab).")
     p.add_argument("--clock", choices=["tempo", "metronome", "step"],
                    default="tempo",
                    help="Timing policy: at-tempo, fixed metronome grid, or "
@@ -174,6 +203,9 @@ def _build_arg_parser() -> argparse.ArgumentParser:
                         "players (default: right).")
     p.add_argument("--width", type=int, default=48,
                    help="Tab view only: viewport width in columns (default: 48).")
+    p.add_argument("--fps", type=float, default=12.0,
+                   help="Animation redraws per second for smooth scrolling / a "
+                        "live bar:beat readout (default: 12).")
     p.add_argument("--audio", choices=["none", "midi", "fluidsynth"], default="none",
                    help="Make sound while playing: 'midi' streams to a MIDI port "
                         "(route it to a DAW/synth), 'fluidsynth' uses a SoundFont. "
@@ -183,13 +215,28 @@ def _build_arg_parser() -> argparse.ArgumentParser:
                         "available, else a virtual 'gtrsnipe' port).")
     p.add_argument("--soundfont", default=None,
                    help="Path to a .sf2 SoundFont for --audio fluidsynth.")
+    p.add_argument("--instrument", default=None,
+                   help="Instrument for --audio: a GM program number (0-127) or a "
+                        "name substring (e.g. 'nylon', 'distortion guitar').")
+    p.add_argument("--list-instruments", action="store_true",
+                   help="Print the General MIDI instrument names and exit.")
     p.add_argument("--no-clear", action="store_true",
                    help="Do not clear the screen between frames (scrolls).")
     return p
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
-    args = _build_arg_parser().parse_args(argv)
+    parser = _build_arg_parser()
+    args = parser.parse_args(argv)
+
+    if args.list_instruments:
+        from .audio import GM_INSTRUMENTS
+        for i, name in enumerate(GM_INSTRUMENTS):
+            print(f"{i:3}  {name}")
+        return 0
+    if not args.input:
+        parser.error("an input file is required (or use --list-instruments)")
+
     cfg = MapperConfig(
         tuning=args.tuning,
         num_strings=args.num_strings,
@@ -204,11 +251,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                                           handed=args.hand)
     try:
         audio = make_audio_sink(args.audio, midi_port=args.midi_port,
-                                soundfont=args.soundfont)
+                                soundfont=args.soundfont,
+                                instrument=args.instrument)
     except (RuntimeError, ValueError) as e:
         sys.stderr.write(f"{e}\n")
         return 1
-    player = Player(renderer, clear=not args.no_clear, audio=audio)
+    refresh = 1.0 / args.fps if args.fps and args.fps > 0 else 0.08
+    player = Player(renderer, clear=not args.no_clear, audio=audio, refresh=refresh)
     try:
         return play_file(
             args.input, clock=args.clock, tempo=args.tempo,

@@ -5,6 +5,7 @@ from gtrsnipe.player.audio import (
     AudioSink,
     NullSink,
     make_audio_sink,
+    resolve_instrument,
 )
 
 
@@ -111,6 +112,40 @@ def test_make_audio_sink_none():
 def test_make_audio_sink_unknown_raises():
     with pytest.raises(ValueError):
         make_audio_sink("kazoo")
+
+
+# -- instrument selection --------------------------------------------------
+
+def test_resolve_instrument_by_number():
+    assert resolve_instrument(24) == 24
+    assert resolve_instrument("30") == 30
+
+
+def test_resolve_instrument_by_name_substring():
+    assert resolve_instrument("nylon") == 24          # Acoustic Guitar (nylon)
+    assert resolve_instrument("Distortion Guitar") == 30
+    assert resolve_instrument("fretless") == 35
+
+
+def test_resolve_instrument_none_defaults_to_zero():
+    assert resolve_instrument(None) == 0
+
+
+def test_resolve_instrument_out_of_range_raises():
+    with pytest.raises(ValueError):
+        resolve_instrument(200)
+
+
+def test_resolve_instrument_no_match_raises():
+    with pytest.raises(ValueError):
+        resolve_instrument("kazoo")
+
+
+def test_make_audio_sink_validates_instrument_before_backend():
+    # A bad instrument name must fail fast (ValueError) rather than trying to
+    # open a MIDI/synth backend.
+    with pytest.raises(ValueError):
+        make_audio_sink("midi", instrument="notarealinstrument")
 
 
 def test_make_audio_sink_fluidsynth_requires_soundfont():

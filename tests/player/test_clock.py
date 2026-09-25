@@ -25,7 +25,9 @@ def test_realtime_uses_frame_durations_in_seconds():
     delays = [d for _, d in sched]
     assert delays[0] == pytest.approx(0.5)   # 1.0 beat
     assert delays[1] == pytest.approx(0.25)  # 0.5 beat
-    assert delays[-1] is None                # last frame has no successor
+    # The last frame now dwells for its OWN duration (2.0 beats @120 = 1.0 s) so
+    # its note is held, not cut off when playback ends.
+    assert delays[-1] == pytest.approx(1.0)
 
 
 def test_realtime_scales_with_tempo():
@@ -40,7 +42,7 @@ def test_metronome_gives_every_frame_the_same_interval():
     delays = [d for _, d in sched]
     assert delays[0] == pytest.approx(0.25)  # 0.5 beat @120 = 0.25 s
     assert delays[1] == pytest.approx(0.25)  # same regardless of frame duration
-    assert delays[-1] is None
+    assert delays[-1] == pytest.approx(0.25)  # last frame dwells too
 
 
 def test_step_never_auto_advances():

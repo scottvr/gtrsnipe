@@ -81,9 +81,20 @@ def test_paint_is_the_uniform_entry_point():
 
 def test_index_clamped_to_valid_range():
     r = std()
-    # Out-of-range index shouldn't crash; clamps to the ends.
-    assert r.render(TL, 99).splitlines()[-1].startswith("[5/5]")
-    assert r.render(TL, -5).splitlines()[-1].startswith("[1/5]")
+    # Out-of-range index shouldn't crash; it clamps to the end frames.
+    assert "t=4.00" in r.render(TL, 99).splitlines()[-1]   # last frame at beat 4
+    assert "t=0.00" in r.render(TL, -5).splitlines()[-1]   # first frame at beat 0
+
+
+def test_render_at_scrolls_continuously_between_onsets():
+    # A time between two onsets scrolls to an in-between column (smooth motion),
+    # and the footer's bar/beat advances (liveness during rests).
+    r = std(width=60, cols_per_beat=4)
+    r.beats_per_measure = 4.0
+    at1 = r.render_at(TL, 1.0)
+    at1_5 = r.render_at(TL, 1.5)   # halfway to the next onset
+    assert at1 != at1_5            # the view moved even without a new note
+    assert "beat" in at1_5.splitlines()[-1]
 
 
 def test_multidigit_fret_rendered():

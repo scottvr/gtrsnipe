@@ -110,7 +110,15 @@ gtrsnipe-play song.mid --audio midi --midi-port "IAC Driver Bus 1"
 
 # Self-contained SoundFont playback (install: pip install 'gtrsnipe[synth]')
 gtrsnipe-play song.mid --audio fluidsynth --soundfont /path/to/font.sf2
+
+# Pick the voice by GM name or number; --list-instruments prints them all
+gtrsnipe-play song.mid --audio fluidsynth --soundfont font.sf2 --instrument "nylon"
 ```
+
+The display animates between notes (`--fps`, default 12) with a live
+`bar N beat X` readout, so long rests in ensemble MIDI keep scrolling instead of
+looking frozen. On MacPorts, `pyfluidsynth` may need
+`export DYLD_FALLBACK_LIBRARY_PATH=/opt/local/lib` to find the native library.
 
 Key options: `--view {fretboard,tab}`, `--clock {tempo,metronome,step}`,
 `--tempo BPM`, `--grid BEATS` (metronome step size), `--window N` (visible fret

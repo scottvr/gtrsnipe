@@ -31,19 +31,20 @@ def make_player(read_keys=None):
 TL = [frame(0, 1.0), frame(1, 0.5), frame(1.5, 2.0)]
 
 
-def test_realtime_sleeps_between_frames_not_after_last():
+def test_realtime_dwells_on_every_frame_including_last():
     p, writes, sleeps = make_player()
     p.run(TL, RealtimeClock(), tempo_bpm=120)
-    # 3 frames painted, 2 gaps slept (last frame has no sleep)
-    assert len(sleeps) == 2
-    assert sleeps == pytest.approx([0.5, 0.25])
+    # Dwells are animated (subdivided into refresh-sized redraws), but the TOTAL
+    # wall-clock equals the sum of frame dwells — last frame included, so the
+    # final note is held rather than cut off.
+    assert sum(sleeps) == pytest.approx(0.5 + 0.25 + 1.0)
 
 
 def test_every_frame_is_painted():
     p, writes, sleeps = make_player()
     p.run(TL, RealtimeClock(), tempo_bpm=120)
-    # One write per frame (clear=False -> no extra clear writes).
-    assert len(writes) == 3
+    # At least one paint per frame (animation may add intermediate redraws).
+    assert len(writes) >= 3
 
 
 def test_step_clock_waits_for_a_key_per_transition():
@@ -72,7 +73,8 @@ def test_clear_emits_clear_sequence():
 def test_metronome_uses_constant_interval():
     p, writes, sleeps = make_player()
     p.run(TL, MetronomeClock(grid_beats=0.5), tempo_bpm=120)
-    assert sleeps == pytest.approx([0.25, 0.25])
+    # 3 frames * 0.25 s dwell each = 0.75 s total (animation subdivides it).
+    assert sum(sleeps) == pytest.approx(0.75)
 
 
 # -- wiring: parse -> map -> timeline ---------------------------------------
@@ -181,7 +183,8 @@ def test_run_closes_audio_even_if_painting_raises():
             self.closed = True
 
     class BoomRenderer:
-        def paint(self, timeline, index):
+        beats_per_measure = 4.0
+        def render_at(self, timeline, beat_time):
             raise RuntimeError("boom")
 
     sink = RecSink()

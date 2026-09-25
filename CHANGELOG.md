@@ -27,8 +27,21 @@ This project adheres to [Semantic Versioning](https://semver.org/).
     `mido` + `python-rtmidi` (the new `[play]` extra); `fluidsynth` renders a
     SoundFont directly with no external host (`pyfluidsynth`, the `[synth]`
     extra). Missing backends fail with an install hint, not a traceback.
+  - `--instrument` selects the voice by General MIDI program number (0-127) or
+    name substring (e.g. `nylon`, `distortion guitar`); `--list-instruments`
+    prints the GM set.
+  - Smooth scrolling: the display animates between onsets at `--fps` (default 12)
+    and shows a continuous `bar N beat X.x` readout — so long rests in ensemble
+    MIDI keep moving instead of looking like the app hung.
 
 ### Fixed
+- **Last note no longer cut off.** Auto-clock playback marked the final frame
+  with no dwell, so its note was struck and immediately released; every frame
+  now dwells for its duration.
+- **FluidSynth error clarity.** When the native `libfluidsynth` C library is
+  missing (but pyfluidsynth is installed), the error now points at the C library
+  (port/brew/apt) and the MacPorts `DYLD_FALLBACK_LIBRARY_PATH` tip, instead of
+  telling the user to reinstall pyfluidsynth.
 - **librosa 1.0 compatibility.** The audio-transcription path crashed with
   `module 'librosa.beat' has no attribute 'tempo'` on modern librosa. Tempo
   estimation now resolves `librosa.feature.rhythm.tempo` / `librosa.feature.tempo`

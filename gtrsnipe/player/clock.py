@@ -28,21 +28,22 @@ def _beats_to_seconds(beats: float, tempo_bpm: float) -> float:
 
 
 class RealtimeClock:
-    """At-tempo playback: each frame lasts its own duration in beats."""
+    """At-tempo playback: the player dwells on each frame for its own duration.
+
+    ``delay`` is the *dwell* time on a frame (its note length), including the
+    final frame — so the last note is held for its duration rather than being
+    cut off the instant playback ends.
+    """
 
     def schedule(self, timeline: Sequence[Frame], tempo_bpm: float) -> Schedule:
-        out: Schedule = []
-        n = len(timeline)
-        for i, frame in enumerate(timeline):
-            delay = None if i == n - 1 else _beats_to_seconds(frame.duration, tempo_bpm)
-            out.append((frame, delay))
-        return out
+        return [(f, _beats_to_seconds(f.duration, tempo_bpm)) for f in timeline]
 
 
 class MetronomeClock:
-    """Steady grid: every frame gets the same interval, real durations ignored.
+    """Steady grid: the player dwells on every frame for the same interval.
 
     ``grid_beats`` is the metronomic step (default 0.5 = an eighth note in 4/4).
+    The final frame gets a dwell too, so its note isn't cut off.
     """
 
     def __init__(self, grid_beats: float = 0.5):
@@ -52,12 +53,7 @@ class MetronomeClock:
 
     def schedule(self, timeline: Sequence[Frame], tempo_bpm: float) -> Schedule:
         interval = _beats_to_seconds(self.grid_beats, tempo_bpm)
-        out: Schedule = []
-        n = len(timeline)
-        for i, frame in enumerate(timeline):
-            delay = None if i == n - 1 else interval
-            out.append((frame, delay))
-        return out
+        return [(f, interval) for f in timeline]
 
 
 class StepClock:
