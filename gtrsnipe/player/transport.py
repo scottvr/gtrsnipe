@@ -14,16 +14,44 @@ comes first* — the next note onset or the next scheduled redraw — so:
 toggles at runtime. Metronome is not a Transport mode — it is a re-timed timeline
 (:func:`metronome_timeline`) played at tempo.
 
-The Transport is decoupled from I/O via a **driver** with four methods
-(``render(beat)``, ``fire(frames)``, ``silence()``, ``read_key(blocking)``), so
-it is fully testable with an injected clock + scripted keys.
+Runtime controls (media-player + pager convention):
+
+* ``space`` — pause/resume (paused: step one frame forward)
+* ``.`` / ``,`` — step forward / back (paused)
+* ``left`` / ``right`` — seek back / forward one bar
+* ``[`` / ``]`` — tempo down / up
+* ``g`` / ``home`` / ``end`` — jump to start / start / end
+* ``h`` / ``?`` — help overlay
+* ``q`` — quit
+
+The Transport is decoupled from I/O via a **driver** (``render(beat)``,
+``fire(frames)``, ``silence()``, ``read_key(blocking)``, and optionally
+``show(text)`` for the help overlay), so it is fully testable with an injected
+clock + scripted keys.
 """
+import bisect
 import time
 from typing import List, Optional, Sequence
 
 from .frame import Frame
 
 INF = float("inf")
+MIN_TEMPO = 20.0
+MAX_TEMPO = 400.0
+TEMPO_STEP = 1.12  # multiplicative tempo nudge per keypress
+
+HELP_TEXT = """\
+gtrsnipe player — keys
+
+  space    pause / resume  (paused: step forward)
+  . / ,    step forward / back   (paused)
+  <- / ->  seek back / forward one bar
+  [ / ]    tempo down / up
+  g / end  jump to start / end
+  h / ?    this help
+  q        quit
+
+(press any key to continue)"""
 
 
 def _beats_to_seconds(beats: float, tempo_bpm: float) -> float:
@@ -49,18 +77,24 @@ class Transport:
 
     def __init__(self, timeline: Sequence[Frame], tempo_bpm: float, *,
                  fps: float = 12.0, playing: bool = True,
+                 beats_per_measure: float = 4.0,
                  now=time.monotonic, sleep=time.sleep):
         self.timeline = list(timeline)
         self.tempo = tempo_bpm
         self.fps = fps if fps and fps > 0 else 12.0
         self.paused = not playing
+        self.beats_per_measure = beats_per_measure if beats_per_measure > 0 else 4.0
         self._now = now
         self._sleep = sleep
-        self.beat_time = self.timeline[0].time if self.timeline else 0.0
+        self._times = [f.time for f in self.timeline]
+        self.start = self.timeline[0].time if self.timeline else 0.0
+        self.beat_time = self.start
         self.end = (self.timeline[-1].time + max(self.timeline[-1].duration, 0.0)
                     if self.timeline else 0.0)
         self._onset_i = 0        # index of the next un-fired frame
         self._quit = False
+        self._anchor = 0.0
+        self._anchor_beat = self.start
 
     # -- helpers ------------------------------------------------------------
 
@@ -68,69 +102,110 @@ class Transport:
     def _fps_beats(self) -> float:
         return self.tempo / (60.0 * self.fps)
 
+    def _reanchor(self) -> None:
+        self._anchor = self._now()
+        self._anchor_beat = self.beat_time
+
     def _next_onset_time(self) -> float:
-        return (self.timeline[self._onset_i].time
-                if self._onset_i < len(self.timeline) else INF)
+        return (self._times[self._onset_i] if self._onset_i < len(self._times) else INF)
 
     def _fire_due(self, driver) -> None:
-        """Fire every onset frame at or before the current beat."""
         due = []
         while (self._onset_i < len(self.timeline)
-               and self.timeline[self._onset_i].time <= self.beat_time + 1e-9):
+               and self._times[self._onset_i] <= self.beat_time + 1e-9):
             due.append(self.timeline[self._onset_i])
             self._onset_i += 1
         if due:
             driver.fire(due)
 
     def _held_frame(self) -> Optional[Frame]:
-        """The frame sounding at the current beat (last onset at/before it)."""
-        held = None
-        for f in self.timeline:
-            if f.time <= self.beat_time + 1e-9:
-                held = f
-            else:
-                break
-        return held
+        i = bisect.bisect_right(self._times, self.beat_time + 1e-9) - 1
+        return self.timeline[i] if i >= 0 else None
 
-    # -- key handling (P1: pause/step/quit; extended in P4) -----------------
+    def _fire_held(self, driver) -> None:
+        held = self._held_frame()
+        if held is not None:
+            driver.fire([held])
+
+    # -- navigation ---------------------------------------------------------
+
+    def _seek_to(self, beat: float, driver) -> None:
+        self.beat_time = max(self.start, min(beat, self.end))
+        # future onsets = frames strictly after the landing beat
+        self._onset_i = bisect.bisect_right(self._times, self.beat_time + 1e-9)
+        driver.silence()
+        self._reanchor()
+        driver.render(self.beat_time)
+        if self.paused:
+            self._fire_held(driver)  # audible scrub feedback while paused
+
+    def _adjust_tempo(self, factor: float, driver) -> None:
+        self.tempo = max(MIN_TEMPO, min(self.tempo * factor, MAX_TEMPO))
+        self._reanchor()
+        driver.render(self.beat_time)
+
+    def _step(self, driver, direction: int = 1) -> None:
+        """Advance/retreat one frame, fire+render it, remain paused."""
+        if direction > 0:
+            if self._onset_i >= len(self.timeline):
+                self._quit = True
+                return
+            self.beat_time = self._times[self._onset_i]
+            self._fire_due(driver)
+        else:
+            i = bisect.bisect_left(self._times, self.beat_time - 1e-9) - 1
+            if i < 0:
+                self.beat_time = self.start
+            else:
+                self.beat_time = self._times[i]
+            self._onset_i = bisect.bisect_right(self._times, self.beat_time + 1e-9)
+            driver.silence()
+            self._fire_held(driver)
+        driver.render(self.beat_time)
+
+    def _resume(self, driver) -> None:
+        self.paused = False
+        self._fire_held(driver)  # re-articulate the held frame on resume
+        self._reanchor()
+
+    # -- key handling -------------------------------------------------------
 
     def _handle_key(self, key: Optional[str], driver) -> None:
         if key is None:
-            # Exhausted/None from a blocking read means "no more input" -> stop.
-            if self.paused:
+            if self.paused:      # exhausted blocking input -> stop
                 self._quit = True
             return
         if key == "<resize>":
-            driver.render(self.beat_time)  # re-layout at the new terminal size
+            driver.render(self.beat_time)
             return
         k = key.lower()
         if k == "q":
             self._quit = True
         elif k in (" ", "\n", "\r", "p"):
             if self.paused:
-                # step one frame forward, stay paused
-                self._step(driver)
+                self._step(driver, +1)
             else:
                 self.paused = True
                 driver.silence()
-        elif k == ".":
-            if self.paused:
-                self._step(driver)
-
-    def _step(self, driver) -> None:
-        """Advance to the next onset (frame), fire+render it, remain paused."""
-        if self._onset_i >= len(self.timeline):
-            self._quit = True
-            return
-        self.beat_time = self.timeline[self._onset_i].time
-        self._fire_due(driver)
-        driver.render(self.beat_time)
-
-    def _resume(self, driver) -> None:
-        self.paused = False
-        held = self._held_frame()
-        if held is not None:
-            driver.fire([held])  # re-articulate the held frame on resume
+        elif k == "." and self.paused:
+            self._step(driver, +1)
+        elif k == "," and self.paused:
+            self._step(driver, -1)
+        elif k in ("left",):
+            self._seek_to(self.beat_time - self.beats_per_measure, driver)
+        elif k in ("right",):
+            self._seek_to(self.beat_time + self.beats_per_measure, driver)
+        elif k == "[":
+            self._adjust_tempo(1.0 / TEMPO_STEP, driver)
+        elif k == "]":
+            self._adjust_tempo(TEMPO_STEP, driver)
+        elif k in ("g", "home"):
+            self._seek_to(self.start, driver)
+        elif k == "end":
+            self._seek_to(self.end, driver)
+        elif k in ("h", "?"):
+            if hasattr(driver, "show"):
+                driver.show(HELP_TEXT)
 
     # -- main loop ----------------------------------------------------------
 
@@ -139,20 +214,17 @@ class Transport:
             return
         driver.render(self.beat_time)
         self._fire_due(driver)  # sound the first frame
-
-        anchor = self._now()
-        anchor_beat = self.beat_time
+        self._reanchor()
 
         while not self._quit and self.beat_time < self.end - 1e-9:
             if self.paused:
-                self._handle_key(driver_key := driver.read_key(True), driver)
+                self._handle_key(driver.read_key(True), driver)
                 if not self.paused and not self._quit:
                     self._resume(driver)
-                    anchor, anchor_beat = self._now(), self.beat_time
                 continue
 
             t = min(self._next_onset_time(), self.beat_time + self._fps_beats, self.end)
-            target_wall = anchor + _beats_to_seconds(t - anchor_beat, self.tempo)
+            target_wall = self._anchor + _beats_to_seconds(t - self._anchor_beat, self.tempo)
             dt = target_wall - self._now()
             if dt > 0:
                 self._sleep(dt)
@@ -163,7 +235,7 @@ class Transport:
                 if self._quit:
                     break
                 if self.paused:
-                    continue  # entered pause; loop will block on next iteration
+                    continue
 
             self.beat_time = t
             self._fire_due(driver)

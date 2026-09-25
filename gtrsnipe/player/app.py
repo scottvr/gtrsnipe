@@ -58,6 +58,9 @@ class _Driver:
     def read_key(self, blocking: bool) -> Optional[str]:
         return self.sink.read_key(blocking)
 
+    def show(self, text: str) -> None:
+        self.sink.write(text)  # e.g. the help overlay
+
 
 def parse_and_map(input_path: str, mapper_config: MapperConfig, *,
                   track: Optional[int] = None,
@@ -139,7 +142,9 @@ def run_player(mapped_song: Song, cfg: MapperConfig, *, clock: str = "tempo",
             renderer.beats_per_measure = _beats_per_measure(mapped_song.time_signature)
         driver = _Driver(timeline, renderer, the_sink, the_audio)
         transport = Transport(timeline, tempo or mapped_song.tempo, fps=fps,
-                              playing=(clock != "step"), now=now, sleep=sleep)
+                              playing=(clock != "step"),
+                              beats_per_measure=_beats_per_measure(mapped_song.time_signature),
+                              now=now, sleep=sleep)
         the_sink.setup()
         transport.run(driver)
         return 0

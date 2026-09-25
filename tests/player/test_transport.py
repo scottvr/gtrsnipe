@@ -52,6 +52,10 @@ class FakeDriver:
             return k
         return None
 
+    def show(self, text):
+        self.shown = getattr(self, "shown", [])
+        self.shown.append(text)
+
     def fired_pitches(self):
         return [pit for _, groups in self.fires for pit in groups]
 
@@ -166,3 +170,78 @@ def test_invalid_tempo_rejected():
     tl = [frame(0, 60), frame(1, 62)]
     with pytest.raises(ValueError):
         Transport(tl, 0, now=FakeClock().now, sleep=FakeClock().sleep).run(FakeDriver())
+
+
+# -- transport controls (P4) ------------------------------------------------
+
+def _paused_transport(n=8, bpm4=4.0):
+    tl = [frame(float(i), 60 + i) for i in range(n)]
+    clk = FakeClock()
+    t = Transport(tl, 120, playing=False, beats_per_measure=bpm4,
+                  now=clk.now, sleep=clk.sleep)
+    return t, FakeDriver(clk)
+
+
+def test_seek_right_advances_one_bar():
+    t, drv = _paused_transport()
+    t._handle_key("right", drv)
+    assert t.beat_time == 4.0
+    assert drv.silences >= 1  # seek resyncs audio
+
+
+def test_seek_left_clamps_to_start():
+    t, drv = _paused_transport()
+    t.beat_time = 2.0
+    t._handle_key("left", drv)   # 2 - 4 -> clamp to start (0)
+    assert t.beat_time == 0.0
+
+
+def test_jump_to_end_and_start():
+    t, drv = _paused_transport()
+    t._handle_key("end", drv)
+    assert t.beat_time == t.end
+    t._handle_key("g", drv)
+    assert t.beat_time == t.start
+
+
+def test_tempo_up_and_down():
+    t, drv = _paused_transport()
+    base = t.tempo
+    t._handle_key("]", drv)
+    assert t.tempo > base
+    up = t.tempo
+    t._handle_key("[", drv)
+    assert t.tempo < up
+
+
+def test_tempo_clamped():
+    t, drv = _paused_transport()
+    for _ in range(50):
+        t._handle_key("]", drv)
+    assert t.tempo <= 400.0
+    for _ in range(100):
+        t._handle_key("[", drv)
+    assert t.tempo >= 20.0
+
+
+def test_step_back_moves_to_previous_onset():
+    t, drv = _paused_transport()
+    t._fire_due(drv)          # run() fires frame 0 at start (onset_i -> 1)
+    t._handle_key(".", drv)   # -> frame 1 (beat 1)
+    t._handle_key(".", drv)   # -> frame 2 (beat 2)
+    assert t.beat_time == 2.0
+    t._handle_key(",", drv)   # back to beat 1
+    assert t.beat_time == 1.0
+
+
+def test_help_overlay_shown():
+    t, drv = _paused_transport()
+    t._handle_key("h", drv)
+    assert getattr(drv, "shown", []) and "keys" in drv.shown[0].lower()
+
+
+def test_resize_rerenders():
+    t, drv = _paused_transport()
+    before = len(drv.renders)
+    t._handle_key("<resize>", drv)
+    assert len(drv.renders) == before + 1
