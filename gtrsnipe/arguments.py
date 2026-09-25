@@ -1,4 +1,9 @@
+import argparse
+import os
+import sys
 from argparse import ArgumentParser
+from pathlib import Path
+from typing import List, Optional
 
 from .core.config import MapperConfig
 
@@ -27,6 +32,14 @@ def add_tuning_args(target) -> None:
     target.add_argument(
         '--max-fret', type=int, default=24,
         help='Maximum fret number on the virtual guitar neck (default: 24).')
+    target.add_argument(
+        '--tuning-pitches', type=str, default=None, metavar='LOW,..,HIGH',
+        help='Define a custom tuning by comma-separated note names, low string to '
+             "high (e.g. 'A1,E2,A2,D3,F#3,B3'). Overrides --tuning.")
+    target.add_argument(
+        '--drop-low-string', type=int, default=0, metavar='SEMITONES',
+        help='Lower the lowest string by N semitones (2 = drop-D style), on any '
+             'tuning / string count.')
 
 
 def add_mapper_args(target) -> None:
@@ -151,6 +164,55 @@ def add_chart_args(target) -> None:
                              "chord tone (default: 0.15).")
 
 
+def parse_tuning_pitches(spec: str) -> tuple:
+    """Parse a `--tuning-pitches` spec (comma-separated notes, low->high) into a
+    validated note-name tuple stored HIGH->low (the convention used everywhere)."""
+    from .core.theory import note_name_to_pitch
+    names_low_to_high = [s.strip() for s in spec.split(",") if s.strip()]
+    if len(names_low_to_high) < 2:
+        raise ValueError("--tuning-pitches needs >=2 comma-separated notes (low to high)")
+    for n in names_low_to_high:
+        note_name_to_pitch(n)  # validate; raises ValueError on a bad name
+    return tuple(reversed(names_low_to_high))
+
+
+def _named_tuning_names(tuning: str):
+    from .core.types import Tuning
+    key = (tuning or "STANDARD").upper()
+    return list(Tuning[key].value) if key in Tuning.__members__ else None
+
+
+def _drop_lowest(names_high_to_low, semitones: int) -> tuple:
+    """Return the tuning with its lowest string lowered by `semitones`."""
+    from .core.theory import note_name_to_pitch, pitch_to_note_name
+    names = list(names_high_to_low)
+    low = names[-1]
+    names[-1] = pitch_to_note_name(note_name_to_pitch(low) - semitones)
+    return tuple(names)
+
+
+def resolve_custom_tuning(args) -> tuple:
+    """The custom tuning (high->low note names) implied by --tuning-pitches and/or
+    --drop-low-string, or None if a plain named tuning is in effect."""
+    spec = getattr(args, "tuning_pitches", None)
+    drop = getattr(args, "drop_low_string", 0) or 0
+    names = parse_tuning_pitches(spec) if spec else None
+    if drop:
+        base = names if names else _named_tuning_names(getattr(args, "tuning", "STANDARD"))
+        if base:
+            names = _drop_lowest(base, drop)
+    return names
+
+
+def open_string_pitches_for(tuning: str, custom=None) -> list:
+    """Open-string MIDI pitches (high->low) for a named or custom tuning; used to
+    decode ASCII tabs in their actual tuning."""
+    from .core.theory import note_name_to_pitch
+    names = list(custom) if custom else (_named_tuning_names(tuning)
+                                         or _named_tuning_names("STANDARD"))
+    return [note_name_to_pitch(n) for n in names]
+
+
 def resolve_num_strings(tuning: str, num_strings) -> int:
     """Infer string count from the tuning when not explicitly set (mirrors the
     converter's inference); falls back to 6 for unknown tunings / PIANO."""
@@ -167,12 +229,18 @@ def build_mapper_config(args, *, tuning: str, num_strings: int) -> MapperConfig:
     """The single MapperConfig builder (was duplicated across three CLIs).
 
     ``tuning`` and ``num_strings`` are passed resolved (callers apply their own
-    bass/num-strings resolution first); every other knob comes from ``args``.
+    bass/num-strings resolution first); every other knob comes from ``args``. A
+    custom tuning (--tuning-pitches / --drop-low-string) overrides both.
     """
+    custom = resolve_custom_tuning(args)
+    if custom:
+        tuning = "CUSTOM"
+        num_strings = len(custom)
     return MapperConfig(
         max_fret=args.max_fret,
         tuning=tuning,
         num_strings=num_strings,
+        custom_tuning=custom,
         fret_span_penalty=args.fret_span_penalty,
         movement_penalty=args.movement_penalty,
         string_switch_penalty=args.string_switch_penalty,
@@ -197,6 +265,156 @@ def build_mapper_config(args, *, tuning: str, num_strings: int) -> MapperConfig:
         diagonal_span_penalty=args.diagonal_span_penalty,
         optimizer=args.optimizer,
     )
+
+
+# ---------------------------------------------------------------------------
+# Profiles / .gtrsnipe config
+#
+# A profile is just "saved argv": each file line becomes CLI tokens that are
+# PREPENDED to the real command line and re-parsed by the same parser. So
+# precedence falls out for free (profile tokens first, explicit CLI last → for
+# argparse store actions the last value wins → CLI overrides the profile), and
+# all validation/type-conversion is reused with no separate schema.
+# ---------------------------------------------------------------------------
+
+# Never taken from a profile file (avoid recursion / per-run-only meta).
+_PROFILE_META = {"--profile", "--no-defaults", "--config-dir", "--save-args"}
+# Not written by --save-args (per-run inputs, actions, or meta).
+_SAVE_SKIP_DESTS = {
+    "input", "output", "save_args", "profile", "no_defaults", "config_dir",
+    "list_tunings", "show_tuning", "list_instruments", "analyze", "yes", "help",
+}
+
+
+def add_profile_args(parser) -> None:
+    """Profile/config options shared by every CLI (handled by apply_profiles)."""
+    g = parser.add_argument_group("Profiles / config (.gtrsnipe)")
+    g.add_argument("--profile", action="append", default=None, metavar="NAME[,NAME]",
+                   help="Apply saved option profiles before the CLI args (repeatable "
+                        "and/or comma-separated; applied in order; CLI overrides).")
+    g.add_argument("--no-defaults", action="store_true",
+                   help="Skip auto-loading the .gtrsnipe/defaults profile.")
+    g.add_argument("--config-dir", default=None,
+                   help="Directory to read/write profiles (default: ./.gtrsnipe then "
+                        "~/.gtrsnipe, or $GTRSNIPE_HOME).")
+    g.add_argument("--save-args", default=None, metavar="NAME",
+                   help="Save the effective (non-default) options to a profile of this "
+                        "name and continue.")
+
+
+def _config_dirs(config_dir: Optional[str]) -> List[Path]:
+    """Search path for profiles. --config-dir or $GTRSNIPE_HOME fully override
+    (each yields exactly one dir — good for power users and hermetic tests);
+    otherwise search ./.gtrsnipe then ~/.gtrsnipe."""
+    if config_dir:
+        return [Path(config_dir)]
+    env = os.environ.get("GTRSNIPE_HOME")
+    if env:
+        return [Path(env)]
+    return [Path.cwd() / ".gtrsnipe", Path.home() / ".gtrsnipe"]
+
+
+def _find_profile(name: str, dirs: List[Path]) -> Optional[Path]:
+    if os.sep in name or (os.altsep and os.altsep in name):
+        p = Path(name).expanduser()
+        return p if p.is_file() else None
+    for d in dirs:
+        f = d / name
+        if f.is_file():
+            return f
+    return None
+
+
+def _tokenize_profile(path: Path, known_opts: set, flag_opts: set) -> List[str]:
+    """Turn a profile file into argv tokens. Lines: `name`, `name value`,
+    `name = value` (leading dashes optional; `#` comments and blanks ignored)."""
+    tokens: List[str] = []
+    for raw in path.read_text().splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        if "=" in line:
+            name, _, value = line.partition("=")
+        else:
+            parts = line.split(None, 1)
+            name, value = parts[0], (parts[1] if len(parts) > 1 else "")
+        name, value = name.strip().lstrip("-"), value.strip()
+        opt = "--" + name
+        if opt in _PROFILE_META:
+            continue  # no nested profiles / meta from a file
+        if opt not in known_opts:
+            sys.stderr.write(f"warning: {path.name}: unknown option '{name}' (skipped)\n")
+            continue
+        if opt in flag_opts:
+            if value and value.lower() in ("false", "no", "0", "off"):
+                continue  # a store_true can't be turned off; just omit it
+            tokens.append(opt)
+        elif value:
+            tokens += [opt, value]
+        else:
+            sys.stderr.write(f"warning: {path.name}: '{name}' needs a value (skipped)\n")
+    return tokens
+
+
+def _save_args(parser, ns, config_dir: Optional[str]) -> None:
+    lines: List[str] = []
+    for a in parser._actions:
+        if a.dest in _SAVE_SKIP_DESTS or not a.option_strings:
+            continue
+        val = getattr(ns, a.dest, None)
+        if val == a.default:
+            continue
+        opt = max(a.option_strings, key=len).lstrip("-")
+        if a.nargs == 0:      # flag
+            if val:
+                lines.append(opt)
+        else:
+            lines.append(f"{opt} = {val}")
+    target_dir = _config_dirs(config_dir)[0]
+    target_dir.mkdir(parents=True, exist_ok=True)
+    out = target_dir / ns.save_args
+    out.write_text("\n".join(lines) + "\n")
+    sys.stderr.write(f"Saved {len(lines)} option(s) to {out}\n")
+
+
+def apply_profiles(parser: ArgumentParser, argv=None) -> argparse.Namespace:
+    """Parse ``argv`` with profile files prepended, then honor --save-args.
+
+    Drop-in replacement for ``parser.parse_args()`` on a parser built with
+    :func:`add_profile_args`.
+    """
+    argv = list(sys.argv[1:] if argv is None else argv)
+
+    pre = argparse.ArgumentParser(add_help=False)
+    pre.add_argument("--profile", action="append", default=[])
+    pre.add_argument("--no-defaults", action="store_true")
+    pre.add_argument("--config-dir", default=None)
+    pre.add_argument("--save-args", default=None)
+    known, _ = pre.parse_known_args(argv)
+
+    dirs = _config_dirs(known.config_dir)
+    known_opts = {o for a in parser._actions for o in a.option_strings}
+    flag_opts = {o for a in parser._actions for o in a.option_strings if a.nargs == 0}
+
+    tokens: List[str] = []
+    if not known.no_defaults:
+        f = _find_profile("defaults", dirs)
+        if f:
+            tokens += _tokenize_profile(f, known_opts, flag_opts)
+    names: List[str] = []
+    for spec in (known.profile or []):
+        names += [n.strip() for n in spec.split(",") if n.strip()]
+    for name in names:
+        f = _find_profile(name, dirs)
+        if f is None:
+            parser.error(f"profile '{name}' not found in: "
+                         + ", ".join(str(d) for d in dirs))
+        tokens += _tokenize_profile(f, known_opts, flag_opts)
+
+    args = parser.parse_args(tokens + argv)
+    if getattr(args, "save_args", None):
+        _save_args(parser, args, known.config_dir)
+    return args
 
 
 def setup_parser() -> ArgumentParser:
@@ -302,6 +520,22 @@ def setup_parser() -> ArgumentParser:
         help='Analyze the input MIDI file to find the pitch range and suggest suitable tunings, then exit.'
     )
     parser.add_argument(
+        '--solve-tuning',
+        type=str,
+        default=None,
+        metavar='NOTES',
+        help="Inverse solve: given a comma-separated target melody (note names with "
+             "octave, e.g. 'C4,C4,G4,G4,A4,A4,G4'), find a tuning under which an "
+             "all-open-string tab plays it. Prints the tuning; add --play to hear it, "
+             "or -o FILE.tab/.mid to write it. No -i needed."
+    )
+    parser.add_argument(
+        '--max-strings',
+        type=int,
+        default=12,
+        help='Max strings the tuning solver may use (default: 12).'
+    )
+    parser.add_argument(
         "--transpose",
         type=int,
         default=0,
@@ -364,6 +598,8 @@ def setup_parser() -> ArgumentParser:
 
     chart_group = parser.add_argument_group('Chord chart output (-o SONG.chords.md)')
     add_chart_args(chart_group)
+
+    add_profile_args(parser)
 
     mapper_group = parser.add_argument_group('Mapper Tuning/Configuration (Advanced)')
     add_mapper_args(mapper_group)

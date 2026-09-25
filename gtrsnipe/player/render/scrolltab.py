@@ -41,10 +41,13 @@ class ScrollingTabRenderer:
 
     def _string_labels(self) -> List[str]:
         n = self.config.num_strings
-        try:
-            names = list(Tuning[self.config.tuning.upper()].value)
-        except KeyError:
-            names = []
+        if getattr(self.config, "custom_tuning", None):
+            names = list(self.config.custom_tuning)
+        else:
+            try:
+                names = list(Tuning[self.config.tuning.upper()].value)
+            except KeyError:
+                names = []
         if len(names) == n:
             return [re.sub(r"-?\d+$", "", name) for name in names]
         return [str(i + 1) for i in range(n)]

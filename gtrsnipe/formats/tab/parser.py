@@ -21,7 +21,8 @@ class AsciiTabParser:
     inferring rhythm from note spacing.
     """
     @staticmethod
-    def parse(tab_string: str, staccato: bool = False, quantization_resolution: float = 0.125) -> Song:
+    def parse(tab_string: str, staccato: bool = False, quantization_resolution: float = 0.125,
+              open_string_pitches: Optional[List[int]] = None) -> Song:
         logger.debug("Starting ASCII Tab parsing.")
         song = Song()
         track = Track()
@@ -95,7 +96,7 @@ class AsciiTabParser:
                 # The note's time is its character index multiplied by the time per character.
                 note_time = temp_event.char_idx * TIME_PER_CHAR_IN_BEATS
 
-                pitch = AsciiTabParser._tab_pos_to_midi(temp_event.string_idx, temp_event.fret, num_strings)
+                pitch = AsciiTabParser._tab_pos_to_midi(temp_event.string_idx, temp_event.fret, num_strings, open_string_pitches)
                 
                 # A reasonable default duration is one time step.
                 # The legato pass will adjust this later.
@@ -144,22 +145,20 @@ class AsciiTabParser:
         return song
 
     @staticmethod
-    def _tab_pos_to_midi(string_idx: int, fret: int, num_strings: int) -> int:
-        """Converts a string/fret position to a MIDI pitch based on the instrument type."""
-        # Standard 6-String Guitar Tuning (High to Low)
-        guitar_tuning = [64, 59, 55, 50, 45, 40] 
-        # Standard 4-String Bass Tuning (High to Low)
-        bass_tuning = [43, 38, 33, 28] # G2, D2, A1, E1
-    
-        open_string_pitches = []
-        if num_strings == 4:
-            open_string_pitches = bass_tuning
-        elif num_strings == 6:
-            open_string_pitches = guitar_tuning
-        else:
-            # Default to guitar tuning if the string count is unusual
-            open_string_pitches = guitar_tuning
-    
+    def _tab_pos_to_midi(string_idx: int, fret: int, num_strings: int,
+                         open_string_pitches: Optional[List[int]] = None) -> int:
+        """Converts a string/fret position to a MIDI pitch.
+
+        Uses the caller-supplied ``open_string_pitches`` (high->low) when given —
+        so a tab is decoded in its actual tuning — else falls back to standard
+        guitar/bass tuning by string count.
+        """
+        if not open_string_pitches:
+            # Standard 6-String Guitar (high->low) / 4-String Bass fallback.
+            guitar_tuning = [64, 59, 55, 50, 45, 40]
+            bass_tuning = [43, 38, 33, 28]  # G2, D2, A1, E1
+            open_string_pitches = bass_tuning if num_strings == 4 else guitar_tuning
+
         # Ensure we don't go out of bounds if string_idx is too high
         if string_idx >= len(open_string_pitches):
             logger.error(f"Invalid string index {string_idx} for a {num_strings}-string instrument.")

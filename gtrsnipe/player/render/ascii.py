@@ -49,10 +49,13 @@ class AsciiFretboardRenderer:
     def _string_labels(self) -> List[str]:
         """String note-letters (high to low), or 1..n if the tuning is unknown."""
         n = self.config.num_strings
-        try:
-            names = list(Tuning[self.config.tuning.upper()].value)
-        except KeyError:
-            names = []
+        if getattr(self.config, "custom_tuning", None):
+            names = list(self.config.custom_tuning)
+        else:
+            try:
+                names = list(Tuning[self.config.tuning.upper()].value)
+            except KeyError:
+                names = []
         if len(names) == n:
             # Drop the octave (and any sign) so "E4" -> "E", "Bb3" -> "Bb".
             return [re.sub(r"-?\d+$", "", name) for name in names]

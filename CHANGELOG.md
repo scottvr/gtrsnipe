@@ -11,6 +11,22 @@ surface and an event-driven transport. **Existing `gtrsnipe -i x -o y.{tab,mid,a
 invocations are unchanged (byte-identical output).**
 
 ### Added
+- **Custom tunings.** `--tuning-pitches "A1,E2,A2,D3,F#3,B3"` (low string → high)
+  defines any tuning, any string count; `--drop-low-string N` lowers the lowest
+  string by N semitones (2 = drop-D style) on any tuning. Works across all modes.
+- **Inverse tuning solver.** `--solve-tuning "C4,C4,G4,G4,A4,A4,G4"` finds a tuning
+  under which an all-open-string tab plays that melody — the tab reveals none of
+  the tune (it lives entirely in the tuning). Prints the tuning + tab; `--play` to
+  hear it, `-o FILE.tab/.mid` to write it. No `-i` needed. (Also a handy
+  alternate-tuning finder.)
+- **Config profiles (`.gtrsnipe`).** Save long option sets and reuse them.
+  `--profile NAME` (repeatable and/or comma-separated; applied in order) loads
+  option files from `./.gtrsnipe`, `~/.gtrsnipe`, or `$GTRSNIPE_HOME`
+  (`--config-dir` overrides); a `defaults` profile auto-loads (`--no-defaults` to
+  skip). Explicit CLI args always override profile values. `--save-args NAME`
+  writes the current non-default options back to a profile. Simple format:
+  `name value`, `name = value`, or bare `name` for flags; `#` comments. Works
+  across all three commands, since a profile is just prepended argv re-parsed.
 - **One canonical tool.** `gtrsnipe` now also:
   - writes a **chord sheet** as an output format: `-o SONG.chords.md` (or `.chords`);
   - **plays/visualizes** with `--play [--view {fretboard,tab}]`, `-o` no longer
@@ -34,6 +50,17 @@ invocations are unchanged (byte-identical output).**
   whose audio onsets fire at true times (independent of the display frame rate).
 - `gtrsnipe-play` / `gtrsnipe-chords` remain as curated convenience stubs over the
   same engine.
+
+### Fixed
+- **ASCII tab parser honors the tuning.** It previously assumed standard/bass
+  tuning regardless of `--tuning`, so a tab read under any other tuning produced
+  wrong pitches. It now decodes in the configured (named or custom) tuning — which
+  also enables re-reading a tab under a different tuning.
+
+### Testing
+- Opt-in, profile-driven golden-output regression gate (`tests/golden/`, skips
+  when no local fixtures are present) — turn a tuned real piece into a pre-release
+  check without committing copyrighted inputs.
 
 ## [0.4.0] — 2026-09-24
 

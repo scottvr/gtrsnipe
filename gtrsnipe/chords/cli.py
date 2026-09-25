@@ -12,8 +12,11 @@ from typing import Optional, Sequence
 from ..arguments import (
     add_chart_args,
     add_mapper_args,
+    add_profile_args,
     add_tuning_args,
+    apply_profiles,
     build_mapper_config,
+    open_string_pitches_for,
     resolve_num_strings,
 )
 from .chart import build_chord_sheet
@@ -32,11 +35,12 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     add_tuning_args(p.add_argument_group("Instrument"))
     add_mapper_args(p.add_argument_group("Mapper (advanced)"))
     add_chart_args(p.add_argument_group("Chord chart"))
+    add_profile_args(p)
     return p
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
-    args = _build_arg_parser().parse_args(argv)
+    args = apply_profiles(_build_arg_parser(), argv)
 
     # Imported here to avoid a converter<->chords import cycle at package load.
     from ..converter import MusicConverter
@@ -46,7 +50,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         num_strings=resolve_num_strings(args.tuning, args.num_strings),
     )
     fmt = Path(args.input).suffix.lstrip(".").lower()
-    song = MusicConverter()._parse(args.input, fmt, args.track)
+    song = MusicConverter()._parse(
+        args.input, fmt, args.track,
+        open_string_pitches=open_string_pitches_for(cfg.tuning, cfg.custom_tuning))
     song.title = song.title if song.title and song.title != "Untitled" else Path(args.input).stem
 
     sheet = build_chord_sheet(
