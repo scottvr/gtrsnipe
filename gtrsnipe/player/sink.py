@@ -80,3 +80,93 @@ class PlainSink(Sink):
         if self.interactive:
             return read_terminal_key()
         return None
+
+
+def map_curses_key(ch: int, curses_mod) -> Optional[str]:
+    """Map a curses ``getch`` code to a Transport key token (pure/testable).
+
+    ``-1`` (no key) -> None; arrows -> named tokens; resize -> ``"<resize>"``;
+    printable ASCII -> its lowercased character.
+    """
+    if ch == -1:
+        return None
+    if ch == curses_mod.KEY_RESIZE:
+        return "<resize>"
+    named = {
+        curses_mod.KEY_LEFT: "left", curses_mod.KEY_RIGHT: "right",
+        curses_mod.KEY_UP: "up", curses_mod.KEY_DOWN: "down",
+    }
+    if ch in named:
+        return named[ch]
+    if 0 <= ch < 256:
+        return chr(ch).lower()
+    return None
+
+
+class CursesSink(Sink):
+    """Interactive TTY sink: alternate screen, non-blocking poll, resize, restore.
+
+    Confined here and only instantiated in ``main()`` for a real terminal; tests
+    use :class:`PlainSink`. Gets alt-screen scrollback preservation, cbreak (so
+    Ctrl-C still raises for a clean quit), hidden cursor, and ``KEY_RESIZE``
+    re-layout for free from stdlib ``curses``.
+    """
+
+    def __init__(self, clear: bool = True):
+        self._scr = None
+        self._curses = None
+        self.width = None
+        self._rows = None
+
+    def setup(self) -> None:
+        import curses
+        self._curses = curses
+        self._scr = curses.initscr()
+        curses.noecho()
+        curses.cbreak()
+        self._scr.keypad(True)
+        try:
+            curses.curs_set(0)
+        except curses.error:  # some terminals can't hide the cursor
+            pass
+        self._update_size()
+
+    def _update_size(self) -> None:
+        if self._scr is None:
+            return
+        rows, cols = self._scr.getmaxyx()
+        self._rows = rows
+        self.width = max(4, cols - 2)  # leave a margin; drives the tab viewport
+
+    def write(self, text: str) -> None:
+        scr = self._scr
+        if scr is None:
+            return
+        scr.erase()
+        rows, cols = scr.getmaxyx()
+        for row, line in enumerate(text.split("\n")):
+            if row >= rows:
+                break
+            try:
+                scr.addnstr(row, 0, line, max(0, cols - 1))
+            except self._curses.error:
+                pass  # writing the last cell can raise; ignore
+        scr.refresh()
+
+    def read_key(self, blocking: bool) -> Optional[str]:
+        scr = self._scr
+        if scr is None:
+            return None
+        scr.nodelay(not blocking)
+        scr.timeout(-1 if blocking else 0)
+        return map_curses_key(scr.getch(), self._curses)
+
+    def teardown(self) -> None:
+        if self._scr is not None and self._curses is not None:
+            try:
+                self._curses.nocbreak()
+                self._scr.keypad(False)
+                self._curses.echo()
+                self._curses.endwin()
+            finally:
+                self._scr = None

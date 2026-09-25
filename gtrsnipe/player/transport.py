@@ -100,6 +100,9 @@ class Transport:
             if self.paused:
                 self._quit = True
             return
+        if key == "<resize>":
+            driver.render(self.beat_time)  # re-layout at the new terminal size
+            return
         k = key.lower()
         if k == "q":
             self._quit = True

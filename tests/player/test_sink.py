@@ -33,6 +33,30 @@ def test_plain_sink_nonblocking_is_none_without_script():
     assert s.read_key(False) is None
 
 
+def test_map_curses_key():
+    import pytest
+    curses = pytest.importorskip("curses")
+    from gtrsnipe.player.sink import map_curses_key
+    assert map_curses_key(-1, curses) is None
+    assert map_curses_key(ord(" "), curses) == " "
+    assert map_curses_key(ord("Q"), curses) == "q"
+    assert map_curses_key(ord("."), curses) == "."
+    assert map_curses_key(curses.KEY_LEFT, curses) == "left"
+    assert map_curses_key(curses.KEY_RIGHT, curses) == "right"
+    assert map_curses_key(curses.KEY_RESIZE, curses) == "<resize>"
+
+
+def test_curses_sink_teardown_without_setup_is_safe():
+    # Constructing and tearing down without a TTY setup must not raise.
+    import pytest
+    pytest.importorskip("curses")
+    from gtrsnipe.player.sink import CursesSink
+    s = CursesSink()
+    s.teardown()          # no setup() called
+    assert s.read_key(True) is None
+    s.write("ignored")    # no-op without a screen
+
+
 def test_read_terminal_key_falls_back_when_not_a_tty(monkeypatch):
     # Regression: piped/redirected stdin raises termios.error, not ImportError,
     # so the raw-mode path must be gated on isatty().

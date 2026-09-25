@@ -25,7 +25,7 @@ from .audio import AudioSink, NullSink, make_audio_sink
 from .frame import Frame
 from .render.ascii import AsciiFretboardRenderer
 from .render.scrolltab import ScrollingTabRenderer
-from .sink import PlainSink, Sink
+from .sink import CursesSink, PlainSink, Sink
 from .timeline import DEFAULT_WINDOW_SIZE, TimelineBuilder
 from .transport import Transport, metronome_timeline
 
@@ -193,6 +193,21 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     return p
 
 
+def _choose_sink(args) -> Sink:
+    """Curses on a real terminal (animated), else a plain stream sink.
+
+    Non-clear/piped/non-TTY output falls back to PlainSink so `printf | ...` and
+    redirects still work.
+    """
+    if sys.stdout.isatty() and not args.no_clear:
+        try:
+            import curses  # noqa: F401  (probe availability; Windows may lack it)
+            return CursesSink(clear=not args.no_clear)
+        except ImportError:
+            pass
+    return PlainSink(clear=not args.no_clear, interactive=True)
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = _build_arg_parser()
     args = parser.parse_args(argv)
@@ -216,7 +231,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     except (RuntimeError, ValueError) as e:
         sys.stderr.write(f"{e}\n")
         return 1
-    sink = PlainSink(clear=not args.no_clear, interactive=True)
+    sink = _choose_sink(args)
     try:
         return play_file(
             args.input, clock=args.clock, tempo=args.tempo, grid_beats=args.grid,
