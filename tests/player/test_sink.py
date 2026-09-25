@@ -43,6 +43,8 @@ def test_map_curses_key():
     assert map_curses_key(ord("."), curses) == "."
     assert map_curses_key(curses.KEY_LEFT, curses) == "left"
     assert map_curses_key(curses.KEY_RIGHT, curses) == "right"
+    assert map_curses_key(curses.KEY_HOME, curses) == "home"
+    assert map_curses_key(curses.KEY_END, curses) == "end"
     assert map_curses_key(curses.KEY_RESIZE, curses) == "<resize>"
 
 

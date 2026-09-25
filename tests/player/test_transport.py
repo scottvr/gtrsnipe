@@ -286,3 +286,23 @@ def test_resize_rerenders():
     before = len(drv.renders)
     t._handle_key("<resize>", drv)
     assert len(drv.renders) == before + 1
+
+
+def test_handle_key_reports_acted():
+    # Bound keys act (True); unbound keys don't (False), so the playing loop can
+    # fall through and keep advancing instead of busy-spinning on a burst.
+    t, drv = _paused_transport()
+    assert t._handle_key("right", drv) is True      # seek acted
+    assert t._handle_key("x", drv) is False         # unbound: no-op
+    assert t._handle_key("up", drv) is False        # mapped but no transport action
+
+
+def test_noop_key_burst_during_play_does_not_stall():
+    # Regression: a burst of unbound keys during playback must not freeze the
+    # playhead / busy-spin — playback still advances and sleeps.
+    tl = [frame(float(i), 60 + i) for i in range(4)]
+    clk = FakeClock()
+    drv = FakeDriver(clk, keys=["x", "x", "x"])  # unbound, then exhaust -> None
+    Transport(tl, 120, playing=True, now=clk.now, sleep=clk.sleep).run(drv)
+    assert (63,) in drv.fired_pitches()  # reached the end despite the no-op keys
+    assert clk.t > 0.0                   # time actually advanced (it slept)

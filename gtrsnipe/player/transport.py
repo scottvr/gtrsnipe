@@ -170,14 +170,17 @@ class Transport:
 
     # -- key handling -------------------------------------------------------
 
-    def _handle_key(self, key: Optional[str], driver) -> None:
+    def _handle_key(self, key: Optional[str], driver) -> bool:
+        """Handle a key; return True if it acted (so the playing loop re-evaluates
+        rather than falling through to `beat_time = t`). No-op/unbound keys return
+        False so a burst of them doesn't stall the playhead."""
         if key is None:
             if self.paused:      # exhausted blocking input -> stop
                 self._quit = True
-            return
+            return True
         if key == "<resize>":
             driver.render(self.beat_time)
-            return
+            return True
         k = key.lower()
         if k == "q":
             self._quit = True
@@ -211,6 +214,9 @@ class Transport:
             driver.silence()
             if hasattr(driver, "show"):
                 driver.show(HELP_TEXT)
+        else:
+            return False   # unbound key: ignore, let the playhead keep advancing
+        return True
 
     # -- main loop ----------------------------------------------------------
 
@@ -236,13 +242,15 @@ class Transport:
 
             key = driver.read_key(False)
             if key is not None:
-                self._handle_key(key, driver)
+                acted = self._handle_key(key, driver)
                 if self._quit:
                     break
-                # Re-evaluate from the new state after ANY key (a seek/jump/tempo
-                # handler moved beat_time/_onset_i/anchor); do NOT fall through to
-                # `self.beat_time = t`, which was computed before the key.
-                continue
+                if acted:
+                    # A seek/jump/tempo/pause handler moved state; re-evaluate
+                    # rather than falling through to `self.beat_time = t` (stale).
+                    continue
+                # No-op/unbound key: fall through so the playhead keeps advancing
+                # (a burst of such keys must not stall it).
 
             self.beat_time = t
             self._fire_due(driver)

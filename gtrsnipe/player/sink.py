@@ -95,6 +95,7 @@ def map_curses_key(ch: int, curses_mod) -> Optional[str]:
     named = {
         curses_mod.KEY_LEFT: "left", curses_mod.KEY_RIGHT: "right",
         curses_mod.KEY_UP: "up", curses_mod.KEY_DOWN: "down",
+        curses_mod.KEY_HOME: "home", curses_mod.KEY_END: "end",
     }
     if ch in named:
         return named[ch]
@@ -159,7 +160,15 @@ class CursesSink(Sink):
             return None
         scr.nodelay(not blocking)
         scr.timeout(-1 if blocking else 0)
-        return map_curses_key(scr.getch(), self._curses)
+        if not blocking:
+            return map_curses_key(scr.getch(), self._curses)
+        # Blocking: keep reading until a mappable key. Otherwise an unbound
+        # special key (PageUp, a function key, …) would map to None, which the
+        # transport reads as end-of-input and quits — a real terminal has no EOF.
+        while True:
+            tok = map_curses_key(scr.getch(), self._curses)
+            if tok is not None:
+                return tok
 
     def teardown(self) -> None:
         if self._scr is not None and self._curses is not None:
