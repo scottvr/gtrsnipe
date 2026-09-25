@@ -17,7 +17,7 @@ class GuitarMapper:
     def __init__(self, config: MapperConfig):
         self.config = config
         if getattr(config, "custom_tuning", None):
-            # User-defined tuning (--tuning-pitches): note names high->low.
+            # User-defined tuning (--tuning-pitches): note names low->high.
             self.tuning = None
             self.tuning_names = tuple(config.custom_tuning)
         else:
@@ -27,7 +27,9 @@ class GuitarMapper:
                 logger.warning(f"Unknown tuning '{self.config.tuning}'. Defaulting to STANDARD.")
                 self.tuning = Tuning.STANDARD
             self.tuning_names = tuple(self.tuning.value)
-        self.open_string_pitches = [note_name_to_pitch(n) for n in self.tuning_names]
+        # tuning_names are low->high; string index 0 is the HIGHEST string, so the
+        # open-string pitch array is the reverse (high->low).
+        self.open_string_pitches = [note_name_to_pitch(n) for n in reversed(self.tuning_names)]
         self.pitch_to_positions: Dict[int, Set[FretPosition]] = {}
         self._build_pitch_maps()
         logger.info("--- Chord-Aware Mapper initialized. ---")

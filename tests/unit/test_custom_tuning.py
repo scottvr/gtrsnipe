@@ -30,8 +30,8 @@ def _parser():
 
 # -- parse_tuning_pitches ---------------------------------------------------
 
-def test_parse_tuning_pitches_low_to_high_stored_high_to_low():
-    assert parse_tuning_pitches("A1,E2,A2,D3,F#3,B3") == ("B3", "F#3", "D3", "A2", "E2", "A1")
+def test_parse_tuning_pitches_stored_low_to_high():
+    assert parse_tuning_pitches("A1,E2,A2,D3,F#3,B3") == ("A1", "E2", "A2", "D3", "F#3", "B3")
 
 
 def test_parse_tuning_pitches_validates():
@@ -49,7 +49,8 @@ def test_build_mapper_config_custom_tuning():
                               num_strings=resolve_num_strings(a.tuning, a.num_strings))
     assert cfg.tuning == "CUSTOM"
     assert cfg.num_strings == 6
-    assert cfg.custom_tuning == ("B3", "F#3", "D3", "A2", "E2", "A1")
+    assert cfg.custom_tuning == ("A1", "E2", "A2", "D3", "F#3", "B3")  # low->high
+    # open pitches are string index 0 = highest (high->low), unchanged by the flip
     assert GuitarMapper(cfg).open_string_pitches == [59, 54, 50, 45, 40, 33]
 
 
@@ -57,7 +58,7 @@ def test_drop_low_string_on_named_tuning():
     # BARITONE_B with its low B dropped 2 semitones == the A1 baritone.
     a = _parser().parse_args(["--tuning", "BARITONE_B", "--drop-low-string", "2"])
     custom = resolve_custom_tuning(a)
-    assert custom[-1] == "A1"   # lowest string dropped B1 -> A1
+    assert custom[0] == "A1"   # lowest string (index 0, low->high) dropped B1 -> A1
 
 
 def test_no_custom_tuning_when_plain():
@@ -85,8 +86,9 @@ def test_tab_parser_uses_supplied_tuning():
 
 
 def test_open_string_pitches_for():
+    # Returns string index 0 = highest (high->low); names are low->high so reversed.
     assert open_string_pitches_for("STANDARD") == [64, 59, 55, 50, 45, 40]
-    assert open_string_pitches_for("CUSTOM", ("D4", "A3")) == [62, 57]
+    assert open_string_pitches_for("CUSTOM", ("E2", "A2")) == [45, 40]  # low->high -> [A2, E2]
 
 
 # -- tuning solver ----------------------------------------------------------
