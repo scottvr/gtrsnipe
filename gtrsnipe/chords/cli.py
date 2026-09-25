@@ -10,13 +10,13 @@ from pathlib import Path
 from typing import Optional, Sequence
 
 from ..arguments import (
+    add_chart_args,
     add_mapper_args,
     add_tuning_args,
     build_mapper_config,
     resolve_num_strings,
 )
-from .chart import DEFAULT_MEASURES_PER_LINE, build_chord_sheet
-from .segment import DEFAULT_CHORD_TONE_THRESHOLD
+from .chart import build_chord_sheet
 
 
 def _build_arg_parser() -> argparse.ArgumentParser:
@@ -27,16 +27,11 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("input", help="Input file (.mid/.abc/.vex/.tab).")
     p.add_argument("-o", "--output", default=None,
                    help="Write the sheet to a file (default: stdout).")
-    p.add_argument("--measures-per-line", type=int, default=DEFAULT_MEASURES_PER_LINE,
-                   help=f"Bars per progression row (default: {DEFAULT_MEASURES_PER_LINE}).")
-    p.add_argument("--chord-tone-threshold", type=float,
-                   default=DEFAULT_CHORD_TONE_THRESHOLD,
-                   help="Min fraction of a bar a note must sound to count as a "
-                        f"chord tone (default: {DEFAULT_CHORD_TONE_THRESHOLD}).")
     p.add_argument("--track", type=int, default=None,
                    help="For MIDI input: 1-indexed track to analyze (default: all).")
     add_tuning_args(p.add_argument_group("Instrument"))
     add_mapper_args(p.add_argument_group("Mapper (advanced)"))
+    add_chart_args(p.add_argument_group("Chord chart"))
     return p
 
 

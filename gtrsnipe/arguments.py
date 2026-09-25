@@ -105,6 +105,52 @@ def add_mapper_args(target) -> None:
         help='Penalize fingerings with an unplayable fret span between consecutive notes.')
 
 
+def add_player_args(target) -> None:
+    """Player/visualizer options, shared by `gtrsnipe --play` and gtrsnipe-play."""
+    target.add_argument("--view", choices=["fretboard", "tab"], default="fretboard",
+                        help="fretboard = animated neck; tab = scrolling tab staff.")
+    target.add_argument("--clock", choices=["tempo", "metronome", "step"],
+                        default="tempo",
+                        help="Timing: at-tempo, fixed metronome grid, or start paused "
+                             "for manual spacebar step (default: tempo).")
+    target.add_argument("--tempo", type=float, default=None, metavar="BPM",
+                        help="Override playback tempo in BPM (default: the song's).")
+    target.add_argument("--grid", type=float, default=0.5,
+                        help="Metronome step in beats (default: 0.5 = eighth note).")
+    target.add_argument("--window", type=int, default=5,
+                        help="Visible fret window size (fretboard view; default: 5).")
+    target.add_argument("--width", type=int, default=48,
+                        help="Tab view viewport width in columns (default: 48).")
+    target.add_argument("--fps", type=float, default=12.0,
+                        help="Animation redraws per second (default: 12).")
+    target.add_argument("--orientation", choices=["horizontal", "vertical"],
+                        default="horizontal",
+                        help="Fretboard view: strings as rows or frets top-to-bottom.")
+    target.add_argument("--hand", choices=["right", "left"], default="right",
+                        help="Fretboard view: mirror the neck for left-handed players.")
+    target.add_argument("--audio", choices=["none", "midi", "fluidsynth"],
+                        default="none",
+                        help="Make sound while playing: 'midi' streams to a port, "
+                             "'fluidsynth' uses a SoundFont ([play]/[synth] extras).")
+    target.add_argument("--midi-port", default=None,
+                        help="MIDI output port name for --audio midi.")
+    target.add_argument("--soundfont", default=None,
+                        help="Path to a .sf2 SoundFont for --audio fluidsynth.")
+    target.add_argument("--instrument", default=None,
+                        help="Instrument for --audio: GM number (0-127) or name substring.")
+    target.add_argument("--no-clear", action="store_true",
+                        help="Do not clear the screen between frames (scrolls).")
+
+
+def add_chart_args(target) -> None:
+    """Chord-chart options, shared by `gtrsnipe -o x.chords.md` and gtrsnipe-chords."""
+    target.add_argument("--measures-per-line", type=int, default=4,
+                        help="Bars per progression row in a chord chart (default: 4).")
+    target.add_argument("--chord-tone-threshold", type=float, default=0.15,
+                        help="Min fraction of a bar a note must sound to count as a "
+                             "chord tone (default: 0.15).")
+
+
 def resolve_num_strings(tuning: str, num_strings) -> int:
     """Infer string count from the tuning when not explicitly set (mirrors the
     converter's inference); falls back to 6 for unknown tunings / PIANO."""
@@ -160,9 +206,9 @@ def setup_parser() -> ArgumentParser:
     parser.add_argument('-i', '--input', help='Path to the input file (.mid, .mp3, .wav, etc.).')
     parser.add_argument(
         '-o', '--output',
-        required=True,
         action='append',
-        help='Path(s) to the output file(s) (e.g., -o out.mid -o out.tab).'
+        help='Path(s) to the output file(s) (e.g., -o out.mid -o out.tab -o song.chords.md). '
+             'Not required with --play. A .chords/.chords.md output writes a chord sheet.'
     )
 
     instrument_group = parser.add_argument_group("Instrument Options")
@@ -309,6 +355,15 @@ def setup_parser() -> ArgumentParser:
         metavar='TUNING_NAME',
         help='Show the notes for a specific tuning and exit.'
     )
+
+    player_group = parser.add_argument_group('Player mode (--play; interactive terminal)')
+    player_group.add_argument(
+        '--play', action='store_true',
+        help="Play/visualize the song in the terminal instead of writing a file.")
+    add_player_args(player_group)
+
+    chart_group = parser.add_argument_group('Chord chart output (-o SONG.chords.md)')
+    add_chart_args(chart_group)
 
     mapper_group = parser.add_argument_group('Mapper Tuning/Configuration (Advanced)')
     add_mapper_args(mapper_group)

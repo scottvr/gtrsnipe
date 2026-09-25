@@ -14,6 +14,7 @@ from typing import List, Optional, Sequence
 
 from ..arguments import (
     add_mapper_args,
+    add_player_args,
     add_tuning_args,
     build_mapper_config,
     resolve_num_strings,
@@ -100,23 +101,30 @@ def _beats_per_measure(time_signature: str) -> float:
         return 4.0
 
 
-def play_file(input_path: str, *, clock: str = "tempo",
-              tempo: Optional[float] = None, grid_beats: float = 0.5,
-              window_size: int = DEFAULT_WINDOW_SIZE, track: Optional[int] = None,
-              mapper_config: Optional[MapperConfig] = None,
-              view: str = "fretboard", orientation: str = "horizontal",
-              handed: str = "right", width: int = 48, fps: float = 12.0,
-              audio: Optional[AudioSink] = None, sink: Optional[Sink] = None,
-              now=time.monotonic, sleep=time.sleep) -> int:
-    """Parse, map, and play a file. Returns a process exit code.
+def map_song(song: Song, mapper_config: MapperConfig, *,
+             no_articulations: bool = True) -> Song:
+    """Map every track's events onto the fretboard in place (for an already-parsed
+    Song, e.g. one the converter has preprocessed)."""
+    mapper = GuitarMapper(mapper_config)
+    for trk in song.tracks:
+        trk.events = mapper.map_events_to_fretboard(
+            trk.events, no_articulations=no_articulations)
+    return song
+
+
+def run_player(mapped_song: Song, cfg: MapperConfig, *, clock: str = "tempo",
+               tempo: Optional[float] = None, grid_beats: float = 0.5,
+               window_size: int = DEFAULT_WINDOW_SIZE, view: str = "fretboard",
+               orientation: str = "horizontal", handed: str = "right",
+               width: int = 48, fps: float = 12.0,
+               audio: Optional[AudioSink] = None, sink: Optional[Sink] = None,
+               now=time.monotonic, sleep=time.sleep) -> int:
+    """Play an already parsed+mapped Song. Returns a process exit code.
 
     ``clock`` maps to Transport state: ``tempo``/``metronome`` play; ``step``
     starts paused. ``metronome`` also re-times the timeline to an even grid.
     """
-    cfg = mapper_config or MapperConfig()
-    song = parse_and_map(input_path, cfg, track=track)
-    timeline = build_timeline(song, cfg, window_size=window_size)
-
+    timeline = build_timeline(mapped_song, cfg, window_size=window_size)
     the_audio = audio or NullSink()
     the_sink = sink or PlainSink(interactive=True)
     try:
@@ -128,9 +136,9 @@ def play_file(input_path: str, *, clock: str = "tempo",
         renderer = build_renderer(cfg, view=view, orientation=orientation,
                                   handed=handed, width=width)
         if hasattr(renderer, "beats_per_measure"):
-            renderer.beats_per_measure = _beats_per_measure(song.time_signature)
+            renderer.beats_per_measure = _beats_per_measure(mapped_song.time_signature)
         driver = _Driver(timeline, renderer, the_sink, the_audio)
-        transport = Transport(timeline, tempo or song.tempo, fps=fps,
+        transport = Transport(timeline, tempo or mapped_song.tempo, fps=fps,
                               playing=(clock != "step"), now=now, sleep=sleep)
         the_sink.setup()
         transport.run(driver)
@@ -140,6 +148,46 @@ def play_file(input_path: str, *, clock: str = "tempo",
         the_sink.teardown()
 
 
+def run_player_from_args(song: Song, cfg: MapperConfig, args, *,
+                         mapped: bool = False, sink: Optional[Sink] = None,
+                         audio: Optional[AudioSink] = None,
+                         now=time.monotonic, sleep=time.sleep) -> int:
+    """Play a Song using player options read from a parsed args namespace.
+
+    Shared by ``gtrsnipe-play`` and ``gtrsnipe --play``. ``mapped=False`` maps the
+    song first (the converter passes a preprocessed-but-unmapped Song)."""
+    if not mapped:
+        song = map_song(song, cfg)
+    return run_player(
+        song, cfg, clock=args.clock, tempo=args.tempo, grid_beats=args.grid,
+        window_size=args.window, view=args.view, orientation=args.orientation,
+        handed=args.hand, width=args.width, fps=args.fps,
+        audio=audio, sink=sink, now=now, sleep=sleep)
+
+
+def play_file(input_path: str, *, clock: str = "tempo",
+              tempo: Optional[float] = None, grid_beats: float = 0.5,
+              window_size: int = DEFAULT_WINDOW_SIZE, track: Optional[int] = None,
+              mapper_config: Optional[MapperConfig] = None,
+              view: str = "fretboard", orientation: str = "horizontal",
+              handed: str = "right", width: int = 48, fps: float = 12.0,
+              audio: Optional[AudioSink] = None, sink: Optional[Sink] = None,
+              now=time.monotonic, sleep=time.sleep) -> int:
+    """Parse, map, and play a file (thin wrapper over :func:`run_player`)."""
+    cfg = mapper_config or MapperConfig()
+    song = parse_and_map(input_path, cfg, track=track)
+    return run_player(
+        song, cfg, clock=clock, tempo=tempo, grid_beats=grid_beats,
+        window_size=window_size, view=view, orientation=orientation, handed=handed,
+        width=width, fps=fps, audio=audio, sink=sink, now=now, sleep=sleep)
+
+
+def audio_from_args(args) -> AudioSink:
+    """Build the audio sink from parsed args (shared by player & converter --play)."""
+    return make_audio_sink(args.audio, midi_port=args.midi_port,
+                           soundfont=args.soundfont, instrument=args.instrument)
+
+
 def _build_arg_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="gtrsnipe-play",
@@ -147,49 +195,13 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     )
     p.add_argument("input", nargs="?", default=None,
                    help="Input file (.mid/.abc/.vex/.tab).")
-    p.add_argument("--clock", choices=["tempo", "metronome", "step"],
-                   default="tempo",
-                   help="Timing: at-tempo, fixed metronome grid, or start paused "
-                        "for manual spacebar step (default: tempo).")
-    p.add_argument("--tempo", type=float, default=None,
-                   help="Override tempo in BPM (default: the song's tempo).")
-    p.add_argument("--grid", type=float, default=0.5,
-                   help="Metronome step in beats (default: 0.5 = eighth note).")
-    p.add_argument("--window", type=int, default=DEFAULT_WINDOW_SIZE,
-                   help=f"Visible fret window size (default: {DEFAULT_WINDOW_SIZE}).")
     p.add_argument("--track", type=int, default=None,
                    help="For MIDI input: 1-indexed track to play (default: all).")
     add_tuning_args(p.add_argument_group("Instrument"))
     add_mapper_args(p.add_argument_group("Mapper (advanced)"))
-    p.add_argument("--view", choices=["fretboard", "tab"], default="fretboard",
-                   help="fretboard = animated neck; tab = horizontally scrolling "
-                        "tab staff (Guitar-Hero style). Default: fretboard.")
-    p.add_argument("--orientation", choices=["horizontal", "vertical"],
-                   default="horizontal",
-                   help="Fretboard view only: strings as rows or frets top-to-bottom.")
-    p.add_argument("--hand", choices=["right", "left"], default="right",
-                   help="Fretboard view only: mirror the neck for left-handed players.")
-    p.add_argument("--width", type=int, default=48,
-                   help="Tab view only: viewport width in columns (default: 48).")
-    p.add_argument("--fps", type=float, default=12.0,
-                   help="Animation redraws per second for smooth scrolling / a "
-                        "live bar:beat readout (default: 12).")
-    p.add_argument("--audio", choices=["none", "midi", "fluidsynth"], default="none",
-                   help="Make sound while playing: 'midi' streams to a MIDI port "
-                        "(route it to a DAW/synth), 'fluidsynth' uses a SoundFont. "
-                        "Default: none (needs the [play] or [synth] extra).")
-    p.add_argument("--midi-port", default=None,
-                   help="MIDI output port name for --audio midi (default: first "
-                        "available, else a virtual 'gtrsnipe' port).")
-    p.add_argument("--soundfont", default=None,
-                   help="Path to a .sf2 SoundFont for --audio fluidsynth.")
-    p.add_argument("--instrument", default=None,
-                   help="Instrument for --audio: a GM program number (0-127) or a "
-                        "name substring (e.g. 'nylon', 'distortion guitar').")
+    add_player_args(p.add_argument_group("Player"))
     p.add_argument("--list-instruments", action="store_true",
                    help="Print the General MIDI instrument names and exit.")
-    p.add_argument("--no-clear", action="store_true",
-                   help="Do not clear the screen between frames (scrolls).")
     return p
 
 
@@ -225,9 +237,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         num_strings=resolve_num_strings(args.tuning, args.num_strings),
     )
     try:
-        audio = make_audio_sink(args.audio, midi_port=args.midi_port,
-                                soundfont=args.soundfont,
-                                instrument=args.instrument)
+        audio = audio_from_args(args)
     except (RuntimeError, ValueError) as e:
         sys.stderr.write(f"{e}\n")
         return 1

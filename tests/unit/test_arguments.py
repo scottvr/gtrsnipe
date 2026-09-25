@@ -89,3 +89,18 @@ def test_converter_parser_still_has_everything():
     args = setup_parser().parse_args(
         ["-i", "x.mid", "-o", "y.tab", "--optimizer", "greedy", "--capo", "2"])
     assert args.optimizer == "greedy" and args.capo == 2 and args.output == ["y.tab"]
+
+
+def test_converter_parser_has_play_chart_and_player_args():
+    # P3: the canonical tool now carries the player + chord-chart option surface.
+    args = setup_parser().parse_args(
+        ["-i", "x.mid", "--play", "--view", "tab", "--tempo", "90",
+         "--measures-per-line", "2", "--audio", "midi"])
+    assert args.play is True and args.view == "tab" and args.tempo == 90
+    assert args.measures_per_line == 2 and args.audio == "midi"
+
+
+def test_converter_output_optional_with_play():
+    # -o is no longer required at the parser level (validated in main w/ --play).
+    args = setup_parser().parse_args(["-i", "x.mid", "--play"])
+    assert args.output is None

@@ -279,8 +279,10 @@ def main():
             exit(1)
         exit(0)    
     
-    if not args.input or not args.output:
-        parser.error("the following arguments are required for conversion: -i/--input and -o/--output")
+    if not args.input:
+        parser.error("the following argument is required: -i/--input")
+    if not args.play and not args.output:
+        parser.error("provide at least one -o/--output (or use --play to visualize)")
 
     log_level = logging.DEBUG if args.debug else logging.INFO
     setup_logger(log_level)
@@ -552,29 +554,61 @@ def main():
             elif pitch_shifted > 0:
                 logger.info(f"--- Shifted {pitch_shifted} notes by octaves to fit ---")
 
+        # --- Player mode: visualize instead of writing files (reuses the full
+        # preamble above, so --play inherits audio input, normalize, etc.). ---
+        if args.play:
+            if is_piano_mode:
+                logger.error("--play needs a fretboard tuning, not PIANO.")
+                return
+            from .player.app import run_player_from_args, audio_from_args, _choose_sink
+            try:
+                audio = audio_from_args(args)
+            except (RuntimeError, ValueError) as e:
+                logger.error(str(e))
+                return
+            sink = _choose_sink(args)
+            try:
+                run_player_from_args(copy.deepcopy(song), mapper_config, args,
+                                     mapped=False, sink=sink, audio=audio)
+            except KeyboardInterrupt:
+                sys.stderr.write("\nStopped.\n")
+            return
+
         logger.info("--- Generating output files ---")
 
         for output_path_str in args.output:
             output_path = Path(output_path_str)
-            to_format = output_path.suffix.lstrip('.').lower()
+            name = output_path.name.lower()
+            if name.endswith(".chords") or name.endswith(".chords.md"):
+                to_format = "chords"
+            else:
+                to_format = output_path.suffix.lstrip('.').lower()
 
             song_for_conversion = copy.deepcopy(song)
             config_for_conversion = copy.deepcopy(mapper_config)
             debug_song_state(song_for_conversion, 5, "Before Final Convert/Map")
 
-            output_data = converter.convert(
-                song=song_for_conversion,
-                command_line=command_line,
-                from_format=format_to_parse,
-                to_format=to_format,
-                nudge=args.nudge,
-                transpose=args.transpose,
-                max_line_width=args.max_line_width,
-                no_articulations=args.no_articulations,
-                single_string=args.single_string,
-                mapper_config=config_for_conversion
-            )
-    
+            if to_format == "chords":
+                from .chords.chart import build_chord_sheet
+                output_data = build_chord_sheet(
+                    song_for_conversion, config_for_conversion,
+                    measures_per_line=args.measures_per_line,
+                    chord_tone_threshold=args.chord_tone_threshold,
+                )
+            else:
+                output_data = converter.convert(
+                    song=song_for_conversion,
+                    command_line=command_line,
+                    from_format=format_to_parse,
+                    to_format=to_format,
+                    nudge=args.nudge,
+                    transpose=args.transpose,
+                    max_line_width=args.max_line_width,
+                    no_articulations=args.no_articulations,
+                    single_string=args.single_string,
+                    mapper_config=config_for_conversion
+                )
+
             if output_path.exists() and not args.yes:
                 logger.error(f"Error: Output file '{output_path}' already exists.")
                 logger.error("Use the -y or --yes flag to allow overwriting.")
