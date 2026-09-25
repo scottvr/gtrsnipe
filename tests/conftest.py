@@ -4,6 +4,7 @@ The whole tier here is torch-free: every fixture and helper uses only core
 dependencies (midiutil/MIDIFile/mido/numpy), so `pytest` runs green on a
 CPU-only install with no audio/ML extras present.
 """
+import os
 import subprocess
 import sys
 import textwrap
@@ -15,6 +16,15 @@ HEAVY_MODULES = [
     "torch", "torchaudio", "tensorflow", "librosa",
     "numba", "demucs", "basic_pitch", "onnxruntime", "scipy",
 ]
+
+
+@pytest.fixture(autouse=True)
+def _isolate_gtrsnipe_config(tmp_path_factory, monkeypatch):
+    """Point profile/config discovery at an empty temp dir for every test, so a
+    developer's real ./.gtrsnipe or ~/.gtrsnipe can never leak into the suite.
+    Tests that exercise profiles use --config-dir explicitly."""
+    empty = tmp_path_factory.mktemp("gtrsnipe_home")
+    monkeypatch.setenv("GTRSNIPE_HOME", str(empty))
 
 
 @pytest.fixture

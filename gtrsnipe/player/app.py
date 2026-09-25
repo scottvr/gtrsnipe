@@ -15,7 +15,9 @@ from typing import List, Optional, Sequence
 from ..arguments import (
     add_mapper_args,
     add_player_args,
+    add_profile_args,
     add_tuning_args,
+    apply_profiles,
     build_mapper_config,
     resolve_num_strings,
 )
@@ -209,6 +211,7 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     add_tuning_args(p.add_argument_group("Instrument"))
     add_mapper_args(p.add_argument_group("Mapper (advanced)"))
     add_player_args(p.add_argument_group("Player"))
+    add_profile_args(p)
     p.add_argument("--list-instruments", action="store_true",
                    help="Print the General MIDI instrument names and exit.")
     return p
@@ -231,7 +234,7 @@ def _choose_sink(args) -> Sink:
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = _build_arg_parser()
-    args = parser.parse_args(argv)
+    args = apply_profiles(parser, argv)
 
     if args.list_instruments:
         from .audio import GM_INSTRUMENTS

@@ -1,4 +1,9 @@
+import argparse
+import os
+import sys
 from argparse import ArgumentParser
+from pathlib import Path
+from typing import List, Optional
 
 from .core.config import MapperConfig
 
@@ -199,6 +204,156 @@ def build_mapper_config(args, *, tuning: str, num_strings: int) -> MapperConfig:
     )
 
 
+# ---------------------------------------------------------------------------
+# Profiles / .gtrsnipe config
+#
+# A profile is just "saved argv": each file line becomes CLI tokens that are
+# PREPENDED to the real command line and re-parsed by the same parser. So
+# precedence falls out for free (profile tokens first, explicit CLI last → for
+# argparse store actions the last value wins → CLI overrides the profile), and
+# all validation/type-conversion is reused with no separate schema.
+# ---------------------------------------------------------------------------
+
+# Never taken from a profile file (avoid recursion / per-run-only meta).
+_PROFILE_META = {"--profile", "--no-defaults", "--config-dir", "--save-args"}
+# Not written by --save-args (per-run inputs, actions, or meta).
+_SAVE_SKIP_DESTS = {
+    "input", "output", "save_args", "profile", "no_defaults", "config_dir",
+    "list_tunings", "show_tuning", "list_instruments", "analyze", "yes", "help",
+}
+
+
+def add_profile_args(parser) -> None:
+    """Profile/config options shared by every CLI (handled by apply_profiles)."""
+    g = parser.add_argument_group("Profiles / config (.gtrsnipe)")
+    g.add_argument("--profile", action="append", default=None, metavar="NAME[,NAME]",
+                   help="Apply saved option profiles before the CLI args (repeatable "
+                        "and/or comma-separated; applied in order; CLI overrides).")
+    g.add_argument("--no-defaults", action="store_true",
+                   help="Skip auto-loading the .gtrsnipe/defaults profile.")
+    g.add_argument("--config-dir", default=None,
+                   help="Directory to read/write profiles (default: ./.gtrsnipe then "
+                        "~/.gtrsnipe, or $GTRSNIPE_HOME).")
+    g.add_argument("--save-args", default=None, metavar="NAME",
+                   help="Save the effective (non-default) options to a profile of this "
+                        "name and continue.")
+
+
+def _config_dirs(config_dir: Optional[str]) -> List[Path]:
+    """Search path for profiles. --config-dir or $GTRSNIPE_HOME fully override
+    (each yields exactly one dir — good for power users and hermetic tests);
+    otherwise search ./.gtrsnipe then ~/.gtrsnipe."""
+    if config_dir:
+        return [Path(config_dir)]
+    env = os.environ.get("GTRSNIPE_HOME")
+    if env:
+        return [Path(env)]
+    return [Path.cwd() / ".gtrsnipe", Path.home() / ".gtrsnipe"]
+
+
+def _find_profile(name: str, dirs: List[Path]) -> Optional[Path]:
+    if os.sep in name or (os.altsep and os.altsep in name):
+        p = Path(name).expanduser()
+        return p if p.is_file() else None
+    for d in dirs:
+        f = d / name
+        if f.is_file():
+            return f
+    return None
+
+
+def _tokenize_profile(path: Path, known_opts: set, flag_opts: set) -> List[str]:
+    """Turn a profile file into argv tokens. Lines: `name`, `name value`,
+    `name = value` (leading dashes optional; `#` comments and blanks ignored)."""
+    tokens: List[str] = []
+    for raw in path.read_text().splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        if "=" in line:
+            name, _, value = line.partition("=")
+        else:
+            parts = line.split(None, 1)
+            name, value = parts[0], (parts[1] if len(parts) > 1 else "")
+        name, value = name.strip().lstrip("-"), value.strip()
+        opt = "--" + name
+        if opt in _PROFILE_META:
+            continue  # no nested profiles / meta from a file
+        if opt not in known_opts:
+            sys.stderr.write(f"warning: {path.name}: unknown option '{name}' (skipped)\n")
+            continue
+        if opt in flag_opts:
+            if value and value.lower() in ("false", "no", "0", "off"):
+                continue  # a store_true can't be turned off; just omit it
+            tokens.append(opt)
+        elif value:
+            tokens += [opt, value]
+        else:
+            sys.stderr.write(f"warning: {path.name}: '{name}' needs a value (skipped)\n")
+    return tokens
+
+
+def _save_args(parser, ns, config_dir: Optional[str]) -> None:
+    lines: List[str] = []
+    for a in parser._actions:
+        if a.dest in _SAVE_SKIP_DESTS or not a.option_strings:
+            continue
+        val = getattr(ns, a.dest, None)
+        if val == a.default:
+            continue
+        opt = max(a.option_strings, key=len).lstrip("-")
+        if a.nargs == 0:      # flag
+            if val:
+                lines.append(opt)
+        else:
+            lines.append(f"{opt} = {val}")
+    target_dir = _config_dirs(config_dir)[0]
+    target_dir.mkdir(parents=True, exist_ok=True)
+    out = target_dir / ns.save_args
+    out.write_text("\n".join(lines) + "\n")
+    sys.stderr.write(f"Saved {len(lines)} option(s) to {out}\n")
+
+
+def apply_profiles(parser: ArgumentParser, argv=None) -> argparse.Namespace:
+    """Parse ``argv`` with profile files prepended, then honor --save-args.
+
+    Drop-in replacement for ``parser.parse_args()`` on a parser built with
+    :func:`add_profile_args`.
+    """
+    argv = list(sys.argv[1:] if argv is None else argv)
+
+    pre = argparse.ArgumentParser(add_help=False)
+    pre.add_argument("--profile", action="append", default=[])
+    pre.add_argument("--no-defaults", action="store_true")
+    pre.add_argument("--config-dir", default=None)
+    pre.add_argument("--save-args", default=None)
+    known, _ = pre.parse_known_args(argv)
+
+    dirs = _config_dirs(known.config_dir)
+    known_opts = {o for a in parser._actions for o in a.option_strings}
+    flag_opts = {o for a in parser._actions for o in a.option_strings if a.nargs == 0}
+
+    tokens: List[str] = []
+    if not known.no_defaults:
+        f = _find_profile("defaults", dirs)
+        if f:
+            tokens += _tokenize_profile(f, known_opts, flag_opts)
+    names: List[str] = []
+    for spec in (known.profile or []):
+        names += [n.strip() for n in spec.split(",") if n.strip()]
+    for name in names:
+        f = _find_profile(name, dirs)
+        if f is None:
+            parser.error(f"profile '{name}' not found in: "
+                         + ", ".join(str(d) for d in dirs))
+        tokens += _tokenize_profile(f, known_opts, flag_opts)
+
+    args = parser.parse_args(tokens + argv)
+    if getattr(args, "save_args", None):
+        _save_args(parser, args, known.config_dir)
+    return args
+
+
 def setup_parser() -> ArgumentParser:
     """Configures and returns the argument parser for the command-line interface."""
     parser = ArgumentParser(description="Convert music files between various formats, including audio to MIDI to tab.")
@@ -364,6 +519,8 @@ def setup_parser() -> ArgumentParser:
 
     chart_group = parser.add_argument_group('Chord chart output (-o SONG.chords.md)')
     add_chart_args(chart_group)
+
+    add_profile_args(parser)
 
     mapper_group = parser.add_argument_group('Mapper Tuning/Configuration (Advanced)')
     add_mapper_args(mapper_group)

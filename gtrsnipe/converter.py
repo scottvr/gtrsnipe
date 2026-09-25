@@ -4,7 +4,7 @@ from .core.theory import note_name_to_pitch, pitch_to_note_name, midi_to_hz
 from .core.types import Song, Tuning
 from .core.config import MapperConfig
 from .utils.io import save_text_file, save_midi_file
-from .arguments import setup_parser, build_mapper_config
+from .arguments import setup_parser, build_mapper_config, apply_profiles
 from .utils.logger import setup_logger
 from .audio.dynamic_tempo import analyze_dynamic_tempo
 from argparse import ArgumentParser
@@ -254,7 +254,7 @@ class MusicConverter:
 def main():
     command_line = " ".join(sys.argv)
     parser = setup_parser()
-    args = parser.parse_args()
+    args = apply_profiles(parser)
 
     if args.list_tunings:
         print("Available Tunings:")

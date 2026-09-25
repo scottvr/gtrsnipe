@@ -64,6 +64,34 @@ pip install -e '.[all]'          # everything above
 
 The installation process makes gtrsnipe available as a command within your activated virtual environment.
 
+## Config profiles (`.gtrsnipe`)
+
+Long command lines get old fast. Save option sets as **profiles** and reuse them.
+Profiles are plain files in a `.gtrsnipe` directory (searched as `./.gtrsnipe`,
+then `~/.gtrsnipe`, or `$GTRSNIPE_HOME`; `--config-dir DIR` overrides). A profile
+named `defaults` is applied automatically (`--no-defaults` skips it), and any CLI
+argument you pass still overrides the profile.
+
+```bash
+# .gtrsnipe/spanish
+sweet-spot-high = 9
+string-switch-penalty = 0
+ignore-open
+prefer-open
+let-ring-bonus = 210
+```
+
+```bash
+gtrsnipe -i piece.mid -o piece.tab --profile spanish        # apply a profile
+gtrsnipe -i piece.mid -o piece.tab --profile spanish,short  # several, in order
+gtrsnipe -i piece.mid -o piece.tab --sweet-spot-high 12 ...  --save-args mine  # save current opts
+```
+
+Format: `name value`, `name = value`, or a bare `name` for on/off flags; `#`
+starts a comment. Works with every command (`gtrsnipe`, `gtrsnipe-play`,
+`gtrsnipe-chords`) — a profile is just saved arguments. `--save-args NAME` writes
+your current (non-default) options to a profile for next time.
+
 ## Player / Visualizer
 
 `gtrsnipe-play` renders a song as a live ASCII fretboard instead of writing a

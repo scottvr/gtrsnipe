@@ -3,6 +3,19 @@
 All notable changes to gtrsnipe are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- **Config profiles (`.gtrsnipe`).** Save long option sets and reuse them.
+  `--profile NAME` (repeatable and/or comma-separated; applied in order) loads
+  option files from `./.gtrsnipe`, `~/.gtrsnipe`, or `$GTRSNIPE_HOME`
+  (`--config-dir` overrides); a `defaults` profile auto-loads (`--no-defaults` to
+  skip). Explicit CLI args always override profile values. `--save-args NAME`
+  writes the current non-default options back to a profile. Simple format:
+  `name value`, `name = value`, or bare `name` for flags; `#` comments. Works
+  across all three commands (`gtrsnipe`, `gtrsnipe-play`, `gtrsnipe-chords`) since
+  a profile is just prepended argv re-parsed by the same parser.
+
 ## [0.5.0] — 2026-09-25
 
 Unified-I/O refactor (design: [`docs/dev/DESIGN-unified-io.md`](docs/dev/DESIGN-unified-io.md)).

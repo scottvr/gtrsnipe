@@ -12,7 +12,9 @@ from typing import Optional, Sequence
 from ..arguments import (
     add_chart_args,
     add_mapper_args,
+    add_profile_args,
     add_tuning_args,
+    apply_profiles,
     build_mapper_config,
     resolve_num_strings,
 )
@@ -32,11 +34,12 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     add_tuning_args(p.add_argument_group("Instrument"))
     add_mapper_args(p.add_argument_group("Mapper (advanced)"))
     add_chart_args(p.add_argument_group("Chord chart"))
+    add_profile_args(p)
     return p
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
-    args = _build_arg_parser().parse_args(argv)
+    args = apply_profiles(_build_arg_parser(), argv)
 
     # Imported here to avoid a converter<->chords import cycle at package load.
     from ..converter import MusicConverter
