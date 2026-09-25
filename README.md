@@ -4,12 +4,8 @@
 
 Convert to and from .mid, .abc, .vex, and .tab files. (and more.)
 
-## v0.3.0
-Released 2026-09-23. See [CHANGELOG](https://github.com/scottvr/gtrsnipe/blob/main/CHANGELOG.md)
-
-## v0.2.0 - experimentaal features added!
-Transcribe music for guitar, capable of converting audio files (.mp3, .wav), MIDI (.mid), and various text-based formats (.tab, .vex, .abc) into high-quality ASCII tablature. [Read about the current state of these new features](https://github.com/scottvr/gtrsnipe/wiki/v0.2.0)
-  
+## v0.4.0
+Released 2026-09-24. See [CHANGELOG](https://github.com/scottvr/gtrsnipe/blob/main/CHANGELOG.md)
 
 # What?
 
@@ -119,6 +115,8 @@ The display animates between notes (`--fps`, default 12) with a live
 `bar N beat X` readout, so long rests in ensemble MIDI keep scrolling instead of
 looking frozen. On MacPorts, `pyfluidsynth` may need
 `export DYLD_FALLBACK_LIBRARY_PATH=/opt/local/lib` to find the native library.
+
+A deecent soundfont I've used is [NitroFont v3.0](https://github.com/nitro-shoe/NitroFont-Rebooted/releases/tag/v3.0)
 
 Key options: `--view {fretboard,tab}`, `--clock {tempo,metronome,step}`,
 `--tempo BPM`, `--grid BEATS` (metronome step size), `--window N` (visible fret
