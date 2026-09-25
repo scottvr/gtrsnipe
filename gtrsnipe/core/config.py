@@ -27,9 +27,9 @@ class MapperConfig:
     tuning: str = "STANDARD"
     num_strings: int =  6
     capo: int = 0
-    # Explicit open-string note names (high->low), set for a user-defined tuning
-    # via --tuning-pitches. When present it overrides `tuning` everywhere the open
-    # string pitches / labels are derived.
+    # Explicit open-string note names (low->high, the canonical tuning order), set
+    # for a user-defined tuning via --tuning-pitches. When present it overrides
+    # `tuning` everywhere the open string pitches / labels are derived.
     custom_tuning: tuple = None
 
     # from match_events_to_fretboard

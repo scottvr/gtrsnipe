@@ -56,6 +56,7 @@ class AsciiFretboardRenderer:
                 names = list(Tuning[self.config.tuning.upper()].value)
             except KeyError:
                 names = []
+        names = list(reversed(names))  # tuning tuples are low->high; row 0 is highest
         if len(names) == n:
             # Drop the octave (and any sign) so "E4" -> "E", "Bb3" -> "Bb".
             return [re.sub(r"-?\d+$", "", name) for name in names]

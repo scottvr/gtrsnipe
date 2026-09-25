@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import List, Optional
 import re
 from ...core.types import MusicalEvent, Song, Track
+from ...core.theory import note_name_to_pitch
 from itertools import groupby
 import logging
 
@@ -31,25 +32,46 @@ class AsciiTabParser:
         if tempo_match:
             song.tempo = float(tempo_match.group(1))
 
+        # Read the embedded tuning header so a generated tab round-trips in its own
+        # tuning (unless the caller supplied one explicitly, which wins). Handles
+        # the current 'Tuning: <low..high>' and the legacy 'Tuning (High to Low): ...'.
+        if open_string_pitches is None:
+            hm = re.search(r"//\s*Tuning([^:]*):\s*(.+)", tab_string, re.IGNORECASE)
+            if hm:
+                names = [x for x in re.split(r"[,\s]+", hm.group(2).strip()) if x]
+                try:
+                    pitches = [note_name_to_pitch(x) for x in names]
+                    # index 0 = highest string; names low->high unless labeled otherwise.
+                    open_string_pitches = (pitches if "high to low" in hm.group(1).lower()
+                                           else list(reversed(pitches)))
+                except ValueError:
+                    open_string_pitches = None  # unparseable header -> fall back
+
         lines = tab_string.split('\n')
-        tab_lines = [line for line in lines if re.match(r'^[eBGDAE]\|', line.strip())]
+        # A tab line is a short (1-3 char) string label then '|' — accepts any
+        # tuning's labels (not just eBGDAE), and comment lines never match.
+        def _is_tab_line(s):
+            return bool(re.match(r'^\s*[^\s|]{1,3}\|', s))
+        tab_lines = [line for line in lines if _is_tab_line(line)]
 
         # 1. First, simply check if any tab lines were found at all.
         if not tab_lines:
             logger.warning("Tab parsing failed: No valid tab lines found in the input.")
             return song
 
-        # 2. Dynamically determine the number of strings per block.
-        # We do this by counting lines until we see a repeated string name (like a second 'G|').
-        num_strings = 0
-        seen_starts = set()
-        for line in tab_lines:
-            # Get the starting character (e.g., 'G')
-            start_char = line.strip()[0].upper()
-            if start_char in seen_starts:
-                break # We've found the start of the next page, so we know the string count.
-            seen_starts.add(start_char)
-            num_strings += 1
+        # 2. Determine strings per block: the tuning header's count if known,
+        # else the length of the first contiguous run of tab lines (robust to
+        # duplicate labels like the two E strings, which the old start-char scan
+        # mis-counted as 5).
+        if open_string_pitches:
+            num_strings = len(open_string_pitches)
+        else:
+            num_strings = 0
+            for line in lines:
+                if _is_tab_line(line):
+                    num_strings += 1
+                elif num_strings:
+                    break
 
         if num_strings == 0:
             logger.warning("Tab parsing failed: Could not determine the number of strings.")

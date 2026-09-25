@@ -166,14 +166,14 @@ def add_chart_args(target) -> None:
 
 def parse_tuning_pitches(spec: str) -> tuple:
     """Parse a `--tuning-pitches` spec (comma-separated notes, low->high) into a
-    validated note-name tuple stored HIGH->low (the convention used everywhere)."""
+    validated note-name tuple, stored low->high (the canonical tuning order)."""
     from .core.theory import note_name_to_pitch
     names_low_to_high = [s.strip() for s in spec.split(",") if s.strip()]
     if len(names_low_to_high) < 2:
         raise ValueError("--tuning-pitches needs >=2 comma-separated notes (low to high)")
     for n in names_low_to_high:
         note_name_to_pitch(n)  # validate; raises ValueError on a bad name
-    return tuple(reversed(names_low_to_high))
+    return tuple(names_low_to_high)
 
 
 def _named_tuning_names(tuning: str):
@@ -182,17 +182,16 @@ def _named_tuning_names(tuning: str):
     return list(Tuning[key].value) if key in Tuning.__members__ else None
 
 
-def _drop_lowest(names_high_to_low, semitones: int) -> tuple:
-    """Return the tuning with its lowest string lowered by `semitones`."""
+def _drop_lowest(names_low_to_high, semitones: int) -> tuple:
+    """Return the tuning with its lowest string (index 0, low->high) lowered."""
     from .core.theory import note_name_to_pitch, pitch_to_note_name
-    names = list(names_high_to_low)
-    low = names[-1]
-    names[-1] = pitch_to_note_name(note_name_to_pitch(low) - semitones)
+    names = list(names_low_to_high)
+    names[0] = pitch_to_note_name(note_name_to_pitch(names[0]) - semitones)
     return tuple(names)
 
 
 def resolve_custom_tuning(args) -> tuple:
-    """The custom tuning (high->low note names) implied by --tuning-pitches and/or
+    """The custom tuning (low->high note names) implied by --tuning-pitches and/or
     --drop-low-string, or None if a plain named tuning is in effect."""
     spec = getattr(args, "tuning_pitches", None)
     drop = getattr(args, "drop_low_string", 0) or 0
@@ -205,12 +204,13 @@ def resolve_custom_tuning(args) -> tuple:
 
 
 def open_string_pitches_for(tuning: str, custom=None) -> list:
-    """Open-string MIDI pitches (high->low) for a named or custom tuning; used to
-    decode ASCII tabs in their actual tuning."""
+    """Open-string MIDI pitches, string index 0 = highest (HIGH->low), for a named
+    or custom tuning; used to decode ASCII tabs in their actual tuning. Names are
+    stored low->high, so reverse them."""
     from .core.theory import note_name_to_pitch
     names = list(custom) if custom else (_named_tuning_names(tuning)
                                          or _named_tuning_names("STANDARD"))
-    return [note_name_to_pitch(n) for n in names]
+    return [note_name_to_pitch(n) for n in reversed(names)]
 
 
 def resolve_num_strings(tuning: str, num_strings) -> int:

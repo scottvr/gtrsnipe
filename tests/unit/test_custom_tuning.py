@@ -30,8 +30,8 @@ def _parser():
 
 # -- parse_tuning_pitches ---------------------------------------------------
 
-def test_parse_tuning_pitches_low_to_high_stored_high_to_low():
-    assert parse_tuning_pitches("A1,E2,A2,D3,F#3,B3") == ("B3", "F#3", "D3", "A2", "E2", "A1")
+def test_parse_tuning_pitches_stored_low_to_high():
+    assert parse_tuning_pitches("A1,E2,A2,D3,F#3,B3") == ("A1", "E2", "A2", "D3", "F#3", "B3")
 
 
 def test_parse_tuning_pitches_validates():
@@ -49,7 +49,8 @@ def test_build_mapper_config_custom_tuning():
                               num_strings=resolve_num_strings(a.tuning, a.num_strings))
     assert cfg.tuning == "CUSTOM"
     assert cfg.num_strings == 6
-    assert cfg.custom_tuning == ("B3", "F#3", "D3", "A2", "E2", "A1")
+    assert cfg.custom_tuning == ("A1", "E2", "A2", "D3", "F#3", "B3")  # low->high
+    # open pitches are string index 0 = highest (high->low), unchanged by the flip
     assert GuitarMapper(cfg).open_string_pitches == [59, 54, 50, 45, 40, 33]
 
 
@@ -57,7 +58,7 @@ def test_drop_low_string_on_named_tuning():
     # BARITONE_B with its low B dropped 2 semitones == the A1 baritone.
     a = _parser().parse_args(["--tuning", "BARITONE_B", "--drop-low-string", "2"])
     custom = resolve_custom_tuning(a)
-    assert custom[-1] == "A1"   # lowest string dropped B1 -> A1
+    assert custom[0] == "A1"   # lowest string (index 0, low->high) dropped B1 -> A1
 
 
 def test_no_custom_tuning_when_plain():
@@ -84,9 +85,52 @@ def test_tab_parser_uses_supplied_tuning():
     assert [e.pitch for e in retuned.tracks[0].events] == [62]        # high string -> D4
 
 
+def test_tab_roundtrips_custom_tuning_via_header():
+    # Generate a custom-tuned tab, then re-parse it with NO tuning passed: it must
+    # read the embedded '// Tuning:' header and recover the exact pitches.
+    from gtrsnipe.core.config import MapperConfig
+    from gtrsnipe.core.types import MusicalEvent, Song, Track
+    from gtrsnipe.formats.tab.generator.ascii import AsciiTabGenerator
+    from gtrsnipe.formats.tab.parser import AsciiTabParser
+    cfg = MapperConfig(tuning="CUSTOM", num_strings=6,
+                       custom_tuning=("D2", "A2", "D3", "G3", "A3", "D4"))  # DADGAD
+    pitches = [62, 64, 66, 67, 69]
+    song = Song(tracks=[Track(events=[MusicalEvent(i * 0.5, p, 0.5, 100)
+                                      for i, p in enumerate(pitches)])], tempo=120)
+    tab = AsciiTabGenerator.generate(song, command_line="", mapper_config=cfg)
+    assert "// Tuning: D2,A2,D3,G3,A3,D4" in tab            # low->high header
+    got = sorted(e.pitch for t in AsciiTabParser.parse(tab).tracks for e in t.events)
+    assert got == sorted(pitches)
+
+
+def test_tab_parser_reads_legacy_high_to_low_header():
+    from gtrsnipe.formats.tab.parser import AsciiTabParser
+    tab = ("// Tuning (High to Low): E4 B3 G3 D3 A2 E2\n"
+           "e|--0--|\nB|-----|\nG|-----|\nD|-----|\nA|-----|\nE|-----|\n")
+    assert [e.pitch for e in AsciiTabParser.parse(tab).tracks[0].events] == [64]
+
+
+def test_tab_six_strings_low_e_not_dropped():
+    # Regression: start-char scan uppercased e/E to the same key -> 5 strings, so
+    # low-E notes were silently dropped. Now the low E (index 5) is parsed.
+    from gtrsnipe.formats.tab.parser import AsciiTabParser
+    tab = "e|-----|\nB|-----|\nG|-----|\nD|-----|\nA|-----|\nE|--3--|\n"
+    got = [e.pitch for t in AsciiTabParser.parse(tab).tracks for e in t.events]
+    assert got == [43]   # low E, fret 3 = G2
+
+
+def test_caller_tuning_overrides_header():
+    from gtrsnipe.formats.tab.parser import AsciiTabParser
+    tab = "// Tuning: E2,A2,D3,G3,B3,E4\ne|--0--|\nB|-|\nG|-|\nD|-|\nA|-|\nE|-|\n"
+    # explicit tuning wins over the embedded header (enables tuning-swap re-reads)
+    got = AsciiTabParser.parse(tab, open_string_pitches=[62, 59, 55, 50, 45, 40])
+    assert [e.pitch for e in got.tracks[0].events] == [62]
+
+
 def test_open_string_pitches_for():
+    # Returns string index 0 = highest (high->low); names are low->high so reversed.
     assert open_string_pitches_for("STANDARD") == [64, 59, 55, 50, 45, 40]
-    assert open_string_pitches_for("CUSTOM", ("D4", "A3")) == [62, 57]
+    assert open_string_pitches_for("CUSTOM", ("E2", "A2")) == [45, 40]  # low->high -> [A2, E2]
 
 
 # -- tuning solver ----------------------------------------------------------

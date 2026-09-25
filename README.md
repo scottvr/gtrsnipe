@@ -102,9 +102,11 @@ gtrsnipe -i piece.mid -o piece.tab --tuning-pitches "A1,E2,A2,D3,F#3,B3"
 gtrsnipe -i piece.mid -o piece.tab --tuning BARITONE_B --drop-low-string 2
 ```
 
-Custom tunings work everywhere (convert, `--play`, chord charts) and — since the
-ASCII-tab parser now decodes in the configured tuning — you can *re-read* a tab in
-a different tuning to hear what the same fingering becomes.
+Custom tunings work everywhere (convert, `--play`, chord charts). Generated tabs
+carry a `// Tuning:` header and **round-trip** — feed one back as input and it
+decodes in its own tuning; pass an explicit `--tuning`/`--tuning-pitches` to
+*re-read* the same fingering in a different tuning and hear what it becomes.
+(Tuning tuples and `--show-tuning` are listed low string → high.)
 
 The **inverse** is `--solve-tuning`: give it a melody and it finds a tuning under
 which an all-open-string tab plays it — the tab shows only open strings while the

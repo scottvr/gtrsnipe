@@ -50,12 +50,22 @@ invocations are unchanged (byte-identical output).**
   whose audio onsets fire at true times (independent of the display frame rate).
 - `gtrsnipe-play` / `gtrsnipe-chords` remain as curated convenience stubs over the
   same engine.
+- **Tuning tuples are now ordered low string → high** (the enum data,
+  `--show-tuning`/`--list-tunings`, and `--tuning-pitches`), matching how tunings
+  are conventionally named. The internal string *index* is unchanged (0 = highest;
+  tab staves still put the fattest string on the bottom row) — verified: resolved
+  open-string pitches and all tab/mid/abc/vex output are unchanged.
 
 ### Fixed
 - **ASCII tab parser honors the tuning.** It previously assumed standard/bass
   tuning regardless of `--tuning`, so a tab read under any other tuning produced
-  wrong pitches. It now decodes in the configured (named or custom) tuning — which
-  also enables re-reading a tab under a different tuning.
+  wrong pitches. It now decodes in the configured (named or custom) tuning.
+- **Generated tabs round-trip.** The parser reads the `// Tuning:` header and
+  accepts any string labels (not just `eBGDAE`), so a generated tab can be re-read
+  as input in its own tuning — or in a different one (explicit `--tuning` wins).
+- **6-string low-E no longer dropped.** String-count detection uppercased `e`/`E`
+  to one key, mis-counting 6 strings as 5 and dropping low-E notes on single-block
+  tabs; it now uses the tuning header's count (else the first contiguous run).
 
 ### Testing
 - Opt-in, profile-driven golden-output regression gate (`tests/golden/`, skips

@@ -201,10 +201,16 @@ class AsciiTabGenerator:
     def _format_score(score: TabScore, command_line: str, max_line_width: int, base_unit_in_beats: float, config: MapperConfig) -> str:
         """Formats the complete score, breaking lines based on character width."""
         
-        try:
-            tuning_notes = Tuning[config.tuning].value
-        except KeyError:
-            tuning_notes = Tuning.STANDARD.value
+        # String labels are indexed 0 = highest, so we need names HIGH->low. Tuning
+        # tuples (and custom_tuning) are stored low->high, so reverse them; a custom
+        # tuning supplies its own names (the enum has no "CUSTOM" entry).
+        if getattr(config, "custom_tuning", None):
+            tuning_notes = list(reversed(config.custom_tuning))
+        else:
+            try:
+                tuning_notes = list(reversed(Tuning[config.tuning].value))
+            except KeyError:
+                tuning_notes = list(reversed(Tuning.STANDARD.value))
 
         # --- New logic to generate conventional string names ---
         string_names = []
@@ -227,7 +233,7 @@ class AsciiTabGenerator:
             f"// Title: {score.title}",
             f"// Tempo: {int(score.tempo)} BPM",
             f"// Time: {score.time_signature[0]}/{score.time_signature[1]}",
-            f"// Tuning (High to Low): {' '.join(tuning_notes)}",
+            f"// Tuning: {','.join(reversed(tuning_notes))}",
             ""
         ]
 

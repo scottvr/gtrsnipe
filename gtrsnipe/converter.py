@@ -337,7 +337,7 @@ def main():
             tuning_to_show = Tuning[tuning_name_to_show]
             notes = ' '.join(tuning_to_show.value)
             print(f"Tuning: {tuning_to_show.name}")
-            print(f"Notes:  {notes} (High to Low)")
+            print(f"Notes:  {notes} (low to high)")
         except KeyError:
             print(f"Error: Tuning '{args.show_tuning}' not found.")
             print("Use --list-tunings to see all available options.")
@@ -376,7 +376,7 @@ def main():
         # A user-defined tuning (--tuning-pitches / --drop-low-string) bypasses the
         # named-tuning resolution and validation below.
         from .arguments import resolve_custom_tuning
-        custom_names = resolve_custom_tuning(args)   # high->low note names, or None
+        custom_names = resolve_custom_tuning(args)   # low->high note names, or None
         is_custom = custom_names is not None
         if is_custom:
             tuning_name = "CUSTOM"
