@@ -4,7 +4,7 @@ from .core.theory import note_name_to_pitch, pitch_to_note_name, midi_to_hz
 from .core.types import Song, Tuning
 from .core.config import MapperConfig
 from .utils.io import save_text_file, save_midi_file
-from .arguments import setup_parser
+from .arguments import setup_parser, build_mapper_config
 from .utils.logger import setup_logger
 from .audio.dynamic_tempo import analyze_dynamic_tempo
 from argparse import ArgumentParser
@@ -474,36 +474,10 @@ def main():
         # (double-quantization) — removed in v0.3.0.
 
         mapper_config = None
-        
-        if not is_piano_mode:   
-            mapper_config = MapperConfig(
-                max_fret=args.max_fret,
-                tuning=tuning_name,
-                num_strings=num_strings,
-                fret_span_penalty=args.fret_span_penalty,
-                movement_penalty=args.movement_penalty,
-                string_switch_penalty=args.string_switch_penalty,
-                high_fret_penalty=args.high_fret_penalty,
-                low_string_high_fret_multiplier=args.low_string_high_fret_multiplier,
-                sweet_spot_bonus=args.sweet_spot_bonus,
-                sweet_spot_low=args.sweet_spot_low,
-                sweet_spot_high=args.sweet_spot_high,
-                unplayable_fret_span=args.unplayable_fret_span,
-                prefer_open=args.prefer_open,
-                fretted_open_penalty=args.fretted_open_penalty,
-                ignore_open=args.ignore_open,
-                legato_time_threshold=args.legato_time_threshold,
-                tapping_run_threshold=args.tapping_run_threshold,
-                deduplicate_pitches=args.dedupe,
-                quantization_resolution=args.quantization_resolution,
-                capo=args.capo,
-                barre_bonus=args.barre_bonus,  
-                barre_penalty=args.barre_penalty,  
-                mono_lowest_only=args.mono_lowest_only,
-                let_ring_bonus=args.let_ring_bonus,
-                diagonal_span_penalty=args.diagonal_span_penalty,
-                optimizer=args.optimizer,
-            )
+
+        if not is_piano_mode:
+            mapper_config = build_mapper_config(
+                args, tuning=tuning_name, num_strings=num_strings)
         
         song = filter_by_velocity(song, args.velocity_cutoff)
         

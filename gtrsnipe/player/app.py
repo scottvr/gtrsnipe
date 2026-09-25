@@ -11,6 +11,12 @@ import time
 from pathlib import Path
 from typing import Callable, List, Optional, Sequence
 
+from ..arguments import (
+    add_mapper_args,
+    add_tuning_args,
+    build_mapper_config,
+    resolve_num_strings,
+)
 from ..core.config import MapperConfig
 from ..core.types import MusicalEvent, Song
 from ..guitar.mapper import GuitarMapper
@@ -186,11 +192,8 @@ def _build_arg_parser() -> argparse.ArgumentParser:
                    help=f"Visible fret window size (default: {DEFAULT_WINDOW_SIZE}).")
     p.add_argument("--track", type=int, default=None,
                    help="For MIDI input: 1-indexed track to play (default: all).")
-    p.add_argument("--tuning", default="STANDARD", help="Tuning name.")
-    p.add_argument("--num-strings", type=int, default=6)
-    p.add_argument("--max-fret", type=int, default=24)
-    p.add_argument("--capo", type=int, default=0)
-    p.add_argument("--optimizer", choices=["viterbi", "greedy"], default="viterbi")
+    add_tuning_args(p.add_argument_group("Instrument"))
+    add_mapper_args(p.add_argument_group("Mapper (advanced)"))
     p.add_argument("--view", choices=["fretboard", "tab"], default="fretboard",
                    help="fretboard = animated neck; tab = horizontally scrolling "
                         "tab staff (Guitar-Hero style). Default: fretboard.")
@@ -237,12 +240,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if not args.input:
         parser.error("an input file is required (or use --list-instruments)")
 
-    cfg = MapperConfig(
-        tuning=args.tuning,
-        num_strings=args.num_strings,
-        max_fret=args.max_fret,
-        capo=args.capo,
-        optimizer=args.optimizer,
+    cfg = build_mapper_config(
+        args, tuning=args.tuning,
+        num_strings=resolve_num_strings(args.tuning, args.num_strings),
     )
     if args.view == "tab":
         renderer = ScrollingTabRenderer(cfg, width=args.width)
