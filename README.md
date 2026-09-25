@@ -72,6 +72,15 @@ every supported input format — with the same rhythm caveats (precise timing fr
 MIDI, approximate from ASCII tab). A 5-fret window auto-follows the playing up
 and down the neck; open strings are shown at the nut.
 
+> Since v0.5.0 the player is also a mode of the main tool: `gtrsnipe -i song.mid
+> --play --view tab` is equivalent to `gtrsnipe-play`, but with the converter's
+> full option set (audio input, `--transpose`, `--normalize-pitch`, every mapper
+> knob). `gtrsnipe-play` remains as a convenience shortcut.
+
+**Playback controls** (interactive terminal): `space` pause/resume (when paused,
+step a note); `.`/`,` step forward/back; `←`/`→` seek ±1 bar; `[`/`]` tempo
+down/up; `g`/`end` jump to start/end; `h` help; `q` quit.
+
 ```bash
 # Play a MIDI file at its own tempo
 gtrsnipe-play song.mid
@@ -145,6 +154,10 @@ gtrsnipe-chords song.mid
 # Save it as Markdown
 gtrsnipe-chords song.mid -o song.chords.md
 ```
+
+> Since v0.5.0 a chord sheet is also just an output format of the main tool:
+> `gtrsnipe -i song.mid -o song.chords.md` (a `.chords`/`.chords.md` output writes
+> the chart). `gtrsnipe-chords` remains as a convenience shortcut.
 
 Chord *names* (C, Am, E5, E7, C/E, …) are derived by matching pitch classes to
 chord templates, with the bass note disambiguating inversions and slash chords.

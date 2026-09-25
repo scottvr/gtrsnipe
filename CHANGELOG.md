@@ -3,6 +3,38 @@
 All notable changes to gtrsnipe are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.5.0] — 2026-09-25
+
+Unified-I/O refactor (design: [`docs/dev/DESIGN-unified-io.md`](docs/dev/DESIGN-unified-io.md)).
+The player, chord charts, and converter are now one tool over a shared option
+surface and an event-driven transport. **Existing `gtrsnipe -i x -o y.{tab,mid,abc,vex}`
+invocations are unchanged (byte-identical output).**
+
+### Added
+- **One canonical tool.** `gtrsnipe` now also:
+  - writes a **chord sheet** as an output format: `-o SONG.chords.md` (or `.chords`);
+  - **plays/visualizes** with `--play [--view {fretboard,tab}]`, `-o` no longer
+    required. Because `--play` runs after the full input preamble, it inherits
+    audio-input transcription, `--normalize-pitch`, `--transpose`, and frequency
+    range — you can now `gtrsnipe -i song.wav --play`.
+- **Full mapper option surface everywhere.** The player and chord charts now
+  accept all 33 mapper knobs (`--fret-span-penalty`, `--sweet-spot-*`, `--barre-*`,
+  `--let-ring-bonus`, …), not the previous ~6.
+- **Transport controls** in the player: `space` pause/resume (paused: step),
+  `.`/`,` step, `←`/`→` seek ±1 bar, `[`/`]` tempo, `g`/`end` jump, `h` help,
+  `q` quit — with audio resynced on seek/pause.
+- **Curses player** on a real terminal: alternate screen (scrollback preserved &
+  restored), non-blocking input (live pause during playback), and terminal-resize
+  re-layout. Piped/redirected output falls back to a plain stream.
+
+### Changed
+- Argument definitions and `MapperConfig` construction are defined once in
+  `gtrsnipe/arguments.py` and composed by every CLI (was declared/duplicated 3×).
+- The three player Clock classes were replaced by one event-driven `Transport`
+  whose audio onsets fire at true times (independent of the display frame rate).
+- `gtrsnipe-play` / `gtrsnipe-chords` remain as curated convenience stubs over the
+  same engine.
+
 ## [0.4.0] — 2026-09-24
 
 ### Added
