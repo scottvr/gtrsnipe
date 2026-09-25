@@ -110,11 +110,15 @@ class AudioSink:
             self._note_on(p, velocity)
         self._active = new
 
-    def close(self) -> None:
-        """Release every ringing note and tear down the backend."""
+    def all_off(self) -> None:
+        """Release every ringing note but keep the backend open (pause/seek)."""
         for p in list(self._active):
             self._note_off(p)
         self._active.clear()
+
+    def close(self) -> None:
+        """Release every ringing note and tear down the backend."""
+        self.all_off()
         self._teardown()
 
     # Subclass hooks -------------------------------------------------------
