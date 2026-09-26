@@ -4,8 +4,8 @@
 
 Convert to and from .mid, .abc, .vex, and .tab files. (and more.)
 
-## v0.4.0
-Released 2026-09-24. See [CHANGELOG](https://github.com/scottvr/gtrsnipe/blob/main/CHANGELOG.md)
+## v0.6.0
+Released 2026-09-26. See [CHANGELOG](https://github.com/scottvr/gtrsnipe/blob/main/CHANGELOG.md)
 
 # What?
 
@@ -13,7 +13,7 @@ gtrsnipe is a guitar transcription tool. Its primary function is to create playa
 
 It can also convert existing MIDI files into text-based notations or, in reverse, generate a playable MIDI file from a text-based tab.
 
-Beyond writing files, gtrsnipe can **play** a song: `gtrsnipe-play` animates it on an ASCII fretboard or a horizontally-scrolling "Guitar Hero"-style tab staff — optionally with sound (MIDI to a synth/DAW, or a SoundFont) — and `gtrsnipe-chords` breaks a song into a per-measure chord sheet with diagrams. Both reuse the same fretboard mapper, so they work with every supported input format and tuning. (See the sections below.)
+Beyond writing files, gtrsnipe can **play** a song: `gtrsnipe-play` animates it on an ASCII fretboard or a horizontally-scrolling "Guitar Hero"-style tab staff — optionally with sound (MIDI to a synth/DAW, or a SoundFont) — and `gtrsnipe-chords` breaks a song into a per-measure chord sheet with diagrams. Both reuse the same fretboard mapper, so they work with every supported input format and tuning. (See the sections below.) It can also find [**tab homographs**](#tab-homographs-one-tab-a-different-song-per-tuning): one ordinary tab that plays a different song in each of two tunings.
 
 At its core, gtrsnipe uses an intelligent fretboard mapper that analyzes notes and chords to find comfortable and logical fingerings on the guitar neck. [This process is highly customizable](https://github.com/scottvr/gtrsnipe/wiki/1.-FretboardMapper-Algorithm-Configuration-and-Tunables), allowing you to fine-tune the output to match your personal playing style and preferences.
 
