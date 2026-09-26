@@ -1,87 +1,16 @@
-## Tab homographs: push the reductio past open strings
-**[DONE — Unreleased]** `--homograph A B [C …]`: one ordinary, fretted tab that plays a
-different song per tuning. Eligibility = alignment + **richness** (distinct note-for-note
-intervals ≤ strings), then free / anchored / middle / as-written, with string-tension
-physics (plain steel breaks ≈ A4 at 25.5" regardless of gauge), song transposition,
-rhythm slop (`--homograph-rhythm RATIO`) and re-rhythm (`--homograph-subdivide`:
-"ta" ≈ "ti ti"). Theory: `docs/dev/DESIGN-homograph.md`; demos: `examples/homograph/`.
+# Parking lot
 
-Next (phase 3, "in the wild"):
-- **Pair search over a corpus.** Richness needs no tab, so it's cheap. Slide every alignment
-  offset between two melodies and find the longest window with richness ≤ 6 (a
-  "≤ k distinct values" sliding window along each diagonal). Corpus candidates:
-  public-domain ABC/EsAC folk collections, hymn tunes that share a metre (Common
-  Metre tunes are famously interchangeable), and The Session's reels (long isochronous
-  eighth-note streams). Needs the ABC parser to learn key signatures, bar-scoped
-  accidentals, ties, and to skip "chord symbols" in quotes.
-- **Fixed published tabs, as written.** Test real tabs of A against candidate B's with
-  the as-written check (per-string interval constancy is a linear check). Copyrighted
-  inputs stay local (golden-gate pattern).
-- **Multi-song re-rhythm.** Subdivision currently aligns 2 songs; K ≥ 3 need 1:1.
-- **Chord-voice pairing** is greedy; an exact search can only lower the reported richness.
-- **Pre-existing tab-generator bug (found by the homograph review):** a hammer-on/pull-off
-  prefix (`h3`, `p2`) is written at the note's column, so its digits land one column late.
-  The parser times notes by the digit column, so a chord with one hammered note decodes
-  as a two-note arpeggio, and single hammered notes read slightly late. The homograph
-  path avoids it by rendering without articulations. A real fix puts the letter in the
-  column *before* the digits, but that changes the bytes of every existing tab with
-  techniques (the golden outputs), so it's parked for a decision.
-- Tension display could be useful outside homographs (e.g. `--show-tuning` with gauges,
-  or warning when a custom tuning would snap a string).
+Quick capture for new ideas. Write one or two lines each; there's no need to think them
+through or start them. Nothing here is scheduled.
 
-## gtrsnipe should support aarabitrary tunings easily
-**[DONE — v0.5.0]** `--tuning-pitches "A1,E2,A2,D3,F#3,B3"` (low→high) + `--drop-low-string N`.
-Custom tunings thread through convert/play/chords; the ASCII-tab parser now decodes in
-the configured tuning (was hardcoded standard — a real bug fix, and it enables re-reading a
-tab under a different tuning). Also added the inverse **`--solve-tuning`** (melody → tuning
-whose all-open tab plays it), the executable form of the copyright reductio.
+At each triage, every entry either moves into [`BACKLOG.md`](BACKLOG.md), the single list
+of open work with a plan, or is declined, and is removed from this file. (This is part of
+The Dull Protocol, described at the top of the backlog.)
 
-- we have plenty of useful provided named tunings
-- I had an occasion to want a BARITONE_B tuning, but dropping the low B to an A1 (analogous to drop-d tuning where the low three strings play a power chord in open position.) BARITONE_A is avauilable, and drop d is available for 6 strings or bass, but very quickly I thought oh we should just implement a `--drop-low-string`argument so that the user could do this on a 7-string, and in any (supported) tuning. This may still be a good idea for convenience, but immediately I realized that the ability to do --tuning CUSTOM that used the values spcified by maybe a --tuning-pitches where the user can specifiy a runing of num_strings length, low to high, by named pitch class like `--tuning-pitches A1,E2,A2,D3,F#3,B3`, so they'd then be free to name their own tune.
+Earlier entries (custom tunings, profiles, homographs, MIDI player defaults) were
+triaged on 2026-09-26. The finished ones are in the CHANGELOG, the open ones are in the
+backlog, and the original notes are in git history.
 
-## we should support user prefs/profiles in a .grtrsnipe directory
-**[DONE — Unreleased]** Implemented as `--profile`/`--save-args`/`--no-defaults`/
-`--config-dir` + auto `defaults`; profile = prepended argv re-parsed. See README
-"Config profiles" and `gtrsnipe/arguments.py` (apply_profiles). Custom tunings can
-now live in profiles once #1 lands.
+## Ideas
 
-- a defaults file will have all option values to use in the absence of an explicit option on the command line.
-- individual files of the same format but just stored for convenience and accessible via --profile <name> where <name> corrresponds to the file name within the .gtrsnipe directory (or other specified directory)
-- they could store custom tunings in there, too. If we allow multiple --profile arguments (and also comma-separated list of profiles that are applied in order, so we only need to support a single file syntax and not a special one for tunings, they'd pass `--profile my-short-scale-prefs,my_custom_tuning` and both of those files would be read and applied to the current command-line arguments
-- applied first, so that then other arguments can override anything from a .gtrsnipe prefs/profile. 
-the commands end up very long with lots of commands at times so this would be a time and aggravation saver.
-- we could add a --save-args <new_file_name> would would taake the current supplied arguments and write them to a .gtrshnipe/new_file_name file for later re-use.
-The file format could be simple ini-ish:
-```
-argname # for boolean/toggle flags
-argname value # for any thaat take options themselves
-```
-
-So if I know I always want 
-```
---sweet-spot-high 9 --string-switch-penalty 0 --ignore-open 
-```
-
-I could create a .gtrsnipe/defaults containing those values, or a file by any other name to load when a --profile is passed.
-Here's a spelled out example:
-```
-# Example gtrsnipe config file:
-# .gtrsnipe/spanish
-sweet-spot-high = 9
-string-switch-penalty = 0
-ignore-open 
-uweet-spot-low=4 
-prefer-open 
-unplayable-fret-span=3 
-high-fret-penalty=50 
-dedupe 
-fretted-open-penalty = 10 
-movement-penalty =20 
-let-ring-bonus  = 210 
-diagonal-span-penalty 
-no-articulations
-```
-Make sense?
-
-## midi player sensible defaults
-We might want to respect midi instruments that may be specified in a .mid file. For display/comment perhaps and for when the audio player is used. Similarly for midi channels if we're sending out to a midi port. track/channel/inst, what else?
+_(nothing waiting for triage)_
