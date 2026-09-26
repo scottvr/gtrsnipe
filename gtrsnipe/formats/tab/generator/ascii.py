@@ -14,13 +14,16 @@ class AsciiTabGenerator:
     @staticmethod
     def generate(song: Song, command_line: str, max_line_width: int = 40, default_note_length: str = "1/16", 
                  no_articulations: bool = False, 
-                 single_string: Optional[int] = None, mapper_config: Optional[MapperConfig] = None, **kwargs) -> str:
+                 single_string: Optional[int] = None, mapper_config: Optional[MapperConfig] = None,
+                 premapped: bool = False, **kwargs) -> str:
         """
         Generates an ASCII tab string from a Song object.
         Args:
             song: The Song object to convert.
             max_line_width: The maximum character width before breaking a line.
             default_note_length: The "base unit" for rhythmic spacing (e.g., "1/8", "1/16").
+            premapped: the events already carry string/fret (e.g. a solved
+                homograph tab) -- render them as-is instead of re-mapping.
         """
         if mapper_config is None:
             mapper_config = MapperConfig()
@@ -30,8 +33,12 @@ class AsciiTabGenerator:
 
         total_mapped_notes = 0
         for track in song.tracks:
-            mapped_events = mapper.map_events_to_fretboard(track.events, no_articulations=no_articulations,
-                                                           single_string=single_string)
+            if premapped:
+                mapped_events = mapper._infer_techniques_from_positions(
+                    sorted(track.events, key=lambda e: e.time), no_articulations)
+            else:
+                mapped_events = mapper.map_events_to_fretboard(track.events, no_articulations=no_articulations,
+                                                               single_string=single_string)
             total_mapped_notes += len(mapped_events)
             new_track = Track(events=mapped_events, instrument_name=track.instrument_name)
             mapped_song.tracks.append(new_track)

@@ -1,0 +1,51 @@
+$ gtrsnipe --homograph oldmac.abc twinkle.abc@1-12 --homograph-octaves -o oldmac-twinkle.tab
+Tab homograph check: 2 songs
+  A  oldmac        (12 notes, 12 onsets)
+  B  twinkle@1-12  (12 notes, 12 onsets)
+Alignment  OK - 12 tab onsets, 12 notes, identical rhythm
+Octaves    displaced 4 note(s) of B (--homograph-octaves)
+Intervals  B-A per note: 0 0 +7 0 0 0 0 +1 +1 +2 +2 +2
+Rank       4 interval classes {0, +1, +2, +7} -> a shared tab needs >= 4 strings
+Free       ELIGIBLE - 4 strings, any tunings (max 12, 24 frets)
+             (--homograph-mode free for its tab)
+Anchored   ELIGIBLE - an ordinary STANDARD tab of A, retuned, plays B (10-46 set, 25.5" scale):
+             string gauge  A                  B
+              1 e   .010   E4        16.3lb   C#4   -3  11.5lb
+              2 B   .013   B3        15.5lb   A3    -2  12.3lb
+              3 G   .017   G3        16.6lb   Bb3   +3  23.5lb
+              4 D   .026w  D3        18.1lb   Bb2   -4  11.4lb
+              5 A   .036w  A2   (unused)
+              6 E   .046w  E2   (unused)
+             B sounds -4 semitones from its input key (chosen to minimize retuning; --homograph-transpose keep holds it)
+Middle     ELIGIBLE - every song a retune of one STANDARD-strung guitar (10-46 set, 25.5" scale); the tab is in tuning A:
+             (every string within safe tension; --homograph-mode middle for its tab)
+Verified   decoding the tab in each tuning reproduces every note of every song
+
+// Title: oldmac
+// Tempo: 120 BPM
+// Time: 4/4
+// Tuning: E2,A2,D3,G3,B3,E4
+// Homograph: this one tab plays a different song in each tuning (low->high):
+//   Key A: E2,A2,D3,G3,B3,E4  = oldmac
+//   Key B: E2,A2,Bb2,Bb3,A3,C#4  = twinkle@1-12 (transposed -4)
+
+// Transcribed with: gtrsnipe --homograph oldmac.abc twinkle.abc@1-12 --homograph-octaves -o oldmac-twinkle.tab -y
+
+e|----------|------|-0-0----|
+B|----------|------|-----3-3|
+G|-------5--|------|--------|
+D|-10-10---5|-7-7-5|--------|
+A|----------|------|--------|
+E|----------|------|--------|
+
+e|--------------------------------|
+B|-1------------------------------|
+G|--------------------------------|
+D|--------------------------------|
+A|--------------------------------|
+E|--------------------------------|
+
+
+Same tab, one tuning per song:
+  gtrsnipe -i oldmac-twinkle.tab --tuning-pitches E2,A2,D3,G3,B3,E4 -o a.mid     # A: oldmac
+  gtrsnipe -i oldmac-twinkle.tab --tuning-pitches 'E2,A2,Bb2,Bb3,A3,C#4' -o b.mid     # B: twinkle@1-12

@@ -118,6 +118,63 @@ gtrsnipe --solve-tuning "C4,C4,G4,G4,A4,A4,G4" --play --audio fluidsynth --sound
 gtrsnipe --solve-tuning "C4,C4,G4,G4,A4,A4,G4" -o twinkle.tab -o twinkle.mid   # write it
 ```
 
+### Tab homographs: one tab, a different song per tuning
+
+`--homograph A B [C …]` goes further: it looks for a single **ordinary, fretted,
+playable** tab that plays song A in one tuning and song B in another. Here is a
+standard-tuning tab of *Old MacDonald*. Retune four strings (all within their
+gauges' safe range) and the very same tab plays *Twinkle, Twinkle*:
+
+```text
+$ gtrsnipe --homograph examples/homograph/oldmac.abc examples/homograph/twinkle.abc@1-12 --homograph-octaves
+...
+// Tuning: E2,A2,D3,G3,B3,E4
+//   Key A: E2,A2,D3,G3,B3,E4  = oldmac
+//   Key B: E2,A2,Bb2,Bb3,A3,C#4  = twinkle@1-12 (transposed -4)
+
+e|----------|------|-0-0----|      e|--------------------------------|
+B|----------|------|-----3-3|      B|-1------------------------------|
+G|-------5--|------|--------|      G|--------------------------------|
+D|-10-10---5|-7-7-5|--------|      D|--------------------------------|
+A|----------|------|--------|      A|--------------------------------|
+E|----------|------|--------|      E|--------------------------------|
+```
+
+(With `--homograph-octaves`, four of Twinkle's notes drop an octave; the report
+says so. `--homograph-mode middle` plays Twinkle exactly, and needs no
+re-stringing either.)
+
+Why it works: on any one string, song A's note and song B's note differ by the
+same interval (the difference between the two open strings). So two aligned songs
+share a tab exactly when their note-for-note intervals split into as many classes
+as there are strings. The report's **rank** counts those distinct intervals.
+Neither note count nor range matters, and the keys don't either.
+
+The report walks through each check in turn: alignment, rank, then *free* (any
+tunings), *anchored* (A keeps `--tuning`, so the tab is an ordinary tab of A),
+*middle* (both tunings are retunes of one strung guitar), and *as written* (A read
+from a `.tab`: does its own fingering retune?). It stops with a reason at the
+first failure. Retunes are checked against **string physics**: tension, the
+breaking point of plain steel (about A4 at 25.5″, whatever the gauge), and slack.
+Strings that would snap or flop are flagged, with a gauge that would work.
+
+```bash
+gtrsnipe --homograph a.mid b.abc -o shared.tab               # anchored to --tuning (default STANDARD)
+gtrsnipe --homograph a.mid b.abc --homograph-mode middle     # both tunings retune one guitar
+gtrsnipe --homograph song.mid:5@9-24 "E4 D4 C4 D4 E4 E4 E4:2"  # MIDI track 5, onsets 9-24, vs an inline melody
+gtrsnipe --homograph a.abc b.abc --homograph-rhythm 1.5      # tolerate loose rhythm (tabs carry little)
+gtrsnipe --homograph a.abc b.abc --homograph-subdivide 2     # 'ta' ~ 'ti ti': smear/re-strike to match counts
+gtrsnipe --homograph a.abc b.abc --play --homograph-play B   # watch/hear the shared tab in B's tuning
+```
+
+Other knobs: `--homograph-transpose`/`-a` (song keys), `--homograph-max-retune`,
+`--homograph-octaves` (octave-displace notes to lower the rank), `--homograph-neutral`
+(number the strings and omit the default tuning, so the text favors no song),
+`--scale-length`, `--string-gauges`. Every liberty taken is disclosed in the report
+and the tab header. Theory, proofs, physics, and limits:
+[`docs/dev/DESIGN-homograph.md`](docs/dev/DESIGN-homograph.md). Worked examples:
+[`examples/homograph/`](examples/homograph/).
+
 ## Player / Visualizer
 
 `gtrsnipe-play` renders a song as a live ASCII fretboard instead of writing a

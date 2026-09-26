@@ -37,6 +37,16 @@ def add_tuning_args(target) -> None:
         help='Define a custom tuning by comma-separated note names, low string to '
              "high (e.g. 'A1,E2,A2,D3,F#3,B3'). Overrides --tuning.")
     target.add_argument(
+        '--scale-length', type=float, default=None, metavar='INCHES',
+        help='Scale length for string-tension physics (default: 25.5 guitar, 27 '
+             'baritone, 34 bass).')
+    target.add_argument(
+        '--string-gauges', type=str, default=None, metavar='GAUGES',
+        help="String gauges for tension physics, low string first like --tuning-pitches "
+             "(a thin->thick set such as '10 13 17 26w 36w 46w' is flipped for you; "
+             "'w' = wound). Default: 10-46 for STANDARD (10-59 7-string, 13-62 "
+             "BARITONE_B, 45-105 bass), else a balanced set designed for the tuning.")
+    target.add_argument(
         '--drop-low-string', type=int, default=0, metavar='SEMITONES',
         help='Lower the lowest string by N semitones (2 = drop-D style), on any '
              'tuning / string count.')
@@ -213,6 +223,29 @@ def open_string_pitches_for(tuning: str, custom=None) -> list:
     return [note_name_to_pitch(n) for n in reversed(names)]
 
 
+def resolve_named_tuning(tuning: str, num_strings, bass: bool) -> tuple:
+    """(tuning name, string count) for a named tuning with the CLI shortcuts the
+    converter applies: STANDARD + --num-strings 7 / 4 -> SEVEN_STRING_STANDARD /
+    BASS_STANDARD, and --bass. Raises ValueError for an unknown tuning or a
+    --num-strings that doesn't match it."""
+    from .core.types import Tuning
+    name = (tuning or "STANDARD").upper()
+    if num_strings is not None and name == "STANDARD":
+        if num_strings == 7:
+            name = "SEVEN_STRING_STANDARD"
+        elif num_strings == 4:
+            name = "BASS_STANDARD"
+    elif bass:
+        name = "BASS_STANDARD"
+    if name not in Tuning.__members__:
+        raise ValueError(f"Tuning '{name}' not found. Use --list-tunings to see available options.")
+    actual = len(Tuning[name].value)
+    if num_strings is not None and num_strings != actual:
+        raise ValueError(f"Mismatch between --num-strings ({num_strings}) and tuning '{name}' "
+                         f"(which has {actual} strings). Please specify a compatible tuning.")
+    return name, actual
+
+
 def resolve_num_strings(tuning: str, num_strings) -> int:
     """Infer string count from the tuning when not explicitly set (mirrors the
     converter's inference); falls back to 6 for unknown tunings / PIANO."""
@@ -283,6 +316,7 @@ _PROFILE_META = {"--profile", "--no-defaults", "--config-dir", "--save-args"}
 _SAVE_SKIP_DESTS = {
     "input", "output", "save_args", "profile", "no_defaults", "config_dir",
     "list_tunings", "show_tuning", "list_instruments", "analyze", "yes", "help",
+    "solve_tuning", "homograph",
 }
 
 
@@ -533,8 +567,57 @@ def setup_parser() -> ArgumentParser:
         '--max-strings',
         type=int,
         default=12,
-        help='Max strings the tuning solver may use (default: 12).'
+        help='Max strings the tuning solver (and --homograph-mode free) may use (default: 12).'
     )
+
+    homograph_group = parser.add_argument_group(
+        'Tab homographs (--homograph: one tab, a different song per tuning)')
+    homograph_group.add_argument(
+        '--homograph', nargs='+', default=None, metavar='SONG',
+        help="Find ONE tab that plays each SONG under its own tuning (2+ songs; the "
+             "first is the tab's own). A SONG is a file (.mid[:TRACK], .abc, .tab, "
+             ".vex; append @START-END for just onsets START..END) or an inline melody "
+             "like 'C4 C4 G4 G4 A4 A4 G4:2' (':beats', '+' chords, 'r' rests). Prints "
+             "an eligibility report and the tab. -o FILE.tab writes it; --play plays "
+             "it. No -i needed.")
+    homograph_group.add_argument(
+        '--homograph-mode', choices=['anchored', 'middle', 'free'], default='anchored',
+        help="anchored (default): song 1 keeps --tuning, so the tab is an ordinary tab "
+             "of it and the other songs are retunes. middle: every song is a retune of "
+             "the same strung guitar (tensions meet in the middle). free: any tunings "
+             "at all (up to --max-strings strings). The report gives every verdict.")
+    homograph_group.add_argument(
+        '--homograph-rhythm', default='strict', metavar='strict|RATIO|sequence',
+        help="strict (default): onsets match (or the same rhythm at another note "
+             "value). RATIO, e.g. 1.5: each gap between onsets may differ by up to "
+             "that factor. sequence: pitch order only. The tab carries song 1's rhythm.")
+    homograph_group.add_argument(
+        '--homograph-subdivide', type=int, default=1, metavar='K',
+        help="Re-rhythm (2 songs): let one note stand for up to K notes of the other "
+             "('ta' ~ 'ti ti'): repeated notes are smeared into one held note, else the "
+             "single note is re-struck. Default 1 = off.")
+    homograph_group.add_argument(
+        '--homograph-transpose', default='auto', metavar='auto|keep|N',
+        help="Transpose songs 2.. to minimize retuning (auto, default), keep their "
+             "keys, or shift them by N semitones.")
+    homograph_group.add_argument(
+        '--homograph-transpose-a', default='auto', metavar='auto|keep|N',
+        help="Song 1: auto (default) keeps its key when that works without "
+             "re-stringing, else tries +-12 semitones; keep; or shift by N.")
+    homograph_group.add_argument(
+        '--homograph-max-retune', type=int, default=None, metavar='SEMITONES',
+        help="Cap how far any string may be retuned from song 1's tuning.")
+    homograph_group.add_argument(
+        '--homograph-octaves', action='store_true',
+        help="Arrangement liberty: allow octave displacement of individual notes of "
+             "songs 2.. (lowers the rank; the report counts displaced notes).")
+    homograph_group.add_argument(
+        '--homograph-neutral', action='store_true',
+        help="Write a neutral tab: strings numbered 1..N, no default tuning, so the "
+             "text privileges no song.")
+    homograph_group.add_argument(
+        '--homograph-play', default='B', metavar='LETTER',
+        help="With --play: which song's tuning to play the shared tab in (default: B).")
     parser.add_argument(
         "--transpose",
         type=int,

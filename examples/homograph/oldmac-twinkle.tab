@@ -1,0 +1,24 @@
+// Title: oldmac
+// Tempo: 120 BPM
+// Time: 4/4
+// Tuning: E2,A2,D3,G3,B3,E4
+// Homograph: this one tab plays a different song in each tuning (low->high):
+//   Key A: E2,A2,D3,G3,B3,E4  = oldmac
+//   Key B: E2,A2,Bb2,Bb3,A3,C#4  = twinkle@1-12 (transposed -4)
+
+// Transcribed with: gtrsnipe --homograph oldmac.abc twinkle.abc@1-12 --homograph-octaves -o oldmac-twinkle.tab -y
+
+e|----------|------|-0-0----|
+B|----------|------|-----3-3|
+G|-------5--|------|--------|
+D|-10-10---5|-7-7-5|--------|
+A|----------|------|--------|
+E|----------|------|--------|
+
+e|--------------------------------|
+B|-1------------------------------|
+G|--------------------------------|
+D|--------------------------------|
+A|--------------------------------|
+E|--------------------------------|
+

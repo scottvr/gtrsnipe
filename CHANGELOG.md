@@ -3,6 +3,46 @@
 All notable changes to gtrsnipe are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- **Tab homographs** (`--homograph A B [C …]`): one ordinary, fretted, playable
+  tab that plays a different song in each tuning. Two aligned songs share a tab iff
+  their note-for-note intervals split into ≤ N classes (one per string; see
+  [`docs/dev/DESIGN-homograph.md`](docs/dev/DESIGN-homograph.md)). The report walks
+  through each check in turn: alignment → **rank** (distinct intervals) → *free* /
+  *anchored* (A keeps `--tuning`, an ordinary tab of A) / *middle* (both tunings
+  retune one strung guitar) / *as written* (does A's own `.tab` fingering retune?).
+  It names the first obstacle, verifies every solution by decoding, writes
+  `-o shared.tab` with every song's key in the header, and `--play`s it in any
+  song's tuning. Songs are files (`.mid[:TRACK]`, `.abc`, `.tab`, `.vex`, each
+  with an optional `@START-END` onset window) or inline melodies
+  (`"C4 C4 G4:2 r:1 C3+E3+G3"`). Knobs: `--homograph-mode`, `-rhythm` (strict /
+  ratio slop / sequence), `-subdivide` ("ta" ≈ "ti ti": smear repeated notes or
+  re-strike), `-transpose`, `-transpose-a`, `-max-retune`, `-octaves`, `-neutral`,
+  `-play`.
+- **String physics** (`gtrsnipe/guitar/strings.py`): tension from gauge / scale /
+  pitch (matches D'Addario EXL110 within 1–2%), plain steel's gauge-independent
+  breaking pitch (≈ A4 at 25.5″), wound-core headroom, slack limit, and
+  restring suggestions. Homograph retunes are costed and flagged with it.
+  `--scale-length`, `--string-gauges` configure the instrument.
+- Worked public-domain examples in `examples/homograph/`.
+- An adversarial multi-agent review of the feature found and confirmed 22
+  issues before release (middle mode not a superset of anchored, the wound-string
+  model, re-rhythm edge cases, rendering). All are fixed, each with a regression test.
+
+### Fixed
+- **`-i x.tab` now honors the tab's own `// Tuning:` header** when no tuning is
+  given, for the whole run (decode, range filter, mapping, and any tab output),
+  as if `--tuning-pitches` had named it. Before, the CLI always passed STANDARD
+  pitches to the parser, so the v0.5.0 tab round-trip only worked through the API
+  (a DADGAD tab decoded as if standard). An explicit `--tuning`/`--tuning-pitches`
+  still overrides; header-less tabs read as 6-string standard, as before.
+- Note names `Cb` and `B#` were an octave off (`Cb4` gave B4, `B#3` gave C3), in
+  `--tuning-pitches` and anywhere else note names are read.
+- `--save-args` no longer writes per-run inputs `--solve-tuning` / `--homograph`
+  into a profile (a saved `--solve-tuning` turned every later run into a solve).
+
 ## [0.5.0] — 2026-09-25
 
 Unified-I/O refactor (design: [`docs/dev/DESIGN-unified-io.md`](docs/dev/DESIGN-unified-io.md)).

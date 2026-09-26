@@ -1,0 +1,18 @@
+// Title: oldmac@1-7
+// Tempo: 120 BPM
+// Time: 4/4
+// Tuning: F#2,B2,D3,E3,F#3,E4
+// Homograph: this one tab plays a different song in each tuning (low->high):
+//   Key A: F#2,B2,D3,E3,F#3,E4  = oldmac@1-7
+//   Key B: B1,E2,D3,A3,B3,E4  = twinkle@1-7 (transposed -7)
+//   Key C: F#2,A2,Bb2,G3,B3,E4  = mary@1-7 (transposed -4)
+
+// Transcribed with: gtrsnipe --homograph oldmac.abc@1-7 twinkle.abc@1-7 mary.abc@1-7 --homograph-mode middle -o nursery-trio.tab -y
+
+e|-----------|------|
+F|-----------|-----1|
+E|----------3|-5-5--|
+D|-------10--|------|
+B|----13-----|------|
+F|-18--------|------|
+

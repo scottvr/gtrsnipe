@@ -10,6 +10,9 @@ __pycache__/
 *.abc
 *.tab
 *.vex
+# ...except the worked examples, which ship their public-domain inputs and outputs
+!examples/**/*.abc
+!examples/**/*.tab
 
 # Distribution / packaging
 .Python
