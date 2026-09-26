@@ -1271,6 +1271,7 @@ def config_for_song(sol: Solution, j: int, base: Optional[MapperConfig] = None) 
     cfg.custom_tuning = tuple(sol.tuning_names(j))
     cfg.num_strings = sol.num_strings
     cfg.capo = 0
+    cfg.mono_lowest_only = False     # a render option must never drop notes of the tab
     return cfg
 
 
@@ -1291,8 +1292,10 @@ def render_tab(report: HomographReport, sol: Solution, *, neutral: bool = False,
     song = decoded_song(report.slots, sol, 0, title=title, tempo=tempo,
                         time_signature=time_signature)
     cfg = config_for_song(sol, 0, base_config)
+    # no_articulations: an 'h'/'p' prefix shifts a chord note's digits one column
+    # right, so the parser would split the chord (the digits' column is the time).
     text = AsciiTabGenerator.generate(song, command_line=command_line,
-                                      max_line_width=max_line_width,
+                                      max_line_width=max_line_width, no_articulations=True,
                                       mapper_config=cfg, premapped=True)
     keys = ["// Homograph: this one tab plays a different song in each tuning (low->high):"]
     for j, lab in enumerate(report.labels):
@@ -1314,6 +1317,31 @@ def render_tab(report: HomographReport, sol: Solution, *, neutral: bool = False,
             run += 1
         out.append(line)
     return "\n".join(out)
+
+
+def verify_text(report: HomographReport, sol: Solution, text: str) -> List[str]:
+    """Re-parse the RENDERED tab in each song's tuning and compare it, onset by
+    onset, with the songs -- so "Verified" covers the text actually written, not
+    just the solver's positions. Returns a list of problems (empty = verified)."""
+    from ..formats.tab.parser import AsciiTabParser
+
+    by_group: Dict[int, List[int]] = defaultdict(list)
+    for i, sl in enumerate(report.slots):
+        by_group[sl.group].append(i)
+    problems = []
+    for j, lab in enumerate(report.labels):
+        parsed = AsciiTabParser.parse(text, open_string_pitches=sol.opens[j])
+        got = [sorted(e.pitch for e in g) for g in
+               onset_groups([e for t in parsed.tracks for e in t.events], 1e-6)]
+        want = [sorted(report.slots[i].pitches[j] + sol.shifts[j] for i in by_group[g])
+                for g in sorted(by_group)]
+        if got != want:
+            k = next((n for n, (x, y) in enumerate(zip(got, want)) if x != y),
+                     min(len(got), len(want)))
+            problems.append(f"song {lab}: tab onset {k + 1} decodes to "
+                            f"{got[k] if k < len(got) else 'nothing'}, expected "
+                            f"{want[k] if k < len(want) else 'nothing'}")
+    return problems
 
 
 # -- the one-call analysis ----------------------------------------------------------------------

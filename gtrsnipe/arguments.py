@@ -223,6 +223,29 @@ def open_string_pitches_for(tuning: str, custom=None) -> list:
     return [note_name_to_pitch(n) for n in reversed(names)]
 
 
+def resolve_named_tuning(tuning: str, num_strings, bass: bool) -> tuple:
+    """(tuning name, string count) for a named tuning with the CLI shortcuts the
+    converter applies: STANDARD + --num-strings 7 / 4 -> SEVEN_STRING_STANDARD /
+    BASS_STANDARD, and --bass. Raises ValueError for an unknown tuning or a
+    --num-strings that doesn't match it."""
+    from .core.types import Tuning
+    name = (tuning or "STANDARD").upper()
+    if num_strings is not None and name == "STANDARD":
+        if num_strings == 7:
+            name = "SEVEN_STRING_STANDARD"
+        elif num_strings == 4:
+            name = "BASS_STANDARD"
+    elif bass:
+        name = "BASS_STANDARD"
+    if name not in Tuning.__members__:
+        raise ValueError(f"Tuning '{name}' not found. Use --list-tunings to see available options.")
+    actual = len(Tuning[name].value)
+    if num_strings is not None and num_strings != actual:
+        raise ValueError(f"Mismatch between --num-strings ({num_strings}) and tuning '{name}' "
+                         f"(which has {actual} strings). Please specify a compatible tuning.")
+    return name, actual
+
+
 def resolve_num_strings(tuning: str, num_strings) -> int:
     """Infer string count from the tuning when not explicitly set (mirrors the
     converter's inference); falls back to 6 for unknown tunings / PIANO."""

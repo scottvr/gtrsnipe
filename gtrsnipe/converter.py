@@ -373,7 +373,8 @@ def _load_homograph_song(spec: str, args, anchor_open: list):
 
 def run_homograph(args, command_line: str = "") -> int:
     """--homograph: one tab that plays a different song under each song's tuning."""
-    from .arguments import resolve_custom_tuning, resolve_num_strings
+    import shlex
+    from .arguments import resolve_custom_tuning, resolve_named_tuning
     from .guitar import homograph as hg
 
     specs = args.homograph
@@ -381,12 +382,20 @@ def run_homograph(args, command_line: str = "") -> int:
         logger.error("--homograph needs at least two songs.")
         return 1
     custom = resolve_custom_tuning(args)
-    tuning = "CUSTOM" if custom else ('BASS_STANDARD' if args.bass else args.tuning.upper())
-    if tuning == 'PIANO':
+    if custom:
+        tuning, num_strings = "CUSTOM", len(custom)
+    elif args.tuning.upper() == 'PIANO':
         logger.error("--homograph needs a string instrument (not --tuning PIANO).")
         return 1
-    cfg = build_mapper_config(args, tuning=tuning,
-                              num_strings=resolve_num_strings(tuning, args.num_strings))
+    else:
+        try:   # the converter's own shortcuts: STANDARD + --num-strings 7/4, --bass
+            tuning, num_strings = resolve_named_tuning(args.tuning, args.num_strings, args.bass)
+        except ValueError as e:
+            logger.error(str(e))
+            return 1
+    if args.capo:
+        logger.warning("--homograph ignores --capo: the shared tab's frets count from the nut.")
+    cfg = build_mapper_config(args, tuning=tuning, num_strings=num_strings)
     anchor_name = ",".join(custom) if custom else tuning
 
     def _shift_arg(value, flag):
@@ -452,6 +461,11 @@ def run_homograph(args, command_line: str = "") -> int:
                          max_line_width=max(args.max_line_width, 60),
                          command_line=command_line, base_config=cfg,
                          tempo=songs[0].tempo, time_signature=songs[0].time_signature)
+    problems = hg.verify_text(report, sol, text)
+    if problems:          # never hand out a tab whose text doesn't decode to the songs
+        logger.error("internal error (please report): the rendered tab does not decode "
+                     f"to the songs: {problems[0]}")
+        return 1
     print("\n" + text)
 
     written = None
@@ -470,8 +484,9 @@ def run_homograph(args, command_line: str = "") -> int:
     target = written or "SHARED.tab"
     print("\nSame tab, one tuning per song:")
     for j, lab in enumerate(labels):
-        print(f"  gtrsnipe -i {target} --tuning-pitches '{','.join(sol.tuning_names(j))}' "
-              f"-o {lab.lower()}.mid     # {lab}: {titles[j]}")
+        print(f"  gtrsnipe -i {shlex.quote(target)} --tuning-pitches "
+              f"{shlex.quote(','.join(sol.tuning_names(j)))} -o {lab.lower()}.mid"
+              f"     # {lab}: {titles[j]}")
 
     if args.play:
         letter = (args.homograph_play or "B").upper()
@@ -532,7 +547,8 @@ def main():
     if args.homograph:
         # The report IS the output; keep pipeline INFO chatter out of it.
         setup_logger(logging.DEBUG if args.debug else logging.WARNING)
-        exit(run_homograph(args, command_line) or 0)
+        import shlex     # keep inline melodies quoted in the tab's header line
+        exit(run_homograph(args, shlex.join(sys.argv)) or 0)
 
     if not args.input:
         parser.error("the following argument is required: -i/--input")

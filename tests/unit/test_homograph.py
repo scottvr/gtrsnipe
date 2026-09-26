@@ -508,3 +508,54 @@ def test_rhythm_labels_are_consistent():
     assert seq.ok and seq.rhythm == "proportional"
     rep = hg.analyze([song("C4 D4 E4"), song("E4:1 E4:1 F4:2 G4:2")], subdivide=2)
     assert "another note value (x2)" in hg.format_report(rep)
+
+
+# -- review regressions: CLI + rendering --------------------------------------------------------
+
+def test_cli_honors_num_strings_shortcut(capsys):
+    # review: --num-strings 7 was ignored -> a false "rank 7 > 6 strings"
+    code, text = _run_cli(["--homograph", "C3 D3 E3 F3 G3 A3 B3", "C3 E3 G3 B3 D4 F4 A4",
+                           "--num-strings", "7"], capsys)
+    assert code == 0 and "SEVEN_STRING_STANDARD tab" in text
+
+
+def test_cli_rejects_a_num_strings_mismatch(capsys):
+    code, _ = _run_cli(["--homograph", "C4 D4", "E4 F4", "--tuning", "DROP_D",
+                        "--num-strings", "7"], capsys)
+    assert code == 1
+
+
+def test_render_keeps_every_note_under_mono_lowest_only():
+    # review: --mono-lowest-only stripped the chords while the report said Verified
+    from gtrsnipe.core.config import MapperConfig as MC
+    rep = hg.analyze([song("C3+E3+G3:2 D3+F3+A3:2"), song("E3+G3+C4:2 F3+A3+D4:2")],
+                     anchor=STD)
+    text = hg.render_tab(rep, rep.anchored, base_config=MC(mono_lowest_only=True))
+    assert hg.verify_text(rep, rep.anchored, text) == []
+
+
+def test_render_keeps_chords_aligned_after_a_hammer_on():
+    # review: an 'h' prefix pushed a chord note one column right -> chord split
+    rep = hg.analyze([song("E3:0.5 F3+A3:1"), song("F3:0.5 F#3+A3:1")], anchor=STD)
+    text = hg.render_tab(rep, rep.anchored)
+    assert "h" not in "".join(ln.split("|", 1)[1] for ln in text.splitlines()
+                              if "|" in ln and not ln.startswith("//"))
+    assert hg.verify_text(rep, rep.anchored, text) == []
+
+
+def test_verify_text_catches_a_corrupted_tab():
+    rep = hg.analyze([song(OLDMAC), song(TWINKLE)], anchor=STD, octaves=True)
+    text = hg.render_tab(rep, rep.anchored)
+    lines = text.splitlines()
+    k = next(i for i, ln in enumerate(lines) if ln.startswith("e|") and "0" in ln)
+    lines[k] = lines[k].replace("0", "1", 1)                     # one wrong fret
+    assert hg.verify_text(rep, rep.anchored, "\n".join(lines))
+
+
+def test_printed_commands_are_shell_quoted(tmp_path, capsys):
+    import shlex
+    out = tmp_path / "my tab.tab"
+    code, text = _run_cli(["--homograph", "C4 D4 E4", "E4 F4 A4", "-o", str(out)], capsys)
+    cmd = next(ln for ln in text.splitlines() if ln.strip().startswith("gtrsnipe -i"))
+    argv = shlex.split(cmd, comments=True)
+    assert argv[argv.index("-i") + 1] == str(out)

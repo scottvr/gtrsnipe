@@ -19,6 +19,13 @@ Next (phase 3, "in the wild"):
   inputs stay local (golden-gate pattern).
 - **Multi-song re-rhythm.** Subdivision currently aligns 2 songs; K ≥ 3 need 1:1.
 - **Chord-voice pairing** is greedy; an exact search can only lower the reported rank.
+- **Pre-existing tab-generator bug (found by the homograph review):** a hammer-on/pull-off
+  prefix (`h3`, `p2`) is written at the note's column, so its digits land one column late.
+  The parser times notes by the digit column, so a chord with one hammered note decodes
+  as a two-note arpeggio, and single hammered notes read slightly late. The homograph
+  path avoids it by rendering without articulations. A real fix puts the letter in the
+  column *before* the digits, but that changes the bytes of every existing tab with
+  techniques (the golden outputs), so it's parked for a decision.
 - Tension display could be useful outside homographs (e.g. `--show-tuning` with gauges,
   or warning when a custom tuning would snap a string).
 
