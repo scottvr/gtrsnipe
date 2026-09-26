@@ -186,7 +186,7 @@ invocations are unchanged (byte-identical output).**
 
 ## [0.3.0] — 2026-09-23
 
-Release plan and design docs live in [`docs/dev/`](docs/dev/RELEASE-PLAN-v0.3.0.md).
+Release plan and design docs live in [`docs/dev/archive/`](docs/dev/archive/RELEASE-PLAN-v0.3.0.md).
 
 ### Added
 - **Global fretboard optimization.** A dynamic-programming / Viterbi trellis
@@ -237,7 +237,7 @@ Release plan and design docs live in [`docs/dev/`](docs/dev/RELEASE-PLAN-v0.3.0.
 - Crash on `--dedupe` (an undefined `_normalize_pitch` helper).
 - Removed a stray `DEBUG PARSER` `print()` from the tab parser.
 
-See [`docs/dev/AUDIT-findings.md`](docs/dev/AUDIT-findings.md).
+See [`docs/dev/archive/AUDIT-findings.md`](docs/dev/archive/AUDIT-findings.md).
 
 ### Known limitations
 - **VexTab** does not yet emit hammer-on/pull-off/tap articulation symbols or
