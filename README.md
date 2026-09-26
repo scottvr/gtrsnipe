@@ -147,10 +147,10 @@ re-stringing either.)
 Why it works: on any one string, song A's note and song B's note differ by the
 same interval (the difference between the two open strings). So two aligned songs
 share a tab exactly when their note-for-note intervals split into as many classes
-as there are strings. The report's **rank** counts those distinct intervals.
+as there are strings. The report's **richness** counts those distinct intervals.
 Neither note count nor range matters, and the keys don't either.
 
-The report walks through each check in turn: alignment, rank, then *free* (any
+The report walks through each check in turn: alignment, richness, then *free* (any
 tunings), *anchored* (A keeps `--tuning`, so the tab is an ordinary tab of A),
 *middle* (both tunings are retunes of one strung guitar), and *as written* (A read
 from a `.tab`: does its own fingering retune?). It stops with a reason at the
@@ -168,7 +168,7 @@ gtrsnipe --homograph a.abc b.abc --play --homograph-play B   # watch/hear the sh
 ```
 
 Other knobs: `--homograph-transpose`/`-a` (song keys), `--homograph-max-retune`,
-`--homograph-octaves` (octave-displace notes to lower the rank), `--homograph-neutral`
+`--homograph-octaves` (octave-displace notes to lower the richness), `--homograph-neutral`
 (number the strings and omit the default tuning, so the text favors no song),
 `--scale-length`, `--string-gauges`. Every liberty taken is disclosed in the report
 and the tab header. Theory, proofs, physics, and limits:
@@ -518,11 +518,3 @@ Demucs is a state-of-the-art music source separation model. Several models are a
 - **hdemucs_mmi**: The v3 Hybrid Demucs model, retrained on more data.
 - **mdx / mdx_extra**: Models known for high performance, trained on the MusDB HQ dataset.
 - **mdx_q / mdx_extra_q**: Quantized (smaller, faster) versions of the mdx models, which may have slightly reduced quality.
-
-
-
-
-
-
-
-

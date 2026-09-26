@@ -4,7 +4,7 @@ Tab homograph check: 2 songs
   B  twinkle@1-12  (12 notes, 12 onsets)
 Alignment  OK - 12 tab onsets, 12 notes, identical rhythm
 Intervals  B-A per note: 0 0 +7 +12 +12 +12 +12 +1 +1 +2 +2 +2
-Rank       5 interval classes {0, +1, +2, +7, +12} -> a shared tab needs >= 5 strings
+Richness   5 interval classes {0, +1, +2, +7, +12} -> a shared tab needs >= 5 strings
            (4 if octave displacement is allowed: --homograph-octaves)
 Free       ELIGIBLE - 5 strings, any tunings (max 12, 24 frets)
              (--homograph-mode free for its tab)

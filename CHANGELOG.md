@@ -10,7 +10,7 @@ This project adheres to [Semantic Versioning](https://semver.org/).
   tab that plays a different song in each tuning. Two aligned songs share a tab iff
   their note-for-note intervals split into ≤ N classes (one per string; see
   [`docs/dev/DESIGN-homograph.md`](docs/dev/DESIGN-homograph.md)). The report walks
-  through each check in turn: alignment → **rank** (distinct intervals) → *free* /
+  through each check in turn: alignment → **richness** (distinct intervals) → *free* /
   *anchored* (A keeps `--tuning`, an ordinary tab of A) / *middle* (both tunings
   retune one strung guitar) / *as written* (does A's own `.tab` fingering retune?).
   It names the first obstacle, verifies every solution by decoding, writes

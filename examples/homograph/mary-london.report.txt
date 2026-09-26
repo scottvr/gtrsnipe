@@ -4,7 +4,7 @@ Tab homograph check: 2 songs
   B  london_bridge  (13 notes, 13 onsets)
 Alignment  OK - 13 tab onsets, 13 notes, rhythm within tolerance (worst x2.00 at onset 3); the tab carries A's rhythm
 Intervals  B-A per note: +3 +7 +7 +3 0 +1 +3 0 +2 +3 0 -2 0
-Rank       6 interval classes {-2, 0, +1, +2, +3, +7} -> a shared tab needs >= 6 strings
+Richness   6 interval classes {-2, 0, +1, +2, +3, +7} -> a shared tab needs >= 6 strings
 Free       ELIGIBLE - 6 strings, any tunings (max 12, 24 frets)
              (--homograph-mode free for its tab)
 Anchored   ELIGIBLE - an ordinary STANDARD tab of A, retuned, plays B (10-46 set, 25.5" scale):

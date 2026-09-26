@@ -63,7 +63,7 @@ def test_any_tab_pair_is_recovered_free_mode(seed):
     a, b, _ = _random_tab(rng, rng.randint(1, 14), N, F)
     rep = hg.analyze([a, b], max_fret=F, max_strings=N)
     assert rep.alignment.ok
-    assert rep.rank <= N                              # the lower bound can't exceed a witness
+    assert rep.richness <= N                              # the lower bound can't exceed a witness
     assert rep.free is not None and rep.free_needed <= N   # exact for melodies
 
 
@@ -120,24 +120,24 @@ def test_chord_tabs_verify_whenever_solved():
         assert rep.alignment.ok
 
 
-# -- rank ----------------------------------------------------------------------------
+# -- richness ----------------------------------------------------------------------------
 
-def test_rank_counts_distinct_intervals():
+def test_richness_counts_distinct_intervals():
     rep = hg.analyze([song(MARY), song(TWINKLE7)])
     assert [s.key[0] for s in rep.slots] == [-4, -2, 7, 5, 5, 5, 3]
-    assert rep.rank == 5
-    assert hg.rank(song(MARY), song(TWINKLE7)) == 5
+    assert rep.richness == 5
+    assert hg.richness(song(MARY), song(TWINKLE7)) == 5
 
 
-def test_rank_is_transposition_invariant():
+def test_richness_is_transposition_invariant():
     up7 = " ".join(pitch_to_note_name(note_name_to_pitch(n) + 7) for n in TWINKLE7.split()[:-1])
     up7 += " " + pitch_to_note_name(note_name_to_pitch("G4") + 7) + ":2"
-    assert hg.rank(song(MARY), song(up7)) == hg.rank(song(MARY), song(TWINKLE7))
+    assert hg.richness(song(MARY), song(up7)) == hg.richness(song(MARY), song(TWINKLE7))
 
 
-def test_transposition_is_rank_one_and_flagged_trivial():
+def test_transposition_is_richness_one_and_flagged_trivial():
     rep = hg.analyze([song("C4 D4 E4"), song("G4 A4 B4")], anchor=STD)
-    assert rep.rank == 1
+    assert rep.richness == 1
     assert "transpositions of each other" in hg.format_report(rep)
 
 
@@ -150,10 +150,10 @@ def test_open_string_solver_is_the_zero_fret_case():
     assert all(f == 0 for _, f in rep.free.positions)
 
 
-def test_octave_folding_lowers_rank_and_counts_displacements():
+def test_octave_folding_lowers_richness_and_counts_displacements():
     plain = hg.analyze([song(OLDMAC), song(TWINKLE)])
     folded = hg.analyze([song(OLDMAC), song(TWINKLE)], octaves=True)
-    assert plain.rank == 5 and folded.rank == 4
+    assert plain.richness == 5 and folded.richness == 4
     assert folded.displaced[1] > 0
     assert all(abs(k[0]) < 12 for k in folded.classes)
 
@@ -201,7 +201,7 @@ def test_chord_voices_pair_to_reuse_existing_classes():
     # Singletons establish intervals {+4, -5}; the chord C4+G4 vs D4+E4 pairs
     # low-with-low as {+2, -3} (two new classes) but crossed as {+4, -5} (none).
     rep = hg.analyze([song("C4 G4 C4+G4"), song("E4 D4 D4+E4")])
-    assert rep.rank == 2
+    assert rep.richness == 2
     assert set(rep.classes) == {(4,), (-5,)}
 
 
@@ -223,11 +223,11 @@ def test_oldmac_twinkle_standard_tab_round_trips():
     assert sol.regauges() == 0
 
 
-def test_anchored_rank_exceeds_strings():
+def test_anchored_richness_exceeds_strings():
     a = song("C4 D4 E4 F4 G4 A4 B4")
     b = song("C4 E4 G4 B4 D5 F5 A5")                  # 7 distinct intervals
     rep = hg.analyze([a, b], anchor=STD)
-    assert rep.anchored is None and "rank 7 > 6 strings" in rep.anchored_reason
+    assert rep.anchored is None and "richness 7 > 6 strings" in rep.anchored_reason
     assert rep.free is not None                       # fine with 7 free strings
 
 
@@ -513,7 +513,7 @@ def test_rhythm_labels_are_consistent():
 # -- review regressions: CLI + rendering --------------------------------------------------------
 
 def test_cli_honors_num_strings_shortcut(capsys):
-    # review: --num-strings 7 was ignored -> a false "rank 7 > 6 strings"
+    # review: --num-strings 7 was ignored -> a false "richness 7 > 6 strings"
     code, text = _run_cli(["--homograph", "C3 D3 E3 F3 G3 A3 B3", "C3 E3 G3 B3 D4 F4 A4",
                            "--num-strings", "7"], capsys)
     assert code == 0 and "SEVEN_STRING_STANDARD tab" in text

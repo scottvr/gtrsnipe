@@ -5,7 +5,7 @@ Tab homograph check: 3 songs
   C  mary@1-7     (7 notes, 7 onsets)
 Alignment  OK - 7 tab onsets, 7 notes, identical rhythm
 Intervals  (B-A,C-A) per note: (0,+4) (0,+2) (+7,0) (+12,+7) (+12,+7) (+12,+7) (+12,+9)
-Rank       5 interval classes {(0,+2), (0,+4), (+7,0), (+12,+7), (+12,+9)} -> a shared tab needs >= 5 strings
+Richness   5 interval classes {(0,+2), (0,+4), (+7,0), (+12,+7), (+12,+9)} -> a shared tab needs >= 5 strings
 Free       ELIGIBLE - 5 strings, any tunings (max 12, 24 frets)
              (--homograph-mode free for its tab)
 Anchored   ELIGIBLE - an ordinary STANDARD tab of A, retuned, plays B, C (10-46 set, 25.5" scale):

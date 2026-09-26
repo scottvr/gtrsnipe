@@ -1,14 +1,14 @@
 ## Tab homographs: push the reductio past open strings
 **[DONE — Unreleased]** `--homograph A B [C …]`: one ordinary, fretted tab that plays a
-different song per tuning. Eligibility = alignment + **rank** (distinct note-for-note
+different song per tuning. Eligibility = alignment + **richness** (distinct note-for-note
 intervals ≤ strings), then free / anchored / middle / as-written, with string-tension
 physics (plain steel breaks ≈ A4 at 25.5" regardless of gauge), song transposition,
 rhythm slop (`--homograph-rhythm RATIO`) and re-rhythm (`--homograph-subdivide`:
 "ta" ≈ "ti ti"). Theory: `docs/dev/DESIGN-homograph.md`; demos: `examples/homograph/`.
 
 Next (phase 3, "in the wild"):
-- **Pair search over a corpus.** Rank needs no tab, so it's cheap. Slide every alignment
-  offset between two melodies and find the longest window with rank ≤ 6 (a
+- **Pair search over a corpus.** Richness needs no tab, so it's cheap. Slide every alignment
+  offset between two melodies and find the longest window with richness ≤ 6 (a
   "≤ k distinct values" sliding window along each diagonal). Corpus candidates:
   public-domain ABC/EsAC folk collections, hymn tunes that share a metre (Common
   Metre tunes are famously interchangeable), and The Session's reels (long isochronous
@@ -18,7 +18,7 @@ Next (phase 3, "in the wild"):
   the as-written check (per-string interval constancy is a linear check). Copyrighted
   inputs stay local (golden-gate pattern).
 - **Multi-song re-rhythm.** Subdivision currently aligns 2 songs; K ≥ 3 need 1:1.
-- **Chord-voice pairing** is greedy; an exact search can only lower the reported rank.
+- **Chord-voice pairing** is greedy; an exact search can only lower the reported richness.
 - **Pre-existing tab-generator bug (found by the homograph review):** a hammer-on/pull-off
   prefix (`h3`, `p2`) is written at the note's column, so its digits land one column late.
   The parser times notes by the digit column, so a chord with one hammered note decodes
