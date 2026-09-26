@@ -160,3 +160,28 @@ def test_format_open_string_tab_shows_only_open_strings():
     assert "0" in tab           # frets are all 0 (open)
     assert all(c in "0-|GACDEFB#\n " or c.isalpha() for c in tab)  # no fret >0 digits
     assert "1" not in tab and "2" not in tab
+
+
+def test_cli_decodes_a_tab_in_its_own_header_tuning(tmp_path):
+    # Regression: the CLI always passed STANDARD pitches to the parser, so a
+    # custom-tuned tab's '// Tuning:' header was ignored unless --tuning-pitches
+    # was given. With no tuning asked for, the header now decides.
+    import os
+    import subprocess
+    import sys
+    from gtrsnipe.formats.abc.parser import AbcParser
+    tab = tmp_path / "dadgad.tab"
+    tab.write_text("// Tuning: D2,A2,D3,G3,A3,D4\n"
+                   "e|--0--|\nB|-----|\nG|-----|\nD|-----|\nA|-----|\nE|--2--|\n")
+    root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    env = dict(os.environ, PYTHONPATH=root + os.pathsep + os.environ.get("PYTHONPATH", ""))
+
+    def decode(*extra):
+        out = tmp_path / "out.abc"
+        subprocess.run([sys.executable, "-m", "gtrsnipe.converter", "-i", str(tab),
+                        "-o", str(out), "-y", *extra], cwd=root, env=env, check=True,
+                       capture_output=True)
+        return sorted(e.pitch for e in AbcParser.parse(out.read_text()).tracks[0].events)
+
+    assert decode() == [40, 62]                          # D2+2, D4 (header tuning)
+    assert decode("--tuning-pitches", "E2,A2,D3,G3,B3,E4") == [42, 64]  # explicit wins

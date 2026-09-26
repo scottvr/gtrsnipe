@@ -522,9 +522,15 @@ def main():
         else:
             # Otherwise, we parse normally
             logger.info(f"--- Parsing '{current_file}' as a {format_to_parse} file for final conversion ---")
+            decode_pitches = open_string_pitches_for(tuning_name, custom_names)
+            if format_to_parse == 'tab' and not is_custom and not args.bass \
+                    and tuning_name == 'STANDARD':
+                # No tuning asked for (STANDARD is only the default): let the tab's
+                # own '// Tuning:' header decide (the parser falls back to standard).
+                decode_pitches = None
             song = converter._parse(current_file, format_to_parse, args.track, staccato=args.staccato,
                                     quantization_resolution=args.quantization_resolution,
-                                    open_string_pitches=open_string_pitches_for(tuning_name, custom_names))
+                                    open_string_pitches=decode_pitches)
         
         debug_song_state(song, 5, "After Parsing") 
         

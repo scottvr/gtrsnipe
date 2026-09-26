@@ -283,6 +283,7 @@ _PROFILE_META = {"--profile", "--no-defaults", "--config-dir", "--save-args"}
 _SAVE_SKIP_DESTS = {
     "input", "output", "save_args", "profile", "no_defaults", "config_dir",
     "list_tunings", "show_tuning", "list_instruments", "analyze", "yes", "help",
+    "solve_tuning", "homograph",
 }
 
 
