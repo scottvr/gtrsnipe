@@ -79,7 +79,7 @@ renderers.
 | R01 | **Corpus loaders.** Essen (kern/ABC) through music21. POP909's MELODY track, cutting legato overlaps at the next onset. Lakh melody extraction: a melody-named track if there is one, else the highest line. Skip Lakh's ~660 non-MIDI files. | M | corpus plan |
 | R02 | **Offset-profile analyzer** (the structure note's experiment): richness, entropy, C₁…C₆, switch count S, total variation TV, and reuse for two melodies. | S–M | structure note §11 |
 | R03 | **Meertens experiment.** On MTC-ANN tune families, does the offset profile beat the transposition-invariant Hamming and interval-Hamming baselines? Needs the download form. | M | structure note §11 |
-| R04 | **Corpus homograph scan.** For each aligned pair, find the longest window with richness ≤ 6. Bucket passages by rhythm pattern first so pairs × offsets stays tractable, and run the full solver only on hits. | L | DESIGN-homograph §5 |
+| R04 | **Corpus homograph scan.** For each aligned pair, find the longest window with richness ≤ 6. Bucket passages by rhythm pattern first so pairs × offsets stays tractable, and run the full solver only on hits. Chart the results with `collision_plot_template.py`; its curves are placeholders until this scan supplies real ones. | L | DESIGN-homograph §5 |
 | R05 | **Published tabs as written** against candidate B's. Inputs stay local, like the golden cases. | M | DESIGN-homograph §5 |
 | R06 | **Literature search** before any novelty claim: δ/γ-approximate matching, SIA/SIATEC, voice-leading geometry, Müllensiefen & Frieler. | S–M | structure note §10 |
 | R07 | **Prove (or refute) the alignment claim**: log-richness stays a metric under composable monotone alignments. | S | structure note §7 |
