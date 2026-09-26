@@ -583,7 +583,8 @@ def main():
         # adopts its own '// Tuning:' header for the WHOLE run -- decode, range
         # filter, mapping and any tab output -- as if --tuning-pitches named it.
         if (custom_names is None and not args.bass and args.num_strings is None
-                and tuning_name == 'STANDARD' and Path(args.input).suffix.lower() == '.tab'):
+                and tuning_name == 'STANDARD' and not getattr(args, 'tuning_explicit', False)
+                and Path(args.input).suffix.lower() == '.tab'):
             header = _tab_header_names(args.input)
             if header:
                 args.tuning_pitches = ",".join(header)
@@ -820,7 +821,9 @@ def main():
 
             initial_note_count = sum(len(track.events) for track in song.tracks)
         
-            constrain_tuning_notes = custom_names if is_custom else Tuning[args.tuning.upper()].value
+            # The RESOLVED tuning (e.g. STANDARD + --num-strings 7 -> SEVEN_STRING_STANDARD),
+            # not the raw --tuning value, or a 7-string's low B notes get dropped.
+            constrain_tuning_notes = custom_names if is_custom else Tuning[tuning_name].value
             constrain_open_notes = [note_name_to_pitch(n) for n in constrain_tuning_notes]
             min_range = min(constrain_open_notes)
             max_range = max(constrain_open_notes) + args.max_fret
@@ -835,9 +838,9 @@ def main():
                         while event.pitch < min_range: 
                             event.pitch += 12
                             pitch_shifted = pitch_shifted + 1
-                    logger.info(f"--- Pitch normalization active: All notes constrained to {args.tuning} range ---")
+                    logger.info(f"--- Pitch normalization active: All notes constrained to {tuning_name} range ---")
                 else:
-                    logger.info(f"--- Pitch normalization NOT active: Dropping notes outside of {args.tuning} range ---")
+                    logger.info(f"--- Pitch normalization NOT active: Dropping notes outside of {tuning_name} range ---")
                     track.events = [e for e in track.events if min_range <= e.pitch <= max_range]
 
             final_note_count = sum(len(track.events) for track in song.tracks)

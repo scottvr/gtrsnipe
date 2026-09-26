@@ -213,3 +213,44 @@ def test_cli_headerless_tab_still_reads_as_six_string_standard(tmp_path):
             "D|-2---2---2-|", "A|---3---3---|", "E|-----------|"]
     got, _ = _cli_decode("\n".join(sys1 + sys2) + "\n", tmp_path)
     assert got == sorted([57, 60, 64, 60, 57, 52, 48, 52, 48, 52])
+
+
+def test_cli_explicit_tuning_overrides_a_tab_header(tmp_path):
+    # Backlog B04: an EXPLICIT --tuning STANDARD must win over the tab's header;
+    # only the STANDARD *default* defers to it.
+    tab = ("// Tuning: D2,A2,D3,G3,A3,D4\n"
+           "e|--0--|\nB|-----|\nG|-----|\nD|-----|\nA|-----|\nE|--2--|\n")
+    assert _cli_decode(tab, tmp_path)[0] == [40, 62]                        # header
+    assert _cli_decode(tab, tmp_path, "--tuning", "STANDARD")[0] == [42, 64]  # explicit
+
+
+def test_cli_num_strings_7_keeps_the_low_b_string(tmp_path):
+    # Backlog B06: the range filter used the raw --tuning (STANDARD) instead of the
+    # resolved SEVEN_STRING_STANDARD, silently dropping notes below E2.
+    import os
+    import subprocess
+    import sys
+    from midiutil import MIDIFile
+    from gtrsnipe.formats.abc.parser import AbcParser
+    mid = tmp_path / "low.mid"
+    m = MIDIFile(1)
+    m.addTempo(0, 0, 120)
+    for i, p in enumerate([35, 38, 40, 45]):          # B1 D2 E2 A2
+        m.addNote(0, 0, p, i, 1, 100)
+    with open(mid, "wb") as fh:
+        m.writeFile(fh)
+    root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    env = dict(os.environ, PYTHONPATH=root + os.pathsep + os.environ.get("PYTHONPATH", ""))
+    out = tmp_path / "out.abc"
+    subprocess.run([sys.executable, "-m", "gtrsnipe.converter", "-i", str(mid), "-o", str(out),
+                    "-y", "--num-strings", "7"], cwd=root, env=env, check=True, capture_output=True)
+    assert sorted(e.pitch for e in AbcParser.parse(out.read_text()).tracks[0].events) == [35, 38, 40, 45]
+
+
+def test_tuning_explicit_flag_and_profiles(tmp_path):
+    from gtrsnipe.arguments import apply_profiles, setup_parser
+    assert not getattr(setup_parser().parse_args([]), "tuning_explicit", False)
+    assert setup_parser().parse_args(["--tuning", "STANDARD"]).tuning_explicit
+    (tmp_path / "std").write_text("tuning STANDARD\n")
+    args = apply_profiles(setup_parser(), ["--profile", "std", "--config-dir", str(tmp_path)])
+    assert args.tuning == "STANDARD" and args.tuning_explicit      # a profile counts too
