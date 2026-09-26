@@ -168,21 +168,32 @@ class AsciiTabGenerator:
             # Get the length of the longest current string line to align notes
             max_len = max(len(s) for s in measure_lines) if any(measure_lines) else 0
             start_pos = max_len + spacing
-    
+
+            tech_map = {"hammer-on": "h", "pull-off": "p", "tap": "t"}
+
+            def _symbol(n):
+                return tech_map.get(n.technique.value, "") if n.technique else ""
+
+            # A technique letter goes in the column(s) BEFORE its fret digits, so every
+            # note of the event keeps its digits in the same column -- the parser times
+            # a note by its digit column, so a shifted digit would split the chord.
+            # If a letter has no room there, move the whole event right together.
+            for note in notes_in_chord:
+                sym = _symbol(note)
+                if sym and 0 <= note.position.string < len(measure_lines):
+                    room = start_pos - len(measure_lines[note.position.string])
+                    if room < len(sym):
+                        start_pos += len(sym) - room
+
             for note in notes_in_chord:
                 str_idx = note.position.string
                 if not (0 <= str_idx < len(measure_lines)):
                     logger.warning(f"Note with string index {str_idx} out of bounds. Skipping.")
                     continue
-                
-                fret = str(note.position.fret)
-                tech_map = {"hammer-on": "h", "pull-off": "p", "tap": "t"}
-                symbol = tech_map.get(note.technique.value) if note.technique else None
-                note_text = f"{symbol or ''}{fret}" if symbol else fret
-                
-                # Add padding to align the note correctly
-                padding_needed = start_pos - len(measure_lines[str_idx])
-                measure_lines[str_idx] += ('-' * padding_needed) + note_text
+
+                sym = _symbol(note)
+                padding_needed = start_pos - len(measure_lines[str_idx]) - len(sym)
+                measure_lines[str_idx] += ('-' * padding_needed) + sym + str(note.position.fret)
             
             last_event_time = time
         
