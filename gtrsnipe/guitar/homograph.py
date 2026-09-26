@@ -671,7 +671,9 @@ def _pack_class(items: List[Tuple[int, int, int]], max_fret: int, max_bins: int
                 ) -> Optional[List[List[int]]]:
     """Fewest strings for one interval class. ``items`` = (slot, group, pitch).
     Each string covers a window of max_fret+1 semitones and plays one note per
-    onset. Returns the slot indices per string, or None past ``max_bins``."""
+    onset. Exact for melodies (a greedy window cover); with chords inside the
+    class, the best found on a fixed budget, never worse than a greedy bound.
+    Returns the slot indices per string, or None past ``max_bins``."""
     by_group: Dict[int, List[Tuple[int, int, int]]] = defaultdict(list)
     for it in items:
         by_group[it[1]].append(it)
@@ -687,15 +689,32 @@ def _pack_class(items: List[Tuple[int, int, int]], max_fret: int, max_bins: int
                 bins[b].append(it[0])
         return bins
 
-    cover, i = 0, 0                                  # windows needed ignoring chords
-    while i < len(pitches):
-        cover += 1
-        lo = pitches[i]
-        while i < len(pitches) and pitches[i] <= lo + max_fret:
-            i += 1
-    for k in range(max(mult, cover), max_bins + 1):
-        for tried, los in enumerate(combinations_with_replacement(pitches, k)):
-            if tried > 50000:
+    # Greedy window cover (interval point cover): optimal when no two notes of
+    # the class sound together, which is every melody.
+    windows = []
+    for pch in pitches:
+        if not windows or pch > windows[-1] + max_fret:
+            windows.append(pch)
+
+    def window_of(pch):
+        return max(i for i, lo in enumerate(windows) if lo <= pch)
+
+    if mult == 1:
+        if len(windows) > max_bins:
+            return None
+        bins = [[] for _ in windows]
+        for it in items:
+            bins[window_of(it[2])].append(it[0])
+        return bins
+
+    # Chords inside the class: each window replicated once per simultaneous voice
+    # is always feasible, so search (on a fixed budget) only for something smaller.
+    upper = len(windows) * mult
+    budget = 20000
+    for k in range(max(mult, len(windows)), min(upper, max_bins + 1)):
+        for los in combinations_with_replacement(pitches, k):
+            budget -= 1
+            if budget < 0:
                 break
             assign: Dict[int, int] = {}
             for its in by_group.values():
@@ -709,7 +728,18 @@ def _pack_class(items: List[Tuple[int, int, int]], max_fret: int, max_bins: int
                 for idx, b in assign.items():
                     bins[b].append(idx)
                 return [b for b in bins if b]
-    return None
+        if budget < 0:
+            break
+    if upper > max_bins:
+        return None
+    bins = [[] for _ in range(upper)]
+    for its in by_group.values():
+        used: Dict[int, int] = defaultdict(int)
+        for it in its:
+            w = window_of(it[2])
+            bins[w * mult + used[w]].append(it[0])
+            used[w] += 1
+    return [b for b in bins if b]
 
 
 def solve_free(slots: List[Slot], *, max_fret: int = 24, max_strings: int = 12,
@@ -879,6 +909,12 @@ def _placement_candidates(slots: List[Slot], config: MapperConfig, *, mode: str,
     else:
         cmask = [sum(1 << s for s in range(N) if xs[c][s]) for c in range(r)]
         reach = [cmask[class_of[i]] for i in range(len(slots))]
+        for i, m in enumerate(reach):
+            a = slots[i].pitches[0]
+            if not m and any(0 <= a - nominal[s] - x <= F and cost(s, nominal[s] + x) < INF
+                             for s in range(N) for x in range(-X_RANGE, X_RANGE + 1)):
+                return [], (f"interval class {fmt_key(keys[class_of[i]])} spans more than "
+                            "one retuned string can hold"), cost
     for i, m in enumerate(reach):
         if not m:
             return [], (f"{pitch_to_note_name(slots[i].pitches[0])} (note {i + 1} of "
@@ -1073,14 +1109,28 @@ def solve_physical(slots: List[Slot], config: MapperConfig, *, mode: str = "anch
         first = transpose_a
     else:
         first = 0
-    kw = dict(mode=mode, instrument=instrument, transpose=transpose, max_retune=max_retune)
-    cands, reason, cost = _placement_candidates(
-        slots if first == 0 else _shift_song0(slots, first), config, t=first, **kw)
+    kw = dict(instrument=instrument, transpose=transpose, max_retune=max_retune)
+
+    def gather(t: int):
+        sl = slots if t == 0 else _shift_song0(slots, t)
+        found, why, cost = _placement_candidates(sl, config, t=t, mode=mode, **kw)
+        if mode == "middle":
+            # Middle is anchored plus per-string offsets, so anchored's placements
+            # (every offset 0, notes routed string by string) are middle solutions
+            # too. Adding them keeps middle a superset of anchored even when an
+            # interval class spans wider than one retuned string can hold.
+            anc, anc_why, _ = _placement_candidates(sl, config, t=t, mode="anchored", **kw)
+            if not found and not anc and why.startswith("interval class") and "spans" in why:
+                why = anc_why
+            found = found + anc
+        return found, why, cost
+
+    cands, reason, cost = gather(first)
     if transpose_a == "auto":
         settled = cands and (mode == "middle" or any(not _needs_regauge(c, cost) for c in cands))
         if not settled:
             for t in _k_candidates("auto", 0, K_RANGE)[1:]:
-                cands += _placement_candidates(_shift_song0(slots, t), config, t=t, **kw)[0]
+                cands += gather(t)[0]
     if not cands:
         return None, reason
     sol = _finalize(cands, mode, instrument)
@@ -1117,6 +1167,9 @@ def check_as_written(slots: List[Slot], *, tab_tuning: Optional[List[int]] = Non
     ``tab_tuning``: the tab's open pitches (high->low), for its unused strings."""
     if any(s.src is None or s.src.string is None or s.src.fret is None for s in slots):
         return None, "song A carries no fingering (not a tab)"
+    high = max(s.src.fret for s in slots)
+    if high > max_fret or min(s.src.fret for s in slots) < 0:
+        return None, f"the tab uses fret {high}, beyond --max-fret {max_fret}"
     by_string: Dict[int, set] = defaultdict(set)
     open0: Dict[int, int] = {}
     for s in slots:
@@ -1306,11 +1359,17 @@ def analyze(songs: Sequence[Song], *, labels: Optional[Sequence[str]] = None,
     rep.as_written, rep.as_written_reason = check_as_written(
         rep.slots, tab_tuning=tab_tuning, max_fret=max_fret, transpose=transpose,
         max_retune=max_retune, instrument=rep.instrument)
-    for sol in (rep.free, rep.anchored, rep.middle, rep.as_written):
-        if sol is not None:
-            problems = verify(rep.slots, sol, max_fret)
-            if problems:                         # a solver bug; never ship a wrong tab
-                raise AssertionError(f"{sol.mode} homograph failed verification: {problems[:3]}")
+    for level in ("free", "anchored", "middle", "as_written"):
+        sol = getattr(rep, level)
+        problems = verify(rep.slots, sol, max_fret) if sol is not None else []
+        if not problems:
+            continue
+        if level == mode:                        # a solver bug; never ship a wrong tab
+            raise AssertionError(f"{sol.mode} homograph failed verification: {problems[:3]}")
+        # an informational level must not sink the requested one: report, don't crash
+        setattr(rep, level, None)
+        setattr(rep, f"{level}_reason",
+                f"internal check failed (please report): {problems[0]}")
     return rep
 
 

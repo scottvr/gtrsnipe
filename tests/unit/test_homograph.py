@@ -418,3 +418,49 @@ def test_subdivide_keeps_song_a_intact():
 def test_unaligned_hint_mentions_subdivide():
     rep = hg.analyze([song("C4 D4 E4"), song("C4 D4")])
     assert "--homograph-subdivide" in rep.alignment.reason
+
+
+# -- review regressions: solver -------------------------------------------------------------
+
+@pytest.mark.parametrize("seed", range(20))
+def test_middle_is_a_superset_of_anchored(seed):
+    # review: middle required each string to hold a class's WHOLE span, so it
+    # rejected (with a false "out of range") pairs anchored mode solved.
+    rng = random.Random(4000 + seed)
+    std = [64, 59, 55, 50, 45, 40]
+    delta = [rng.randint(-3, 2) for _ in range(6)]
+    a_ev, b_ev = [], []
+    for t in range(rng.randint(3, 9)):
+        s, f = rng.randrange(6), rng.randint(0, 12)
+        a_ev.append(MusicalEvent(t, std[s] + f, 1, 100))
+        b_ev.append(MusicalEvent(t, std[s] + delta[s] + f, 1, 100))
+    rep = hg.analyze([Song(tracks=[Track(events=a_ev)]), Song(tracks=[Track(events=b_ev)])],
+                     anchor=STD, max_fret=12)
+    if rep.anchored is not None:
+        assert rep.middle is not None, rep.middle_reason
+
+
+def test_middle_handles_a_class_wider_than_one_string():
+    rep = hg.analyze([song("E2 G3 A4"), song("E2 F#3 A4")], anchor=STD, mode="middle")
+    assert rep.middle is not None
+    assert "out of range" not in rep.middle_reason
+
+
+def test_as_written_respects_max_fret_and_never_crashes(tmp_path):
+    a = Song(tracks=[Track(events=[MusicalEvent(0, 64, 1, 100, string=0, fret=0),
+                                   MusicalEvent(1, 79, 1, 100, string=0, fret=15)])])
+    rep = hg.analyze([a, song("F4 G#5")], anchor=STD, max_fret=12,
+                     tab_tuning=[64, 59, 55, 50, 45, 40])        # used to raise
+    assert rep.as_written is None and "fret 15" in rep.as_written_reason
+    assert rep.anchored is not None                               # the requested mode stands
+
+
+def test_free_packing_is_fast_and_exact_for_a_wide_melody():
+    # review: 11 chromatic notes at max_fret 0 took 70 s and claimed ">64 strings"
+    import time
+    a = song("C4 C#4 D4 D#4 E4 F4 F#4 G4 G#4 A4 A#4")
+    b = song("D4 D#4 E4 F4 F#4 G4 G#4 A4 A#4 B4 C5")
+    t0 = time.perf_counter()
+    rep = hg.analyze([a, b], max_fret=0, max_strings=12, physical=False)
+    assert time.perf_counter() - t0 < 2.0
+    assert rep.free is not None and rep.free_needed == 11
