@@ -4,7 +4,7 @@ The single list of open work, as of **v0.6.0 (2026-09-26)**. It collates the old
 lot, the CHANGELOG's known limitations, the design docs, the v0.3.0-era audit and plans,
 GitHub issues, and findings from recent sessions.
 
-## How this list works
+## How this list works: The Dull Protocol
 
 - **New ideas go in [`PARKING-LOT.md`](PARKING-LOT.md).** One or two lines each; capture
   only, no need to start them or even think them through.
@@ -22,16 +22,16 @@ Sizes: **S** is an hour or less, **M** is about a session, **L** is several sess
 
 ## The plan
 
-### Step 0: decisions (yours; minutes)
+### Step 0: decisions ✓ (all decided 2026-09-26, as recommended)
 
-| ID | Decision | Recommendation |
+| ID | Decision | Outcome |
 |---|---|---|
-| D1 | Fix the tab generator's h/p column bug (B02)? It changes the bytes of every existing tab that uses hammer-ons or pull-offs. | Fix it in 0.6.1. The tabs become *more* correct (digits land in the right column), so it counts as a fix, not a format break. Note it in the CHANGELOG and re-bless any local golden cases. |
-| D2 | Close GitHub issue #4? It was resolved on 2026-09-25 and the reporter never replied. | Close it with a thank-you. |
-| D3 | Let an explicit `--tuning STANDARD` override a `.tab`'s own header (B04)? | Yes. It's small: `--tuning` defaults to "not given" instead of STANDARD. |
-| D4 | Move the v0.3.0-era planning docs (RELEASE-PLAN-v0.3.0, AUDIT-findings, TEST-PLAN, CPU-DECOUPLING) into `docs/dev/archive/`? Their status columns are stale; AUDIT still lists fixed bugs as pending. | Yes. |
-| D5 | Request GigaMIDI access? It's gated, CC BY-NC, and ~0.5 TB extracted on the LaCie. | Not now. Revisit if Lakh isn't enough. |
-| D6 | PDF tab output: implement it, or delete the empty `PdfTabGenerator` stub? | Delete the stub for now (it's imported but does nothing). Re-add it when you want PDFs. |
+| D1 | Fix the tab generator's h/p column bug (B02)? It changes the bytes of every existing tab that uses hammer-ons or pull-offs. | **Yes, in 0.6.1.** The tabs become *more* correct (digits land in the right column), so it counts as a fix, not a format break. Note it in the CHANGELOG and re-bless any local golden cases. |
+| D2 | Close GitHub issue #4? It was resolved on 2026-09-25 and the reporter never replied. | **Yes.** Close it with a thank-you, in step 1. |
+| D3 | Let an explicit `--tuning STANDARD` override a `.tab`'s own header (B04)? | **Yes.** It's small: `--tuning` defaults to "not given" instead of STANDARD. |
+| D4 | Move the v0.3.0-era planning docs (RELEASE-PLAN-v0.3.0, AUDIT-findings, TEST-PLAN, CPU-DECOUPLING) into `docs/dev/archive/`? Their status columns are stale; AUDIT still lists fixed bugs as pending. | **Yes**, in step 1. |
+| D5 | Request GigaMIDI access? It's gated, CC BY-NC, and ~0.5 TB extracted on the LaCie. | **Not now.** Revisit if Lakh isn't enough. |
+| D6 | PDF tab output: implement it, or delete the empty `PdfTabGenerator` stub? | **Delete the stub** in step 1 (it's imported but does nothing). Pretty PDF output itself stays on the list as F05. |
 
 ### Step 1: v0.6.1, a correctness sweep (about one session)
 
@@ -112,7 +112,7 @@ renderers.
 | F02 | ABC output: a real key signature (`K:`) and flat spellings. This needs a key on the Song model. | M | CHANGELOG 0.3.0 |
 | F03 | **Playability-based `--analyze`**: score each candidate tuning by the mapper's cost, not just whether the range fits. ("Bonkers in standard, easy in drop-D.") | M | player notes |
 | F04 | **Tension display outside homographs**: `--show-tuning` with gauges and tensions, and a warning when a custom tuning would snap a string. | S | parking lot |
-| F05 | PDF tab output (see D6). | M | code stub |
+| F05 | **Pretty PDF tab output**: typeset tabs as a PDF worth printing (title and header, clean staff lines, measure bars, tuning key, maybe rhythm stems or notation). Intended eventually. The empty stub goes in step 1 so it isn't mistaken for a feature; this item is where PDF output comes back. | M–L | code stub; D6 |
 
 ### Tests and housekeeping
 
