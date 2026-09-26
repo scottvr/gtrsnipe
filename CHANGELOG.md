@@ -3,7 +3,14 @@
 All notable changes to gtrsnipe are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+**Versioning while in 0.x.** The minor version marks breaking changes (or a
+deliberate milestone); the patch version marks everything else, including
+backward-compatible features and fixes. This is the left-most-non-zero rule that npm
+and Cargo apply to 0.x version ranges. Full SemVer applies from 1.0.0. The public API
+is the CLI flags and the file formats gtrsnipe reads and writes; report wording is
+not part of it.
+
+## [0.6.0] — 2026-09-26
 
 ### Added
 - **Tab homographs** (`--homograph A B [C …]`): one ordinary, fretted, playable
@@ -27,6 +34,11 @@ This project adheres to [Semantic Versioning](https://semver.org/).
   restring suggestions. Homograph retunes are costed and flagged with it.
   `--scale-length`, `--string-gauges` configure the instrument.
 - Worked public-domain examples in `examples/homograph/`.
+- Dev note [`docs/dev/coupled_transposition_structure.md`](docs/dev/coupled_transposition_structure.md)
+  (+ `triangle_check.py`): the offset-sequence analysis behind the homograph's
+  *richness* (the Hill order-0 count of distinct note-for-note intervals). It covers
+  which offset statistics are metrics modulo transposition, the explicit
+  counterexamples at other Hill/Rényi orders, and prior-art names.
 - An adversarial multi-agent review of the feature found and confirmed 22
   issues before release (middle mode not a superset of anchored, the wound-string
   model, re-rhythm edge cases, rendering). All are fixed, each with a regression test.
