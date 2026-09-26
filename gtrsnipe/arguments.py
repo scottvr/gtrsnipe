@@ -15,6 +15,16 @@ TUNING_CHOICES = ['STANDARD', 'E_FLAT', 'DROP_D', 'OPEN_G', 'BASS_STANDARD', 'BA
 QUANTIZATION_CHOICES = [0.0125, 0.025, 0.0625, 0.125, 0.25, 0.5, 1.0]
 
 
+class _ExplicitTuning(argparse.Action):
+    """Store --tuning and record that it was given (``tuning_explicit``), so an
+    explicit --tuning STANDARD can override a .tab's own header while the
+    STANDARD *default* defers to it. A tuning set in a profile counts too."""
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        setattr(namespace, self.dest, values)
+        namespace.tuning_explicit = True
+
+
 def add_tuning_args(target) -> None:
     """Fretboard geometry shared by every mode (all feed MapperConfig).
 
@@ -24,7 +34,7 @@ def add_tuning_args(target) -> None:
         '--capo', type=int, default=0,
         help="Specify a capo position. All fret numbers will be relative to the capo.")
     target.add_argument(
-        '--tuning', type=str, default='STANDARD', choices=TUNING_CHOICES,
+        '--tuning', type=str, default='STANDARD', choices=TUNING_CHOICES, action=_ExplicitTuning,
         help='Specify the guitar tuning or "PIANO" for full-range midi passthrough. (default: STANDARD).')
     target.add_argument(
         '--num-strings', type=int, default=None, choices=[4, 5, 6, 7],

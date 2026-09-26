@@ -1,5 +1,7 @@
 import io
 import logging
+import os
+import tempfile
 from contextlib import redirect_stderr
 from typing import Optional, Dict, List
 import traceback
@@ -41,10 +43,40 @@ class MidiReader:
         return time_in_beats
 
     @staticmethod
+    def _read_smf(midi_path: str) -> bytes:
+        """The Standard MIDI File bytes in ``midi_path``: a plain SMF, the 'data'
+        chunk of a RIFF 'RMID' container (.rmi, often saved as .mid), or an SMF
+        after a short junk prefix (e.g. a MacBinary header). Anything else raises
+        ValueError -- a non-MIDI file must not come back as an empty song."""
+        with open(midi_path, "rb") as f:
+            raw = f.read()
+        if raw[:4] == b"MThd":
+            return raw
+        if raw[:4] == b"RIFF" and raw[8:12] == b"RMID":
+            pos = 12
+            while pos + 8 <= len(raw):
+                chunk_id = raw[pos:pos + 4]
+                size = int.from_bytes(raw[pos + 4:pos + 8], "little")
+                if chunk_id == b"data":
+                    data = raw[pos + 8:pos + 8 + size]
+                    if data[:4] == b"MThd":
+                        logger.info("--- RIFF/RMID container: reading its embedded MIDI data ---")
+                        return data
+                    break
+                pos += 8 + size + (size & 1)          # RIFF chunks are word-aligned
+            raise ValueError(f"{midi_path}: RIFF/RMID container without a MIDI 'data' chunk")
+        k = raw.find(b"MThd", 0, 1024)
+        if k > 0:
+            logger.warning(f"Skipping {k} bytes of junk before the MIDI header in {midi_path}.")
+            return raw[k:]
+        raise ValueError(f"{midi_path} is not a MIDI file (it starts with {raw[:12]!r}).")
+
+    @staticmethod
     def parse(midi_path: str, track_number_to_select: Optional[int]) -> Song:
+        smf = MidiReader._read_smf(midi_path)        # ValueError for non-MIDI files
         try:
             logger.info("--- Attempting to parse with primary library (mido)... ---")
-            return MidiReader._parse_with_mido(midi_path, track_number_to_select)
+            return MidiReader._parse_with_mido(smf, track_number_to_select)
         except Exception as e:
             logger.warning(
                 "The primary 'mido' parser failed. This can happen with rare or unusual MIDI files, "
@@ -52,10 +84,19 @@ class MidiReader:
             )
             logger.warning(f"  └─ Details: {e}")
             
-            # Attempt the fallback parser
+            # Attempt the fallback parser. It reads only paths, so an unwrapped
+            # (RIFF / junk-prefixed) file goes to it via a temp copy of the SMF bytes.
             try:
                 logger.info("--- Attempting to parse with fallback library (py-midi)... ---")
-                return MidiReader._parse_with_py_midi(midi_path, track_number_to_select)
+                if os.path.getsize(midi_path) == len(smf):
+                    return MidiReader._parse_with_py_midi(midi_path, track_number_to_select)
+                fd, tmp = tempfile.mkstemp(suffix=".mid")
+                try:
+                    with os.fdopen(fd, "wb") as f:
+                        f.write(smf)
+                    return MidiReader._parse_with_py_midi(tmp, track_number_to_select)
+                finally:
+                    os.remove(tmp)
             except Exception as e_fallback:
                 logger.error("All MIDI parsers failed. The file may be corrupt or in an unsupported format.")
                 traceback.print_exc()
@@ -209,13 +250,17 @@ class MidiReader:
 
     @staticmethod
     def _parse_with_mido(
-        midi_path: str, track_number_to_select: Optional[int]
+        smf: bytes, track_number_to_select: Optional[int]
     ) -> Song:
         song = Song()
         try:
-            midi_file = mido.MidiFile(midi_path)
+            midi_file = mido.MidiFile(file=io.BytesIO(smf))
         except Exception as e:
-            raise IOError(f"Mido could not open or parse the file: {e}") from e
+            try:   # common in the wild: data bytes > 127 (mido's strict mode rejects them)
+                midi_file = mido.MidiFile(file=io.BytesIO(smf), clip=True)
+                logger.warning(f"Clipped out-of-range MIDI data bytes to 0..127 ({e}).")
+            except Exception:
+                raise IOError(f"Mido could not open or parse the file: {e}") from e
         
         song.time_signature = "4/4"
         ticks_per_beat = midi_file.ticks_per_beat if midi_file.ticks_per_beat > 0 else 480

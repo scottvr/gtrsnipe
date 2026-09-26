@@ -1294,8 +1294,8 @@ def render_tab(report: HomographReport, sol: Solution, *, neutral: bool = False,
     song = decoded_song(report.slots, sol, 0, title=title, tempo=tempo,
                         time_signature=time_signature)
     cfg = config_for_song(sol, 0, base_config)
-    # no_articulations: an 'h'/'p' prefix shifts a chord note's digits one column
-    # right, so the parser would split the chord (the digits' column is the time).
+    # no_articulations: keep the shared tab to plain fret numbers (technique marks
+    # would be valid in every tuning, but they aren't needed to spell the songs).
     text = AsciiTabGenerator.generate(song, command_line=command_line,
                                       max_line_width=max_line_width, no_articulations=True,
                                       mapper_config=cfg, premapped=True)

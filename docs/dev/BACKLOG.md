@@ -1,6 +1,6 @@
 # gtrsnipe backlog
 
-The single list of open work, as of **v0.6.0 (2026-09-26)**. It collates the old parking
+The single list of open work, as of **v0.6.1 (2026-09-26)**. It collates the old parking
 lot, the CHANGELOG's known limitations, the design docs, the v0.3.0-era audit and plans,
 GitHub issues, and findings from recent sessions.
 
@@ -28,18 +28,20 @@ Sizes: **S** is an hour or less, **M** is about a session, **L** is several sess
 |---|---|---|
 | D1 | Fix the tab generator's h/p column bug (B02)? It changes the bytes of every existing tab that uses hammer-ons or pull-offs. | **Yes, in 0.6.1.** The tabs become *more* correct (digits land in the right column), so it counts as a fix, not a format break. Note it in the CHANGELOG and re-bless any local golden cases. |
 | D2 | Close GitHub issue #4? It was resolved on 2026-09-25 and the reporter never replied. | **Yes.** Close it with a thank-you, in step 1. |
-| D3 | Let an explicit `--tuning STANDARD` override a `.tab`'s own header (B04)? | **Yes.** It's small: `--tuning` defaults to "not given" instead of STANDARD. |
+| D3 | Let an explicit `--tuning STANDARD` override a `.tab`'s own header (B04)? | **Yes.** Done in 0.6.1 by recording when `--tuning` is given, rather than changing its default. |
 | D4 | Move the v0.3.0-era planning docs (RELEASE-PLAN-v0.3.0, AUDIT-findings, TEST-PLAN, CPU-DECOUPLING) into `docs/dev/archive/`? Their status columns are stale; AUDIT still lists fixed bugs as pending. | **Yes**, in step 1. |
 | D5 | Request GigaMIDI access? It's gated, CC BY-NC, and ~0.5 TB extracted on the LaCie. | **Not now.** Revisit if Lakh isn't enough. |
 | D6 | PDF tab output: implement it, or delete the empty `PdfTabGenerator` stub? | **Delete the stub** in step 1 (it's imported but does nothing). Pretty PDF output itself stays on the list as F05. |
 
-### Step 1: v0.6.1, a correctness sweep (about one session)
+### Step 1: v0.6.1, a correctness sweep ✓ (released as v0.6.1)
 
-B01 (ABC parser), B03 (RIFF MIDI), B04 (explicit `--tuning`), B02 (if D1), plus the
-D2/D4/D6 housekeeping. B01 matters beyond ABC input: it unblocks the folk-tune ABC corpora
-for the research track.
+B01 (ABC parser), B02 (h/p columns), B03 (RIFF MIDI), B04 (explicit `--tuning`), plus
+B06 (`--num-strings 7`, found along the way), and the D2/D4/D6 housekeeping. The ABC
+rewrite was validated against music21 on 1,034 Nottingham tunes (94% note-for-note, the
+rest being music21 quirks), which unblocks the folk-tune ABC corpora for the research
+track. Triage at the end of this step: the parking lot was empty.
 
-### Step 2: the research track
+### Step 2: the research track (next)
 
 In order: R01 corpus loaders, R02 offset-profile analyzer, R03 the Meertens experiment
 (starts once you've submitted the download form), R04 the corpus homograph scan, R05
@@ -63,11 +65,12 @@ renderers.
 
 | ID | Item | Size | Source |
 |---|---|---|---|
-| B01 | **ABC parser ignores key signatures** (`K:`), bar-scoped accidentals, and ties, and reads chord symbols in quotes (`"G"`) as notes. Any ABC tune with a key signature decodes wrong. | M | parking lot; corpus work |
-| B02 | **Tab generator h/p column bug.** The `h`/`p` prefix is written at the note's column, so its digits land one column late. A chord with one hammered note decodes as a two-note arpeggio, and single hammered notes read slightly late. (The homograph render avoids it by omitting articulations.) | S | homograph review |
-| B03 | **MIDI reader returns an empty song for RIFF-wrapped MIDI** instead of reading it or raising an error. There are 259 such files in Lakh. | S | corpus agent |
-| B04 | An explicit `--tuning STANDARD` can't override a `.tab`'s own header, because it's indistinguishable from the default. | S | D3 |
+| B01 | ✓ v0.6.1 **ABC parser ignores key signatures** (`K:`), bar-scoped accidentals, and ties, and reads chord symbols in quotes (`"G"`) as notes. Any ABC tune with a key signature decodes wrong. | M | parking lot; corpus work |
+| B02 | ✓ v0.6.1 **Tab generator h/p column bug.** The `h`/`p` prefix is written at the note's column, so its digits land one column late. A chord with one hammered note decodes as a two-note arpeggio, and single hammered notes read slightly late. (The homograph render avoids it by omitting articulations.) | S | homograph review |
+| B03 | ✓ v0.6.1 **MIDI reader returns an empty song for RIFF-wrapped MIDI** instead of reading it or raising an error. There are 259 such files in Lakh. | S | corpus agent |
+| B04 | ✓ v0.6.1 An explicit `--tuning STANDARD` can't override a `.tab`'s own header, because it's indistinguishable from the default. | S | D3 |
 | B05 | `-i x.tab --play` re-optimizes the tab's fingering instead of playing it as written. It needs a way (e.g. `--as-written`) to keep the tab's own strings and frets. | S–M | session notes |
+| B06 | ✓ v0.6.1 `--num-strings 7` silently dropped every note below E2: the range filter used STANDARD instead of the resolved 7-string tuning. | S | found fixing B04 |
 
 ### Research: homograph phase 3 and the offset profile
 
@@ -119,6 +122,6 @@ renderers.
 | ID | Item | Size | Source |
 |---|---|---|---|
 | H01 | **The golden gate has no local cases on this machine.** Add the wiki examples (Mr Crowley, Bach Cello Prelude, Asturias, Barney Miller) as local golden cases. Needs your files. | S | RELEASE-PLAN v0.3.0 |
-| H02 | Archive the v0.3.0-era docs (see D4). | S | audit |
+| H02 | ✓ v0.6.1 Archive the v0.3.0-era docs (see D4). | S | audit |
 | H03 | Wiki: document v0.6.0 (homographs, string physics, `.tab` header behavior). | S–M | release |
-| H04 | Close issue #4 (see D2). | S | GitHub |
+| H04 | ✓ v0.6.1 Close issue #4 (see D2). | S | GitHub |

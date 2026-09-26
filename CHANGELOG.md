@@ -10,6 +10,44 @@ and Cargo apply to 0.x version ranges. Full SemVer applies from 1.0.0. The publi
 is the CLI flags and the file formats gtrsnipe reads and writes; report wording is
 not part of it.
 
+## [0.6.1] — 2026-09-26
+
+A correctness sweep (step 1 of `docs/dev/BACKLOG.md`).
+
+### Fixed
+- **ABC input was decoded wrong.** The parser ignored the key signature and read
+  chord symbols (`"G7"`), lyrics lines and comments as notes; it got 0 of the 1,034
+  Nottingham folk tunes right. It's rewritten and now handles:
+  - key signatures, including modes (`Dmix`, `E minor`) and explicit accidentals;
+  - accidentals carried through the bar as the ABC version says (as music21 does);
+  - ties, including the detached `C2 -C2` form legacy files use, where a tied note
+    keeps its accidental;
+  - broken rhythm, tuplets, chords, rests and multi-bar rests;
+  - mid-tune key, length and meter changes;
+  - skipping grace notes, decorations and other non-note text;
+  - only the first tune and the first voice.
+
+  It now matches music21 note for note on 94% of those tunes; the rest are music21
+  quirks.
+- **RIFF-wrapped MIDI** (`RIFF…RMID`, 259 files in Lakh) came back as an empty
+  song. It's now read. Files that aren't MIDI at all raise a clear error instead of
+  returning nothing, and out-of-range MIDI data bytes are tolerated.
+- **Tabs with hammer-ons/pull-offs read back wrong.** The `h`/`p` letter pushed the
+  fret digits one column late, so a chord with a hammered note decoded as an
+  arpeggio and hammered notes read late. The letter now goes before the digits.
+  *Generated tabs with techniques change byte-for-byte (they now read back
+  correctly).*
+- **`--num-strings 7` dropped the 7-string's low B string.** The range filter used
+  STANDARD instead of the resolved tuning, so every note below E2 was discarded.
+- An explicit `--tuning STANDARD` now overrides a `.tab`'s own `// Tuning:`
+  header. Only the default defers to the header.
+
+### Removed
+- The empty `PdfTabGenerator` stub. Pretty PDF output stays on the backlog (F05).
+
+### Changed
+- The v0.3.0-era planning docs moved to `docs/dev/archive/`.
+
 ## [0.6.0] — 2026-09-26
 
 ### Added
@@ -186,7 +224,7 @@ invocations are unchanged (byte-identical output).**
 
 ## [0.3.0] — 2026-09-23
 
-Release plan and design docs live in [`docs/dev/`](docs/dev/RELEASE-PLAN-v0.3.0.md).
+Release plan and design docs live in [`docs/dev/archive/`](docs/dev/archive/RELEASE-PLAN-v0.3.0.md).
 
 ### Added
 - **Global fretboard optimization.** A dynamic-programming / Viterbi trellis
@@ -237,7 +275,7 @@ Release plan and design docs live in [`docs/dev/`](docs/dev/RELEASE-PLAN-v0.3.0.
 - Crash on `--dedupe` (an undefined `_normalize_pitch` helper).
 - Removed a stray `DEBUG PARSER` `print()` from the tab parser.
 
-See [`docs/dev/AUDIT-findings.md`](docs/dev/AUDIT-findings.md).
+See [`docs/dev/archive/AUDIT-findings.md`](docs/dev/archive/AUDIT-findings.md).
 
 ### Known limitations
 - **VexTab** does not yet emit hammer-on/pull-off/tap articulation symbols or
