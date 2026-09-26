@@ -27,12 +27,19 @@ This project adheres to [Semantic Versioning](https://semver.org/).
   restring suggestions. Homograph retunes are costed and flagged with it.
   `--scale-length`, `--string-gauges` configure the instrument.
 - Worked public-domain examples in `examples/homograph/`.
+- An adversarial multi-agent review of the feature found and confirmed 22
+  issues before release (middle mode not a superset of anchored, the wound-string
+  model, re-rhythm edge cases, rendering). All are fixed, each with a regression test.
 
 ### Fixed
 - **`-i x.tab` now honors the tab's own `// Tuning:` header** when no tuning is
-  given. The CLI always passed STANDARD pitches to the parser, so the v0.5.0 tab
-  round-trip only worked through the API (a DADGAD tab decoded as if standard).
-  An explicit `--tuning`/`--tuning-pitches` still overrides.
+  given, for the whole run (decode, range filter, mapping, and any tab output),
+  as if `--tuning-pitches` had named it. Before, the CLI always passed STANDARD
+  pitches to the parser, so the v0.5.0 tab round-trip only worked through the API
+  (a DADGAD tab decoded as if standard). An explicit `--tuning`/`--tuning-pitches`
+  still overrides; header-less tabs read as 6-string standard, as before.
+- Note names `Cb` and `B#` were an octave off (`Cb4` gave B4, `B#3` gave C3), in
+  `--tuning-pitches` and anywhere else note names are read.
 - `--save-args` no longer writes per-run inputs `--solve-tuning` / `--homograph`
   into a profile (a saved `--solve-tuning` turned every later run into a solve).
 

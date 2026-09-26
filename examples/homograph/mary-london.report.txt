@@ -8,7 +8,7 @@ Rank       6 interval classes {-2, 0, +1, +2, +3, +7} -> a shared tab needs >= 6
 Free       ELIGIBLE - 6 strings, any tunings (max 12, 24 frets)
              (--homograph-mode free for its tab)
 Anchored   ELIGIBLE - an ordinary STANDARD tab of A, retuned, plays B (10-46 set, 25.5" scale):
-             (1 string(s) need another gauge; --homograph-mode anchored for its tab)
+             (1 string outside safe tension; --homograph-mode anchored for its tab)
 Middle     ELIGIBLE - every song a retune of one STANDARD-strung guitar (10-46 set, 25.5" scale); the tab is in tuning A:
              string gauge  A                  B
               1 e   .010   B3    -5   9.1lb   E4        16.3lb
@@ -39,5 +39,5 @@ E|--------|-------|---22--|--------|
 
 
 Same tab, one tuning per song:
-  gtrsnipe -i mary-london.tab --tuning-pitches 'E2,A2,D3,G3,Bb3,B3' -o a.mid     # A: mary
-  gtrsnipe -i mary-london.tab --tuning-pitches 'E2,Ab2,Bb2,F3,B3,E4' -o b.mid     # B: london_bridge
+  gtrsnipe -i mary-london.tab --tuning-pitches E2,A2,D3,G3,Bb3,B3 -o a.mid     # A: mary
+  gtrsnipe -i mary-london.tab --tuning-pitches E2,Ab2,Bb2,F3,B3,E4 -o b.mid     # B: london_bridge

@@ -18,7 +18,7 @@ Anchored   ELIGIBLE - an ordinary STANDARD tab of A, retuned, plays B (10-46 set
               6 E   .046w  E2   (unused)
              B sounds -4 semitones from its input key (chosen to minimize retuning; --homograph-transpose keep holds it)
 Middle     ELIGIBLE - every song a retune of one STANDARD-strung guitar (10-46 set, 25.5" scale); the tab is in tuning A:
-             (no re-stringing needed; --homograph-mode middle for its tab)
+             (every string within safe tension; --homograph-mode middle for its tab)
 Verified   decoding the tab in each tuning reproduces every note of every song
 
 // Title: oldmac
@@ -47,5 +47,5 @@ E|--------------------------------|
 
 
 Same tab, one tuning per song:
-  gtrsnipe -i oldmac-twinkle.tab --tuning-pitches 'E2,A2,D3,G3,B3,E4' -o a.mid     # A: oldmac
+  gtrsnipe -i oldmac-twinkle.tab --tuning-pitches E2,A2,D3,G3,B3,E4 -o a.mid     # A: oldmac
   gtrsnipe -i oldmac-twinkle.tab --tuning-pitches 'E2,A2,Bb2,Bb3,A3,C#4' -o b.mid     # B: twinkle@1-12

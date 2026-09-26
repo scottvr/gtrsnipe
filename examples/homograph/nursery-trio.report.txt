@@ -9,7 +9,7 @@ Rank       5 interval classes {(0,+2), (0,+4), (+7,0), (+12,+7), (+12,+9)} -> a 
 Free       ELIGIBLE - 5 strings, any tunings (max 12, 24 frets)
              (--homograph-mode free for its tab)
 Anchored   ELIGIBLE - an ordinary STANDARD tab of A, retuned, plays B, C (10-46 set, 25.5" scale):
-             (3 string(s) need another gauge; --homograph-mode anchored for its tab)
+             (3 strings outside safe tension; --homograph-mode anchored for its tab)
 Middle     ELIGIBLE - every song a retune of one STANDARD-strung guitar (10-46 set, 25.5" scale); the tab is in tuning A:
              string gauge  A                  B                  C
               1 e   .010   E4   (unused)
@@ -43,5 +43,5 @@ F|-18--------|------|
 
 Same tab, one tuning per song:
   gtrsnipe -i nursery-trio.tab --tuning-pitches 'F#2,B2,D3,E3,F#3,E4' -o a.mid     # A: oldmac@1-7
-  gtrsnipe -i nursery-trio.tab --tuning-pitches 'B1,E2,D3,A3,B3,E4' -o b.mid     # B: twinkle@1-7
+  gtrsnipe -i nursery-trio.tab --tuning-pitches B1,E2,D3,A3,B3,E4 -o b.mid     # B: twinkle@1-7
   gtrsnipe -i nursery-trio.tab --tuning-pitches 'F#2,A2,Bb2,G3,B3,E4' -o c.mid     # C: mary@1-7
