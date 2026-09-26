@@ -42,9 +42,10 @@ def add_tuning_args(target) -> None:
              'baritone, 34 bass).')
     target.add_argument(
         '--string-gauges', type=str, default=None, metavar='GAUGES',
-        help="String gauges for tension physics, e.g. '.010,.013,.017,.026w,.036w,.046w' "
-             "(any order; thickest = lowest string; 'w' = wound). Default: a "
-             "conventional set for the tuning.")
+        help="String gauges for tension physics, low string first like --tuning-pitches "
+             "(a thin->thick set such as '10 13 17 26w 36w 46w' is flipped for you; "
+             "'w' = wound). Default: 10-46 for STANDARD (10-59 7-string, 13-62 "
+             "BARITONE_B, 45-105 bass), else a balanced set designed for the tuning.")
     target.add_argument(
         '--drop-low-string', type=int, default=0, metavar='SEMITONES',
         help='Lower the lowest string by N semitones (2 = drop-D style), on any '

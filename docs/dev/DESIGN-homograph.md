@@ -93,21 +93,34 @@ real strings:
   G♯4 84%, A4 94%. A heavier string doesn't help; that's why the high E is the one
   that snaps, and why no steel string (plain has the least stress per pitch)
   can be tuned there at this scale.
-- **Wound strings** load only their core (the wrap adds mass), so they have huge
-  breaking headroom; their practical limit is tension.
+- **Wound strings** load only their core (the wrap adds mass): core stress is
+  plain stress × *m* (total/core mass), and *m* depends on core sizes makers don't
+  publish (≈2–3 for a wound G, 4–6 for a low E). So wound strings are judged by
+  **tension**, with only a conservative ceiling from the thinnest plausible wrap
+  (*m* ≥ 2). (A first cut used one fixed core fraction for every wound string;
+  that made each one break at ≈G3 regardless of gauge and flagged every acoustic
+  set's wound G. The review caught it.)
 - **Down never snaps** but below ~55% of normal tension (≈ −5 semitones) a
   string flops.
 
-Status per string per song: `ok` · `slack` (< 55% tension) · `tight` (> 145%
-tension or ≥ 70% of breaking stress) · `breaks` (≥ 90% of breaking stress, or ≥ 2×
-tension — a bridge/neck hazard) · `impossible` (no steel string holds it at this
-scale). For slack/tight/breaks the report suggests a catalog gauge that holds the
+Status per string per song, relative to the string's normal tension: `ok` ·
+`slack` (< 55%) · `tight` (> 145%, or a plain string ≥ 70% of breaking stress) ·
+`breaks` (≥ 2× tension, a bridge/neck hazard, or at the breaking stress) ·
+`impossible` (no steel string holds that pitch at this scale). For slack/tight/breaks the report suggests a catalog gauge that holds the
 pitch at the original string's tension.
 
 **Retune cost** (what the solver minimizes): semitones moved (tightening × 1.5 —
 down never snaps) + 10 per string that needs a different gauge; impossible = ∞.
-`--scale-length` and `--string-gauges` override the default set (10-46 guitar,
-10-59 seven, 13-62 baritone @27″, 45-105 bass @34″, else a balanced ~17 lb set).
+**Default strings**: the conventional set only for the tuning it is designed for
+(STANDARD 10-46, SEVEN_STRING_STANDARD 10-59, BARITONE_B 13-62 @27″,
+BASS_STANDARD 45-105 @34″). Any other tuning (drop, open, custom) gets a set
+designed for it at ~17 lb per string (~42 lb bass), so "normal tension" is
+physical. A 10-46 set in DROP_C would make the dropped C2 the low string's
+"normal", and then E2 would read as "too tight". Scale: bass (34″) only if the
+tuning is low *and* tops out by D3; baritone/extended range (7- and 8-string)
+27″; else 25.5″, shortened if the top string couldn't hold its own pitch.
+`--scale-length` and `--string-gauges` (low string first; a thin→thick set such as
+`10 13 17 26w 36w 46w` is flipped) override.
 
 ### Modes and transposition
 

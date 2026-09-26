@@ -10,11 +10,13 @@ length alone -- f_break = sqrt(UTS/rho) / 2L, about A4 at 25.5" for music wire
 (UTS ~2.7 GPa). A heavier high E doesn't help; the high E sits at ~53% of its
 breaking stress at E4, 75% at G4, 94% at A4. That is why it's the one that snaps.
 
-Wound: the core carries the load and the wrap only adds mass (core stress =
-rho * m * (2 L f)**2, m = total/core mass ~4-5), so wound strings have huge
-breaking headroom; their practical limit is tension -- feel and neck load.
-Plain steel has the lowest stress of any string at a given pitch (m = 1), so a
-pitch that would break a plain string is out of reach for every steel string.
+Wound: the core carries the load and the wrap only adds mass, so core stress =
+rho * m * (2 L f)**2 with m = total/core mass. m depends on the (unpublished) core
+size -- roughly 2-3 for a wound G, 4-6 for a low E -- so wound strings are judged
+by TENSION (feel and neck load), with only a conservative pitch ceiling taken
+from the thinnest plausible wrap (m >= 2). Plain steel has the lowest stress of
+any string at a given pitch (m = 1), so a pitch that would break a plain string
+is out of reach for every steel string.
 
 Tuning down never breaks a string, but below ~55% of its normal tension
 (about -5 semitones) it flops, buzzes and won't intonate.
@@ -34,7 +36,7 @@ GRAVITY_IN = 386.4          # in/s^2: converts lb-mass to lb-force in the formul
 STEEL_DENSITY = 0.2836      # lb/in^3
 STEEL_DENSITY_SI = 7850.0   # kg/m^3
 WOUND_FACTOR = 0.83         # nickel round-wound UW / solid-steel UW, same outer gauge
-CORE_FRACTION = 0.40        # wound core diameter / outer diameter (typical hex core)
+WOUND_MIN_STRESS = 2.0      # a wound core carries >= ~2x plain steel's stress at a pitch
 UTS_PSI = 2.7e9 / 6894.757  # music-wire ultimate tensile strength (~390 ksi)
 BREAK_AT = 0.90             # stress >= 90% of UTS: treat as breaking
 RISKY_AT = 0.70             # stress >= 70% of UTS: snap risk (high E past F#4)
@@ -65,12 +67,6 @@ class Gauge:
         solid = STEEL_DENSITY * math.pi * self.inches ** 2 / 4
         return solid * WOUND_FACTOR if self.wound else solid
 
-    @property
-    def load_area(self) -> float:
-        """Cross-section carrying the tension (in^2): the core, if wound."""
-        d = self.inches * (CORE_FRACTION if self.wound else 1.0)
-        return math.pi * d * d / 4
-
     def __str__(self) -> str:
         s = f"{self.inches:.4f}".rstrip("0")
         s = s[1:] if s.startswith("0") else s
@@ -80,8 +76,11 @@ class Gauge:
 
 
 def parse_gauges(spec: str) -> List[Gauge]:
-    """'.010,.013,.017,.026w,.036w,.046w' (or '10 13 17 26w 36w 46w') -> gauges
-    ordered LOW string -> high (thickest first; input order doesn't matter).
+    """String gauges -> a list ordered LOW string -> high, like --tuning-pitches.
+
+    Written thin->thick as sets usually are ('10 13 17 26w 36w 46w', '.010,...'),
+    they're flipped; thick->thin is already low->high; a mixed order (a
+    re-entrant set, e.g. Nashville) is taken as given, low string first.
     Suffix w = wound, p = plain; unsuffixed gauges above .020 are wound."""
     out = []
     for tok in re.split(r"[,\s]+", spec.strip()):
@@ -97,16 +96,26 @@ def parse_gauges(spec: str) -> List[Gauge]:
         out.append(Gauge(v, wound))
     if not out:
         raise ValueError("no string gauges given")
-    return sorted(out, key=lambda g: -g.inches)
+    d = [g.inches for g in out]
+    if len(set(d)) > 1 and all(a <= b for a, b in zip(d, d[1:])):
+        out.reverse()                   # thin -> thick: the usual set notation
+    return out
 
 
 def tension_lb(g: Gauge, pitch: float, scale_in: float) -> float:
     return g.unit_weight * (2 * scale_in * hz(pitch)) ** 2 / GRAVITY_IN
 
 
-def stress_fraction(g: Gauge, pitch: float, scale_in: float) -> float:
-    """Load-bearing stress as a fraction of the steel's breaking strength."""
-    return tension_lb(g, pitch, scale_in) / g.load_area / UTS_PSI
+def plain_stress(pitch: float, scale_in: float) -> float:
+    """Stress in plain steel at ``pitch`` as a fraction of its breaking strength:
+    rho*(2Lf)^2 -- the same for every gauge."""
+    return tension_lb(Gauge(0.010, False), pitch, scale_in) / (math.pi * 0.010 ** 2 / 4) / UTS_PSI
+
+
+def stress_fraction(g: Gauge, pitch: float, scale_in: float) -> Optional[float]:
+    """Stress as a fraction of breaking strength, for plain strings. None for
+    wound ones: their core size isn't known, so they're judged by tension."""
+    return None if g.wound else plain_stress(pitch, scale_in)
 
 
 def breaking_pitch_hz(scale_in: float) -> float:
@@ -121,7 +130,7 @@ class StringState:
     pitch: int
     tension: float
     ratio: float                 # tension / the string's normal tension
-    stress: float                # fraction of breaking strength
+    stress: Optional[float]      # fraction of breaking strength (plain only)
     status: str                  # ok | slack | tight | breaks | impossible
     suggestion: Optional[Tuple[Gauge, float]] = None    # (gauge, tension) to restring
 
@@ -130,30 +139,33 @@ class StringState:
         return self.status == "ok"
 
 
-def _status(g: Gauge, pitch: int, normal_t: float, scale_in: float) -> Tuple[str, float, float, float]:
+def _status(g: Gauge, pitch: int, normal_t: float, scale_in: float
+            ) -> Tuple[str, float, float, Optional[float]]:
     t = tension_lb(g, pitch, scale_in)
-    sf = stress_fraction(g, pitch, scale_in)
+    ps = plain_stress(pitch, scale_in)
+    load = ps * (WOUND_MIN_STRESS if g.wound else 1.0)   # wound: a conservative floor
     ratio = t / normal_t if normal_t else 1.0
     if hz(pitch) >= breaking_pitch_hz(scale_in):
         st = "impossible"
-    elif sf >= BREAK_AT or ratio >= HAZARD_ABOVE:
+    elif load >= BREAK_AT or ratio >= HAZARD_ABOVE:
         st = "breaks"
-    elif sf >= RISKY_AT or ratio > TIGHT_ABOVE:
+    elif load >= RISKY_AT or ratio > TIGHT_ABOVE:
         st = "tight"
     elif ratio < SLACK_BELOW:
         st = "slack"
     else:
         st = "ok"
-    return st, t, ratio, sf
+    return st, t, ratio, (None if g.wound else ps)
 
 
 def restring(pitch: int, target_tension: float, scale_in: float) -> Optional[Tuple[Gauge, float]]:
     """The catalog gauge whose tension at ``pitch`` is closest to
     ``target_tension`` (the feel of the string it replaces) and safe."""
     best = None
+    ps = plain_stress(pitch, scale_in)
     for inches, wound in [(g, False) for g in PLAIN_GAUGES] + [(g, True) for g in WOUND_GAUGES]:
         g = Gauge(inches, wound)
-        if stress_fraction(g, pitch, scale_in) >= RISKY_AT:
+        if ps * (WOUND_MIN_STRESS if wound else 1.0) >= RISKY_AT:
             continue
         t = tension_lb(g, pitch, scale_in)
         if best is None or abs(t - target_tension) < abs(best[1] - target_tension):
@@ -185,12 +197,14 @@ class Instrument:
         return f'{self.name or gs} set, {self.scale_in:g}" scale'
 
 
-# Conventional sets, LOW -> high string.
+# Conventional sets, keyed by the tuning each is designed for (gauges LOW -> high).
+# Any other tuning gets a set designed for it, so "normal tension" stays physical
+# (a 10-46 set in DROP_C would make C2 the low string's "normal").
 _SETS = {
-    "guitar6": ("10-46", 25.5, ".046w .036w .026w .017 .013 .010"),
-    "guitar7": ("10-59", 25.5, ".059w .046w .036w .026w .017 .013 .010"),
-    "baritone": ("13-62", 27.0, ".062w .046w .036w .026w .017 .013"),
-    "bass4": ("45-105", 34.0, ".105w .085w .065w .045w"),
+    "STANDARD": ("10-46", 25.5, ".046w .036w .026w .017 .013 .010"),
+    "SEVEN_STRING_STANDARD": ("10-59", 25.5, ".059w .046w .036w .026w .017 .013 .010"),
+    "BARITONE_B": ("13-62", 27.0, ".062w .046w .036w .026w .017 .013"),
+    "BASS_STANDARD": ("45-105", 34.0, ".105w .085w .065w .045w"),
 }
 
 
@@ -204,36 +218,45 @@ def _balanced_gauge(pitch: int, scale_in: float, target: float) -> Gauge:
     return Gauge(min(WOUND_GAUGES, key=lambda g: abs(g - d_wound)), True)
 
 
+def _default_scale(tuning: str, nominal: Sequence[int]) -> float:
+    if tuning.startswith("BASS_"):
+        return 34.0
+    if tuning.startswith("BARITONE_"):
+        return 27.0
+    lowest, highest = min(nominal), max(nominal)
+    if lowest <= 31 and highest <= 50:     # low AND tops out by D3: a bass
+        return 34.0
+    if lowest <= 35:                       # baritone / extended-range guitar (7-, 8-string)
+        return 27.0
+    return 25.5
+
+
 def default_instrument(tuning: str, nominal_high_to_low: Sequence[int],
                        scale_in: Optional[float] = None,
                        gauges_low_to_high: Optional[Sequence[Gauge]] = None) -> Instrument:
-    """The strung instrument a tuning implies: a conventional set for the named
-    guitar/baritone/bass tunings, else a balanced ~17 lb/string set designed for
-    the tuning. ``scale_in``/``gauges_low_to_high`` override."""
+    """The strung instrument a tuning implies: the conventional set when the tuning
+    is the one that set is designed for (STANDARD 10-46, 7-string 10-59, BARITONE_B
+    13-62, BASS_STANDARD 45-105), else a balanced ~17 lb/string (~42 lb bass) set
+    designed for the tuning. ``scale_in`` / ``gauges_low_to_high`` override."""
     n = len(nominal_high_to_low)
-    key = None
     t = (tuning or "").upper()
-    if t.startswith("BASS_") and n == 4:
-        key = "bass4"
-    elif t.startswith("BARITONE_") and n == 6:
-        key = "baritone"
-    elif t not in ("", "CUSTOM") and n in (6, 7):
-        key = f"guitar{n}"
-    lowest = min(nominal_high_to_low)
-    if key:
-        name, default_scale, spec = _SETS[key]
-    else:
-        name, spec = "", None
-        default_scale = 34.0 if lowest <= 31 else 27.0 if lowest <= 35 else 25.5
-    scale = scale_in or default_scale
+    conventional = _SETS.get(t)
+    if conventional and len(conventional[2].split()) != n:
+        conventional = None
     if gauges_low_to_high:
         if len(gauges_low_to_high) != n:
             raise ValueError(f"{len(gauges_low_to_high)} string gauges for a {n}-string tuning")
-        gl, name = list(gauges_low_to_high), ""
-    elif spec:
-        gl = parse_gauges(spec)
-    else:
+        scale = scale_in or (conventional[1] if conventional else _default_scale(t, nominal_high_to_low))
+        return Instrument(scale, list(reversed(gauges_low_to_high)), list(nominal_high_to_low), "")
+    if conventional:
+        name, default, spec = conventional
+        return Instrument(scale_in or default, list(reversed(parse_gauges(spec))),
+                          list(nominal_high_to_low), name)
+    scales = [scale_in] if scale_in else [_default_scale(t, nominal_high_to_low), 25.5, 24.75]
+    for scale in dict.fromkeys(scales):
         target = 42.0 if scale >= 30 else 17.0
         gl = [_balanced_gauge(p, scale, target) for p in reversed(nominal_high_to_low)]
-        name = "balanced"
-    return Instrument(scale, list(reversed(gl)), list(nominal_high_to_low), name)
+        inst = Instrument(scale, list(reversed(gl)), list(nominal_high_to_low), "balanced")
+        if all(inst.assess(s, p).ok for s, p in enumerate(nominal_high_to_low)):
+            break                          # this scale can hold every string's own pitch
+    return inst

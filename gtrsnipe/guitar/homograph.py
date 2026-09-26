@@ -164,12 +164,12 @@ class Solution:
         return [self.opens[j][s] - ref[s] for s in range(self.num_strings)]
 
     def regauges(self) -> int:
-        """(string, song) pairs whose tension needs a different gauge."""
+        """Distinct strings outside their safe tension range in some song's tuning."""
         if self.instrument is None:
             return 0
         return sum(1 for s in range(self.num_strings) if self.used[s]
-                   for j in range(len(self.opens))
-                   if not self.instrument.assess(s, self.opens[j][s]).ok)
+                   and any(not self.instrument.assess(s, self.opens[j][s]).ok
+                           for j in range(len(self.opens))))
 
 
 @dataclass
@@ -1343,10 +1343,11 @@ def _string_label(names_high_to_low: List[str], s: int) -> str:
 
 _STATUS_WORDS = {
     "slack": lambda st: "too slack",
-    "tight": lambda st: "too tight",
-    "breaks": lambda st: ("past its breaking point" if st.stress >= 0.9
-                          else "dangerously tight (over 2x its normal tension)"),
-    "impossible": lambda st: "beyond what any steel string can hold",
+    "tight": lambda st: ("too tight" if st.ratio > 1.45 or st.stress is None
+                         else "at risk of snapping"),
+    "breaks": lambda st: ("dangerously tight (2x or more its normal tension)"
+                          if st.ratio >= 2.0 else "at its breaking point"),
+    "impossible": lambda st: "beyond what any steel string can hold at this scale length",
 }
 
 
@@ -1376,11 +1377,12 @@ def _tuning_table(rep: HomographReport, sol: Solution, indent: str) -> List[str]
                 if not st.ok:
                     fix = (f"restring with {st.suggestion[0]} ({st.suggestion[1]:.1f} lb)"
                            if st.suggestion else "no gauge helps at this scale length")
+                    stress = ("" if st.stress is None
+                              else f", {st.stress * 100:.0f}% of breaking stress")
                     notes.append(f"{indent}! string {s + 1} for {rep.labels[j]}: "
                                  f"{pitch_to_note_name(p)} is {_STATUS_WORDS[st.status](st)} "
-                                 f"({st.tension:.1f} lb = "
-                                 f"{st.ratio * 100:.0f}% of normal, {st.stress * 100:.0f}% of "
-                                 f"breaking) - {fix}")
+                                 f"({st.tension:.1f} lb = {st.ratio * 100:.0f}% of normal"
+                                 f"{stress}) - {fix}")
             cells.append(f"{cell:<{w}}")
         lines.append(row + "  ".join(cells).rstrip())
     return lines + notes
@@ -1457,7 +1459,8 @@ def format_report(rep: HomographReport) -> str:
         else:
             rg = sol.regauges()
             phys = "" if sol.instrument is None else (
-                "no re-stringing needed; " if not rg else f"{rg} string(s) need another gauge; ")
+                "every string within safe tension; " if not rg else
+                f"{rg} string{'s' if rg > 1 else ''} outside safe tension; ")
             L.append(f"{ind}({phys}--homograph-mode {tag.lower()} for its tab)")
 
     free_head = (f"{rep.free_needed} strings, any tunings (max {rep.max_strings}, "
