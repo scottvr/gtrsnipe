@@ -316,6 +316,16 @@ def run_solve_tuning(args) -> int:
     return 0
 
 
+def _tab_header_names(path: str) -> Optional[list]:
+    """A .tab file's own '// Tuning:' header as note names LOW -> high, or None."""
+    try:
+        with open(path) as f:
+            pitches = tab.AsciiTabParser.header_tuning(f.read())
+    except OSError:
+        return None
+    return [pitch_to_note_name(p) for p in reversed(pitches)] if pitches else None
+
+
 def _load_homograph_song(spec: str, args, anchor_open: list):
     """A --homograph SONG: a file (.mid[:TRACK]/.abc/.tab/.vex) or an inline
     melody. Returns (song, title, open pitches a .tab was decoded in | None)."""
@@ -553,6 +563,15 @@ def main():
         # named-tuning resolution and validation below.
         from .arguments import resolve_custom_tuning
         custom_names = resolve_custom_tuning(args)   # low->high note names, or None
+        # A .tab input with no tuning asked for (STANDARD is only the default)
+        # adopts its own '// Tuning:' header for the WHOLE run -- decode, range
+        # filter, mapping and any tab output -- as if --tuning-pitches named it.
+        if (custom_names is None and not args.bass and args.num_strings is None
+                and tuning_name == 'STANDARD' and Path(args.input).suffix.lower() == '.tab'):
+            header = _tab_header_names(args.input)
+            if header:
+                args.tuning_pitches = ",".join(header)
+                custom_names = resolve_custom_tuning(args)
         is_custom = custom_names is not None
         if is_custom:
             tuning_name = "CUSTOM"
@@ -698,15 +717,9 @@ def main():
         else:
             # Otherwise, we parse normally
             logger.info(f"--- Parsing '{current_file}' as a {format_to_parse} file for final conversion ---")
-            decode_pitches = open_string_pitches_for(tuning_name, custom_names)
-            if format_to_parse == 'tab' and not is_custom and not args.bass \
-                    and tuning_name == 'STANDARD':
-                # No tuning asked for (STANDARD is only the default): let the tab's
-                # own '// Tuning:' header decide (the parser falls back to standard).
-                decode_pitches = None
             song = converter._parse(current_file, format_to_parse, args.track, staccato=args.staccato,
                                     quantization_resolution=args.quantization_resolution,
-                                    open_string_pitches=decode_pitches)
+                                    open_string_pitches=open_string_pitches_for(tuning_name, custom_names))
         
         debug_song_state(song, 5, "After Parsing") 
         

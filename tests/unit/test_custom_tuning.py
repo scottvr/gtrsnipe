@@ -162,26 +162,54 @@ def test_format_open_string_tab_shows_only_open_strings():
     assert "1" not in tab and "2" not in tab
 
 
-def test_cli_decodes_a_tab_in_its_own_header_tuning(tmp_path):
-    # Regression: the CLI always passed STANDARD pitches to the parser, so a
-    # custom-tuned tab's '// Tuning:' header was ignored unless --tuning-pitches
-    # was given. With no tuning asked for, the header now decides.
+def _cli_decode(tab_text, tmp_path, *extra, out_name="out.abc"):
+    """Run the real CLI on a .tab; return (sorted pitches of the .abc output, out path)."""
     import os
     import subprocess
     import sys
     from gtrsnipe.formats.abc.parser import AbcParser
-    tab = tmp_path / "dadgad.tab"
-    tab.write_text("// Tuning: D2,A2,D3,G3,A3,D4\n"
-                   "e|--0--|\nB|-----|\nG|-----|\nD|-----|\nA|-----|\nE|--2--|\n")
+    tab = tmp_path / "in.tab"
+    tab.write_text(tab_text)
     root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     env = dict(os.environ, PYTHONPATH=root + os.pathsep + os.environ.get("PYTHONPATH", ""))
+    out = tmp_path / out_name
+    subprocess.run([sys.executable, "-m", "gtrsnipe.converter", "-i", str(tab),
+                    "-o", str(out), "-y", *extra], cwd=root, env=env, check=True,
+                   capture_output=True)
+    if out.suffix == ".abc":
+        return sorted(e.pitch for e in AbcParser.parse(out.read_text()).tracks[0].events), out
+    return None, out
 
-    def decode(*extra):
-        out = tmp_path / "out.abc"
-        subprocess.run([sys.executable, "-m", "gtrsnipe.converter", "-i", str(tab),
-                        "-o", str(out), "-y", *extra], cwd=root, env=env, check=True,
-                       capture_output=True)
-        return sorted(e.pitch for e in AbcParser.parse(out.read_text()).tracks[0].events)
 
-    assert decode() == [40, 62]                          # D2+2, D4 (header tuning)
-    assert decode("--tuning-pitches", "E2,A2,D3,G3,B3,E4") == [42, 64]  # explicit wins
+def test_cli_decodes_a_tab_in_its_own_header_tuning(tmp_path):
+    # Regression: the CLI always passed STANDARD pitches to the parser, so a
+    # custom-tuned tab's '// Tuning:' header was ignored unless --tuning-pitches
+    # was given. With no tuning asked for, the header now decides.
+    tab = ("// Tuning: D2,A2,D3,G3,A3,D4\n"
+           "e|--0--|\nB|-----|\nG|-----|\nD|-----|\nA|-----|\nE|--2--|\n")
+    assert _cli_decode(tab, tmp_path)[0] == [40, 62]                  # D2+2, D4 (header)
+    assert _cli_decode(tab, tmp_path, "--tuning-pitches", "E2,A2,D3,G3,B3,E4")[0] == [42, 64]
+
+
+def test_cli_header_tuning_governs_the_whole_run(tmp_path):
+    # Regression (review): the header decoded the pitches, but the range filter and
+    # mapping still assumed STANDARD, silently dropping a drop-D tab's low D2s.
+    tab = ("// Tuning: D2,A2,D3,G3,B3,E4\n"
+           "e|-------|\nB|-------|\nG|-------|\nD|-------|\nA|---0---|\nD|-0---0-|\n")
+    assert _cli_decode(tab, tmp_path)[0] == [38, 38, 45]              # D2 D2 A2 all kept
+    _, out = _cli_decode(tab, tmp_path, out_name="out.tab")          # tab -> tab round trip
+    text = out.read_text()
+    assert "// Tuning: D2,A2,D3,G3,B3,E4" in text
+    from gtrsnipe.formats.tab.parser import AsciiTabParser
+    assert sorted(e.pitch for e in AsciiTabParser.parse(text).tracks[0].events) == [38, 38, 45]
+
+
+def test_cli_headerless_tab_still_reads_as_six_string_standard(tmp_path):
+    # Regression (review): two systems back to back with no blank line and no
+    # header must still be read in 6-line blocks (main's behavior), not as 12 strings.
+    sys1 = ["e|-----0-----|", "B|---1---1---|", "G|-2-------2-|",
+            "D|-----------|", "A|-----------|", "E|-----------|"]
+    sys2 = ["e|-----------|", "B|-----------|", "G|-----------|",
+            "D|-2---2---2-|", "A|---3---3---|", "E|-----------|"]
+    got, _ = _cli_decode("\n".join(sys1 + sys2) + "\n", tmp_path)
+    assert got == sorted([57, 60, 64, 60, 57, 52, 48, 52, 48, 52])
