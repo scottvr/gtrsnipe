@@ -285,6 +285,15 @@ def test_parse_inline_rejects_garbage():
         hg.parse_inline("C4 H9")
     with pytest.raises(ValueError):
         hg.parse_inline("r r")
+    for bad in ("C4 D4:1/0", "C4:0 D4"):            # review: crashed / fused into a chord
+        with pytest.raises(ValueError):
+            hg.parse_inline(bad)
+
+
+def test_parse_inline_enharmonic_octaves():
+    # review: Cb4 came out as B4 (an octave high), B#3 as C3
+    s = hg.parse_inline("Cb4 B#3")
+    assert [e.pitch for e in s.tracks[0].events] == [59, 60]
 
 
 # -- CLI ---------------------------------------------------------------------------------

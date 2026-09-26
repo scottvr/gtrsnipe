@@ -11,7 +11,7 @@ def note_name_to_pitch(name: str) -> int:
     Converts a note name (e.g., "A4", "C#5", "Eb3") to its corresponding MIDI pitch number.
     """
     note_map = {
-        'C': 0, 'B#': 0,
+        'C': 0, 'B#': 12,   # B#3 is C4: the octave number belongs to the letter B
         'C#': 1, 'Db': 1,
         'D': 2,
         'D#': 3, 'Eb': 3,
@@ -22,7 +22,7 @@ def note_name_to_pitch(name: str) -> int:
         'G#': 8, 'Ab': 8,
         'A': 9,
         'A#': 10, 'Bb': 10,
-        'B': 11, 'Cb': 11,
+        'B': 11, 'Cb': -1,  # Cb4 is B3: the octave number belongs to the letter C
     }
     
     match = re.match(r'([A-Ga-g])([#b]?)(-?\d+)', name)

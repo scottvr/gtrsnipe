@@ -1496,8 +1496,12 @@ def _parse_duration(s: Optional[str]) -> float:
         return 1.0
     if "/" in s:
         num, den = s.split("/")
-        return float(num) / float(den)
-    return float(s)
+        v = float(num) / float(den) if float(den) else 0.0
+    else:
+        v = float(s)
+    if v <= 0:                  # a zero length would silently fuse notes into a chord
+        raise ValueError(f"bad duration {s!r} (must be > 0 beats)")
+    return v
 
 
 def window(song: Song, start: int, end: int, resolution: float = 0.125) -> Song:

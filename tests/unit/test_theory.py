@@ -18,6 +18,10 @@ from gtrsnipe.core.theory import (
         ("C#5", 73),
         ("Db5", 73),   # enharmonic with C#5
         ("Eb3", 51),
+        ("Cb4", 59),   # = B3 (octave belongs to the letter; was an octave high)
+        ("B#3", 60),   # = C4 (was an octave low)
+        ("E#4", 65),
+        ("Fb4", 64),
     ],
 )
 def test_note_name_to_pitch(name, pitch):
