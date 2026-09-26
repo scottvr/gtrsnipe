@@ -464,3 +464,47 @@ def test_free_packing_is_fast_and_exact_for_a_wide_melody():
     rep = hg.analyze([a, b], max_fret=0, max_strings=12, physical=False)
     assert time.perf_counter() - t0 < 2.0
     assert rep.free is not None and rep.free_needed == 11
+
+
+# -- review regressions: alignment ------------------------------------------------------------
+
+def _al(a, b, **kw):
+    ev = lambda spec: [e for t in song(spec).tracks for e in t.events]   # noqa: E731
+    return hg.align([ev(a), ev(b)], **kw)
+
+
+def test_dp_finds_the_tempo_scale_when_the_split_is_at_the_end():
+    # review: c was guessed from the LAST onsets, which a final split skews
+    al = _al("C4 D4 E4 F4", "E4:2 F4:2 G4:2 A4:1 A4:1", subdivide=2)
+    assert al.ok and al.rhythm == "proportional" and al.detail == "x2"
+    assert any("smeared" in e for e in al.edits)
+
+
+def test_final_restrikes_follow_the_rhythm_not_the_last_notes_length():
+    # review: B's held final C5 squeezed A's re-strike into a 1/9-beat flam
+    for tail in ("C5:4", "C5:1/2"):
+        al = _al("C4 D4 E4 C4", f"E4 F4 G4 A4:1/2 {tail}", subdivide=2)
+        assert [(o.time, o.duration) for o in al.onsets[-2:]] == [(3.0, 0.5), (3.5, 0.5)]
+
+
+def test_subdivide_never_loses_a_one_to_one_alignment():
+    # review: turning subdivide on made an aligned proportional pair NOT ALIGNED
+    for sub in (1, 2):
+        al = _al("C4 D4 E4 F4", "E4:2.125 F4:1.75 G4:2.125 A4:2", subdivide=sub)
+        assert al.ok and al.rhythm == "proportional" and not al.edits
+
+
+def test_strict_rejects_drifting_onsets():
+    # review: strict fell into the ratio loop -> "loose ... worst x1.00 at onset 0"
+    al = _al("C4 D4 E4 F4 G4", "E4:2.125 F4:2.125 G4:1.875 A4:1.875 B4:2")
+    assert not al.ok and "onset 3" in al.reason
+    loose = _al("C4 D4 E4 F4 G4", "E4:2.125 F4:2.125 G4:1.875 A4:1.875 B4:2", rhythm=1.2)
+    assert loose.ok and "onset 0" not in loose.detail
+
+
+def test_rhythm_labels_are_consistent():
+    # review: sequence mode called an exact pair "rhythms differ"; x2+edits lost "x2"
+    seq = _al("C4 D4 E4 F4", "E4:2.125 F4:1.875 G4:2 A4:2", rhythm="sequence", subdivide=2)
+    assert seq.ok and seq.rhythm == "proportional"
+    rep = hg.analyze([song("C4 D4 E4"), song("E4:1 E4:1 F4:2 G4:2")], subdivide=2)
+    assert "another note value (x2)" in hg.format_report(rep)

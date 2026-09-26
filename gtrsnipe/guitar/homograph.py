@@ -240,7 +240,7 @@ def _fit(dur_a: float, dur_b: float, c: float, rhythm: Rhythm, tol: float) -> Tu
     dev = max(q, 1 / q)
     exact = abs(dur_b - c * dur_a) <= tol * max(1.0, c)
     if rhythm == "sequence":
-        return True, dev
+        return True, (1.0 if exact else dev)
     if rhythm == "strict":
         return exact, (1.0 if exact else dev)
     return exact or dev <= rhythm + 1e-9, (1.0 if exact else dev)
@@ -269,6 +269,10 @@ def align(event_lists: Sequence[Sequence[MusicalEvent]], *, rhythm: Rhythm = "st
         if not g:
             return Alignment(False, f"{labels[j]} has no notes")
     if subdivide > 1 and len(groups) == 2:
+        if len(groups[0]) == len(groups[1]):
+            plain = _align_linear(groups, rhythm, resolution, labels)
+            if plain.ok:                     # a 1:1 alignment needs no re-rhythm
+                return plain
         return _align_dp(groups, rhythm, resolution, labels, subdivide)
     return _align_linear(groups, rhythm, resolution, labels)
 
@@ -309,20 +313,25 @@ def _align_linear(groups, rhythm, resolution, labels) -> Alignment:
         if rhythm == "sequence":
             worst_kind = "sequence-only"
             continue
+        if rhythm == "strict":
+            t = next(i for i, (a, b) in enumerate(zip(r0, rj))
+                     if abs(c * a - b) > tol * max(1.0, c))
+            return Alignment(False, (
+                f"rhythms differ at onset {t + 1} ({labels[0]} beat {r0[t]:g}, "
+                f"{labels[j]} beat {rj[t]:g}); --homograph-rhythm RATIO (e.g. 1.5) "
+                "tolerates loose spacing; 'sequence' ignores timing"))
         worst, at = 1.0, 0
         for t in range(len(r0) - 1):
             ok, dev = _fit(r0[t + 1] - r0[t], rj[t + 1] - rj[t], c, rhythm, tol)
             if not ok:
-                hint = ("--homograph-rhythm RATIO (e.g. 1.5) tolerates loose spacing; "
-                        "'sequence' ignores timing") if rhythm == "strict" else \
-                    f"beyond the x{rhythm:g} slop"
                 return Alignment(False, (
                     f"rhythms differ at onset {t + 2} ({labels[0]} beat {r0[t + 1]:g}, "
-                    f"{labels[j]} beat {rj[t + 1]:g}); {hint}"))
+                    f"{labels[j]} beat {rj[t + 1]:g}); beyond the x{rhythm:g} slop"))
             if dev > worst:
                 worst, at = dev, t + 2
         worst_kind = max(worst_kind, "loose", key=order.index)
-        details.append(f"worst x{worst:.2f} at onset {at}")
+        details.append(f"worst x{worst:.2f} at onset {at}" if at else
+                       "every gap within the grid, onsets drifting")
     onsets = []
     t0 = g0[0][0].time
     for t in range(len(g0)):
@@ -340,9 +349,18 @@ def _align_dp(groups, rhythm, resolution, labels, kmax) -> Alignment:
     end_a = ta[-1] + max(e.duration for e in A[-1])
     end_b = tb[-1] + max(e.duration for e in B[-1])
     ta_x, tb_x = ta + [end_a], tb + [end_b]
-    cs = [1.0]
-    if ta[-1] > 0 and tb[-1] > 0 and abs(tb[-1] / ta[-1] - 1) > 1e-9:
-        cs.append(tb[-1] / ta[-1])
+    # Tempo-scale candidates: splits/merges at either end make the first or last
+    # onsets unreliable, so pair each end's last few onsets (and the note ends).
+    cs = {1.0}
+    if end_a > 0:
+        cs.add(end_b / end_a)
+    for p_ in range(1, kmax + 1):
+        for q_ in range(1, kmax + 1):
+            if TA - p_ > 0 and TB - q_ > 0 and ta[TA - p_] > 0:
+                cs.add(tb[TB - q_] / ta[TA - p_])
+            if p_ < TA and q_ < TB and ta[p_] > 0:
+                cs.add(tb[q_] / ta[p_])
+    cs = sorted({round(c, 9) for c in cs if c > 0}, key=lambda c: (abs(math.log(c)), c))
 
     moves = [(1, 1)] + [(1, k) for k in range(2, kmax + 1)] + [(k, 1) for k in range(2, kmax + 1)]
 
@@ -393,8 +411,7 @@ def _align_dp(groups, rhythm, resolution, labels, kmax) -> Alignment:
     runs = [(c, run(c)) for c in cs]
     done = [(b[(TA, TB)][0], c, b) for c, b in runs if (TA, TB) in b]
     if not done:
-        _c, b = runs[0]
-        fi, fj = max(b, key=lambda ij: (ij[0] + ij[1], ij))
+        fi, fj = max((ij for _c, b in runs for ij in b), key=lambda ij: (ij[0] + ij[1], ij))
         return Alignment(False, (
             f"no re-rhythm with subdivision <= {kmax} lines them up: stuck after "
             f"{labels[0]} onset {fi} and {labels[1]} onset {fj} of {TA}/{TB}"))
@@ -421,11 +438,16 @@ def _align_dp(groups, rhythm, resolution, labels, kmax) -> Alignment:
                              f"(onsets {j + 1}-{nj}) smeared into one held note")
             else:
                 span_a, span_b = ta_x[ni] - ta[i], tb_x[nj] - tb[j]
+                if ni == TA and nj == TB or span_b <= 0:
+                    # the final block: map B's re-strikes through the tempo scale
+                    # (as the DP checked), never by how long B's last note rings
+                    offs = [min((tb[j + u] - tb[j]) / c, span_a * (1 - (q - u) * 1e-3))
+                            for u in range(q)]
+                else:
+                    offs = [(tb[j + u] - tb[j]) * (span_a / span_b) for u in range(q)]
                 for u in range(q):
-                    off = (tb[j + u] - tb[j]) * (span_a / span_b) if span_b > 0 else u * span_a / q
-                    nxt = ((tb_x[j + u + 1] - tb[j]) * (span_a / span_b) if span_b > 0
-                           else (u + 1) * span_a / q)
-                    onsets.append(TabOnset(ta[i] + off, nxt - off, (A[i], B[j + u])))
+                    nxt = offs[u + 1] if u + 1 < q else span_a
+                    onsets.append(TabOnset(ta[i] + offs[u], nxt - offs[u], (A[i], B[j + u])))
                 edits.append(f"{labels[0]}'s {_names(A[i])} (onset {i + 1}) re-struck x{q} to "
                              f"cover {labels[1]}'s {' '.join(_names(g) for g in many)}")
         else:                                  # p A notes vs one B note: keep A intact
@@ -446,7 +468,8 @@ def _align_dp(groups, rhythm, resolution, labels, kmax) -> Alignment:
         kind, detail = "sequence-only", ""
     else:
         kind = "loose" if not exact else ("identical" if abs(c - 1) < 1e-9 else "proportional")
-        detail = f"worst x{worst:.2f} at tab onset {worst_at}" if not exact else ""
+        detail = (f"worst x{worst:.2f} at tab onset {worst_at}" if not exact
+                  else "" if abs(c - 1) < 1e-9 else f"x{c:g}")
     return Alignment(True, rhythm=kind, detail=detail, onsets=onsets, edits=edits)
 
 
