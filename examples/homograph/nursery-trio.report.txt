@@ -1,0 +1,47 @@
+$ gtrsnipe --homograph oldmac.abc@1-7 twinkle.abc@1-7 mary.abc@1-7 --homograph-mode middle -o nursery-trio.tab
+Tab homograph check: 3 songs
+  A  oldmac@1-7   (7 notes, 7 onsets)
+  B  twinkle@1-7  (7 notes, 7 onsets)
+  C  mary@1-7     (7 notes, 7 onsets)
+Alignment  OK - 7 tab onsets, 7 notes, identical rhythm
+Intervals  (B-A,C-A) per note: (0,+4) (0,+2) (+7,0) (+12,+7) (+12,+7) (+12,+7) (+12,+9)
+Rank       5 interval classes {(0,+2), (0,+4), (+7,0), (+12,+7), (+12,+9)} -> a shared tab needs >= 5 strings
+Free       ELIGIBLE - 5 strings, any tunings (max 12, 24 frets)
+             (--homograph-mode free for its tab)
+Anchored   ELIGIBLE - an ordinary STANDARD tab of A, retuned, plays B, C (10-46 set, 25.5" scale):
+             (3 string(s) need another gauge; --homograph-mode anchored for its tab)
+Middle     ELIGIBLE - every song a retune of one STANDARD-strung guitar (10-46 set, 25.5" scale); the tab is in tuning A:
+             string gauge  A                  B                  C
+              1 e   .010   E4   (unused)
+              2 B   .013   F#3   -5   8.7lb   B3        15.5lb   B3        15.5lb
+              3 G   .017   E3    -3  11.8lb   A3    +2  21.0lb   G3        16.6lb
+              4 D   .026w  D3        18.1lb   D3        18.1lb   Bb2   -4  11.4lb
+              5 A   .036w  B2    +2  24.6lb   E2    -5  11.0lb   A2        19.5lb
+              6 E   .046w  F#2   +2  22.5lb   B1    -5  10.0lb   F#2   +2  22.5lb
+             B sounds -7 semitones from its input key (chosen to minimize retuning; --homograph-transpose keep holds it)
+             C sounds -4 semitones from its input key (chosen to minimize retuning; --homograph-transpose keep holds it)
+Verified   decoding the tab in each tuning reproduces every note of every song
+
+// Title: oldmac@1-7
+// Tempo: 120 BPM
+// Time: 4/4
+// Tuning: F#2,B2,D3,E3,F#3,E4
+// Homograph: this one tab plays a different song in each tuning (low->high):
+//   Key A: F#2,B2,D3,E3,F#3,E4  = oldmac@1-7
+//   Key B: B1,E2,D3,A3,B3,E4  = twinkle@1-7 (transposed -7)
+//   Key C: F#2,A2,Bb2,G3,B3,E4  = mary@1-7 (transposed -4)
+
+// Transcribed with: gtrsnipe --homograph oldmac.abc@1-7 twinkle.abc@1-7 mary.abc@1-7 --homograph-mode middle -o nursery-trio.tab -y
+
+e|-----------|------|
+F|-----------|-----1|
+E|----------3|-5-5--|
+D|-------10--|------|
+B|----13-----|------|
+F|-18--------|------|
+
+
+Same tab, one tuning per song:
+  gtrsnipe -i nursery-trio.tab --tuning-pitches 'F#2,B2,D3,E3,F#3,E4' -o a.mid     # A: oldmac@1-7
+  gtrsnipe -i nursery-trio.tab --tuning-pitches 'B1,E2,D3,A3,B3,E4' -o b.mid     # B: twinkle@1-7
+  gtrsnipe -i nursery-trio.tab --tuning-pitches 'F#2,A2,Bb2,G3,B3,E4' -o c.mid     # C: mary@1-7

@@ -1,0 +1,17 @@
+// Title: mary
+// Tempo: 120 BPM
+// Time: 4/4
+// Tuning: E2,A2,D3,G3,Bb3,B3
+// Homograph: this one tab plays a different song in each tuning (low->high):
+//   Key A: E2,A2,D3,G3,Bb3,B3  = mary
+//   Key B: E2,Ab2,Bb2,F3,B3,E4  = london_bridge (transposed -2)
+
+// Transcribed with: gtrsnipe --homograph mary.abc london_bridge.abc --homograph-rhythm 2 --homograph-mode middle -o mary-london.tab -y
+
+b|---3-1--|-------|-------|--------|
+B|-6-----4|------6|------4|--------|
+G|--------|-9-----|-7-----|-9----12|
+D|--------|-------|-------|---17---|
+A|--------|---19--|-------|--------|
+E|--------|-------|---22--|--------|
+

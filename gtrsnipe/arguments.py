@@ -37,6 +37,15 @@ def add_tuning_args(target) -> None:
         help='Define a custom tuning by comma-separated note names, low string to '
              "high (e.g. 'A1,E2,A2,D3,F#3,B3'). Overrides --tuning.")
     target.add_argument(
+        '--scale-length', type=float, default=None, metavar='INCHES',
+        help='Scale length for string-tension physics (default: 25.5 guitar, 27 '
+             'baritone, 34 bass).')
+    target.add_argument(
+        '--string-gauges', type=str, default=None, metavar='GAUGES',
+        help="String gauges for tension physics, e.g. '.010,.013,.017,.026w,.036w,.046w' "
+             "(any order; thickest = lowest string; 'w' = wound). Default: a "
+             "conventional set for the tuning.")
+    target.add_argument(
         '--drop-low-string', type=int, default=0, metavar='SEMITONES',
         help='Lower the lowest string by N semitones (2 = drop-D style), on any '
              'tuning / string count.')
@@ -534,8 +543,57 @@ def setup_parser() -> ArgumentParser:
         '--max-strings',
         type=int,
         default=12,
-        help='Max strings the tuning solver may use (default: 12).'
+        help='Max strings the tuning solver (and --homograph-mode free) may use (default: 12).'
     )
+
+    homograph_group = parser.add_argument_group(
+        'Tab homographs (--homograph: one tab, a different song per tuning)')
+    homograph_group.add_argument(
+        '--homograph', nargs='+', default=None, metavar='SONG',
+        help="Find ONE tab that plays each SONG under its own tuning (2+ songs; the "
+             "first is the tab's own). A SONG is a file (.mid[:TRACK], .abc, .tab, "
+             ".vex; append @START-END for just onsets START..END) or an inline melody "
+             "like 'C4 C4 G4 G4 A4 A4 G4:2' (':beats', '+' chords, 'r' rests). Prints "
+             "an eligibility report and the tab. -o FILE.tab writes it; --play plays "
+             "it. No -i needed.")
+    homograph_group.add_argument(
+        '--homograph-mode', choices=['anchored', 'middle', 'free'], default='anchored',
+        help="anchored (default): song 1 keeps --tuning, so the tab is an ordinary tab "
+             "of it and the other songs are retunes. middle: every song is a retune of "
+             "the same strung guitar (tensions meet in the middle). free: any tunings "
+             "at all (up to --max-strings strings). The report gives every verdict.")
+    homograph_group.add_argument(
+        '--homograph-rhythm', default='strict', metavar='strict|RATIO|sequence',
+        help="strict (default): onsets match (or the same rhythm at another note "
+             "value). RATIO, e.g. 1.5: each gap between onsets may differ by up to "
+             "that factor. sequence: pitch order only. The tab carries song 1's rhythm.")
+    homograph_group.add_argument(
+        '--homograph-subdivide', type=int, default=1, metavar='K',
+        help="Re-rhythm (2 songs): let one note stand for up to K notes of the other "
+             "('ta' ~ 'ti ti'): repeated notes are smeared into one held note, else the "
+             "single note is re-struck. Default 1 = off.")
+    homograph_group.add_argument(
+        '--homograph-transpose', default='auto', metavar='auto|keep|N',
+        help="Transpose songs 2.. to minimize retuning (auto, default), keep their "
+             "keys, or shift them by N semitones.")
+    homograph_group.add_argument(
+        '--homograph-transpose-a', default='auto', metavar='auto|keep|N',
+        help="Song 1: auto (default) keeps its key when that works without "
+             "re-stringing, else tries +-12 semitones; keep; or shift by N.")
+    homograph_group.add_argument(
+        '--homograph-max-retune', type=int, default=None, metavar='SEMITONES',
+        help="Cap how far any string may be retuned from song 1's tuning.")
+    homograph_group.add_argument(
+        '--homograph-octaves', action='store_true',
+        help="Arrangement liberty: allow octave displacement of individual notes of "
+             "songs 2.. (lowers the rank; the report counts displaced notes).")
+    homograph_group.add_argument(
+        '--homograph-neutral', action='store_true',
+        help="Write a neutral tab: strings numbered 1..N, no default tuning, so the "
+             "text privileges no song.")
+    homograph_group.add_argument(
+        '--homograph-play', default='B', metavar='LETTER',
+        help="With --play: which song's tuning to play the shared tab in (default: B).")
     parser.add_argument(
         "--transpose",
         type=int,

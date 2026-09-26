@@ -316,6 +316,177 @@ def run_solve_tuning(args) -> int:
     return 0
 
 
+def _load_homograph_song(spec: str, args, anchor_open: list):
+    """A --homograph SONG: a file (.mid[:TRACK]/.abc/.tab/.vex) or an inline
+    melody. Returns (song, title, open pitches a .tab was decoded in | None)."""
+    import re
+    from .guitar.homograph import parse_inline, window
+
+    path, track, span = spec, args.track, None
+    m = re.match(r"^(.+?)(?::(\d+))?(?:@(\d+)-(\d+))?$", spec)
+    if not os.path.exists(spec) and m and os.path.exists(m.group(1)):
+        path = m.group(1)
+        track = int(m.group(2)) if m.group(2) else track
+        span = (int(m.group(3)), int(m.group(4))) if m.group(3) else None
+    tab_open = None
+    if os.path.exists(path):
+        fmt = Path(path).suffix.lower().lstrip('.')
+        if fmt == 'tab':
+            with open(path) as f:
+                content = f.read()
+            # A tab decodes in its own '// Tuning:' header, else the anchor tuning.
+            tab_open = tab.AsciiTabParser.header_tuning(content) or anchor_open
+            song = tab.AsciiTabParser.parse(content, open_string_pitches=tab_open,
+                                            quantization_resolution=args.quantization_resolution)
+        elif fmt in ('mid', 'abc', 'vex'):
+            song = MusicConverter()._parse(path, fmt, track,
+                                           quantization_resolution=args.quantization_resolution)
+        else:
+            raise ValueError(f"{path}: --homograph reads .mid/.abc/.tab/.vex "
+                             "(transcribe audio to .mid first)")
+        title = Path(path).stem + (f":{track}" if track and fmt == 'mid' else "")
+        if span:
+            song = window(song, *span, resolution=args.quantization_resolution)
+            title += f"@{span[0]}-{span[1]}"
+    else:
+        try:
+            song = parse_inline(spec)
+        except ValueError as e:
+            raise ValueError(f"{spec!r} is neither a file nor an inline melody ({e})")
+        toks = spec.replace(",", " ").split()
+        title = " ".join(toks[:4]) + (" ..." if len(toks) > 4 else "")
+    song = filter_by_velocity(song, args.velocity_cutoff)
+    if not args.no_pre_quantize:
+        song = pre_quantize_song(song, args.quantization_resolution)
+    return song, title, tab_open
+
+
+def run_homograph(args, command_line: str = "") -> int:
+    """--homograph: one tab that plays a different song under each song's tuning."""
+    from .arguments import resolve_custom_tuning, resolve_num_strings
+    from .guitar import homograph as hg
+
+    specs = args.homograph
+    if len(specs) < 2:
+        logger.error("--homograph needs at least two songs.")
+        return 1
+    custom = resolve_custom_tuning(args)
+    tuning = "CUSTOM" if custom else ('BASS_STANDARD' if args.bass else args.tuning.upper())
+    if tuning == 'PIANO':
+        logger.error("--homograph needs a string instrument (not --tuning PIANO).")
+        return 1
+    cfg = build_mapper_config(args, tuning=tuning,
+                              num_strings=resolve_num_strings(tuning, args.num_strings))
+    anchor_name = ",".join(custom) if custom else tuning
+
+    def _shift_arg(value, flag):
+        if value in ("auto", "keep"):
+            return value
+        try:
+            return int(value)
+        except ValueError:
+            raise ValueError(f"{flag} takes auto, keep, or an integer")
+
+    try:
+        transpose = _shift_arg(args.homograph_transpose, "--homograph-transpose")
+        transpose_a = _shift_arg(args.homograph_transpose_a, "--homograph-transpose-a")
+        rhythm = args.homograph_rhythm
+        if rhythm not in ("strict", "sequence"):
+            try:
+                rhythm = float(rhythm)
+            except ValueError:
+                rhythm = 0.0
+            if rhythm < 1:
+                raise ValueError("--homograph-rhythm takes strict, sequence, or a ratio >= 1 "
+                                 "(e.g. 1.5)")
+        from .guitar.strings import default_instrument, parse_gauges
+        gauges = parse_gauges(args.string_gauges) if args.string_gauges else None
+        anchor_open = open_string_pitches_for(tuning, custom)
+        instrument = default_instrument(tuning, anchor_open, scale_in=args.scale_length,
+                                        gauges_low_to_high=gauges)
+    except ValueError as e:
+        logger.error(str(e))
+        return 1
+
+    songs, titles, tab_tuning = [], [], None
+    for i, spec in enumerate(specs):
+        try:
+            song, title, tab_open = _load_homograph_song(spec, args, anchor_open)
+        except (ValueError, OSError) as e:
+            logger.error(f"--homograph: {e}")
+            return 1
+        if i == 0:
+            tab_tuning = tab_open
+            if args.transpose:
+                for t in song.tracks:
+                    for e in t.events:
+                        e.pitch += args.transpose
+        songs.append(song)
+        titles.append(title)
+
+    labels = [chr(65 + i) for i in range(len(songs))]
+    report = hg.analyze(songs, labels=labels, titles=titles, anchor=cfg,
+                        anchor_name=anchor_name, mode=args.homograph_mode,
+                        instrument=instrument, max_fret=args.max_fret,
+                        max_strings=args.max_strings, rhythm=rhythm,
+                        subdivide=args.homograph_subdivide, transpose=transpose,
+                        transpose_a=transpose_a, max_retune=args.homograph_max_retune,
+                        octaves=args.homograph_octaves,
+                        resolution=args.quantization_resolution, tab_tuning=tab_tuning)
+    print(hg.format_report(report))
+    sol = report.solution
+    if sol is None:
+        return 1
+
+    text = hg.render_tab(report, sol, neutral=args.homograph_neutral,
+                         max_line_width=max(args.max_line_width, 60),
+                         command_line=command_line, base_config=cfg,
+                         tempo=songs[0].tempo, time_signature=songs[0].time_signature)
+    print("\n" + text)
+
+    written = None
+    for out in (args.output or []):
+        p = Path(out)
+        if p.suffix.lower() != '.tab':
+            logger.error(f"--homograph writes the shared tab as .tab (got {out}); "
+                         "decode it per song with -i FILE.tab --tuning-pitches KEY.")
+            return 1
+        if p.exists() and not args.yes:
+            logger.error(f"Output file '{p}' already exists (use -y to overwrite).")
+            return 1
+        save_text_file(text + "\n", str(p))
+        print(f"Wrote {out}")
+        written = out
+    target = written or "SHARED.tab"
+    print("\nSame tab, one tuning per song:")
+    for j, lab in enumerate(labels):
+        print(f"  gtrsnipe -i {target} --tuning-pitches '{','.join(sol.tuning_names(j))}' "
+              f"-o {lab.lower()}.mid     # {lab}: {titles[j]}")
+
+    if args.play:
+        letter = (args.homograph_play or "B").upper()
+        if letter not in labels:
+            logger.error(f"--homograph-play {letter}: choose one of {', '.join(labels)}.")
+            return 1
+        j = labels.index(letter)
+        from .player.app import run_player_from_args, audio_from_args, _choose_sink
+        try:
+            audio = audio_from_args(args)
+        except (RuntimeError, ValueError) as e:
+            logger.error(str(e))
+            return 1
+        song_j = hg.decoded_song(report.slots, sol, j, title=titles[j],
+                                 tempo=songs[0].tempo, time_signature=songs[0].time_signature)
+        try:
+            run_player_from_args(song_j, hg.config_for_song(sol, j, cfg), args,
+                                 mapped=True, sink=_choose_sink(args), audio=audio)
+        except KeyboardInterrupt:
+            sys.stderr.write("\nStopped.\n")
+        finally:
+            audio.close()
+    return 0
+
+
 def main():
     command_line = " ".join(sys.argv)
     parser = setup_parser()
@@ -347,6 +518,11 @@ def main():
     if args.solve_tuning:
         setup_logger(logging.DEBUG if args.debug else logging.INFO)
         exit(run_solve_tuning(args) or 0)
+
+    if args.homograph:
+        # The report IS the output; keep pipeline INFO chatter out of it.
+        setup_logger(logging.DEBUG if args.debug else logging.WARNING)
+        exit(run_homograph(args, command_line) or 0)
 
     if not args.input:
         parser.error("the following argument is required: -i/--input")

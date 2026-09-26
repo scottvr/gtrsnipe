@@ -1,0 +1,43 @@
+$ gtrsnipe --homograph mary.abc london_bridge.abc --homograph-rhythm 2 --homograph-mode middle -o mary-london.tab
+Tab homograph check: 2 songs
+  A  mary           (13 notes, 13 onsets)
+  B  london_bridge  (13 notes, 13 onsets)
+Alignment  OK - 13 tab onsets, 13 notes, rhythm within tolerance (worst x2.00 at onset 3); the tab carries A's rhythm
+Intervals  B-A per note: +3 +7 +7 +3 0 +1 +3 0 +2 +3 0 -2 0
+Rank       6 interval classes {-2, 0, +1, +2, +3, +7} -> a shared tab needs >= 6 strings
+Free       ELIGIBLE - 6 strings, any tunings (max 12, 24 frets)
+             (--homograph-mode free for its tab)
+Anchored   ELIGIBLE - an ordinary STANDARD tab of A, retuned, plays B (10-46 set, 25.5" scale):
+             (1 string(s) need another gauge; --homograph-mode anchored for its tab)
+Middle     ELIGIBLE - every song a retune of one STANDARD-strung guitar (10-46 set, 25.5" scale); the tab is in tuning A:
+             string gauge  A                  B
+              1 e   .010   B3    -5   9.1lb   E4        16.3lb
+              2 B   .013   Bb3   -1  13.8lb   B3        15.5lb
+              3 G   .017   G3        16.6lb   F3    -2  13.2lb
+              4 D   .026w  D3        18.1lb   Bb2   -4  11.4lb
+              5 A   .036w  A2        19.5lb   Ab2   -1  17.4lb
+              6 E   .046w  E2        17.9lb   E2        17.9lb
+             B sounds -2 semitones from its input key (chosen to minimize retuning; --homograph-transpose keep holds it)
+Verified   decoding the tab in each tuning reproduces every note of every song
+
+// Title: mary
+// Tempo: 120 BPM
+// Time: 4/4
+// Tuning: E2,A2,D3,G3,Bb3,B3
+// Homograph: this one tab plays a different song in each tuning (low->high):
+//   Key A: E2,A2,D3,G3,Bb3,B3  = mary
+//   Key B: E2,Ab2,Bb2,F3,B3,E4  = london_bridge (transposed -2)
+
+// Transcribed with: gtrsnipe --homograph mary.abc london_bridge.abc --homograph-rhythm 2 --homograph-mode middle -o mary-london.tab -y
+
+b|---3-1--|-------|-------|--------|
+B|-6-----4|------6|------4|--------|
+G|--------|-9-----|-7-----|-9----12|
+D|--------|-------|-------|---17---|
+A|--------|---19--|-------|--------|
+E|--------|-------|---22--|--------|
+
+
+Same tab, one tuning per song:
+  gtrsnipe -i mary-london.tab --tuning-pitches 'E2,A2,D3,G3,Bb3,B3' -o a.mid     # A: mary
+  gtrsnipe -i mary-london.tab --tuning-pitches 'E2,Ab2,Bb2,F3,B3,E4' -o b.mid     # B: london_bridge
