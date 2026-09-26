@@ -3,6 +3,13 @@
 All notable changes to gtrsnipe are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+**Versioning while in 0.x.** The minor version marks breaking changes (or a
+deliberate milestone); the patch version marks everything else, including
+backward-compatible features and fixes. This is the left-most-non-zero rule that npm
+and Cargo apply to 0.x version ranges. Full SemVer applies from 1.0.0. The public API
+is the CLI flags and the file formats gtrsnipe reads and writes; report wording is
+not part of it.
+
 ## [0.6.0] — 2026-09-26
 
 ### Added
