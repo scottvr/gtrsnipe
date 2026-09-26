@@ -32,6 +32,8 @@ class GuitarMapper:
         self.open_string_pitches = [note_name_to_pitch(n) for n in reversed(self.tuning_names)]
         self.pitch_to_positions: Dict[int, Set[FretPosition]] = {}
         self._build_pitch_maps()
+        # Objective value of the last map_multi_string() path (None until run).
+        self.last_path_score: Optional[float] = None
         logger.info("--- Chord-Aware Mapper initialized. ---")
 
     def _build_pitch_maps(self):
@@ -52,7 +54,12 @@ class GuitarMapper:
                 if pitch not in self.pitch_to_positions:
                     self.pitch_to_positions[pitch] = set()
                 self.pitch_to_positions[pitch].add(pos)
-    
+
+    def _positions_for(self, note: MusicalEvent) -> Optional[Set[FretPosition]]:
+        """Candidate positions for one note. A hook: a subclass can restrict them
+        (the homograph solver pins each note to the strings of its interval class)."""
+        return self.pitch_to_positions.get(note.pitch)
+
     def _map_to_single_string(self, events: List[MusicalEvent], string_index: int) -> List[MusicalEvent]:
         open_string_pitch = self.open_string_pitches[string_index]
         mapped_events = []
@@ -180,7 +187,7 @@ class GuitarMapper:
     def _find_optimal_fingering(self, notes: List[MusicalEvent], prev_fingering: Optional[Fingering], prev_prev_fingering: Optional[Fingering]) -> Optional[Fingering]:
         note_positions = []
         for note in notes:
-            positions = self.pitch_to_positions.get(note.pitch)
+            positions = self._positions_for(note)
             if not positions: return None
             note_positions.append(positions)
 
@@ -299,7 +306,7 @@ class GuitarMapper:
         dead-end group (any note has no playable position), matching greedy."""
         note_positions = []
         for n in group_notes:
-            pos = self.pitch_to_positions.get(n.pitch)
+            pos = self._positions_for(n)
             if not pos:
                 return []
             note_positions.append(sorted(pos, key=lambda p: (p.string, p.fret)))
@@ -425,6 +432,7 @@ class GuitarMapper:
 
         # termination + traceback (store current-fingering index at each stage)
         end_state = max(sorted(V, key=lambda s: (s[0], s[1])), key=lambda s: V[s])
+        self.last_path_score = V[end_state]
         chosen_idx = [0] * T
         st = end_state
         for t in range(T - 1, -1, -1):

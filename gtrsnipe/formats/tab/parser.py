@@ -33,19 +33,9 @@ class AsciiTabParser:
             song.tempo = float(tempo_match.group(1))
 
         # Read the embedded tuning header so a generated tab round-trips in its own
-        # tuning (unless the caller supplied one explicitly, which wins). Handles
-        # the current 'Tuning: <low..high>' and the legacy 'Tuning (High to Low): ...'.
+        # tuning (unless the caller supplied one explicitly, which wins).
         if open_string_pitches is None:
-            hm = re.search(r"//\s*Tuning([^:]*):\s*(.+)", tab_string, re.IGNORECASE)
-            if hm:
-                names = [x for x in re.split(r"[,\s]+", hm.group(2).strip()) if x]
-                try:
-                    pitches = [note_name_to_pitch(x) for x in names]
-                    # index 0 = highest string; names low->high unless labeled otherwise.
-                    open_string_pitches = (pitches if "high to low" in hm.group(1).lower()
-                                           else list(reversed(pitches)))
-                except ValueError:
-                    open_string_pitches = None  # unparseable header -> fall back
+            open_string_pitches = AsciiTabParser.header_tuning(tab_string)
 
         lines = tab_string.split('\n')
         # A tab line is a short (1-3 char) string label then '|' — accepts any
@@ -165,6 +155,22 @@ class AsciiTabParser:
         song.tracks.append(track)
         logger.debug("Finished creating Song object.")
         return song
+
+    @staticmethod
+    def header_tuning(tab_string: str) -> Optional[List[int]]:
+        """Open-string pitches (index 0 = highest string) from a tab's embedded
+        tuning header, or None. Handles the current '// Tuning: <low..high>' and
+        the legacy '// Tuning (High to Low): ...'."""
+        hm = re.search(r"//\s*Tuning([^:]*):\s*(.+)", tab_string, re.IGNORECASE)
+        if not hm:
+            return None
+        names = [x for x in re.split(r"[,\s]+", hm.group(2).strip()) if x]
+        try:
+            pitches = [note_name_to_pitch(x) for x in names]
+        except ValueError:
+            return None  # unparseable header -> fall back
+        # index 0 = highest string; names low->high unless labeled otherwise.
+        return pitches if "high to low" in hm.group(1).lower() else list(reversed(pitches))
 
     @staticmethod
     def _tab_pos_to_midi(string_idx: int, fret: int, num_strings: int,
