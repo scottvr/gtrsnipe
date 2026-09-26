@@ -18,13 +18,15 @@ notes split into <= N classes ("strings") where, within each class,
 Conversely every such split IS a tab: openA = the class's lowest A pitch,
 openB = openA + d, fret = a - openA.
 
-So neither the note count nor the overall range matters. What matters is the
-*rank*: the number of distinct note-for-note intervals B - A. Rank 1 means B is
-just A transposed (a capo, not a homograph). F = 0 recovers the all-open solver
-(each class then holds one pitch pair). Rank is transposition-invariant
-(transposing B adds a constant to every d), so eligibility depends only on the
-melodic shapes, never the keys; that free transposition is spent keeping the
-retune small. For K songs the class key is the vector of differences to song 0.
+So neither note count nor overall range alone decides the problem. A first lower
+bound is *richness*: the number of distinct note-for-note intervals B - A. Richness 1
+means B is just A transposed (a capo, not a homograph). Additional strings may still
+be required when one interval class spans more than F semitones or contains simultaneous
+notes. F = 0 recovers the all-open solver (each string then holds one pitch pair).
+Richness is transposition-invariant (transposing B adds a constant to every d), so the
+pure free-tuning richness condition depends only on melodic shape, not key; anchored and
+physical modes can still depend on absolute pitch. For K songs the class key is the
+vector of differences to song 0.
 
 Modes
 -----
@@ -182,7 +184,7 @@ class HomographReport:
     mode: str = "free"
     slots: List[Slot] = field(default_factory=list)
     classes: Dict[Key, List[int]] = field(default_factory=dict)
-    rank_mod12: int = 0
+    richness_mod12: int = 0
     displaced: List[int] = field(default_factory=list)
     max_fret: int = 24
     max_strings: int = 12
@@ -199,7 +201,7 @@ class HomographReport:
     as_written_reason: str = ""
 
     @property
-    def rank(self) -> int:
+    def richness(self) -> int:
         return len(self.classes)
 
     @property
@@ -850,7 +852,7 @@ def _map_pinned(slots: List[Slot], cfg: MapperConfig, string_key: List[Optional[
 
 
 def _proxy_cost(slots: List[Slot], open0: List[int], string_key: List[Optional[Key]]) -> float:
-    """Cheap playability estimate used to rank assignments before the real
+    """Cheap playability estimate used to score assignments before the real
     mapper runs: hand movement + high frets (first string of each class)."""
     first = {}
     for st, k in enumerate(string_key):
@@ -907,7 +909,7 @@ def _placement_candidates(slots: List[Slot], config: MapperConfig, *, mode: str,
     r = len(keys)
     K = len(slots[0].pitches)
     if r > N:
-        return [], (f"rank {r} > {N} strings: the songs differ by {r} distinct "
+        return [], (f"richness {r} > {N} strings: the songs differ by {r} distinct "
                     f"intervals, each needing its own string"), cost
 
     # Offsets x per (class, string): song 0's tuning = nominal + x, keeping every
@@ -1362,7 +1364,7 @@ def analyze(songs: Sequence[Song], *, labels: Optional[Sequence[str]] = None,
     mode runs. ``mode``: which solution ``report.solution`` returns (default
     'anchored' with an anchor, else 'free'). ``instrument``: its strings (default:
     the conventional set for the anchor tuning). ``physical=False`` skips the
-    anchored/middle searches (a quick rank/free check); ``string_physics=False``
+    anchored/middle searches (a quick richness/free check); ``string_physics=False``
     costs retunes in bare semitones (no breaking limits). ``tab_tuning``: if song
     0 was read from a tab, the open pitches (high->low) it was decoded in."""
     from .strings import default_instrument
@@ -1395,7 +1397,7 @@ def analyze(songs: Sequence[Song], *, labels: Optional[Sequence[str]] = None,
     rep.slots = pair_slots(rep.alignment.onsets, permute=permute)
     rep.displaced = fold_octaves(rep.slots, transpose) if octaves else [0] * len(songs)
     rep.classes = classes_of(rep.slots)
-    rep.rank_mod12 = len({tuple(x % 12 for x in k) for k in rep.classes})
+    rep.richness_mod12 = len({tuple(x % 12 for x in k) for k in rep.classes})
 
     rep.free, rep.free_needed, rep.free_reason = solve_free(
         rep.slots, max_fret=max_fret, max_strings=max_strings,
@@ -1430,10 +1432,10 @@ def _quiet(cfg: MapperConfig) -> MapperConfig:
     return c
 
 
-def rank(song_a: Song, song_b: Song, *, rhythm: Rhythm = "strict", subdivide: int = 1,
+def richness(song_a: Song, song_b: Song, *, rhythm: Rhythm = "strict", subdivide: int = 1,
          octaves: bool = False, resolution: float = 0.125) -> Optional[int]:
-    """The retuning rank of two songs (distinct note-for-note intervals after
-    alignment and pairing), or None if they don't align. Cheap: no tab solved."""
+    """The retuning richness of two songs under the selected alignment/pairing
+    (distinct note-for-note intervals), or None if they don't align. Cheap: no tab solved."""
     evs = [[e for t in s.tracks for e in t.events] for s in (song_a, song_b)]
     al = align(evs, rhythm=rhythm, resolution=resolution, subdivide=subdivide)
     if not al.ok:
@@ -1546,12 +1548,12 @@ def format_report(rep: HomographReport) -> str:
         "(" + ",".join(f"{lab}-{rep.labels[0]}" for lab in rep.labels[1:]) + ")"
     L.append(f"Intervals  {what} per note: {shown}")
     cls = ", ".join(fmt_key(k) for k in rep.classes)
-    L.append(f"Rank       {rep.rank} interval class{'es' if rep.rank != 1 else ''} "
-             f"{{{cls}}} -> a shared tab needs >= {rep.rank} strings")
-    if rep.rank_mod12 < rep.rank and not any(rep.displaced):
-        L.append(f"           ({rep.rank_mod12} if octave displacement is allowed: "
+    L.append(f"Richness   {rep.richness} interval class{'es' if rep.richness != 1 else ''} "
+             f"{{{cls}}} -> a shared tab needs >= {rep.richness} strings")
+    if rep.richness_mod12 < rep.richness and not any(rep.displaced):
+        L.append(f"           ({rep.richness_mod12} if octave displacement is allowed: "
                  "--homograph-octaves)")
-    if rep.rank == 1:
+    if rep.richness == 1:
         only = next(iter(rep.classes))
         L.append("           Trivial: " + ("the songs are identical." if not any(only) else
                  "the songs are transpositions of each other - a capo, not a homograph."))

@@ -610,7 +610,7 @@ def setup_parser() -> ArgumentParser:
     homograph_group.add_argument(
         '--homograph-octaves', action='store_true',
         help="Arrangement liberty: allow octave displacement of individual notes of "
-             "songs 2.. (lowers the rank; the report counts displaced notes).")
+             "songs 2.. (lowers the richness; the report counts displaced notes).")
     homograph_group.add_argument(
         '--homograph-neutral', action='store_true',
         help="Write a neutral tab: strings numbered 1..N, no default tuning, so the "

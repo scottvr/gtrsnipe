@@ -36,7 +36,7 @@ class:
 
 ### Consequences
 
-- **Rank.** Let *r(A,B)* = the number of distinct intervals *bᵢ − aᵢ*. Every class
+- **Richness.** Let *r(A,B)* = the number of distinct intervals *bᵢ − aᵢ*. Every class
   holds one interval, so *N ≥ r* is necessary; for a monophonic line whose
   classes each span ≤ F semitones (typical on a 24-fret neck) it is also sufficient. **Neither the number of notes nor the
   overall pitch range matters.** A 500-note pair is eligible on a guitar if it
@@ -67,7 +67,7 @@ failure with the reason:
 | level | question | failure message names |
 |---|---|---|
 | alignment | same onset skeleton (§4)? | the first onset where counts/chord sizes/timing diverge |
-| rank | how many interval classes? | (always reported; ≥ N means impossible) |
+| richness | how many interval classes? | (always reported; > N means impossible) |
 | free | can the classes be packed onto ≤ `--max-strings` strings (chords, fret span)? | strings needed |
 | anchored | on the real instrument, with A's tuning fixed (an *ordinary* tab of A)? | the smallest group of classes needing more strings than can reach them (a Hall's-theorem certificate) |
 | middle | on the real instrument, with every song's tuning a retune of it? | same |
@@ -156,7 +156,7 @@ tolerant:
   repeat one pitch they're **smeared** into one held note (legato); otherwise the
   single note is **re-struck**. Song A is kept intact wherever possible (so the
   tab stays A's). Cost order: 1:1 < same-pitch smear < re-strike; a same-pitch
-  split adds no interval class, so it costs almost nothing in rank.
+  split adds no interval class, so it costs almost nothing in richness.
 
 Every edit is listed in the report and in the tab header (`// Re-rhythmed:`).
 With `--homograph-octaves`, individual notes of B may also be displaced by
@@ -166,17 +166,17 @@ each class minimizes retune + notes displaced, and the count is reported.
 **Chords.** Within a chord, which voice of B answers which voice of A is free (the
 tab only fixes strings). Pairing is greedy: fewest new classes / simultaneous-class
 collisions, tie-broken toward voice order. It's exact for melodies and a heuristic
-for chords (a pairing search could only ever *lower* the rank it reports).
+for chords (a pairing search could only ever *lower* the richness it reports).
 
 ## 5. Limits and next steps
 
 - Alignment + subdivision is pairwise (K = 2); K ≥ 3 songs need a 1:1 skeleton.
 - The anchored search enumerates ≤ 20,000 string assignments (it notes truncation;
   never hit on 6 strings).
-- **Phase 3 — in the wild.** Two searches, both cheap because rank needs no tab:
+- **Phase 3 — in the wild.** Two searches, both cheap because richness needs no tab:
   (a) *pairs*: over a corpus of melodies (public-domain ABC/EsAC folk collections,
   hymn tunes sharing a metre), slide every alignment offset and find the longest
-  window whose rank ≤ 6 — a sliding-window "≤ k distinct values" pass along each
+  window whose richness ≤ 6 — a sliding-window "≤ k distinct values" pass along each
   diagonal; (b) *fixed tabs*: take real published tabs of A and test them
   **as written** against candidate B's (per-string interval constancy is a linear
   check). Copyrighted inputs stay local (the golden-gate pattern).

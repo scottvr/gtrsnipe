@@ -5,7 +5,7 @@ Tab homograph check: 2 songs
 Alignment  OK - 12 tab onsets, 12 notes, identical rhythm
 Octaves    displaced 4 note(s) of B (--homograph-octaves)
 Intervals  B-A per note: 0 0 +7 0 0 0 0 +1 +1 +2 +2 +2
-Rank       4 interval classes {0, +1, +2, +7} -> a shared tab needs >= 4 strings
+Richness   4 interval classes {0, +1, +2, +7} -> a shared tab needs >= 4 strings
 Free       ELIGIBLE - 4 strings, any tunings (max 12, 24 frets)
              (--homograph-mode free for its tab)
 Anchored   ELIGIBLE - an ordinary STANDARD tab of A, retuned, plays B (10-46 set, 25.5" scale):
