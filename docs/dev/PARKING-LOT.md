@@ -83,6 +83,12 @@ notes are in git history.
     the first bad string;
   - partial alignment, for tabs with a few missing or extra notes;
   - batch mode over many tabs of one song, e.g. to rank user-submitted versions.
+- **`--min-note-length BEATS`**: drop notes shorter than a threshold, for MIDI from audio
+  transcription (from P01, 2026-09-27). Optional: `--velocity-cutoff` is the existing cruft
+  filter, and since P01 short notes stay short rather than being stretched.
+- **Tab onset decoding wobbles at barlines and two-digit frets**: the wiki's steady-sixteenth
+  tabs decode with gaps of 0.375–0.625 beats (seen in R05). Worth a look at how the parser
+  counts barline columns and multi-digit frets.
 - **Optional notes: let the user change *what* gets tabbed, not just where** (scottvr,
   2026-09-27). Today every sounding pitch must be fingered. If a chord needs a barre, there's
   no way to ask for a 3-string partial voicing. Players who want partial shapes (beginners,

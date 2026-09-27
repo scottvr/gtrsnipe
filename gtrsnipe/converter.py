@@ -219,7 +219,7 @@ class MusicConverter:
         return output_data
 
 
-    def _parse(self, data: str, format: str, track_num: Optional[int], staccato: bool = False,  units: str = 'beats', quantization_resolution=0.125, open_string_pitches=None) -> Song:
+    def _parse(self, data: str, format: str, track_num: Optional[int], staccato: bool = False,  units: str = 'beats', quantization_resolution=0.125, open_string_pitches=None, sustain: str = "legato") -> Song:
         if format == 'mid':
             return mid.MidiReader.parse(data, track_number_to_select=track_num)
         elif format == 'abc':
@@ -235,7 +235,8 @@ class MusicConverter:
                 content = f.read()
             return tab.AsciiTabParser.parse(content, staccato=staccato,
                                             quantization_resolution=quantization_resolution,
-                                            open_string_pitches=open_string_pitches)
+                                            open_string_pitches=open_string_pitches,
+                                            sustain=sustain)
         else:
             raise ValueError(f"Unsupported input format: {format}")
 
@@ -737,7 +738,8 @@ def main():
             logger.info(f"--- Parsing '{current_file}' as a {format_to_parse} file for final conversion ---")
             song = converter._parse(current_file, format_to_parse, args.track, staccato=args.staccato,
                                     quantization_resolution=args.quantization_resolution,
-                                    open_string_pitches=open_string_pitches_for(tuning_name, custom_names))
+                                    open_string_pitches=open_string_pitches_for(tuning_name, custom_names),
+                                    sustain=args.sustain)
         
         debug_song_state(song, 5, "After Parsing") 
         

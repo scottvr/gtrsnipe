@@ -30,6 +30,8 @@ The Transport is decoupled from I/O via a **driver** (``render(beat)``,
 clock + scripted keys.
 """
 import bisect
+import heapq
+import itertools
 import time
 from typing import List, Optional, Sequence
 
@@ -67,8 +69,10 @@ def metronome_timeline(timeline: Sequence[Frame], grid_beats: float = 0.5) -> Li
         raise ValueError("grid_beats must be positive")
     out: List[Frame] = []
     for i, f in enumerate(timeline):
-        out.append(Frame(time=i * grid_beats, duration=grid_beats,
-                         positions=f.positions, window=f.window, pitches=f.pitches))
+        t = i * grid_beats
+        out.append(Frame(time=t, duration=grid_beats,
+                         positions=f.positions, window=f.window, pitches=f.pitches,
+                         ends=tuple(t + grid_beats for _ in f.pitches) if f.ends else ()))
     return out
 
 
@@ -91,6 +95,14 @@ class Transport:
         self.beat_time = self.start
         self.end = (self.timeline[-1].time + max(self.timeline[-1].duration, 0.0)
                     if self.timeline else 0.0)
+        # A note written longer than the rest of the piece still gets to finish.
+        self.end = max([self.end] + [e for f in self.timeline for e in f.ends])
+        # Note releases (when frames carry note ends and the driver can release):
+        # a heap of (beat, seq, pitch, generation). Re-striking a pitch bumps its
+        # generation, so a stale release can't cut the new note short.
+        self._releases: list = []
+        self._gen: dict = {}
+        self._seq = itertools.count()
         self._onset_i = 0        # index of the next un-fired frame
         self._quit = False
         self._anchor = 0.0
@@ -109,6 +121,30 @@ class Transport:
     def _next_onset_time(self) -> float:
         return (self._times[self._onset_i] if self._onset_i < len(self._times) else INF)
 
+    def _next_release_time(self) -> float:
+        return self._releases[0][0] if self._releases else INF
+
+    def _schedule(self, frames, driver) -> None:
+        if not hasattr(driver, "release"):
+            return
+        for f in frames:
+            for p, end in zip(f.pitches, f.ends):
+                g = self._gen[p] = self._gen.get(p, 0) + 1
+                heapq.heappush(self._releases, (end, next(self._seq), p, g))
+
+    def _release_due(self, driver) -> None:
+        done = []
+        while self._releases and self._releases[0][0] <= self.beat_time + 1e-9:
+            _, _, p, g = heapq.heappop(self._releases)
+            if self._gen.get(p) == g:
+                done.append(p)
+        if done:
+            driver.release(done)
+
+    def _silence(self, driver) -> None:
+        driver.silence()
+        self._releases.clear()
+
     def _fire_due(self, driver) -> None:
         due = []
         while (self._onset_i < len(self.timeline)
@@ -117,6 +153,7 @@ class Transport:
             self._onset_i += 1
         if due:
             driver.fire(due)
+            self._schedule(due, driver)
 
     def _held_frame(self) -> Optional[Frame]:
         i = bisect.bisect_right(self._times, self.beat_time + 1e-9) - 1
@@ -124,8 +161,18 @@ class Transport:
 
     def _fire_held(self, driver) -> None:
         held = self._held_frame()
-        if held is not None:
-            driver.fire([held])
+        if held is None:
+            return
+        if held.ends:                       # only the notes still ringing now
+            keep = [(p, e) for p, e in zip(held.pitches, held.ends)
+                    if e > self.beat_time + 1e-9]
+            if not keep:
+                return                      # paused in a rest: stay silent
+            held = Frame(time=held.time, duration=held.duration, positions=held.positions,
+                         window=held.window, pitches=tuple(p for p, _ in keep),
+                         ends=tuple(e for _, e in keep))
+        driver.fire([held])
+        self._schedule([held], driver)
 
     # -- navigation ---------------------------------------------------------
 
@@ -133,7 +180,7 @@ class Transport:
         self.beat_time = max(self.start, min(beat, self.end))
         # future onsets = frames strictly after the landing beat
         self._onset_i = bisect.bisect_right(self._times, self.beat_time + 1e-9)
-        driver.silence()
+        self._silence(driver)
         self._reanchor()
         driver.render(self.beat_time)
         if self.paused:
@@ -151,6 +198,7 @@ class Transport:
                 self._quit = True
                 return
             self.beat_time = self._times[self._onset_i]
+            self._silence(driver)    # stepping: each frame sounds on its own
             self._fire_due(driver)
         else:
             i = bisect.bisect_left(self._times, self.beat_time - 1e-9) - 1
@@ -159,7 +207,7 @@ class Transport:
             else:
                 self.beat_time = self._times[i]
             self._onset_i = bisect.bisect_right(self._times, self.beat_time + 1e-9)
-            driver.silence()
+            self._silence(driver)
             self._fire_held(driver)
         driver.render(self.beat_time)
 
@@ -191,7 +239,7 @@ class Transport:
                 self.paused = False
             else:
                 self.paused = True
-                driver.silence()
+                self._silence(driver)
         elif k == "." and self.paused:
             self._step(driver, +1)
         elif k == "," and self.paused:
@@ -211,7 +259,7 @@ class Transport:
         elif k in ("h", "?"):
             # Pause so the overlay persists (a live render would repaint over it).
             self.paused = True
-            driver.silence()
+            self._silence(driver)
             if hasattr(driver, "show"):
                 driver.show(HELP_TEXT)
         else:
@@ -234,7 +282,8 @@ class Transport:
                     self._resume(driver)
                 continue
 
-            t = min(self._next_onset_time(), self.beat_time + self._fps_beats, self.end)
+            t = min(self._next_onset_time(), self._next_release_time(),
+                    self.beat_time + self._fps_beats, self.end)
             target_wall = self._anchor + _beats_to_seconds(t - self._anchor_beat, self.tempo)
             dt = target_wall - self._now()
             if dt > 0:
@@ -253,6 +302,7 @@ class Transport:
                 # (a burst of such keys must not stall it).
 
             self.beat_time = t
+            self._release_due(driver)
             self._fire_due(driver)
             driver.render(self.beat_time)
 

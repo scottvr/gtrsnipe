@@ -14,6 +14,13 @@ from ...core.types import Song, TimeSignature, Track, MusicalEvent
 
 logger = logging.getLogger(__name__)
 
+# Shortest note the reader keeps, in beats. It was 0.25 (a sixteenth), which
+# stretched every shorter note -- including audio-transcription blips -- into a
+# sixteenth; the old reason (tidy tab spacing) no longer applies, because the tab
+# generator spaces notes by onset, not duration. This floor only keeps a
+# zero-length note from vanishing.
+MIN_NOTE_BEATS = 1.0 / 64
+
 def _safe_decode(value: Optional[Union[str, bytes, float, bytearray, memoryview]]) -> Optional[str]:
     """Safely decodes a value to a string if it's bytes, otherwise returns it."""
     if isinstance(value, float):
@@ -216,7 +223,7 @@ class MidiReader:
                             time=start_event["time"],
                             pitch=pitch,
                             velocity=start_event["velocity"],
-                            duration=max(0.25, duration),
+                            duration=max(MIN_NOTE_BEATS, duration),
                         )
                     )
 
@@ -323,7 +330,7 @@ class MidiReader:
                             MusicalEvent(
                                 time=start_event["time"], 
                                 pitch=event.note, 
-                                duration=max(0.25, duration), 
+                                duration=max(MIN_NOTE_BEATS, duration), 
                                 velocity=start_event["velocity"]
                             )
                         )
@@ -339,7 +346,7 @@ class MidiReader:
                             time=start_event["time"],
                             pitch=pitch,
                             velocity=start_event["velocity"],
-                            duration=max(0.25, duration),
+                            duration=max(MIN_NOTE_BEATS, duration),
                         )
                     )
     

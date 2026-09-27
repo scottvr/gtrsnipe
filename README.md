@@ -4,7 +4,7 @@
 
 Convert to and from .mid, .abc, .vex, and .tab files. (and more.)
 
-## v0.6.7
+## v0.6.8
 Released 2026-09-27. See [CHANGELOG](https://github.com/scottvr/gtrsnipe/blob/main/CHANGELOG.md)
 
 # What?
@@ -291,6 +291,14 @@ track, 1-indexed, same as the converter), `--orientation {horizontal,vertical}`,
 `--audio {none,midi,fluidsynth}` (`--midi-port`, `--soundfont`, `--instrument`
 NAME-or-0..127, `--list-instruments`), plus the usual `--tuning`,
 `--num-strings`, `--max-fret`, `--capo`, and `--optimizer`.
+
+**Note lengths.** Playback honors each note's own length: a held bass note rings under a
+moving melody, and a rest is silent. `--legato` brings back the old behavior, where every
+note sounds until the next one starts. A tab only says when to strike a string, not when to
+stop it, so for tab input `--sustain` decides (in playback and MIDI output alike):
+- `legato` (default): each note sounds until the next onset.
+- `string`: each note rings until its own string is struck again, as on a guitar, so
+  arpeggios and pedal notes keep sounding (at most one bar).
 
 ## Chord charts
 

@@ -35,6 +35,10 @@ class RecordingAudio(AudioSink):
         self.closed = False
     def attack(self, pitches, velocity=96):
         self.attacks.append(tuple(pitches))
+    def strike(self, pitches, velocity=96):       # P01: note ends drive releases
+        self.attacks.append(tuple(pitches))
+    def release(self, pitches):
+        self.releases = getattr(self, "releases", []) + [tuple(pitches)]
     def all_off(self):
         self.offs += 1
     def close(self):
@@ -164,7 +168,7 @@ def test_track_is_threaded_to_parser(monkeypatch):
     import gtrsnipe.player.app as app
     captured = {}
 
-    def fake_parse_and_map(path, cfg, *, track=None, no_articulations=True):
+    def fake_parse_and_map(path, cfg, *, track=None, no_articulations=True, **kw):
         captured["track"] = track
         return Song(tracks=[Track(events=[
             MusicalEvent(0, 60, 0.5, 100, string=0, fret=3)])])
