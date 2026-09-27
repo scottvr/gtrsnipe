@@ -168,28 +168,92 @@ lemma's terms, the lifted walk here is (1,1,1), (1,1,2), (1,2,2):
 - a legal path cannot keep that repeat, and dropping it is exactly the reweighting that
   breaks entropy.
 
-## Relation to known work: the discrete Fréchet (Frechet) distance
+## Relation to known work: Fréchet, elastic distances and stutter-invariant costs (Frechet)
 
-The discrete Fréchet distance between two point sequences is the minimum, over couplings
-(exactly our warping paths), of the largest pointwise distance. It is known to be a
-pseudometric, zero exactly when the sequences agree after merging consecutive repeats. Its
-triangle inequality is proved, I believe, by composing couplings through the middle sequence,
-which is this lemma. The maximum is stutter-invariant, so the discrete Fréchet distance is the
-prototype of the class above. Applied to pitch with transposition factored out, it is R/2 in
-the corollary table: exactly R/2 when the transposition may be any real number, ⌈R/2⌉ when
-it must be whole semitones.
+There are two classic families of alignment distances. Each sits on one side of this note's
+dividing line (occupancy-sensitive vs stutter-invariant), and a third family escapes the
+problem another way.
 
-So **the composition argument is not new**. What this note adds:
-- the explicit condition, stutter-invariance plus subadditivity;
-- applying it to the *offset* sequence, which makes every member transposition-invariant for
-  free;
-- the members richness, S and TV, with richness's physical reading as a lower bound on
-  strings.
+### 1. Summed costs (DTW): occupancy-sensitive, not metrics
 
-Whether the general condition is written down anywhere needs a literature search before any
-novelty claim. Starting points: Eiter & Mannila's discrete Fréchet report (1994), Alt &
-Godau's Fréchet paper (1995), and the elastic distances built to be metrics (ERP, TWED,
-Move-Split-Merge). *These citations were not verified in this session.*
+Dynamic time warping sums a per-cell cost over the path (e.g. Σ \|a_i − b_j\|). A note held
+against three notes of the other melody is charged three times, so the path's multiplicities
+enter the total. That is the entropy/TI-Hamming situation above, and DTW is well known *not* to
+satisfy the triangle inequality. Composing two optimal paths reweights the cells, which is the
+§7 intuition.
+
+### 2. Maximum cost (Fréchet): stutter-invariant, a pseudometric
+
+The **discrete Fréchet distance** is the minimum over couplings (our warping paths) of the
+*largest* pointwise distance. A maximum does not care how often a value is repeated, so it is
+stutter-invariant and subadditive: exactly the theorem's hypotheses. The discrete Fréchet
+distance is the class's prototype. Its triangle inequality composes two couplings through the
+middle sequence, which is our lemma. The continuous Fréchet distance is the same idea for
+curves: stutter-invariance becomes invariance under monotone reparametrization.
+
+On pitch with transposition factored out, the Fréchet distance of the offset sequence is
+R/2 (⌈R/2⌉ for whole semitones), the range row of the corollary.
+
+### 3. Paying for stretching (ERP, TWED, Move-Split-Merge): metrics by a different route
+
+Several time-series distances were *built* to be metrics while staying elastic:
+- ERP (edit distance with real penalty);
+- TWED (time warp edit distance);
+- MSM (move–split–merge).
+
+They are edit distances: stretching a sequence (a gap, a split or a merge) has a cost, and the
+costs are chosen so that the edit operations compose metrically. That is the opposite of this
+note's route. Here stretching is **free**, and metricity comes from restricting the statistic
+to be **stutter-invariant**.
+
+### Where this note's distances sit
+
+| family | stretching | the cost is a function of | metric? |
+|---|---|---|---|
+| DTW | free | the multiset of cells visited (occupancy) | no |
+| discrete Fréchet | free | the max over cells visited | yes (pseudometric) |
+| ERP, TWED, MSM | charged | edit operations | yes, by design |
+| **this note** | free | a stutter-invariant, subadditive functional of the **offset sequence** δ = b − a | yes (pseudometric): the theorem |
+| entropy, 1 − C₁ under warping | free | occupancy of offset values | no (counterexample above) |
+
+The two distinguishing choices:
+- **The functional acts on the signed offset sequence,** not on pointwise distances \|a − b\|.
+  That makes every member transposition-invariant (each is unchanged by δ → δ + c).
+- **The members are functionals of the sequence as a whole,** not only a maximum: the number of
+  distinct values, the number of changes, the total and largest change, the range.
+
+**What is probably known, and what might not be.**
+- The composition argument is certainly known: it is the Fréchet proof.
+- Whether the general sufficient condition (any stutter-invariant, subadditive functional of
+  the coupled differences) is stated anywhere is **not known here**.
+- Likewise unknown: whether d_S (the fewest changes of relative transposition, with free
+  stretching) or d_richness (the fewest distinct transpositions, with free stretching) appear
+  under other names. The closest known relatives are local-transposition alignment (Allali et
+  al.) and Lemström & Mäkinen's minimum number of pieces, both from
+  [`LITERATURE-offsets.md`](LITERATURE-offsets.md) §1. Both charge a switch or piece every
+  time the transposition changes, including a return to an earlier one.
+
+### Citations to verify (none checked in this session)
+
+| citation (as remembered) | what this note relies on |
+|---|---|
+| T. Eiter, H. Mannila, *Computing discrete Fréchet distance*, Tech. Report CD-TR 94/64, Christian Doppler Laboratory for Expert Systems, TU Vienna, 1994 | the definition of the discrete Fréchet distance via couplings; that it is a (pseudo)metric |
+| H. Alt, M. Godau, "Computing the Fréchet distance between two polygonal curves," *Int. J. Computational Geometry & Applications* 5(1–2):75–91, 1995 | the continuous Fréchet distance; reparametrization invariance |
+| H. Sakoe, S. Chiba, "Dynamic programming algorithm optimization for spoken word recognition," *IEEE Trans. ASSP* 26(1):43–49, 1978 | DTW's definition |
+| any standard source that DTW violates the triangle inequality | DTW is not a metric |
+| L. Chen, R. Ng, "On the marriage of Lp-norms and edit distance," VLDB 2004, pp. 792–803 | ERP is a metric |
+| P.-F. Marteau, "Time warp edit distance with stiffness adjustment for time series matching," *IEEE TPAMI* 31(2):306–318, 2009 | TWED is a metric |
+| A. Stefan, V. Athitsos, G. Das, "The Move-Split-Merge metric for time series," *IEEE TKDE* 25(6):1425–1438, 2013 | MSM is a metric |
+
+What to look for while verifying:
+1. Does any Fréchet or time-series source state the triangle inequality for a *general* class
+   of coupling costs, beyond the maximum? Look for "Fréchet-like", "coupling distance",
+   "bottleneck" and "reparametrization-invariant functional".
+2. Is there a known name for "minimum over couplings of the number of changes" (or the number
+   of distinct values) of a difference sequence? Search the run-length-encoded string matching
+   literature too: stutter-invariance is invariance under run-length expansion.
+3. Does the music-retrieval literature use Fréchet distances on pitch sequences with
+   transposition factored out? That is R/2 here.
 
 ## Caveats
 
