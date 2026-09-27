@@ -300,7 +300,8 @@ def read_abc_file(path: str, rel: str, corpus: str) -> List[Melody]:
 
 MELODY_NAME = re.compile(r"melod|vocal|voice|\bvox\b|singer|\bsing\b|\blead\s*v|canto|stimme",
                          re.I)
-BACKING_NAME = re.compile(r"back|harmon|choir|chorus|\bbgv?\b|\bbv\b|2nd|second", re.I)
+BACKING_NAME = re.compile(r"back|harmon|choir|chorus|\bbgv?\b|\bbv\b|2nd|second|ooh|aah|pad",
+                          re.I)
 
 
 @dataclass

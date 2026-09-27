@@ -10,6 +10,31 @@ and Cargo apply to 0.x version ranges. Full SemVer applies from 1.0.0. The publi
 is the CLI flags and the file formats gtrsnipe reads and writes; report wording is
 not part of it.
 
+## [0.6.4] — 2026-09-26
+
+Step 2 of `docs/dev/BACKLOG.md`, continued: R04, the corpus homograph scan.
+
+### Added
+- **`gtrsnipe-research scan CORPUS…`**: finds passages of different songs that one tab can
+  play under two tunings.
+  - It buckets marked phrases (or sliding windows) by rhythm and computes the richness of
+    every same-rhythm pair from different works.
+  - It counts, per length, what is eligible, what is trivial, and what sounds unrelated.
+  - It runs the full homograph solver (anchored and middle, string physics) on the best
+    pairs and on a random sample per length, and writes verified shared tabs on request.
+  - Options: `--cross-corpus`, `--named-melodies`.
+- `docs/dev/RESULTS-R04-scan.md` with charts (`docs/dev/r04_plot.py`, `docs/dev/figures/`):
+  - Folk song (Essen + Meertens): a third of same-rhythm 8-note phrase pairs from different
+    tunes share a tab and sound unrelated; 8% at 12 notes, 3% at 16.
+  - The solver places 93–100% of sampled pairs on a real guitar: A in STANDARD, B a retune
+    of the same guitar.
+  - Pop (Lakh): mostly trivial pairs (few distinct pitch pairs), but 4,467 unrelated-sounding
+    32-note pairs remain.
+
+### Changed
+- MIDI melody extraction no longer takes "Voice Oohs"/"Aahs" or pad tracks for the
+  melody.
+
 ## [0.6.3] — 2026-09-26
 
 Step 2 of `docs/dev/BACKLOG.md`, continued: R03 and R07.

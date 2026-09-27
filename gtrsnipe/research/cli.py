@@ -7,6 +7,7 @@
     gtrsnipe-research profile essen:deut4659#p1 essen:deut4659#p3
     gtrsnipe-research profile a.mid:2@1-16 "C4 D4 E4 C4" --rhythm sequence
     gtrsnipe-research families mtc-ann
+    gtrsnipe-research scan essen mtc-fs --solve 50 --tabs out/
 
 A song is a corpus reference (``NAME:ID``, optionally ``@START-END`` in notes,
 1-based inclusive, or ``#pN`` for phrase N), or anything ``--homograph`` reads:
@@ -183,6 +184,73 @@ def cmd_families(a) -> int:
     return 0
 
 
+def cmd_scan(a) -> int:
+    import json
+    from . import scan as S
+    mels, names = [], []
+    for name in a.names:
+        head, ms = C.read_cache(_cache_path(name, a.data))
+        if a.named_melodies:                 # drop MIDI lines taken from the skyline
+            ms = [m for m in ms if m.source != "midi:skyline"]
+        mels += ms
+        names.append(head["corpus"])
+    by_ref = {m.ref: m for m in mels}
+    stats, top, samples = S.scan(mels, unit=a.unit, max_richness=a.max_richness,
+                                 min_len=a.min_len, max_len=a.max_len, window=a.window,
+                                 stride=a.stride, keep=a.keep, min_keep_len=a.min_keep_len,
+                                 sample_per_length=a.physics_sample,
+                                 cross_corpus=a.cross_corpus, seed=a.seed)
+    print(S.format_stats(stats, " + ".join(names)))
+    for c in top[:a.solve]:
+        c.solved = S.solve(c, by_ref)
+    physics = {}
+    for L, cs in samples.items():
+        for c in cs:
+            c.solved = S.solve(c, by_ref)
+        physics[L] = {"sampled": len(cs),
+                      "free": sum(bool(c.solved["free"]) for c in cs),
+                      "anchored": sum(bool(c.solved["anchored"]) for c in cs),
+                      "anchored_no_regauge": sum(bool(c.solved["anchored"])
+                                                 and not c.solved["anchored"]["regauges"]
+                                                 for c in cs),
+                      "middle": sum(bool(c.solved["middle"]) for c in cs),
+                      "middle_no_regauge": sum(bool(c.solved["middle"])
+                                               and not c.solved["middle"]["regauges"] for c in cs)}
+    if physics:
+        print("\nPhysical check of random unrelated-sounding eligible pairs (share solved):")
+        print("  notes  sampled   anchored (no restring)   middle (no restring)")
+        for L, v in physics.items():
+            n = max(1, v["sampled"])
+            print(f"  {L:5d}  {v['sampled']:7d}   {100 * v['anchored'] / n:5.1f}% "
+                  f"({100 * v['anchored_no_regauge'] / n:5.1f}%)        "
+                  f"{100 * v['middle'] / n:5.1f}% ({100 * v['middle_no_regauge'] / n:5.1f}%)")
+    print(f"\nBest unrelated-sounding pairs: most distinct (A,B) pitch pairs, then longest"
+          f" (one per pair of works; solver run on the first {min(a.solve, len(top))}):")
+    print(S.format_candidates(top, a.show))
+    if a.tabs:
+        os.makedirs(a.tabs, exist_ok=True)
+        written = 0
+        for k, c in enumerate(top[:a.solve], 1):
+            if not (c.solved and c.solved.get("anchored")):
+                continue
+            text = S.render(c, by_ref)
+            if text:
+                fn = os.path.join(a.tabs, f"{k:03d}-{c.pairs}pairs-{c.length}notes.tab")
+                with open(fn, "w") as f:
+                    f.write(text + "\n")
+                written += 1
+        print(f"\n{written} verified shared tabs written to {a.tabs}")
+    if a.json:
+        with open(a.json, "w") as f:
+            json.dump({"corpora": names, "stats": S.stats_dict(stats),
+                       "physics": {str(k): v for k, v in physics.items()},
+                       "top": [vars(c) for c in top],
+                       "samples": {str(L): [vars(c) for c in cs] for L, cs in samples.items()},
+                       "settings": {k: v for k, v in vars(a).items() if k != "func"}},
+                      f, indent=1, default=str)
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(prog="gtrsnipe-research", description=__doc__.split("\n\n")[0])
     ap.add_argument("--data", help=f"corpus root folder (default: ${C.ROOT_ENV})")
@@ -224,6 +292,32 @@ def build_parser() -> argparse.ArgumentParser:
     fm.add_argument("--no-models", action="store_true", help="skip the logistic pair models")
     fm.add_argument("--json", help="also write the full results here")
     fm.set_defaults(func=cmd_families)
+
+    sc = sub.add_parser("scan", help="find passages of different songs that could share one tab (R04)")
+    sc.add_argument("names", nargs="+", help="corpora (or cache files) to scan together")
+    sc.add_argument("--unit", choices=["auto", "phrase", "window"], default="auto",
+                    help="marked phrases, sliding windows, or phrases where marked (default)")
+    sc.add_argument("--window", type=int, default=16, help="window length in notes (default 16)")
+    sc.add_argument("--stride", type=int, default=4, help="window step in notes (default 4)")
+    sc.add_argument("--min-len", type=int, default=5, help="shortest phrase (default 5 notes)")
+    sc.add_argument("--max-len", type=int, default=64, help="longest phrase (default 64)")
+    sc.add_argument("--max-richness", type=int, default=6, help="string budget (default 6)")
+    sc.add_argument("--keep", type=int, default=300, help="candidates kept (default 300)")
+    sc.add_argument("--min-keep-len", type=int, default=8,
+                    help="shortest passage kept as a candidate (default 8)")
+    sc.add_argument("--solve", type=int, default=25,
+                    help="run the homograph solver on the best N candidates (default 25)")
+    sc.add_argument("--physics-sample", type=int, default=0,
+                    help="also solve N random different-sounding eligible pairs per length")
+    sc.add_argument("--show", type=int, default=25, help="candidates listed (default 25)")
+    sc.add_argument("--tabs", help="write the verified shared tabs of solved candidates here")
+    sc.add_argument("--cross-corpus", action="store_true",
+                    help="only pair passages from different corpora")
+    sc.add_argument("--named-melodies", action="store_true",
+                    help="MIDI corpora: only melodies from a melody-named track (no skyline)")
+    sc.add_argument("--seed", type=int, default=20260926)
+    sc.add_argument("--json", help="also write stats, candidates and samples here")
+    sc.set_defaults(func=cmd_scan)
     return ap
 
 
