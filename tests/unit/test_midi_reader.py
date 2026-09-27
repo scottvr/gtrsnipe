@@ -59,3 +59,23 @@ def test_riff_without_midi_data_raises(tmp_path):
     f.write_bytes(b"RIFF" + struct.pack("<I", 4) + b"RMID")
     with pytest.raises(ValueError, match="without a MIDI 'data' chunk"):
         MidiReader.parse(str(f), None)
+
+
+def test_track_and_instrument_names_are_kept(tmp_path):
+    # B07: the mido path never read track_name meta events, so every track came back
+    # as the default "Acoustic Grand Piano" (only the py-midi fallback kept names)
+    import mido
+    mf = mido.MidiFile()
+    for name, instrument in (("Melody", None), (None, "Flute"), ("", None)):
+        tr = mido.MidiTrack()
+        if name is not None:
+            tr.append(mido.MetaMessage("track_name", name=name, time=0))
+        if instrument:
+            tr.append(mido.MetaMessage("instrument_name", name=instrument, time=0))
+        tr.append(mido.Message("note_on", note=60, velocity=90, time=0))
+        tr.append(mido.Message("note_off", note=60, velocity=0, time=480))
+        mf.tracks.append(tr)
+    path = tmp_path / "named.mid"
+    mf.save(path)
+    names = [t.instrument_name for t in MidiReader.parse(str(path), None).tracks]
+    assert names == ["Melody", "Flute", "Acoustic Grand Piano"]

@@ -295,7 +295,11 @@ class MidiReader:
                 if event.is_meta and event.type == "set_tempo":
                     song.tempo = mido.tempo2bpm(event.tempo)
                     midi_tempo_usec = event.tempo
-    
+                elif event.is_meta and event.type == "track_name":
+                    temp_track_name = _safe_decode(event.name)
+                elif event.is_meta and event.type == "instrument_name":
+                    temp_instrument_name = _safe_decode(event.name)
+
                 if event.type == "note_on" and event.velocity > 0:
                     beat_time = MidiReader._get_correct_beat_time(
                         absolute_time_ticks, ticks_per_beat, midi_tempo_usec, song.tempo
