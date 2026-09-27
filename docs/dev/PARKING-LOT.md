@@ -13,4 +13,8 @@ backlog, and the original notes are in git history.
 
 ## Ideas
 
-_(nothing waiting for triage)_
+- **Bug: `MidiReader` drops MIDI track names** (found during R01, 2026-09-26). The mido path
+  never reads `track_name` meta events (`temp_track_name` stays `None`), so every track is
+  "Acoustic Grand Piano"; only the py-midi fallback keeps names. Fixing it changes tab titles
+  ("Title (Melody)"), so re-bless any golden cases. The research corpus reader uses mido
+  directly and is unaffected.

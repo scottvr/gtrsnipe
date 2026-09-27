@@ -1,0 +1,213 @@
+"""``gtrsnipe-research``: corpus caches and offset profiles.
+
+    gtrsnipe-research corpus list
+    gtrsnipe-research corpus build essen [--data DIR]
+    gtrsnipe-research corpus info essen
+    gtrsnipe-research corpus show essen:deut4659
+    gtrsnipe-research profile essen:deut4659#p1 essen:deut4659#p3
+    gtrsnipe-research profile a.mid:2@1-16 "C4 D4 E4 C4" --rhythm sequence
+
+A song is a corpus reference (``NAME:ID``, optionally ``@START-END`` in notes,
+1-based inclusive, or ``#pN`` for phrase N), or anything ``--homograph`` reads:
+a .mid[:TRACK]/.abc/.tab/.vex file with an optional ``@START-END`` onset window,
+or an inline melody.
+"""
+from __future__ import annotations
+
+import argparse
+import os
+import re
+import statistics
+import sys
+from collections import Counter
+from typing import Dict, List, Optional, Tuple
+
+from . import corpus as C
+from .offsets import format_profile, profile_json, profile_songs
+
+_loaded: Dict[str, List[C.Melody]] = {}
+
+
+def _cache_path(name: str, data: Optional[str]) -> str:
+    if os.path.exists(name) and name.endswith(".gz"):
+        return name
+    if name not in C.CORPORA:
+        raise ValueError(f"unknown corpus {name!r} (known: {', '.join(C.CORPORA)})")
+    path = C.default_cache(name, data)
+    if not os.path.exists(path):
+        raise ValueError(f"no cache for {name} yet: run  gtrsnipe-research corpus build {name}")
+    return path
+
+
+def _melodies(name: str, data: Optional[str]) -> List[C.Melody]:
+    path = _cache_path(name, data)
+    if path not in _loaded:
+        _loaded[path] = C.read_cache(path)[1]
+    return _loaded[path]
+
+
+_REF = re.compile(r"^(?P<corpus>[a-z0-9-]+):(?P<id>.+?)(?:@(?P<s>\d+)-(?P<e>\d+)|#p(?P<p>\d+))?$")
+
+
+def resolve_melody(ref: str, data: Optional[str]) -> Optional[C.Melody]:
+    """A corpus reference as a Melody, or None if ``ref`` isn't one."""
+    m = _REF.match(ref)
+    if not m or m.group("corpus") not in C.CORPORA or os.path.exists(ref):
+        return None
+    mel = C.find(_melodies(m.group("corpus"), data), m.group("id"))
+    if m.group("s"):
+        return mel.slice(int(m.group("s")) - 1, int(m.group("e")))
+    if m.group("p"):
+        spans = mel.phrase_spans()
+        k = int(m.group("p"))
+        if not 1 <= k <= len(spans):
+            raise ValueError(f"{mel.ref} has {len(spans)} phrase(s); no phrase {k}")
+        out = mel.slice(*spans[k - 1])
+        out.id = f"{mel.id}#p{k}"
+        return out
+    return mel
+
+
+def load_song(spec: str, data: Optional[str]):
+    """(Song, label) for a corpus reference, file or inline melody."""
+    mel = resolve_melody(spec, data)
+    if mel is not None:
+        return mel.to_song(), mel.ref
+    from ..arguments import setup_parser
+    from ..converter import _load_homograph_song
+    args = setup_parser().parse_args([])
+    song, title, _ = _load_homograph_song(spec, args, anchor_open=[])
+    return song, title
+
+
+# -- commands ---------------------------------------------------------------------
+
+def cmd_corpus_list(a) -> int:
+    for name, spec in C.CORPORA.items():
+        try:
+            path = C.default_cache(name, a.data)
+            state = "cached" if os.path.exists(path) else "not built"
+        except ValueError:
+            state = "no corpus root"
+        print(f"{name:12} {state:10} {spec.about}")
+    return 0
+
+
+def cmd_corpus_build(a) -> int:
+    def progress(i, n):
+        if i == n or i % max(1, n // 20) == 0:
+            print(f"\r  {i}/{n} files", end="", file=sys.stderr, flush=True)
+    h = C.build(a.name, root=a.data, out=a.out, workers=a.workers, limit=a.limit,
+                progress=progress)
+    print(file=sys.stderr)
+    print(f"{a.name}: {h['melodies']} melodies from {h['files']} files, {h['errors']} errors"
+          f" -> {a.out or C.default_cache(a.name, a.data)}")
+    for rel, err in h["error_sample"][:10]:
+        print(f"  {rel}: {err}")
+    return 0
+
+
+def cmd_corpus_info(a) -> int:
+    path = _cache_path(a.name, a.data)
+    head = C.cache_header(path)
+    lengths, sources, meters, phrases, dropped = [], Counter(), Counter(), 0, 0
+    for m in C.iter_cache(path):
+        lengths.append(len(m))
+        sources[m.source.split(" ")[0] if m.source.startswith("midi:track") else m.source] += 1
+        meters[m.meter or "?"] += 1
+        phrases += bool(m.phrases)
+        dropped += m.dropped
+    print(f"{head['corpus']}: {head['about']}")
+    print(f"  built {head['built']} with gtrsnipe {head['gtrsnipe']}; {head['files']} files, "
+          f"{head['errors']} unreadable")
+    if not lengths:
+        print("  (no melodies)")
+        return 0
+    q = statistics.quantiles(lengths, n=4) if len(lengths) > 1 else [lengths[0]] * 3
+    print(f"  {len(lengths)} melodies, {sum(lengths):,} notes; notes per melody median "
+          f"{statistics.median(lengths):g} (IQR {q[0]:g}-{q[2]:g}, min {min(lengths)}, "
+          f"max {max(lengths)})")
+    print("  line from: " + ", ".join(f"{k} {v}" for k, v in sources.most_common()))
+    print("  meters: " + ", ".join(f"{k} {v}" for k, v in meters.most_common(8)))
+    print(f"  phrase-marked: {phrases}; simultaneous notes dropped: {dropped:,}")
+    return 0
+
+
+def cmd_corpus_show(a) -> int:
+    from ..core.theory import pitch_to_note_name
+    mel = resolve_melody(a.ref, a.data)
+    if mel is None:
+        raise ValueError(f"{a.ref!r} is not a corpus reference (NAME:ID)")
+    print(f"{mel.ref}  {mel.title!r}" + (f" by {mel.artist}" if mel.artist else ""))
+    print(f"  {len(mel)} notes, meter {mel.meter or '?'}, key {mel.key or '?'}, "
+          f"from {mel.source}; phrases {len(mel.phrase_spans())}")
+    starts = set(mel.phrases)
+    toks = []
+    for i, (p, t, d) in enumerate(zip(mel.pitches, mel.onsets, mel.durations)):
+        dur = d / C.TPQ
+        toks.append(("| " if i in starts and i else "") + pitch_to_note_name(p)
+                    + ("" if dur == 1 else f":{dur:g}"))
+    print("  " + " ".join(toks))
+    return 0
+
+
+def cmd_profile(a) -> int:
+    (sa, la), (sb, lb) = load_song(a.a, a.data), load_song(a.b, a.data)
+    rhythm = a.rhythm if a.rhythm in ("strict", "sequence") else float(a.rhythm)
+    prof, why = profile_songs(sa, sb, rhythm=rhythm, subdivide=a.subdivide)
+    if prof is None:
+        print(f"{la} and {lb} don't align: {why}", file=sys.stderr)
+        return 1
+    if a.json:
+        print(profile_json(prof, a=la, b=lb))
+    else:
+        print(f"A = {la}\nB = {lb}")
+        print(format_profile(prof))
+    return 0
+
+
+def build_parser() -> argparse.ArgumentParser:
+    ap = argparse.ArgumentParser(prog="gtrsnipe-research", description=__doc__.split("\n\n")[0])
+    ap.add_argument("--data", help=f"corpus root folder (default: ${C.ROOT_ENV})")
+    sub = ap.add_subparsers(dest="cmd", required=True)
+
+    cp = sub.add_parser("corpus", help="build and inspect melody caches").add_subparsers(
+        dest="corpus_cmd", required=True)
+    cp.add_parser("list", help="known corpora and whether they are cached").set_defaults(
+        func=cmd_corpus_list)
+    b = cp.add_parser("build", help="read a corpus into its cache")
+    b.add_argument("name", choices=list(C.CORPORA))
+    b.add_argument("--out", help="cache file (default: DATA/_cache/NAME.jsonl.gz)")
+    b.add_argument("--workers", type=int, help="processes (default: CPUs - 2)")
+    b.add_argument("--limit", type=int, help="read only the first N files")
+    b.set_defaults(func=cmd_corpus_build)
+    i = cp.add_parser("info", help="summary of a cached corpus")
+    i.add_argument("name", help="corpus name or cache file")
+    i.set_defaults(func=cmd_corpus_info)
+    s = cp.add_parser("show", help="print one melody")
+    s.add_argument("ref", help="NAME:ID, e.g. essen:deut4659 or essen:deut4659#p2")
+    s.set_defaults(func=cmd_corpus_show)
+
+    p = sub.add_parser("profile", help="offset profile of two aligned melodies")
+    p.add_argument("a")
+    p.add_argument("b")
+    p.add_argument("--rhythm", default="strict",
+                   help="strict (default), a slop RATIO such as 1.5, or sequence")
+    p.add_argument("--subdivide", type=int, default=1,
+                   help="let one note stand for up to K notes of the other song")
+    p.add_argument("--json", action="store_true", help="one JSON object")
+    p.set_defaults(func=cmd_profile)
+    return ap
+
+
+def main(argv=None) -> int:
+    a = build_parser().parse_args(argv)
+    try:
+        return a.func(a)
+    except ValueError as e:
+        print(f"gtrsnipe-research: {e}", file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main())
