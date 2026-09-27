@@ -4,7 +4,7 @@
 
 Convert to and from .mid, .abc, .vex, and .tab files. (and more.)
 
-## v0.6.6
+## v0.6.7
 Released 2026-09-27. See [CHANGELOG](https://github.com/scottvr/gtrsnipe/blob/main/CHANGELOG.md)
 
 # What?
@@ -398,7 +398,7 @@ gtrsnipe -i input.mid --fret-span-penalty -10 ...
 -  `-y, --yes`             Automatically overwrite the output file if it already exists.
 -  `--track TRACK`         The track number (1-based) to select from a multi-track MIDI file. If not set, all tracks are processed. For a multitrack midi, you will   
                         want to select a single instrument track to transcribe.
--  `--analyze`             Analyze the input MIDI file to find the pitch range and suggest suitable tunings, then exit.
+-  `--analyze`             Finger the song in every tuning whose range fits (with your mapper settings) and rank the tunings by playability, then exit. Each row shows the mapper's score per note, how much harder it is than the best tuning, the frets used, the average hand travel, and the share of open strings. No `-o` needed; `--bass` ranks bass tunings.
 -  `--transpose TRANSPOSE`
                         Transpose the music up or down by N semitones (e.g., 2 for up, -3 for down).
 -  `--no-articulations`    Transcribe with no legato, taps, hammer-ons, pull-offs, etc.
