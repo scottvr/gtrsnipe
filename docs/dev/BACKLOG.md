@@ -1,6 +1,6 @@
 # gtrsnipe backlog
 
-The single list of open work, as of **v0.6.5 (2026-09-27)**. It collates the old parking
+The single list of open work, as of **v0.6.5 (2026-09-27), after the step-2 triage**. It collates the old parking
 lot, the CHANGELOG's known limitations, the design docs, the v0.3.0-era audit and plans,
 GitHub issues, and findings from recent sessions.
 
@@ -41,21 +41,31 @@ rewrite was validated against music21 on 1,034 Nottingham tunes (94% note-for-no
 rest being music21 quirks), which unblocks the folk-tune ABC corpora for the research
 track. Triage at the end of this step: the parking lot was empty.
 
-### Step 2: the research track ✓ (R01–R07 done; R08/R09 stay open, low priority)
+### Step 2: the research track ✓ (v0.6.2–v0.6.5)
 
-In order: R01 corpus loaders ✓, R02 offset-profile analyzer ✓ (both v0.6.2), R03 the
-Meertens experiment ✓ (v0.6.3), R04 the corpus homograph scan ✓ (v0.6.4), R05 published
-tabs as written ✓ (v0.6.5). R06 (literature search, ✓ v0.6.2) and R07 (the alignment proof, ✓ v0.6.3) can
-run any time. Each tool ships as a patch release.
+R01 corpus loaders and R02 the offset profile (v0.6.2); R03 the Meertens experiment and R07
+the alignment proof (v0.6.3); R04 the corpus homograph scan (v0.6.4); R05 published tabs as
+written (v0.6.5); R06 the literature search (v0.6.2). Results: `RESULTS-R03-families.md`,
+`RESULTS-R04-scan.md`, `RESULTS-R05-aswritten.md`, `PROOF-alignment.md`,
+`LITERATURE-offsets.md`. R08 and R09 stay open, low priority.
 
-### Step 3: features, one at a time
+**Triage at the end of this step (2026-09-27).** The parking lot's six entries became:
+- B07, the MIDI track-name bug;
+- F06, the playability threshold for homograph tabs (paired with F03);
+- R10–R12, the scan and similarity follow-ups;
+- R13, the literature search for the stutter-invariance principle.
 
-A suggested order (swap freely if something else is more fun): P01 true note durations
-in playback, P03 instrument defaults from the MIDI file, C01 chord names over the tab,
-F04 tension display, F03 playability-based `--analyze`, C03 shape-relative chord names,
-C02 open-position chord voicings, then C04/C05/F02 together (they share key-aware
-spelling), F01 VexTab articulations, P02 tempo changes, P04 pager search, P05 other
-renderers.
+### Step 3: features, one at a time (next)
+
+First B07 (quick), then **F06 with F03**. Both need the mapper's playability score calibrated
+against the tab gtrsnipe writes for a song alone, and it's the first thing you'll hit when
+playing the new homograph tabs (the solver reaches fret 24).
+
+Then, as before (swap freely if something else is more fun): P01 true note durations in
+playback, P03 instrument defaults from the MIDI file, C01 chord names over the tab, F04
+tension display, C03 shape-relative chord names, C02 open-position chord voicings, then
+C04/C05/F02 together (they share key-aware spelling), F01 VexTab articulations, P02 tempo
+changes, P04 pager search, P05 other renderers.
 
 ---
 
@@ -65,26 +75,19 @@ renderers.
 
 | ID | Item | Size | Source |
 |---|---|---|---|
-| B01 | ✓ v0.6.1 **ABC parser ignores key signatures** (`K:`), bar-scoped accidentals, and ties, and reads chord symbols in quotes (`"G"`) as notes. Any ABC tune with a key signature decodes wrong. | M | parking lot; corpus work |
-| B02 | ✓ v0.6.1 **Tab generator h/p column bug.** The `h`/`p` prefix is written at the note's column, so its digits land one column late. A chord with one hammered note decodes as a two-note arpeggio, and single hammered notes read slightly late. (The homograph render avoids it by omitting articulations.) | S | homograph review |
-| B03 | ✓ v0.6.1 **MIDI reader returns an empty song for RIFF-wrapped MIDI** instead of reading it or raising an error. There are 259 such files in Lakh. | S | corpus agent |
-| B04 | ✓ v0.6.1 An explicit `--tuning STANDARD` can't override a `.tab`'s own header, because it's indistinguishable from the default. | S | D3 |
 | B05 | `-i x.tab --play` re-optimizes the tab's fingering instead of playing it as written. It needs a way (e.g. `--as-written`) to keep the tab's own strings and frets. | S–M | session notes |
-| B06 | ✓ v0.6.1 `--num-strings 7` silently dropped every note below E2: the range filter used STANDARD instead of the resolved 7-string tuning. | S | found fixing B04 |
+| B07 | **`MidiReader` drops MIDI track names.** The mido path never reads `track_name` meta events, so every track is "Acoustic Grand Piano"; only the py-midi fallback keeps names. The fix changes tab titles ("Title (Melody)"), so re-bless any golden cases. (The research corpus reader uses mido directly and is unaffected.) | S | R01, parking lot |
 
 ### Research: homograph phase 3 and the offset profile
 
 | ID | Item | Size | Source |
 |---|---|---|---|
-| R01 | ✓ v0.6.2 **Corpus loaders** (`gtrsnipe-research corpus`). Essen and Meertens kern through a native reader that keeps phrase marks (8,469/8,473 Essen files match music21; the other 4 are malformed ties). Nottingham ABC, POP909 MELODY, Lakh melody-named part or skyline. | M | corpus plan |
-| R02 | ✓ v0.6.2 **Offset-profile analyzer** (`gtrsnipe-research profile`): richness, entropy, C₁…C₆, switch count S, total variation TV, and reuse for two melodies. | S–M | structure note §11 |
-| R03 | ✓ v0.6.3 **Meertens experiment** (`gtrsnipe-research families`). On MTC-ANN and MTC-FS-INST the offset profile does *not* beat TI-Hamming; adding richness, entropy and reuse to the baselines gains ≤ 0.006 MAP. [`RESULTS-R03-families.md`](RESULTS-R03-families.md). | M | structure note §11 |
-| R04 | ✓ v0.6.4 **Corpus homograph scan** (`gtrsnipe-research scan`). Folk: a third of same-rhythm 8-note phrase pairs from different tunes share a tab and sound unrelated, 3% at 16 notes; physics almost never blocks it. [`RESULTS-R04-scan.md`](RESULTS-R04-scan.md). | L | DESIGN-homograph §5 |
-| R05 | ✓ v0.6.5 **Published tabs as written** (`gtrsnipe-research aswritten`), on the wiki's Bach Prelude and Asturias tabs: about 10,000× stricter than a free fit; the fingering decides the partners; past 16 notes nothing unrelated-sounding fits. [`RESULTS-R05-aswritten.md`](RESULTS-R05-aswritten.md). Third-party tabs are the natural next input. | M | DESIGN-homograph §5 |
-| R06 | ✓ v0.6.2 **Literature search**: [`LITERATURE-offsets.md`](LITERATURE-offsets.md). The offset set is in Mäkinen–Navarro–Ukkonen 2005 (used only via its mode); its size as a measure, and the tab homograph, were not found. Allen & Goudeseune 2011 is the dual construction. | S–M | structure note §10 |
-| R07 | ✓ v0.6.3 **The alignment claim**: under warping-path alignment, log-richness, S and TV stay pseudometrics; entropy and 1 − C₁ don't. [`PROOF-alignment.md`](PROOF-alignment.md). | S | structure note §7 |
 | R08 | Homograph solver limits, all low priority: re-rhythm for 3+ songs; exact chord-voice pairing (greedy today); middle-mode offsets for a class split across strings; the 20,000-assignment search cap. | M each | DESIGN-homograph §5 |
 | R09 | GigaMIDI (see D5). | — | corpus plan |
+| R10 | **Scan with re-rhythm**: a rhythm slop ratio and `--homograph-subdivide` in `scan`/`aswritten`. Today only identical (or proportional) rhythms meet. | M | R04, parking lot |
+| R11 | **LMD-full**: build the cache (about 3 h) and scan it. Mostly unattended machine time; R04's curves already look saturated. | L (machine) | R04, parking lot |
+| R12 | **Richness under its own optimal warping** as the fair similarity test for R03: a minimum-label path per pair, exact for k ≤ 6. Unlikely to overturn R03. | M–L | R03 "Limits", parking lot |
+| R13 | **Literature search for the stutter-invariance principle** (*scottvr, in progress*): the checklist in `PROOF-alignment.md`, "Citations to verify". Needed before any novelty claim about the general statement. | S–M | R07, parking lot |
 
 ### Player and audio
 
@@ -116,12 +119,11 @@ renderers.
 | F03 | **Playability-based `--analyze`**: score each candidate tuning by the mapper's cost, not just whether the range fits. ("Bonkers in standard, easy in drop-D.") | M | player notes |
 | F04 | **Tension display outside homographs**: `--show-tuning` with gauges and tensions, and a warning when a custom tuning would snap a string. | S | parking lot |
 | F05 | **Pretty PDF tab output**: typeset tabs as a PDF worth printing (title and header, clean staff lines, measure bars, tuning key, maybe rhythm stems or notation). Intended eventually. The empty stub goes in step 1 so it isn't mistaken for a feature; this item is where PDF output comes back. | M–L | code stub; D6 |
+| F06 | **Playability threshold for homograph tabs** (scottvr's idea): `--homograph-max-discomfort` (or `--homograph-min-playability`) on the mapper's Viterbi score, already on `Solution.playability`. It would report the score per note, reject solutions over the limit so the solver tries its next candidate, and let `scan`/`aswritten` rank and filter by it. Calibrate against the tab gtrsnipe writes for song A alone ("1.5 = at most 1.5× as awkward per note"); check the score's sign and scale first. Quick win first: pass `--max-fret` through `scan`'s solver. Pairs with F03. | S + M | R04, parking lot |
 
 ### Tests and housekeeping
 
 | ID | Item | Size | Source |
 |---|---|---|---|
-| H01 | **The golden gate has no local cases on this machine.** Add the wiki examples (Mr Crowley, Bach Cello Prelude, Asturias, Barney Miller) as local golden cases. Needs your files. | S | RELEASE-PLAN v0.3.0 |
-| H02 | ✓ v0.6.1 Archive the v0.3.0-era docs (see D4). | S | audit |
+| H01 | **The golden gate has no local cases on this machine.** Add the wiki examples (Mr Crowley, Bach Cello Prelude, Asturias, Barney Miller) as local golden cases. The expected tabs are now in `docs/wiki/` and `examples/aswritten/`, but the MIDI/audio inputs aren't (they're on the machine in pieces). | S | RELEASE-PLAN v0.3.0 |
 | H03 | Wiki: document v0.6.0 (homographs, string physics, `.tab` header behavior). | S–M | release |
-| H04 | ✓ v0.6.1 Close issue #4 (see D2). | S | GitHub |
