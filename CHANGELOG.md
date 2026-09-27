@@ -10,6 +10,31 @@ and Cargo apply to 0.x version ranges. Full SemVer applies from 1.0.0. The publi
 is the CLI flags and the file formats gtrsnipe reads and writes; report wording is
 not part of it.
 
+## [0.6.5] — 2026-09-27
+
+R05 finishes the research items planned for step 2 of `docs/dev/BACKLOG.md`.
+
+### Added
+- **`gtrsnipe-research aswritten TAB…`**: can a tab's *own* fingering be retuned into
+  another song?
+  - Every note the tab puts on one string must move by one interval.
+  - Windows slide over the tab and are tested against evenly spaced corpus passages. The
+    output counts trivial hits (each string maps one pitch to one pitch), transpositions of
+    the passage itself, and unrelated-sounding hits.
+  - The best hits go through the solver's as-written check.
+- `docs/dev/RESULTS-R05-aswritten.md`, from Bach's Cello Suite No. 1 Prelude and six
+  successive Asturias fingerings (`examples/aswritten/`):
+  - As written is about 10,000× stricter than a free fit.
+  - Which passages a tab can become depends on the fingering.
+  - Past 16 notes, nothing unrelated-sounding fits either piece's real fingering.
+- `docs/wiki/`: a snapshot of the whole GitHub wiki, with Windows-safe file names.
+- `docs/dev/PROOF-alignment.md`:
+  - the stutter-invariance principle: stutter-invariant, subadditive offset statistics stay
+    pseudometrics under warping;
+  - a subsection relating it to the Fréchet distance, DTW and elastic metrics (ERP, TWED,
+    MSM);
+  - a checklist of citations to verify.
+
 ## [0.6.4] — 2026-09-26
 
 Step 2 of `docs/dev/BACKLOG.md`, continued: R04, the corpus homograph scan.
