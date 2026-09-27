@@ -217,14 +217,14 @@ def cmd_scan(a) -> int:
                       "middle_no_regauge": sum(bool(c.solved["middle"])
                                                and not c.solved["middle"]["regauges"] for c in cs)}
     if physics:
-        print("\nPhysical check of random different-sounding eligible pairs (share solved):")
+        print("\nPhysical check of random unrelated-sounding eligible pairs (share solved):")
         print("  notes  sampled   anchored (no restring)   middle (no restring)")
         for L, v in physics.items():
             n = max(1, v["sampled"])
             print(f"  {L:5d}  {v['sampled']:7d}   {100 * v['anchored'] / n:5.1f}% "
                   f"({100 * v['anchored_no_regauge'] / n:5.1f}%)        "
                   f"{100 * v['middle'] / n:5.1f}% ({100 * v['middle_no_regauge'] / n:5.1f}%)")
-    print(f"\nBest different-sounding pairs: most distinct (A,B) pitch pairs, then longest"
+    print(f"\nBest unrelated-sounding pairs: most distinct (A,B) pitch pairs, then longest"
           f" (one per pair of works; solver run on the first {min(a.solve, len(top))}):")
     print(S.format_candidates(top, a.show))
     if a.tabs:

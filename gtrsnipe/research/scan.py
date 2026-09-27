@@ -17,10 +17,15 @@ before the fret, simultaneity and physics checks. So the scan:
    a random sample per length, and runs the full homograph solver on them:
    anchored to STANDARD and 'middle', with string physics.
 
-"Least similar" is the modal share C1: the fraction of notes explained by the
-best single transposition. C1 near 1 is one tune with a few notes changed
-(variants, shared formulas); C1 <= 1/2 means no transposition explains even
-half the notes -- two tunes that sound different, the case the reductio needs.
+Whether two passages *sound unrelated* -- the case the reductio needs -- is
+judged two ways:
+- the modal share C1, the fraction of notes explained by the best single
+  transposition. C1 near 1 is one tune with a few notes changed (variants,
+  shared formulas); C1 <= 1/2 means no transposition explains half the notes;
+- contour agreement, the fraction of consecutive moves going the same way
+  (up/down/repeat). Two descending scale runs in different modes can have a
+  low C1 and still sound alike. <= 0.6 is typical of unrelated phrases: 86% of
+  MTC-ANN phrase pairs from different tune families are at or below it.
 
 A pair is only *interesting* when it has more distinct aligned (A, B) pitch
 pairs than strings. Richness can never exceed that count, so a passage built
@@ -52,6 +57,7 @@ from .corpus import Melody
 
 STRINGS = 6
 DISTINCT_C1 = 0.5
+UNRELATED_CONTOUR = 0.6
 BUCKET_CAP = 6000          # units per bucket compared exhaustively; larger ones are sampled
 
 
@@ -138,6 +144,7 @@ class LengthStats:
     eligible: int = 0          # 2 <= richness <= max_richness
     trivial: int = 0           # ... but with <= max_richness distinct (a, b) pairs
     distinct: int = 0          # eligible, non-trivial, C1 <= 1/2, neither phrase mechanical
+    unrelated: int = 0         # ... and contour agreement <= UNRELATED_CONTOUR
     with_partner: int = 0      # units with >= 1 such partner
     richness: Counter = field(default_factory=Counter)
 
@@ -152,6 +159,7 @@ class Candidate:
     titles: Tuple[str, str]
     offsets: List[int]
     pairs: int = 0             # distinct aligned (a, b) pitch pairs
+    contour: float = 0.0       # share of consecutive moves in the same direction
     solved: Optional[dict] = None
 
     @property
@@ -197,11 +205,13 @@ def scan(melodies: Sequence[Melody], *, unit: str = "auto", max_richness: int = 
     samples: Dict[int, List[Candidate]] = defaultdict(list)
     seen: Counter = Counter()
 
-    def cand(i_unit: int, j_unit: int, r: int, c1: float, offsets, npairs: int) -> Candidate:
+    def cand(i_unit: int, j_unit: int, r: int, c1: float, offsets, npairs: int,
+             contour: float) -> Candidate:
         ua, ub = units[i_unit], units[j_unit]
         ma, mb = melodies[ua.mel], melodies[ub.mel]
         return Candidate(_ref(ma, ua), _ref(mb, ub), ua.length, r, float(c1),
-                         (ma.title, mb.title), [int(x) for x in offsets], int(npairs))
+                         (ma.title, mb.title), [int(x) for x in offsets], int(npairs),
+                         round(float(contour), 3))
 
     for (L, _), members in buckets.items():
         st = stats[L]
@@ -243,12 +253,18 @@ def scan(melodies: Sequence[Melody], *, unit: str = "auto", max_richness: int = 
             npairs = distinct_pairs(np.broadcast_to(P[i], (len(idx), L)), P[i + 1:][idx])
             st.trivial += int((npairs <= max_richness).sum())
             c1 = _modal_share(D[ok])
-            good = ((c1 <= DISTINCT_C1) & (npairs > max_richness)
-                    & ~mech[i + 1:][idx] & ~mech[i])
+            distinct = ((c1 <= DISTINCT_C1) & (npairs > max_richness)
+                        & ~mech[i + 1:][idx] & ~mech[i])
+            st.distinct += int(distinct.sum())
+            if not distinct.any():
+                continue
+            contour = (np.sign(np.diff(P[i + 1:][idx], axis=1))
+                       == np.sign(np.diff(P[i]))).mean(1)
+            good = distinct & (contour <= UNRELATED_CONTOUR)
             n_good = int(good.sum())
             if not n_good:
                 continue
-            st.distinct += n_good
+            st.unrelated += n_good
             partnered[members[i]] = True
             partnered[[members[i + 1 + j] for j in idx[good]]] = True
             gi = np.flatnonzero(good)
@@ -259,7 +275,7 @@ def scan(melodies: Sequence[Melody], *, unit: str = "auto", max_richness: int = 
                         else rng.randrange(seen[L])
                     if slot < sample_per_length:
                         c = cand(members[i], members[i + 1 + idx[g]], int(r[ok][g]), c1[g],
-                                 D[ok][g], npairs[g])
+                                 D[ok][g], npairs[g], contour[g])
                         if slot == len(samples[L]):
                             samples[L].append(c)
                         else:
@@ -274,7 +290,7 @@ def scan(melodies: Sequence[Melody], *, unit: str = "auto", max_richness: int = 
                 if pair not in best and len(best) >= keep and key <= heap[0][0]:
                     continue
                 best[pair] = cand(members[i], members[i + 1 + idx[g]], int(r[ok][g]), c1[g],
-                                  D[ok][g], npairs[g])
+                                  D[ok][g], npairs[g], contour[g])
                 heapq.heappush(heap, (key, pair))
                 while len(best) > keep:                     # evict the weakest pair
                     k0, p0 = heapq.heappop(heap)
@@ -340,16 +356,17 @@ def render(c: Candidate, by_ref: Dict[str, Melody], mode: str = "anchored") -> O
 def format_stats(stats: Dict[int, LengthStats], title: str = "") -> str:
     lines = [f"Same-rhythm pairs from different works{': ' + title if title else ''}",
              "  eligible: 2 <= richness <= 6.  trivial: ... with <= 6 distinct (A,B) pitch pairs.",
-             "  different-sounding: eligible, not trivial, C1 <= 1/2, no mechanical figure.",
-             "  notes    units       pairs  transposed   eligible   trivial    different-sounding"
-             "   units with a partner"]
+             "  distinct: eligible, not trivial, C1 <= 1/2, no mechanical figure.",
+             "  unrelated: ... and contour agreement <= 0.6.",
+             "  notes    units       pairs  transposed   eligible   trivial  distinct"
+             "       unrelated   units with a partner"]
     for L, s in stats.items():
         if not s.pairs:
             continue
         lines.append(f"  {L:5d} {s.units:8d} {s.pairs:11d}  {100 * s.transposed / s.pairs:9.2f}%"
                      f"  {100 * s.eligible / s.pairs:8.2f}%  {100 * s.trivial / s.pairs:7.2f}%"
-                     f"  {s.distinct:10d} "
-                     f"{100 * s.distinct / s.pairs:7.2f}%"
+                     f"  {100 * s.distinct / s.pairs:7.2f}%"
+                     f"  {s.unrelated:8d} {100 * s.unrelated / s.pairs:6.2f}%"
                      f"   {s.with_partner:7d} {100 * s.with_partner / max(1, s.units):6.2f}%")
     capped = sum(s.sampled_out for s in stats.values())
     if capped:
@@ -369,9 +386,10 @@ def format_candidates(cands: Sequence[Candidate], limit: int = 25) -> str:
             return "-"
         return "ok" + (f"+{v['regauges']}g" if v["regauges"] else "")
 
-    lines = ["  pairs  notes  rich    C1  anchored  middle  A  /  B"]
+    lines = ["  pairs  notes  rich    C1  contour  anchored  middle  A  /  B"]
     for c in cands[:limit]:
         lines.append(f"  {c.pairs:5d}  {c.length:5d}  {c.richness:4d}  {c.c1:4.2f}  "
+                     f"{c.contour:7.2f}  "
                      f"{mark(c, 'anchored'):8}  "
                      f"{mark(c, 'middle'):6}  {c.a} ({c.titles[0]})  /  {c.b} ({c.titles[1]})")
     return "\n".join(lines)

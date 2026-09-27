@@ -13,7 +13,7 @@ from gtrsnipe.research.cli import main as research_main
 Q = C.TPQ
 E8 = Q // 2
 A = [60, 62, 64, 65, 67, 69, 71, 72]
-DELTA = [0, 0, 5, 5, 7, 7, 0, 5]            # richness 3, C1 = 3/8: sounds different
+DELTA = [0, 0, 0, -3, 0, -3, 2, -3]         # richness 3, C1 = 1/2, contour agreement 4/7
 
 
 def mel(id_, pitches, corpus="mtc-fs", family="", rhythm=None, phrases=(0,)):
@@ -75,8 +75,8 @@ def test_scan_counts_and_finds_the_homograph():
     assert st.richness[1] >= 1 and st.richness[8] >= 1
     best = [c for c in top if {c.a.split("@")[0], c.b.split("@")[0]}
             == {"mtc-fs:NLB000001_01", "mtc-fs:NLB000002_01"}]
-    assert best and best[0].richness == 3 and best[0].c1 == pytest.approx(3 / 8)
-    assert best[0].pairs == 8
+    assert best and best[0].richness == 3 and best[0].c1 == pytest.approx(1 / 2)
+    assert best[0].pairs == 8 and best[0].contour == pytest.approx(4 / 7, abs=1e-3)
     assert best[0].offsets in (DELTA, [-d for d in DELTA])
     # the mechanical phrase never appears in a candidate
     assert not any("NLB000006" in c.a + c.b for c in top)
@@ -127,7 +127,7 @@ def test_cli_scan_writes_stats_candidates_and_tabs(tmp_path, capsys):
     assert research_main(["scan", str(path), "--solve", "3", "--physics-sample", "2",
                           "--json", str(out), "--tabs", str(tabs)]) == 0
     text = capsys.readouterr().out
-    assert "Same-rhythm pairs" in text and "Best different-sounding pairs" in text
+    assert "Same-rhythm pairs" in text and "Best unrelated-sounding pairs" in text
     data = json.loads(out.read_text())
     assert data["stats"]["8"]["pairs"] == 19 and data["top"]
     assert list(tabs.glob("*.tab"))

@@ -5,7 +5,9 @@ JSON that `gtrsnipe-research scan ... --physics-sample N --json FILE` writes.
 For each phrase length (notes), among same-rhythm pairs from different works:
 
   eligible              richness 2-6: the offsets fit six strings (free tunings)
-  different-sounding    ... and no single transposition explains half the notes
+  unrelated-sounding    ... with more distinct pitch pairs than strings, no single
+                        transposition explaining half the notes, contour agreement
+                        <= 0.6, and no mechanical figure (arpeggio, ostinato...)
   playable              ... times the share of sampled pairs the full solver
                         places on a real guitar: one tab of A in STANDARD, the
                         other song a retune of it, string physics on
@@ -28,7 +30,7 @@ def curves(data, min_sample=10, max_len=32):
             continue
         xs.append(L)
         elig.append(100 * s["eligible"] / s["pairs"])
-        d = 100 * s["distinct"] / s["pairs"]
+        d = 100 * s["unrelated"] / s["pairs"]
         dist.append(d)
         ph = data.get("physics", {}).get(str(L))
         if ph and ph["sampled"] >= min_sample:
@@ -71,7 +73,7 @@ def main():
                          'axes.titlesize': 13, 'xtick.labelsize': 10, 'ytick.labelsize': 10})
     fig, ax = plt.subplots(figsize=(8, 5), dpi=300)
     ax.plot(xs, elig, label='Offsets fit six strings (free tunings)', color='#1f77b4', linewidth=2.5)
-    ax.plot(xs, dist, label='... and the phrases sound different', color='#ff7f0e',
+    ax.plot(xs, dist, label='... and the phrases sound unrelated', color='#ff7f0e',
             linewidth=2.5, linestyle='--')
     if play:
         ax.plot(*zip(*play), label='... and playable: A in STANDARD, B a retune',

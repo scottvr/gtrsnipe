@@ -18,3 +18,11 @@ backlog, and the original notes are in git history.
   "Acoustic Grand Piano"; only the py-midi fallback keeps names. Fixing it changes tab titles
   ("Title (Melody)"), so re-bless any golden cases. The research corpus reader uses mido
   directly and is unaffected.
+- **R04 follow-ups** (2026-09-26):
+  - Scan with re-rhythm (a rhythm slop ratio, `--homograph-subdivide`); today only identical or
+    proportional rhythms meet.
+  - Rank candidates by playability, since the solver happily reaches fret 24 on the low
+    strings.
+  - Build and scan LMD-full (178k files, about 3 h to cache).
+- **R03 follow-up**: richness under its *own* optimal warping (a minimum-label path) as the fair
+  similarity test; see RESULTS-R03 "Limits".
