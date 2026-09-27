@@ -10,6 +10,25 @@ and Cargo apply to 0.x version ranges. Full SemVer applies from 1.0.0. The publi
 is the CLI flags and the file formats gtrsnipe reads and writes; report wording is
 not part of it.
 
+## [0.6.7] — 2026-09-27
+
+Step 3 continues: F03 from `docs/dev/BACKLOG.md`.
+
+### Changed
+- **`--analyze` ranks tunings by how playable the song is in each (F03).** It used to list
+  the tunings whose range fits.
+  - It now fingers the song in each of them, with your own mapper settings, and ranks them
+    by the mapper's score per note.
+  - Each row shows how many points per note harder than the best tuning it is, the frets
+    used, the average hand travel between fretted notes, and the share of open strings.
+  - Ties (the default weights don't prefer open strings to a barre) go to less travel,
+    then more open strings.
+  - A guitar gets guitar tunings (7-string and baritone included) and `--bass` gets bass
+    tunings; before, all were mixed. A custom `--tuning-pitches` tuning is ranked too.
+
+### Fixed
+- `--analyze` no longer demands `-o/--output`; it never writes one.
+
 ## [0.6.6] — 2026-09-27
 
 Step 3 begins: B07 and F06 from `docs/dev/BACKLOG.md`.

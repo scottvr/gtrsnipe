@@ -1,6 +1,6 @@
 # gtrsnipe backlog
 
-The single list of open work, as of **v0.6.6 (2026-09-27)**. It collates the old parking
+The single list of open work, as of **v0.6.7 (2026-09-27)**. It collates the old parking
 lot, the CHANGELOG's known limitations, the design docs, the v0.3.0-era audit and plans,
 GitHub issues, and findings from recent sessions.
 
@@ -57,8 +57,7 @@ written (v0.6.5); R06 the literature search (v0.6.2). Results: `RESULTS-R03-fami
 
 ### Step 3: features, one at a time (next)
 
-B07 ✓ and F06 ✓ (v0.6.6). Next **F03** (playability-based `--analyze`), which can reuse F06's
-per-note score.
+B07 ✓ and F06 ✓ (v0.6.6), F03 ✓ (v0.6.7).
 
 Then, as before (swap freely if something else is more fun): P01 true note durations in
 playback, P03 instrument defaults from the MIDI file, C01 chord names over the tab, F04
@@ -115,7 +114,7 @@ changes, P04 pager search, P05 other renderers.
 |---|---|---|---|
 | F01 | VexTab output: emit hammer-on, pull-off and tap marks, and rests. | M | CHANGELOG 0.3.0 |
 | F02 | ABC output: a real key signature (`K:`) and flat spellings. This needs a key on the Song model. | M | CHANGELOG 0.3.0 |
-| F03 | **Playability-based `--analyze`**: score each candidate tuning by the mapper's cost, not just whether the range fits. ("Bonkers in standard, easy in drop-D.") | M | player notes |
+| F03 | ✓ v0.6.7 **Playability-based `--analyze`**: fingers the song in every fitting tuning and ranks them by the mapper's score per note, with frets, hand travel and open strings. (It showed the default weights don't prefer open strings to a barre: a weights-audit item.) | M | player notes |
 | F04 | **Tension display outside homographs**: `--show-tuning` with gauges and tensions, and a warning when a custom tuning would snap a string. | S | parking lot |
 | F05 | **Pretty PDF tab output**: typeset tabs as a PDF worth printing (title and header, clean staff lines, measure bars, tuning key, maybe rhythm stems or notation). Intended eventually. The empty stub goes in step 1 so it isn't mistaken for a feature; this item is where PDF output comes back. | M–L | code stub; D6 |
 | F06 | ✓ v0.6.6 **Playability of homograph tabs**: discomfort per note vs A's own best tab, `--homograph-max-discomfort`, `scan --max-discomfort/--max-fret`. Comfort filters hard: 19/50 sampled folk pairs within 50 points per note, 0 within 5. | S + M | R04, parking lot |

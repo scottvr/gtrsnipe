@@ -61,6 +61,10 @@ notes are in git history.
        matters: one knob, not two.
     4. **Sensitivity sweep**: vary one knob at a time on a few tricky songs and count the
        *distinct* tabs.
+    5. **Open strings** (found by F03's `--analyze`, 2026-09-27): with default weights an open
+       string scores no better than a fretted note in the sweet spot. An open-G riff scored
+       the same in OPEN_G (all open) as in OPEN_E (a barre at fret 3). `--prefer-open` only
+       penalizes fretting a pitch that exists as an open string.
   - **Profile finder**: the tab is piecewise constant in the weights. So:
     1. sample settings widely (log scales, flags included);
     2. decode each and drop duplicate tabs (a few dozen distinct tabs expected per excerpt;

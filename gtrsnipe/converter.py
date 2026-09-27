@@ -553,7 +553,7 @@ def main():
 
     if not args.input:
         parser.error("the following argument is required: -i/--input")
-    if not args.play and not args.output:
+    if not args.play and not args.output and not args.analyze:
         parser.error("provide at least one -o/--output (or use --play to visualize)")
 
     log_level = logging.DEBUG if args.debug else logging.INFO
@@ -796,28 +796,31 @@ def main():
                 min_pitch = min(event.pitch for event in all_events)
                 max_pitch = max(event.pitch for event in all_events)
 
-                suggested_tunings = []
-                for tuning in Tuning:
-                    open_notes = [note_name_to_pitch(n) for n in tuning.value]
-                    lowest_tuning_note = min(open_notes)
-                    highest_playable_note = max(open_notes) + args.max_fret
-                    if min_pitch >= lowest_tuning_note and max_pitch <= highest_playable_note:
-                        suggested_tunings.append((tuning, lowest_tuning_note))
+                # F03: finger the song in every tuning whose range fits (with the
+                # user's own mapper settings) and rank them by playability.
+                from .guitar.analyze import format_ranking, rank_tunings
+                pool = [(t.name, t.value) for t in Tuning
+                        if t.name.startswith("BASS_") == bool(args.bass)]
+                if is_custom:
+                    pool.insert(0, ("CUSTOM " + ",".join(custom_names), tuple(custom_names)))
+                candidates = []
+                for name, names in pool:
+                    open_notes = [note_name_to_pitch(n) for n in names]
+                    if min_pitch < min(open_notes) or max_pitch > max(open_notes) + args.max_fret:
+                        continue
+                    cfg = copy.deepcopy(mapper_config)
+                    if not name.startswith("CUSTOM"):
+                        cfg.tuning, cfg.custom_tuning, cfg.num_strings = name, None, len(names)
+                    candidates.append((name, cfg))
 
-                suggested_tunings.sort(key=lambda x: min_pitch - x[1])
-
-                logger.info(f"Found {len(all_events)} notes within the specified pitch range.")
-                logger.info(f"Lowest Note:  {min_pitch} ({pitch_to_note_name(min_pitch)})")
-                logger.info(f"Highest Note: {max_pitch} ({pitch_to_note_name(max_pitch)})")
-                logger.info("\n--- Tuning Suggestions ---")
-
-                if not suggested_tunings:
-                    logger.info("Could not find any standard tunings that fit this song's pitch range.")
+                print(f"{song.title}: {len(all_events)} notes, {pitch_to_note_name(min_pitch)} to "
+                      f"{pitch_to_note_name(max_pitch)}; {len(candidates)} of {len(pool)} "
+                      f"{'bass ' if args.bass else ''}tunings fit a {args.max_fret}-fret neck.")
+                if not candidates:
+                    print("No tuning fits this song's pitch range.")
                 else:
-                    logger.info(f"Based on a {args.max_fret}-fret neck.")
-                    logger.info("The following tunings can accommodate the song's pitch range:")
-                    for tuning, low_note in suggested_tunings:
-                        print(f"- {tuning.name} (Lowest note: {pitch_to_note_name(low_note)})")
+                    logger.info(f"Fingering the song in {len(candidates)} tunings...")
+                    print(format_ranking(rank_tunings(song, candidates)))
                 exit(0)
 
             initial_note_count = sum(len(track.events) for track in song.tracks)

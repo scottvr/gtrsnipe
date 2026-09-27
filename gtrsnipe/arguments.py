@@ -561,7 +561,9 @@ def setup_parser() -> ArgumentParser:
     parser.add_argument(
         '--analyze',
         action='store_true',
-        help='Analyze the input MIDI file to find the pitch range and suggest suitable tunings, then exit.'
+        help='Rank the tunings whose range fits the song by how playable its tab is in each '
+             '(the mapper\'s score per note with your settings, frets, hand travel, open '
+             'strings), then exit. No -o needed; --bass ranks bass tunings.'
     )
     parser.add_argument(
         '--solve-tuning',
