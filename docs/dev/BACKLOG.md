@@ -1,6 +1,6 @@
 # gtrsnipe backlog
 
-The single list of open work, as of **v0.6.3 (2026-09-26)**. It collates the old parking
+The single list of open work, as of **v0.6.4 (2026-09-26)**. It collates the old parking
 lot, the CHANGELOG's known limitations, the design docs, the v0.3.0-era audit and plans,
 GitHub issues, and findings from recent sessions.
 
@@ -44,8 +44,8 @@ track. Triage at the end of this step: the parking lot was empty.
 ### Step 2: the research track (next)
 
 In order: R01 corpus loaders ✓, R02 offset-profile analyzer ✓ (both v0.6.2), R03 the
-Meertens experiment ✓ (v0.6.3), R04 the corpus homograph scan (next), R05 published tabs
-as written. R06 (literature search, ✓ v0.6.2) and R07 (the alignment proof, ✓ v0.6.3) can
+Meertens experiment ✓ (v0.6.3), R04 the corpus homograph scan ✓ (v0.6.4), R05 published
+tabs as written (next; needs your tab files). R06 (literature search, ✓ v0.6.2) and R07 (the alignment proof, ✓ v0.6.3) can
 run any time. Each tool ships as a patch release.
 
 ### Step 3: features, one at a time
@@ -79,8 +79,8 @@ renderers.
 | R01 | ✓ v0.6.2 **Corpus loaders** (`gtrsnipe-research corpus`). Essen and Meertens kern through a native reader that keeps phrase marks (8,469/8,473 Essen files match music21; the other 4 are malformed ties). Nottingham ABC, POP909 MELODY, Lakh melody-named part or skyline. | M | corpus plan |
 | R02 | ✓ v0.6.2 **Offset-profile analyzer** (`gtrsnipe-research profile`): richness, entropy, C₁…C₆, switch count S, total variation TV, and reuse for two melodies. | S–M | structure note §11 |
 | R03 | ✓ v0.6.3 **Meertens experiment** (`gtrsnipe-research families`). On MTC-ANN and MTC-FS-INST the offset profile does *not* beat TI-Hamming; adding richness, entropy and reuse to the baselines gains ≤ 0.006 MAP. [`RESULTS-R03-families.md`](RESULTS-R03-families.md). | M | structure note §11 |
-| R04 | **Corpus homograph scan.** For each aligned pair, find the longest window with richness ≤ 6. Bucket passages by rhythm pattern first so pairs × offsets stays tractable, and run the full solver only on hits. Chart the results with `collision_plot_template.py`; its curves are placeholders until this scan supplies real ones. | L | DESIGN-homograph §5 |
-| R05 | **Published tabs as written** against candidate B's. Inputs stay local, like the golden cases. | M | DESIGN-homograph §5 |
+| R04 | ✓ v0.6.4 **Corpus homograph scan** (`gtrsnipe-research scan`). Folk: a third of same-rhythm 8-note phrase pairs from different tunes share a tab and sound unrelated, 3% at 16 notes; physics almost never blocks it. [`RESULTS-R04-scan.md`](RESULTS-R04-scan.md). | L | DESIGN-homograph §5 |
+| R05 | **Published tabs as written** against candidate B's. Inputs stay local, like the golden cases. **Needs your tab files** (e.g. the wiki examples, H01). | M | DESIGN-homograph §5 |
 | R06 | ✓ v0.6.2 **Literature search**: [`LITERATURE-offsets.md`](LITERATURE-offsets.md). The offset set is in Mäkinen–Navarro–Ukkonen 2005 (used only via its mode); its size as a measure, and the tab homograph, were not found. Allen & Goudeseune 2011 is the dual construction. | S–M | structure note §10 |
 | R07 | ✓ v0.6.3 **The alignment claim**: under warping-path alignment, log-richness, S and TV stay pseudometrics; entropy and 1 − C₁ don't. [`PROOF-alignment.md`](PROOF-alignment.md). | S | structure note §7 |
 | R08 | Homograph solver limits, all low priority: re-rhythm for 3+ songs; exact chord-voice pairing (greedy today); middle-mode offsets for a class split across strings; the 20,000-assignment search cap. | M each | DESIGN-homograph §5 |

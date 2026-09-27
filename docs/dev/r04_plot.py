@@ -73,16 +73,16 @@ def main():
                          'axes.titlesize': 13, 'xtick.labelsize': 10, 'ytick.labelsize': 10})
     fig, ax = plt.subplots(figsize=(8, 5), dpi=300)
     ax.plot(xs, elig, label='Offsets fit six strings (free tunings)', color='#1f77b4', linewidth=2.5)
-    ax.plot(xs, dist, label='... and the phrases sound unrelated', color='#ff7f0e',
+    ax.plot(xs, dist, label='... and the passages sound unrelated', color='#ff7f0e',
             linewidth=2.5, linestyle='--')
     if play:
         ax.plot(*zip(*play), label='... and playable: A in STANDARD, B a retune',
                 color='#2ca02c', linewidth=2, marker='o', markersize=4)
         ax.plot(*zip(*norestr), label='... with no string re-gauged', color='#d62728',
                 linewidth=2, linestyle=':', marker='s', markersize=4)
-    ax.set_title('Same-rhythm phrase pairs from different songs that share a tab', pad=15,
+    ax.set_title('Same-rhythm passages from different songs that share a tab', pad=15,
                  weight='bold')
-    ax.set_xlabel('Phrase length (notes)', labelpad=10)
+    ax.set_xlabel('Passage length (notes)', labelpad=10)
     ax.set_ylabel('Share of same-rhythm pairs (%)', labelpad=10)
     ax.set_xlim(min(xs), max(xs))
     ax.set_ylim(-3, 103)
