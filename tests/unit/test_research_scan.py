@@ -54,7 +54,14 @@ def test_work_keys_group_voices_and_duplicates():
 def test_mechanical_figures():
     assert S.mechanical([60, 64, 67, 64] * 3)          # Alberti bass
     assert S.mechanical([60, 62] * 5)                  # two pitches
+    assert S.mechanical([70, 73, 77, 73, 77, 73] * 4)  # a 6-note arpeggio cell, repeated
     assert not S.mechanical(A)
+
+
+def test_distinct_pairs_bound_richness():
+    a = np.array([[60, 62, 64, 60, 62, 64]])
+    assert S.distinct_pairs(a, a + 5).tolist() == [3]
+    assert S.distinct_pairs(a, np.array([[1, 2, 3, 4, 5, 6]])).tolist() == [6]
 
 
 def test_scan_counts_and_finds_the_homograph():
@@ -67,6 +74,7 @@ def test_scan_counts_and_finds_the_homograph():
     best = [c for c in top if {c.a.split("@")[0], c.b.split("@")[0]}
             == {"mtc-fs:NLB000001_01", "mtc-fs:NLB000002_01"}]
     assert best and best[0].richness == 3 and best[0].c1 == pytest.approx(3 / 8)
+    assert best[0].pairs == 8
     assert best[0].offsets in (DELTA, [-d for d in DELTA])
     # the mechanical phrase never appears in a candidate
     assert not any("NLB000006" in c.a + c.b for c in top)
@@ -117,7 +125,7 @@ def test_cli_scan_writes_stats_candidates_and_tabs(tmp_path, capsys):
     assert research_main(["scan", str(path), "--solve", "3", "--physics-sample", "2",
                           "--json", str(out), "--tabs", str(tabs)]) == 0
     text = capsys.readouterr().out
-    assert "Same-rhythm pairs" in text and "Longest different-sounding pairs" in text
+    assert "Same-rhythm pairs" in text and "Best different-sounding pairs" in text
     data = json.loads(out.read_text())
     assert data["stats"]["8"]["pairs"] == 19 and data["top"]
     assert list(tabs.glob("*.tab"))

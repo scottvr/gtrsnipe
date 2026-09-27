@@ -224,8 +224,8 @@ def cmd_scan(a) -> int:
             print(f"  {L:5d}  {v['sampled']:7d}   {100 * v['anchored'] / n:5.1f}% "
                   f"({100 * v['anchored_no_regauge'] / n:5.1f}%)        "
                   f"{100 * v['middle'] / n:5.1f}% ({100 * v['middle_no_regauge'] / n:5.1f}%)")
-    print(f"\nLongest different-sounding pairs (one per pair of works; solver run on the "
-          f"first {min(a.solve, len(top))}):")
+    print(f"\nBest different-sounding pairs: most distinct (A,B) pitch pairs, then longest"
+          f" (one per pair of works; solver run on the first {min(a.solve, len(top))}):")
     print(S.format_candidates(top, a.show))
     if a.tabs:
         os.makedirs(a.tabs, exist_ok=True)
@@ -235,7 +235,7 @@ def cmd_scan(a) -> int:
                 continue
             text = S.render(c, by_ref)
             if text:
-                fn = os.path.join(a.tabs, f"{k:03d}-{c.length}notes.tab")
+                fn = os.path.join(a.tabs, f"{k:03d}-{c.pairs}pairs-{c.length}notes.tab")
                 with open(fn, "w") as f:
                     f.write(text + "\n")
                 written += 1

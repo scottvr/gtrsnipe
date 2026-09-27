@@ -11,7 +11,8 @@ For each phrase length (notes), among same-rhythm pairs from different works:
                         other song a retune of it, string physics on
   no restring           ... the same without swapping any string's gauge
 
-Run:  python docs/dev/r04_plot.py scan.json [out.png] [--min-sample 10]
+Run:  python docs/dev/r04_plot.py scan.json [more.json ...] [--out fig.png] [--min-sample 10]
+      (several files are merged by length -- e.g. one window-length scan each)
 """
 import json
 import sys
@@ -36,10 +37,33 @@ def curves(data, min_sample=10, max_len=32):
     return xs, elig, dist, play, norestr
 
 
+def load(paths):
+    """Merge scans: per-length stats and physics samples add up."""
+    data = {"stats": {}, "physics": {}, "corpora": []}
+    for p in paths:
+        d = json.load(open(p))
+        for c in d.get("corpora", []):
+            if c not in data["corpora"]:
+                data["corpora"].append(c)
+        for part in ("stats", "physics"):
+            for L, v in d.get(part, {}).items():
+                acc = data[part].setdefault(L, {})
+                for k, x in v.items():
+                    if isinstance(x, (int, float)):
+                        acc[k] = acc.get(k, 0) + x
+    return data
+
+
+def _opt(name, default=None):
+    return sys.argv[sys.argv.index(name) + 1] if name in sys.argv else default
+
+
 def main():
-    args = [a for a in sys.argv[1:] if not a.startswith("--")]
-    min_sample = int(sys.argv[sys.argv.index("--min-sample") + 1]) if "--min-sample" in sys.argv else 10
-    data = json.load(open(args[0]))
+    skip = {sys.argv.index(o) + 1 for o in ("--out", "--min-sample") if o in sys.argv}
+    paths = [a for i, a in enumerate(sys.argv[1:], 1) if not a.startswith("--") and i not in skip]
+    min_sample = int(_opt("--min-sample", 10))
+    out = _opt("--out")
+    data = load(paths)
     xs, elig, dist, play, norestr = curves(data, min_sample)
 
     plt.style.use('seaborn-v0_8-whitegrid')
@@ -68,8 +92,8 @@ def main():
     ax.text(0.01, -0.16, f"Corpora: {corpora}. Physics curves from random samples "
             f"(>= {min_sample} pairs per length).", transform=ax.transAxes, fontsize=8, color='#555')
     plt.tight_layout()
-    if len(args) > 1:
-        plt.savefig(args[1], bbox_inches='tight', dpi=300)
+    if out:
+        plt.savefig(out, bbox_inches='tight', dpi=300)
     else:
         plt.show()
 

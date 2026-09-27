@@ -22,10 +22,17 @@ best single transposition. C1 near 1 is one tune with a few notes changed
 (variants, shared formulas); C1 <= 1/2 means no transposition explains even
 half the notes -- two tunes that sound different, the case the reductio needs.
 
+A pair is only *interesting* when it has more distinct aligned (A, B) pitch
+pairs than strings. Richness can never exceed that count, so a passage built
+from <= 6 distinct pairs -- two repeated 6-note cells, say -- fits six strings
+for free, however long it is. Candidates are ranked by distinct pairs first
+(how much coincidence the tab needs), then by length.
+
 Excluded from the candidates (but counted): pairs from the same work (another
 voice or stanza of one song, a duplicate MIDI of one title), pairs from the same
-labelled tune family, and phrases that are degenerate (<= 2 distinct pitches) or
-mechanical (a figure of period <= 4, like an Alberti bass).
+labelled tune family, phrases that are mechanical (<= 2 distinct pitches, or a
+figure repeating with a period of <= 6 notes: arpeggios, ostinatos, Alberti
+basses), and pairs with <= 6 distinct aligned pitch pairs.
 """
 from __future__ import annotations
 
@@ -97,14 +104,21 @@ def units_of(melodies: Sequence[Melody], unit: str, min_len: int, max_len: int,
     return out
 
 
-def mechanical(p: Sequence[int]) -> bool:
-    """A figure that repeats with a period of at most 4 notes over >= 80% of
-    the phrase (Alberti bass, oom-pah, trills), or <= 2 distinct pitches."""
+def mechanical(p: Sequence[int], max_period: int = STRINGS) -> bool:
+    """<= 2 distinct pitches, or a figure repeating with a period of at most
+    ``max_period`` notes over >= 80% of the phrase (Alberti bass, arpeggio,
+    ostinato, trill)."""
     if len(set(p)) <= 2:
         return True
     n = len(p)
-    return any(n > 2 * k and sum(p[i] == p[i + k] for i in range(n - k)) >= 0.8 * (n - k)
-               for k in range(1, 5))
+    return any(n >= 2 * k and sum(p[i] == p[i + k] for i in range(n - k)) >= 0.8 * (n - k)
+               for k in range(1, max_period + 1))
+
+
+def distinct_pairs(A: np.ndarray, B: np.ndarray) -> np.ndarray:
+    """Distinct aligned (a, b) pitch pairs per row -- an upper bound on richness."""
+    S = np.sort(A.astype(np.int64) * 256 + B, axis=1)
+    return 1 + (S[:, 1:] != S[:, :-1]).sum(1)
 
 
 @dataclass
@@ -115,7 +129,8 @@ class LengthStats:
     sampled_out: int = 0       # pairs skipped because a bucket exceeded BUCKET_CAP
     transposed: int = 0        # richness 1
     eligible: int = 0          # 2 <= richness <= max_richness
-    distinct: int = 0          # ... and C1 <= 1/2 and neither phrase mechanical
+    trivial: int = 0           # ... but with <= max_richness distinct (a, b) pairs
+    distinct: int = 0          # eligible, non-trivial, C1 <= 1/2, neither phrase mechanical
     with_partner: int = 0      # units with >= 1 such partner
     richness: Counter = field(default_factory=Counter)
 
@@ -129,11 +144,12 @@ class Candidate:
     c1: float
     titles: Tuple[str, str]
     offsets: List[int]
+    pairs: int = 0             # distinct aligned (a, b) pitch pairs
     solved: Optional[dict] = None
 
     @property
     def sort_key(self):
-        return (self.length, -self.c1)
+        return (self.pairs, self.length, -self.c1)
 
 
 def _modal_share(D: np.ndarray) -> np.ndarray:
@@ -174,11 +190,11 @@ def scan(melodies: Sequence[Melody], *, unit: str = "auto", max_richness: int = 
     samples: Dict[int, List[Candidate]] = defaultdict(list)
     seen: Counter = Counter()
 
-    def cand(i_unit: int, j_unit: int, r: int, c1: float, offsets) -> Candidate:
+    def cand(i_unit: int, j_unit: int, r: int, c1: float, offsets, npairs: int) -> Candidate:
         ua, ub = units[i_unit], units[j_unit]
         ma, mb = melodies[ua.mel], melodies[ub.mel]
         return Candidate(_ref(ma, ua), _ref(mb, ub), ua.length, r, float(c1),
-                         (ma.title, mb.title), [int(x) for x in offsets])
+                         (ma.title, mb.title), [int(x) for x in offsets], int(npairs))
 
     for (L, _), members in buckets.items():
         st = stats[L]
@@ -217,8 +233,11 @@ def scan(melodies: Sequence[Melody], *, unit: str = "auto", max_richness: int = 
                 continue
             st.eligible += int(ok.sum())
             idx = np.flatnonzero(use)[ok]                  # positions within `rest`
+            npairs = distinct_pairs(np.broadcast_to(P[i], (len(idx), L)), P[i + 1:][idx])
+            st.trivial += int((npairs <= max_richness).sum())
             c1 = _modal_share(D[ok])
-            good = (c1 <= DISTINCT_C1) & ~mech[i + 1:][idx] & ~mech[i]
+            good = ((c1 <= DISTINCT_C1) & (npairs > max_richness)
+                    & ~mech[i + 1:][idx] & ~mech[i])
             n_good = int(good.sum())
             if not n_good:
                 continue
@@ -233,7 +252,7 @@ def scan(melodies: Sequence[Melody], *, unit: str = "auto", max_richness: int = 
                         else rng.randrange(seen[L])
                     if slot < sample_per_length:
                         c = cand(members[i], members[i + 1 + idx[g]], int(r[ok][g]), c1[g],
-                                 D[ok][g])
+                                 D[ok][g], npairs[g])
                         if slot == len(samples[L]):
                             samples[L].append(c)
                         else:
@@ -241,14 +260,14 @@ def scan(melodies: Sequence[Melody], *, unit: str = "auto", max_richness: int = 
             if L < min_keep_len:
                 continue
             for g in gi:
-                key = (L, -float(c1[g]))
+                key = (int(npairs[g]), L, -float(c1[g]))
                 pair = tuple(sorted((wk[i], wk[i + 1 + idx[g]])))
                 if pair in best and best[pair].sort_key >= key:
                     continue
                 if pair not in best and len(best) >= keep and key <= heap[0][0]:
                     continue
                 best[pair] = cand(members[i], members[i + 1 + idx[g]], int(r[ok][g]), c1[g],
-                                  D[ok][g])
+                                  D[ok][g], npairs[g])
                 heapq.heappush(heap, (key, pair))
                 while len(best) > keep:                     # evict the weakest pair
                     k0, p0 = heapq.heappop(heap)
@@ -313,15 +332,16 @@ def render(c: Candidate, by_ref: Dict[str, Melody], mode: str = "anchored") -> O
 
 def format_stats(stats: Dict[int, LengthStats], title: str = "") -> str:
     lines = [f"Same-rhythm pairs from different works{': ' + title if title else ''}",
-             "  (eligible: 2 <= richness <= 6; different-sounding: also C1 <= 1/2, no mechanical"
-             " figure)",
-             "  notes    units       pairs  transposed      eligible     different-sounding"
+             "  eligible: 2 <= richness <= 6.  trivial: ... with <= 6 distinct (A,B) pitch pairs.",
+             "  different-sounding: eligible, not trivial, C1 <= 1/2, no mechanical figure.",
+             "  notes    units       pairs  transposed   eligible   trivial    different-sounding"
              "   units with a partner"]
     for L, s in stats.items():
         if not s.pairs:
             continue
         lines.append(f"  {L:5d} {s.units:8d} {s.pairs:11d}  {100 * s.transposed / s.pairs:9.2f}%"
-                     f"  {100 * s.eligible / s.pairs:11.2f}%  {s.distinct:10d} "
+                     f"  {100 * s.eligible / s.pairs:8.2f}%  {100 * s.trivial / s.pairs:7.2f}%"
+                     f"  {s.distinct:10d} "
                      f"{100 * s.distinct / s.pairs:7.2f}%"
                      f"   {s.with_partner:7d} {100 * s.with_partner / max(1, s.units):6.2f}%")
     capped = sum(s.sampled_out for s in stats.values())
@@ -342,9 +362,10 @@ def format_candidates(cands: Sequence[Candidate], limit: int = 25) -> str:
             return "-"
         return "ok" + (f"+{v['regauges']}g" if v["regauges"] else "")
 
-    lines = ["  notes  rich    C1  anchored  middle  A  /  B"]
+    lines = ["  pairs  notes  rich    C1  anchored  middle  A  /  B"]
     for c in cands[:limit]:
-        lines.append(f"  {c.length:5d}  {c.richness:4d}  {c.c1:4.2f}  {mark(c, 'anchored'):8}  "
+        lines.append(f"  {c.pairs:5d}  {c.length:5d}  {c.richness:4d}  {c.c1:4.2f}  "
+                     f"{mark(c, 'anchored'):8}  "
                      f"{mark(c, 'middle'):6}  {c.a} ({c.titles[0]})  /  {c.b} ({c.titles[1]})")
     return "\n".join(lines)
 
