@@ -174,6 +174,11 @@ well. We therefore make no metric claim for the rest of the Renyi/Hill family wi
 an order-specific proof. In particular, **log inverse Simpson is not a metric here**,
 and neither is -log C1, even though 1 - C1 is.
 
+> **Update (R06, 2026-09-26):** it fails at *every* order except 0 and 1. Rényi entropy is not
+> subadditive for α ∉ {0, 1}, and offsets whose pairwise sums are distinct turn any
+> non-subadditive joint distribution into a triangle violation. See
+> [`LITERATURE-offsets.md`](LITERATURE-offsets.md) §5 (Aczél, Forte & Ng 1974).
+
 ### 4.5 Top-k coverage: a prefilter, not a distance
 
 ```text
@@ -255,6 +260,11 @@ novelty (§10).
 ---
 
 ## 7. Alignment
+
+> **Update (R07, 2026-09-26):** settled in [`PROOF-alignment.md`](PROOF-alignment.md). Under
+> warping-path alignment, log-richness, **S and TV all stay pseudometrics** (the sketch
+> below guessed S and TV would not); Shannon entropy and 1 − C₁ fail, with a 3-note
+> counterexample. The capped re-rhythm remains outside the result.
 
 Everything above assumes the alignment `a_i <-> b_i` is given. Once the alignment is
 *optimized* per pair, the triangle inequality is no longer automatic. Dynamic time

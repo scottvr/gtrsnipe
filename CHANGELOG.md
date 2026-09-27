@@ -10,6 +10,27 @@ and Cargo apply to 0.x version ranges. Full SemVer applies from 1.0.0. The publi
 is the CLI flags and the file formats gtrsnipe reads and writes; report wording is
 not part of it.
 
+## [0.6.3] — 2026-09-26
+
+Step 2 of `docs/dev/BACKLOG.md`, continued: R03 and R07.
+
+### Added
+- **`gtrsnipe-research families CORPUS`**: tune-family retrieval with every offset
+  measure (R03).
+  - Each measure ranks every melody against the others on one shared pairing: pitch
+    sampled at evenly spaced points.
+  - Scores are tie-aware MAP and AUC, with bootstrap intervals.
+  - Logistic pair models, cross-validated by tune family, test whether the
+    candidates add anything to the baselines.
+  - Result ([`docs/dev/RESULTS-R03-families.md`](docs/dev/RESULTS-R03-families.md)):
+    on MTC-ANN and MTC-FS-INST, transposition-invariant Hamming wins, and richness
+    adds nothing (+0.002 to +0.006 MAP). It is a guitar statistic, not a similarity
+    measure.
+- `docs/dev/PROOF-alignment.md` and `alignment_check.py` (R07): under optimized
+  (warping-path) alignment, log-richness, switch count and total variation stay
+  pseudometrics; entropy and modal share don't (a 3-note counterexample).
+  - `coupled_transposition_structure.md` gets pointers in §4.4 and §7.
+
 ## [0.6.2] — 2026-09-26
 
 The first research tools (step 2 of `docs/dev/BACKLOG.md`: R01, R02, R06).

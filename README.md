@@ -4,7 +4,7 @@
 
 Convert to and from .mid, .abc, .vex, and .tab files. (and more.)
 
-## v0.6.2
+## v0.6.3
 Released 2026-09-26. See [CHANGELOG](https://github.com/scottvr/gtrsnipe/blob/main/CHANGELOG.md)
 
 # What?
@@ -191,6 +191,7 @@ gtrsnipe-research corpus build essen --data ~/corpora     # read essen/**/*.krn 
 gtrsnipe-research corpus show essen:deut4659               # one melody, phrase marks shown as |
 gtrsnipe-research profile essen:deut4659#p1 essen:deut4659#p3   # compare two phrases
 gtrsnipe-research profile a.mid:2@1-16 "C4 D4 E4 C4" --json     # files and inline melodies work too
+gtrsnipe-research families mtc-ann                         # tune-family retrieval, measure by measure
 ```
 
 ## Player / Visualizer

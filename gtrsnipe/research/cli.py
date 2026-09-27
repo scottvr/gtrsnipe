@@ -6,6 +6,7 @@
     gtrsnipe-research corpus show essen:deut4659
     gtrsnipe-research profile essen:deut4659#p1 essen:deut4659#p3
     gtrsnipe-research profile a.mid:2@1-16 "C4 D4 E4 C4" --rhythm sequence
+    gtrsnipe-research families mtc-ann
 
 A song is a corpus reference (``NAME:ID``, optionally ``@START-END`` in notes,
 1-based inclusive, or ``#pN`` for phrase N), or anything ``--homograph`` reads:
@@ -166,6 +167,22 @@ def cmd_profile(a) -> int:
     return 0
 
 
+def cmd_families(a) -> int:
+    from .families import format_results, results_json, run
+    path = _cache_path(a.name, a.data)
+    head, mels = C.read_cache(path)
+    if not any(m.family for m in mels):
+        raise ValueError(f"{a.name} has no tune-family labels (try mtc-ann or mtc-fs)")
+    res = run(mels, grid=a.grid, bootstrap=a.bootstrap, seed=a.seed,
+              max_queries=a.queries, models=not a.no_models)
+    res["corpus"] = head["corpus"]
+    print(format_results(res, head["corpus"]))
+    if a.json:
+        with open(a.json, "w") as f:
+            f.write(results_json(res))
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(prog="gtrsnipe-research", description=__doc__.split("\n\n")[0])
     ap.add_argument("--data", help=f"corpus root folder (default: ${C.ROOT_ENV})")
@@ -197,6 +214,16 @@ def build_parser() -> argparse.ArgumentParser:
                    help="let one note stand for up to K notes of the other song")
     p.add_argument("--json", action="store_true", help="one JSON object")
     p.set_defaults(func=cmd_profile)
+
+    fm = sub.add_parser("families", help="tune-family retrieval with each offset measure (R03)")
+    fm.add_argument("name", help="a corpus with tune-family labels (mtc-ann, mtc-fs) or cache file")
+    fm.add_argument("--grid", type=int, default=64, help="points per melody (default 64)")
+    fm.add_argument("--bootstrap", type=int, default=2000, help="resamples for the 95%% intervals")
+    fm.add_argument("--seed", type=int, default=20260926)
+    fm.add_argument("--queries", type=int, help="use a random sample of N queries")
+    fm.add_argument("--no-models", action="store_true", help="skip the logistic pair models")
+    fm.add_argument("--json", help="also write the full results here")
+    fm.set_defaults(func=cmd_families)
     return ap
 
 
