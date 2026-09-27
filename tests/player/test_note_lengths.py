@@ -155,3 +155,58 @@ def test_sustain_option_is_on_both_clis():
     assert setup_parser().parse_args(["--sustain", "string"]).sustain == "string"
     a = _build_arg_parser().parse_args(["x.tab", "--sustain", "string", "--legato"])
     assert a.sustain == "string" and a.legato
+
+
+# -- P03: the audio instrument defaults to the MIDI file's own ------------------------
+
+def _midi_with_program(tmp_path, program=25, channel=2):
+    import mido
+    mf = mido.MidiFile()
+    tr = mido.MidiTrack()
+    tr.append(mido.MetaMessage("track_name", name="Lead", time=0))
+    tr.append(mido.Message("program_change", program=program, channel=channel, time=0))
+    tr.append(mido.Message("note_on", note=64, velocity=90, channel=channel, time=0))
+    tr.append(mido.Message("note_off", note=64, velocity=0, channel=channel, time=480))
+    mf.tracks.append(tr)
+    path = tmp_path / "prog.mid"
+    mf.save(path)
+    return path
+
+
+def test_midi_reader_keeps_program_and_channel(tmp_path):
+    from gtrsnipe.formats.mid.reader import MidiReader
+    (tr,) = MidiReader.parse(str(_midi_with_program(tmp_path)), None).tracks
+    assert (tr.program, tr.channel, tr.instrument_name) == (25, 2, "Lead")
+
+
+def _args(**kw):
+    from types import SimpleNamespace
+    base = dict(audio="midi", midi_port=None, soundfont=None, instrument=None)
+    base.update(kw)
+    return SimpleNamespace(**base)
+
+
+def test_audio_defaults_to_the_files_program_and_channel(tmp_path, monkeypatch):
+    import gtrsnipe.player.app as app
+    from gtrsnipe.formats.mid.reader import MidiReader
+    seen = {}
+    monkeypatch.setattr(app, "make_audio_sink", lambda kind, **kw: seen.update(kw) or "sink")
+    song = MidiReader.parse(str(_midi_with_program(tmp_path)), None)
+    app.audio_from_args(_args(), song)
+    assert seen["program"] == 25 and seen["channel"] == 2
+    app.audio_from_args(_args(instrument="nylon"), song)        # --instrument wins
+    assert seen["instrument"] == "nylon" and seen["program"] is None and seen["channel"] == 0
+
+
+def test_make_audio_sink_passes_program_and_channel(monkeypatch):
+    import gtrsnipe.player.audio as audio
+    made = {}
+
+    class FakeMidi:
+        def __init__(self, **kw):
+            made.update(kw)
+    monkeypatch.setattr(audio, "MidiOutSink", FakeMidi)
+    audio.make_audio_sink("midi", program=25, channel=2)
+    assert made["program"] == 25 and made["channel"] == 2
+    audio.make_audio_sink("midi", instrument="24", program=25)   # an explicit choice wins
+    assert made["program"] == 24

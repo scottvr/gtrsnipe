@@ -7,6 +7,7 @@ CLI entry point (:func:`main`, the ``gtrsnipe-play`` console script) parses a
 file, maps it to the fretboard, and plays it in the terminal.
 """
 import argparse
+import logging
 import sys
 import time
 from pathlib import Path
@@ -33,6 +34,9 @@ from .render.scrolltab import ScrollingTabRenderer
 from .sink import CursesSink, PlainSink, Sink
 from .timeline import DEFAULT_WINDOW_SIZE, TimelineBuilder
 from .transport import Transport, metronome_timeline
+
+
+logger = logging.getLogger(__name__)
 
 
 class _Driver:
@@ -208,10 +212,30 @@ def play_file(input_path: str, *, clock: str = "tempo",
         now=now, sleep=sleep)
 
 
-def audio_from_args(args) -> AudioSink:
-    """Build the audio sink from parsed args (shared by player & converter --play)."""
+def instrument_from_song(song: Optional[Song]):
+    """(program, channel, track name) of the first track with notes whose source
+    says which General MIDI program it uses (P03), else None."""
+    for tr in (song.tracks if song else []):
+        if tr.events and tr.program is not None:
+            return tr.program, tr.channel or 0, tr.instrument_name
+    return None
+
+
+def audio_from_args(args, song: Optional[Song] = None) -> AudioSink:
+    """Build the audio sink from parsed args (shared by player & converter --play).
+    Without --instrument, a MIDI source's own program and channel are used."""
+    program, channel = None, 0
+    if args.instrument is None and args.audio != "none":
+        picked = instrument_from_song(song)
+        if picked:
+            program, channel, name = picked
+            from .audio import GM_INSTRUMENTS
+            logger.info(f"Instrument from the file: {GM_INSTRUMENTS[program]} (program "
+                        f"{program}, channel {channel + 1}, track '{name}'); "
+                        "--instrument overrides")
     return make_audio_sink(args.audio, midi_port=args.midi_port,
-                           soundfont=args.soundfont, instrument=args.instrument)
+                           soundfont=args.soundfont, instrument=args.instrument,
+                           program=program, channel=channel)
 
 
 def _build_arg_parser() -> argparse.ArgumentParser:
@@ -264,26 +288,27 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         args, tuning=args.tuning,
         num_strings=resolve_num_strings(args.tuning, args.num_strings),
     )
+    # Parse first, so the audio can default to the file's own instrument (P03).
+    song = parse_and_map(args.input, cfg, track=args.track, sustain=args.sustain)
     try:
-        audio = audio_from_args(args)
+        audio = audio_from_args(args, song)
     except (RuntimeError, ValueError) as e:
         sys.stderr.write(f"{e}\n")
         return 1
     sink = _choose_sink(args)
     try:
-        return play_file(
-            args.input, clock=args.clock, tempo=args.tempo, grid_beats=args.grid,
-            window_size=args.window, track=args.track, mapper_config=cfg,
-            view=args.view, orientation=args.orientation, handed=args.hand,
-            width=args.width, fps=args.fps, audio=audio, sink=sink,
-            sustain=args.sustain, legato=args.legato,
+        return run_player(
+            song, cfg, clock=args.clock, tempo=args.tempo, grid_beats=args.grid,
+            window_size=args.window, view=args.view, orientation=args.orientation,
+            handed=args.hand, width=args.width, fps=args.fps, audio=audio, sink=sink,
+            legato=args.legato,
         )
     except KeyboardInterrupt:  # pragma: no cover - interactive
         sys.stderr.write("\nStopped.\n")
         return 130
     finally:
-        # Release the audio backend even if play_file raised before run_player's
-        # own finally (e.g. a parse error). close() is idempotent.
+        # Release the audio backend even if run_player raised before its own
+        # finally. close() is idempotent.
         audio.close()
 
 

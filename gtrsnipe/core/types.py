@@ -72,6 +72,10 @@ class Track:
     """Represents a single track of music."""
     events: List[MusicalEvent] = field(default_factory=list)
     instrument_name: str = "Acoustic Grand Piano"
+    # From a MIDI source: the track's General MIDI program (0-127) and the channel
+    # (0-15) its notes are on. None when the source doesn't say.
+    program: Optional[int] = None
+    channel: Optional[int] = None
 
 
 @dataclass 

@@ -498,7 +498,7 @@ def run_homograph(args, command_line: str = "") -> int:
         j = labels.index(letter)
         from .player.app import run_player_from_args, audio_from_args, _choose_sink
         try:
-            audio = audio_from_args(args)
+            audio = audio_from_args(args, songs[j])
         except (RuntimeError, ValueError) as e:
             logger.error(str(e))
             return 1
@@ -862,7 +862,7 @@ def main():
             # (PIANO tuning already exits earlier via parser.error, so no guard here.)
             from .player.app import run_player_from_args, audio_from_args, _choose_sink
             try:
-                audio = audio_from_args(args)
+                audio = audio_from_args(args, song)
             except (RuntimeError, ValueError) as e:
                 logger.error(str(e))
                 return
