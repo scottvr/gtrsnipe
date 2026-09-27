@@ -4,7 +4,7 @@
 
 Convert to and from .mid, .abc, .vex, and .tab files. (and more.)
 
-## v0.6.1
+## v0.6.2
 Released 2026-09-26. See [CHANGELOG](https://github.com/scottvr/gtrsnipe/blob/main/CHANGELOG.md)
 
 # What?
@@ -174,6 +174,24 @@ Other knobs: `--homograph-transpose`/`-a` (song keys), `--homograph-max-retune`,
 and the tab header. Theory, proofs, physics, and limits:
 [`docs/dev/DESIGN-homograph.md`](docs/dev/DESIGN-homograph.md). Worked examples:
 [`examples/homograph/`](examples/homograph/).
+
+#### Research tools (`gtrsnipe-research`)
+
+For hunting homographs and studying the offset measures across melody corpora. It
+reads the Essen Folksong Collection, the Meertens Tune Collections, Nottingham,
+POP909 and Lakh into one monophonic format and caches each as a single file. It
+also prints the **offset profile** of two aligned melodies: richness, entropy,
+coverage, switches, total variation and reuse (see
+[`docs/dev/coupled_transposition_structure.md`](docs/dev/coupled_transposition_structure.md)).
+The corpora aren't included; point `--data` (or `GTRSNIPE_CORPUS_ROOT`) at a
+folder holding them.
+
+```bash
+gtrsnipe-research corpus build essen --data ~/corpora     # read essen/**/*.krn into a cache
+gtrsnipe-research corpus show essen:deut4659               # one melody, phrase marks shown as |
+gtrsnipe-research profile essen:deut4659#p1 essen:deut4659#p3   # compare two phrases
+gtrsnipe-research profile a.mid:2@1-16 "C4 D4 E4 C4" --json     # files and inline melodies work too
+```
 
 ## Player / Visualizer
 

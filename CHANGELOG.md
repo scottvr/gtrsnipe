@@ -10,6 +10,36 @@ and Cargo apply to 0.x version ranges. Full SemVer applies from 1.0.0. The publi
 is the CLI flags and the file formats gtrsnipe reads and writes; report wording is
 not part of it.
 
+## [0.6.2] — 2026-09-26
+
+The first research tools (step 2 of `docs/dev/BACKLOG.md`: R01, R02, R06).
+
+### Added
+- **`gtrsnipe-research`**, a new command for work across melody corpora. It isn't
+  imported by `gtrsnipe` itself.
+  - `corpus build/info/show/list` reads the Essen Folksong Collection, the Meertens
+    Tune Collections (MTC-ANN, MTC-FS-INST, with tune-family labels), Nottingham,
+    POP909 and Lakh into one monophonic format and caches each corpus as a single
+    gzipped file.
+    - Kern files go through a new reader that keeps phrase marks. It matches
+      music21 note for note on 8,469 of the 8,473 Essen files; the other 4 have
+      malformed tie chains, which it holds as one note.
+    - For MIDI it takes a melody-named part, or else the skyline of the other parts.
+  - `profile A B` prints the offset profile of two aligned melodies: richness,
+    entropy, coverage C₁…C₆, transposition-invariant Hamming, switches, total
+    variation and reuse. A and B can be corpus melodies or phrases
+    (`essen:deut4659#p2`), files or inline melodies.
+- `docs/dev/LITERATURE-offsets.md`: the prior-art survey for the offset measures
+  and tab homographs.
+- `docs/dev/collision_plot_template.py`: a figure template for the corpus scan
+  (placeholder curves).
+
+### Fixed
+- **Non-editable installs were missing most of gtrsnipe.** The package pattern
+  matched only the top-level package, so a wheel (e.g. `pip install
+  git+https://…`) held 3 of 56 modules. Editable installs (`pip install -e .`,
+  the README's method) were unaffected.
+
 ## [0.6.1] — 2026-09-26
 
 A correctness sweep (step 1 of `docs/dev/BACKLOG.md`).

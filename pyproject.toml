@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gtrsnipe"
-version = "0.6.1"
+version = "0.6.2"
 description = "A command-line tool to translate between MIDI and various text notation systems, including ASCII tablature."
 authors = [
   { name="ScottVR", email="scottvr@gmail.com" },
@@ -30,12 +30,13 @@ dependencies = [
 gtrsnipe = "gtrsnipe.converter:main"
 gtrsnipe-play = "gtrsnipe.player.app:main"
 gtrsnipe-chords = "gtrsnipe.chords.cli:main"
+gtrsnipe-research = "gtrsnipe.research.cli:main"
 
 [project.urls]
 "Homepage" = "https://github.com/scottvr/gtrsnipe" 
 
 [tool.setuptools.packages.find]
-include = ["gtrsnipe"]
+include = ["gtrsnipe", "gtrsnipe.*"]
 exclude = ["separated", "docs"]
 
 [project.optional-dependencies]
