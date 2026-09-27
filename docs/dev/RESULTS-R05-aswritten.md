@@ -17,7 +17,7 @@ which is far stricter than R04's "richness ≤ 6".
   - Bach's Cello Suite No. 1 Prelude: the wiki's full 654-note transcription, plus one
     measure in two fingerings.
   - The six successive Asturias transcriptions from the wiki, v1 (the "unplayable
-    abomination") to v6, the fingering you play by ear.
+    abomination") to v6, the option set whose output matches how you play it by ear.
   - All are public domain.
 - **Timing.** ASCII tab carries only rough timing (the column spacing wobbles at barlines and
   two-digit frets). Both pieces are steady sixteenths, so each tab is read as steady notes and
@@ -64,10 +64,10 @@ Non-trivial as-written hits per million candidates (counts in brackets):
 | fingering | strings | as-written hits at 8 notes (per million) | trivial | non-trivial |
 |---|---|---|---|---|
 | default mapper scoring | 3 | 1,292,404 (81,373: 8% of all candidates) | **all** | 0 |
-| by hand ("how I'd transcribe it") | 2 | 15,261 (961) | 0 | 15,261 |
+| tuned options (`--sweet-spot-low 0 --sweet-spot-high 4 --string-switch-penalty 0`: "exactly how I would have transcribed it manually") | 2 | 15,261 (961) | 0 | 15,261 |
 
 In the default fingering each string carries one pitch. Any passage that repeats three pitches
-in the same pattern fits, so the tab constrains nothing but the pattern. The hand fingering puts
+in the same pattern fits, so the tab constrains nothing but the pattern. The tuned fingering puts
 two pitches on one string, and the hit rate drops 85×. Even then every hit is another
 repetitive figure; none sounds unrelated.
 
@@ -109,8 +109,9 @@ repetitive figure; none sounds unrelated.
 
 ## Caveats
 
-- These tabs were made by gtrsnipe (v6 is a human fingering, made by hand-tuning the mapper),
-  not collected from third-party tab sites. Third-party tabs are the natural next input.
+- These tabs were all made by gtrsnipe, including v6 and the tuned Bach measure: they are the
+  output of option sets scottvr tuned until the result matched how he plays it. None was
+  collected from a third-party tab site. Third-party tabs are the natural next input.
 - Timing is taken as steady notes. That is true of these two pieces, not of tabs in general.
 - Single notes only. Chord onsets break windows, which is why v1 has none.
 - "Unrelated-sounding" is the R04 proxies (C₁, contour, mechanical), not a listening test.
