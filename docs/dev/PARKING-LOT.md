@@ -79,3 +79,21 @@ notes are in git history.
     the first bad string;
   - partial alignment, for tabs with a few missing or extra notes;
   - batch mode over many tabs of one song, e.g. to rank user-submitted versions.
+- **Optional notes: let the user change *what* gets tabbed, not just where** (scottvr,
+  2026-09-27). Today every sounding pitch must be fingered. If a chord needs a barre, there's
+  no way to ask for a 3-string partial voicing. Players who want partial shapes (beginners,
+  campfire style, funk/rock rhythm) need this, and it is broader than C02 (open voicings).
+  Design notes (Claude):
+  - **Simple knobs:**
+    - `--max-chord-notes N`: keep the top N notes (or the N most essential);
+    - a voicing style: `top3`, shell (root/3rd/7th), power (root/5th);
+    - existing relatives: `--dedupe` and `--mono-lowest-only`.
+  - **Principled version: every note gets a *drop cost* from its musical importance**,
+    and the Viterbi mapper may omit a note when fingering it costs more.
+    - Doubled octaves and 5ths are cheap to drop; 3rds and 7ths are expensive; the melody
+      note is never dropped.
+    - The chord identifier (`gtrsnipe-chords`) already knows which tone is which.
+    - One knob, the drop cost scale, trades faithfulness against ease.
+    - This fits the weights audit's exchange-rate units: "I'd drop a doubled root rather
+      than move 5 frets".
+  - Report what was dropped, the way the homograph report discloses its liberties.
