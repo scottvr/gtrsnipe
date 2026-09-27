@@ -47,3 +47,35 @@ notes are in git history.
     annotations; verify), DadaGP (GuitarPro tabs, gated), scottvr's own tabs.
   - The hard thresholds (the −1000 unplayable span, the sweet-spot window) stay constraints
     rather than learned weights.
+  - **First steps, useful even without an optimizer** (discussed 2026-09-27):
+    1. **Audit** each score term: its feature, its unit, what it trades against.
+    2. **Express the defaults as exchange rates**, with `movement_penalty` = 1 "fret of hand
+       travel". The Viterbi fingering depends only on weight *ratios*. Today a string switch
+       = 1.7 frets of travel, a fret above the sweet spot = 1.7 (17 on the low strings), a
+       fretted-open note = 6.7, chord span = 33 per fret.
+    3. **Separate the kinds of knob.** Trade-offs (search log-ratios) are different from
+       priorities disguised as big numbers: e.g. `--let-ring-bonus 210` = 70 frets of travel,
+       i.e. "ringing always wins". Priorities are a lexicographic ordering, better expressed
+       as one. Structural settings (sweet-spot bounds, unplayable span, flags) are discrete.
+       `barre_bonus`/`barre_penalty` multiply the same count, so only their difference
+       matters: one knob, not two.
+    4. **Sensitivity sweep**: vary one knob at a time on a few tricky songs and count the
+       *distinct* tabs.
+  - **Profile finder**: the tab is piecewise constant in the weights. So:
+    1. sample settings widely (log scales, flags included);
+    2. decode each and drop duplicate tabs (a few dozen distinct tabs expected per excerpt;
+       check);
+    3. scottvr ranks tabs, not settings, or picks between pairs;
+    4. take the setting at the centre of the winner's region as the style profile, saved as a
+       `.gtrsnipe` profile file.
+
+    Richer options: preference-based Bayesian optimization, or the structured perceptron
+    trained on his picks (no community tabs to curate). Check that each profile transfers to
+    a second song of the same style.
+- **Tab checker** (2026-09-27): `gtrsnipe --homograph their.tab reference.mid
+  --homograph-rhythm sequence` already tells a right tab, a right-in-another-tuning tab, and a
+  "wrong-wrong" tab apart (see README, "Checking a tab"). Possible follow-ups:
+  - a friendlier `--check-tab REF` that lists *every* conflicting note and measure, not just
+    the first bad string;
+  - partial alignment, for tabs with a few missing or extra notes;
+  - batch mode over many tabs of one song, e.g. to rank user-submitted versions.

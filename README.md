@@ -177,6 +177,23 @@ and the tab header. Theory, proofs, physics, and limits:
 [`docs/dev/DESIGN-homograph.md`](docs/dev/DESIGN-homograph.md). Worked examples:
 [`examples/homograph/`](examples/homograph/).
 
+#### Checking a tab against a recording's MIDI
+
+The homograph machinery doubles as a tab checker. Give it a tab and a reference MIDI of the
+same passage; tabs rarely get the timing right, so match the notes in order:
+
+```bash
+gtrsnipe --homograph their.tab reference.mid --homograph-rhythm sequence
+```
+
+The **As written** line says what kind of tab it is:
+- **ELIGIBLE, no retune:** the tab is right.
+- **ELIGIBLE with a retune:** the tab is right in another tuning (e.g. written for drop-D
+  but labelled standard).
+- **NOT ELIGIBLE, "string N carries 2 different intervals":** the tab is wrong-wrong. No
+  tuning makes its fingering play the reference, and the named string is where to look.
+- **NOT ALIGNED:** the tab has missing or extra notes.
+
 #### Research tools (`gtrsnipe-research`)
 
 For hunting homographs and studying the offset measures across melody corpora. It
