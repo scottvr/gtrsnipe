@@ -1,6 +1,6 @@
 # gtrsnipe backlog
 
-The single list of open work, as of **v0.6.1 (2026-09-26)**. It collates the old parking
+The single list of open work, as of **v0.6.2 (2026-09-26)**. It collates the old parking
 lot, the CHANGELOG's known limitations, the design docs, the v0.3.0-era audit and plans,
 GitHub issues, and findings from recent sessions.
 
@@ -43,10 +43,10 @@ track. Triage at the end of this step: the parking lot was empty.
 
 ### Step 2: the research track (next)
 
-In order: R01 corpus loaders, R02 offset-profile analyzer, R03 the Meertens experiment
-(starts once you've submitted the download form), R04 the corpus homograph scan, R05
-published tabs as written. R06 (literature search) and R07 (the alignment proof) can run
-any time. Each tool ships as a patch release.
+In order: R01 corpus loaders ✓, R02 offset-profile analyzer ✓ (both v0.6.2), R03 the
+Meertens experiment (unblocked), R04 the corpus homograph scan, R05 published tabs as
+written. R06 (literature search, ✓ v0.6.2) and R07 (the alignment proof) can run any
+time. Each tool ships as a patch release.
 
 ### Step 3: features, one at a time
 
@@ -76,12 +76,12 @@ renderers.
 
 | ID | Item | Size | Source |
 |---|---|---|---|
-| R01 | **Corpus loaders.** Essen (kern/ABC) through music21. POP909's MELODY track, cutting legato overlaps at the next onset. Lakh melody extraction: a melody-named track if there is one, else the highest line. Skip Lakh's ~660 non-MIDI files. | M | corpus plan |
-| R02 | **Offset-profile analyzer** (the structure note's experiment): richness, entropy, C₁…C₆, switch count S, total variation TV, and reuse for two melodies. | S–M | structure note §11 |
-| R03 | **Meertens experiment.** On MTC-ANN tune families, does the offset profile beat the transposition-invariant Hamming and interval-Hamming baselines? Needs the download form. | M | structure note §11 |
+| R01 | ✓ v0.6.2 **Corpus loaders** (`gtrsnipe-research corpus`). Essen and Meertens kern through a native reader that keeps phrase marks (8,469/8,473 Essen files match music21; the other 4 are malformed ties). Nottingham ABC, POP909 MELODY, Lakh melody-named part or skyline. | M | corpus plan |
+| R02 | ✓ v0.6.2 **Offset-profile analyzer** (`gtrsnipe-research profile`): richness, entropy, C₁…C₆, switch count S, total variation TV, and reuse for two melodies. | S–M | structure note §11 |
+| R03 | **Meertens experiment.** On MTC-ANN tune families, does the offset profile beat the transposition-invariant Hamming and interval-Hamming baselines? Unblocked: MTC-ANN 2.0.1 and MTC-FS-INST 2.0 are downloaded and cached. | M | structure note §11 |
 | R04 | **Corpus homograph scan.** For each aligned pair, find the longest window with richness ≤ 6. Bucket passages by rhythm pattern first so pairs × offsets stays tractable, and run the full solver only on hits. Chart the results with `collision_plot_template.py`; its curves are placeholders until this scan supplies real ones. | L | DESIGN-homograph §5 |
 | R05 | **Published tabs as written** against candidate B's. Inputs stay local, like the golden cases. | M | DESIGN-homograph §5 |
-| R06 | **Literature search** before any novelty claim: δ/γ-approximate matching, SIA/SIATEC, voice-leading geometry, Müllensiefen & Frieler. | S–M | structure note §10 |
+| R06 | ✓ v0.6.2 **Literature search**: [`LITERATURE-offsets.md`](LITERATURE-offsets.md). The offset set is in Mäkinen–Navarro–Ukkonen 2005 (used only via its mode); its size as a measure, and the tab homograph, were not found. Allen & Goudeseune 2011 is the dual construction. | S–M | structure note §10 |
 | R07 | **Prove (or refute) the alignment claim**: log-richness stays a metric under composable monotone alignments. | S | structure note §7 |
 | R08 | Homograph solver limits, all low priority: re-rhythm for 3+ songs; exact chord-voice pairing (greedy today); middle-mode offsets for a class split across strings; the 20,000-assignment search cap. | M each | DESIGN-homograph §5 |
 | R09 | GigaMIDI (see D5). | — | corpus plan |
