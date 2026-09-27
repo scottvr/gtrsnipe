@@ -8,6 +8,7 @@
     gtrsnipe-research profile a.mid:2@1-16 "C4 D4 E4 C4" --rhythm sequence
     gtrsnipe-research families mtc-ann
     gtrsnipe-research scan essen mtc-fs --solve 50 --tabs out/
+    gtrsnipe-research aswritten song.tab --corpora essen mtc-fs lakh-clean
 
 A song is a corpus reference (``NAME:ID``, optionally ``@START-END`` in notes,
 1-based inclusive, or ``#pN`` for phrase N), or anything ``--homograph`` reads:
@@ -251,6 +252,58 @@ def cmd_scan(a) -> int:
     return 0
 
 
+def cmd_aswritten(a) -> int:
+    import json
+    from . import aswritten as W
+    mels, names = [], []
+    for name in a.corpora:
+        head, ms = C.read_cache(_cache_path(name, a.data))
+        mels += ms
+        names.append(head["corpus"])
+    by_ref = {m.ref: m for m in mels}
+    lengths = [int(x) for x in a.lengths.split(",")]
+    report = {"corpora": names, "tabs": {}}
+    cache: dict = {}
+    for path in a.tabs:
+        tab = W.read_tab(path, os.path.basename(path))
+        res, hits = W.scan_tab(tab, mels, lengths, keep=a.keep, window_cache=cache)
+        for h in hits[:a.solve]:
+            h.solved = W.solve_hit(tab, h, by_ref)
+        print(f"\n{tab.name}: {len(tab.pitches)} notes on "
+              f"{len(set(tab.strings.tolist()))} strings; {int(tab.chord_at.sum())} chord onsets skipped")
+        print("  notes  windows   compared   share *some* tab   as written (per million)"
+              "   trivial   non-trivial (per million)   unrelated   itself")
+        for L, r in res.items():
+            if not r.windows:
+                continue
+            c = max(1, r.candidates)
+            nt = r.as_written - r.trivial
+            print(f"  {L:5d}  {r.windows:7d}  {r.candidates:10d}   {100 * r.free / c:14.2f}%"
+                  f"   {r.as_written:9d} ({1e6 * r.as_written / c:8.2f})   {r.trivial:7d}"
+                  f"   {nt:9d} ({1e6 * nt / c:8.2f})      {r.unrelated:6d}   {r.itself:6d}")
+        found = sorted({x for r in res.values() for x in r.itself_found})
+        if found:
+            print("  the passage itself (transposed) turns up in: " + "; ".join(found[:8])
+                  + (" ..." if len(found) > 8 else ""))
+        if hits:
+            print("  best as-written hits (unrelated-sounding first; solver on the first "
+                  f"{min(a.solve, len(hits))}):")
+            print("    tab notes   pairs rich str   C1  contour mech  solver        corpus passage")
+            for h in hits[:a.show]:
+                sv = h.solved
+                mark = "?" if sv is None else ("ok" + (f"+{sv['regauges']}g" if sv.get("regauges")
+                                                        else "") if sv["as_written"] else "-")
+                print(f"    {h.tab_span[0]:3d}-{h.tab_span[1]:<3d}   {h.pairs:5d} {h.richness:4d} "
+                      f"{h.strings:3d}  {h.c1:4.2f}  {h.contour:5.2f}  {'y' if h.mechanical else 'n':>3}"
+                      f"   {mark:10}  {h.ref} ({h.title})")
+        report["tabs"][tab.name] = {"results": {str(L): vars(r) for L, r in res.items()},
+                                    "hits": [vars(h) for h in hits]}
+    if a.json:
+        with open(a.json, "w") as f:
+            json.dump(report, f, indent=1, default=str)
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(prog="gtrsnipe-research", description=__doc__.split("\n\n")[0])
     ap.add_argument("--data", help=f"corpus root folder (default: ${C.ROOT_ENV})")
@@ -318,6 +371,19 @@ def build_parser() -> argparse.ArgumentParser:
     sc.add_argument("--seed", type=int, default=20260926)
     sc.add_argument("--json", help="also write stats, candidates and samples here")
     sc.set_defaults(func=cmd_scan)
+
+    aw = sub.add_parser("aswritten", help="can a tab's own fingering be retuned into other songs? (R05)")
+    aw.add_argument("tabs", nargs="+", help="ASCII tab files (their // Tuning: header, else STANDARD)")
+    aw.add_argument("--corpora", nargs="+", default=["essen", "mtc-fs", "nottingham", "pop909",
+                                                     "lakh-clean"],
+                    help="corpora to search (default: all cached except lakh-full)")
+    aw.add_argument("--lengths", default="8,12,16,24,32",
+                    help="window lengths in notes (default 8,12,16,24,32)")
+    aw.add_argument("--keep", type=int, default=30, help="hits kept per tab (default 30)")
+    aw.add_argument("--solve", type=int, default=10, help="hits checked by the solver (default 10)")
+    aw.add_argument("--show", type=int, default=15, help="hits listed per tab (default 15)")
+    aw.add_argument("--json", help="also write the results here")
+    aw.set_defaults(func=cmd_aswritten)
     return ap
 
 
