@@ -313,14 +313,16 @@ def _songs(c: Candidate, by_ref: Dict[str, Melody]):
     return songs
 
 
-def solve(c: Candidate, by_ref: Dict[str, Melody]) -> dict:
+def solve(c: Candidate, by_ref: Dict[str, Melody], *, max_fret: int = 24,
+          max_discomfort: Optional[float] = None) -> dict:
     """The homograph solver on a candidate: free tunings, anchored to STANDARD
     (A stays an ordinary tab), and middle (both retune one guitar), with string
-    physics. Records each mode's tunings, retunes and restrung strings."""
+    physics. Records each mode's tunings, retunes, restrung strings, highest
+    fret and discomfort (mapper points per note below A's own best tab)."""
     from ..core.config import MapperConfig
     from ..guitar.homograph import analyze
     rep = analyze(_songs(c, by_ref), anchor=MapperConfig(), anchor_name="STANDARD",
-                  mode="anchored")
+                  mode="anchored", max_fret=max_fret, max_discomfort=max_discomfort)
     out = {"aligned": rep.alignment.ok, "richness": rep.richness}
     for mode in ("free", "anchored", "middle"):
         sol = getattr(rep, mode)
@@ -332,16 +334,21 @@ def solve(c: Candidate, by_ref: Dict[str, Melody]) -> dict:
                      "shifts": list(sol.shifts),
                      "max_retune": max((abs(x) for j in range(2) for x in sol.retunes(j)),
                                        default=0),
-                     "regauges": sol.regauges()}
+                     "regauges": sol.regauges(),
+                     "top_fret": max((f for _, f in sol.positions), default=0),
+                     "discomfort": None if sol.discomfort is None
+                     else round(sol.discomfort, 2)}
     return out
 
 
-def render(c: Candidate, by_ref: Dict[str, Melody], mode: str = "anchored") -> Optional[str]:
+def render(c: Candidate, by_ref: Dict[str, Melody], mode: str = "anchored", *,
+           max_fret: int = 24, max_discomfort: Optional[float] = None) -> Optional[str]:
     """The shared tab for a candidate, verified to decode to both passages."""
     from ..core.config import MapperConfig
     from ..guitar.homograph import analyze, format_report, render_tab, verify_text
     rep = analyze(_songs(c, by_ref), labels=["A", "B"], titles=[c.a, c.b],
-                  anchor=MapperConfig(), anchor_name="STANDARD", mode=mode)
+                  anchor=MapperConfig(), anchor_name="STANDARD", mode=mode,
+                  max_fret=max_fret, max_discomfort=max_discomfort)
     sol = rep.solution
     if sol is None:
         return None
@@ -386,12 +393,19 @@ def format_candidates(cands: Sequence[Candidate], limit: int = 25) -> str:
             return "-"
         return "ok" + (f"+{v['regauges']}g" if v["regauges"] else "")
 
-    lines = ["  pairs  notes  rich    C1  contour  anchored  middle  A  /  B"]
+    def comfort(c: Candidate) -> str:
+        v = (c.solved or {}).get("anchored")
+        if not v or v.get("discomfort") is None:
+            return "     -"
+        return f"{v['discomfort']:6.1f}"
+
+    lines = ["  pairs  notes  rich    C1  contour  anchored  middle  discomfort  A  /  B"]
     for c in cands[:limit]:
         lines.append(f"  {c.pairs:5d}  {c.length:5d}  {c.richness:4d}  {c.c1:4.2f}  "
                      f"{c.contour:7.2f}  "
                      f"{mark(c, 'anchored'):8}  "
-                     f"{mark(c, 'middle'):6}  {c.a} ({c.titles[0]})  /  {c.b} ({c.titles[1]})")
+                     f"{mark(c, 'middle'):6}  {comfort(c):>10}  "
+                     f"{c.a} ({c.titles[0]})  /  {c.b} ({c.titles[1]})")
     return "\n".join(lines)
 
 

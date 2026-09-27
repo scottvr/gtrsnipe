@@ -1,6 +1,6 @@
 # gtrsnipe backlog
 
-The single list of open work, as of **v0.6.5 (2026-09-27), after the step-2 triage**. It collates the old parking
+The single list of open work, as of **v0.6.6 (2026-09-27)**. It collates the old parking
 lot, the CHANGELOG's known limitations, the design docs, the v0.3.0-era audit and plans,
 GitHub issues, and findings from recent sessions.
 
@@ -57,9 +57,8 @@ written (v0.6.5); R06 the literature search (v0.6.2). Results: `RESULTS-R03-fami
 
 ### Step 3: features, one at a time (next)
 
-First B07 (quick), then **F06 with F03**. Both need the mapper's playability score calibrated
-against the tab gtrsnipe writes for a song alone, and it's the first thing you'll hit when
-playing the new homograph tabs (the solver reaches fret 24).
+B07 ✓ and F06 ✓ (v0.6.6). Next **F03** (playability-based `--analyze`), which can reuse F06's
+per-note score.
 
 Then, as before (swap freely if something else is more fun): P01 true note durations in
 playback, P03 instrument defaults from the MIDI file, C01 chord names over the tab, F04
@@ -76,7 +75,7 @@ changes, P04 pager search, P05 other renderers.
 | ID | Item | Size | Source |
 |---|---|---|---|
 | B05 | `-i x.tab --play` re-optimizes the tab's fingering instead of playing it as written. It needs a way (e.g. `--as-written`) to keep the tab's own strings and frets. | S–M | session notes |
-| B07 | **`MidiReader` drops MIDI track names.** The mido path never reads `track_name` meta events, so every track is "Acoustic Grand Piano"; only the py-midi fallback keeps names. The fix changes tab titles ("Title (Melody)"), so re-bless any golden cases. (The research corpus reader uses mido directly and is unaffected.) | S | R01, parking lot |
+| B07 | ✓ v0.6.6 **`MidiReader` drops MIDI track names** (mido path). Fixed; tab titles for named tracks now read "Title (Melody)". | S | R01, parking lot |
 
 ### Research: homograph phase 3 and the offset profile
 
@@ -119,7 +118,7 @@ changes, P04 pager search, P05 other renderers.
 | F03 | **Playability-based `--analyze`**: score each candidate tuning by the mapper's cost, not just whether the range fits. ("Bonkers in standard, easy in drop-D.") | M | player notes |
 | F04 | **Tension display outside homographs**: `--show-tuning` with gauges and tensions, and a warning when a custom tuning would snap a string. | S | parking lot |
 | F05 | **Pretty PDF tab output**: typeset tabs as a PDF worth printing (title and header, clean staff lines, measure bars, tuning key, maybe rhythm stems or notation). Intended eventually. The empty stub goes in step 1 so it isn't mistaken for a feature; this item is where PDF output comes back. | M–L | code stub; D6 |
-| F06 | **Playability threshold for homograph tabs** (scottvr's idea): `--homograph-max-discomfort` (or `--homograph-min-playability`) on the mapper's Viterbi score, already on `Solution.playability`. It would report the score per note, reject solutions over the limit so the solver tries its next candidate, and let `scan`/`aswritten` rank and filter by it. Calibrate against the tab gtrsnipe writes for song A alone ("1.5 = at most 1.5× as awkward per note"); check the score's sign and scale first. Quick win first: pass `--max-fret` through `scan`'s solver. Pairs with F03. | S + M | R04, parking lot |
+| F06 | ✓ v0.6.6 **Playability of homograph tabs**: discomfort per note vs A's own best tab, `--homograph-max-discomfort`, `scan --max-discomfort/--max-fret`. Comfort filters hard: 19/50 sampled folk pairs within 50 points per note, 0 within 5. | S + M | R04, parking lot |
 
 ### Tests and housekeeping
 

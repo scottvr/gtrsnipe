@@ -137,6 +137,51 @@ matters only through which strings can reach which notes, so it is moved only wh
 its own key fails or needs re-stringing. Middle mode's per-string offsets are the
 stronger, per-string version of the same idea.
 
+### Playability: discomfort (F06)
+
+A shared tab is a restriction of A's fingering: each note must sit on a string of its
+interval class, which is often far from where a guitarist would play it. Each anchored or
+middle solution is scored against the tab gtrsnipe writes for song A alone, in the same
+tuning and key:
+
+    discomfort = (score of A's best unrestricted tab - score of the shared tab) / notes
+
+It is measured in the mapper's own points (see `MapperConfig`). It is never negative,
+since the pinned search is a restriction of the free one, and it is 0 when the homograph
+costs no comfort. With default weights, most of it is **hand movement** (3 points per fret
+shifted between consecutive notes) plus **high-fret penalties** (5 per fret above the 12th,
+more on the low strings). So a discomfort of 30 is roughly an extra 10-fret leap per note.
+For reference, song A's own best tab typically scores −2 to −7 per note.
+
+The report prints each solution's discomfort and fret range. `--homograph-max-discomfort
+POINTS` rejects placements over the limit, and the solver then fingers up to 16× the usual 64
+placements (1,024) looking for one within it. That's slower, but opt-in.
+`gtrsnipe-research scan` takes `--max-discomfort` and `--max-fret` too.
+
+**What it showed.** On 50 random different-sounding eligible folk pairs from R04
+(`RESULTS-R04-scan.md`, "Playability"), the anchored solver found a tab for 49. But the
+median discomfort was about 100 points per note, with the top fret usually 24. With a limit,
+the anchored solver found this many:
+
+| max discomfort | fingering 256 placements | fingering 1,024 (the default with a limit) |
+|---|---|---|
+| 50 | 8 | 19 |
+| 20 | 4 | 4 |
+| 5 | 0 | 0 |
+
+So moderate limits are partly search-limited, while strict ones reflect real scarcity.
+String tension barely filters shared tabs, but *comfort* does.
+
+Middle mode found fewer than anchored under a limit (6 vs 19 at 50). Its larger pool of
+placements pushes the anchored ones past the budget, so under a limit it is no longer
+guaranteed to be a superset.
+
+**A known limit.** An interval class may use only the strings its placement assigned it,
+plus one spare (`EXTRA_STRINGS`). A string whose tuning would happen to fit another class
+too, e.g. every string when B is a plain transposition, isn't offered. So discomfort is an
+upper bound on what the best placement could achieve. Offering every compatible string to
+each class would lower it.
+
 ## 4. Alignment and re-rhythming
 
 A tab has one onset sequence, so the songs must share one: every tab onset sounds

@@ -14,4 +14,9 @@ notes are in git history.
 
 ## Ideas
 
-_(nothing waiting for triage)_
+- **Homograph comfort: offer every compatible string to each interval class** (from F06,
+  2026-09-27). Today a class may use only its assigned strings plus one spare, so the
+  measured discomfort is an upper bound. For example, a plain transposition still costs
+  0.57 points per note because all its notes sit on one string. Offering any string whose
+  tuning fits the class would lower it. Also: under a comfort limit, middle mode is no longer
+  a superset of anchored (its bigger pool pushes anchored placements past the budget).

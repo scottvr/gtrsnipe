@@ -4,7 +4,7 @@
 
 Convert to and from .mid, .abc, .vex, and .tab files. (and more.)
 
-## v0.6.5
+## v0.6.6
 Released 2026-09-27. See [CHANGELOG](https://github.com/scottvr/gtrsnipe/blob/main/CHANGELOG.md)
 
 # What?
@@ -167,7 +167,9 @@ gtrsnipe --homograph a.abc b.abc --homograph-subdivide 2     # 'ta' ~ 'ti ti': s
 gtrsnipe --homograph a.abc b.abc --play --homograph-play B   # watch/hear the shared tab in B's tuning
 ```
 
-Other knobs: `--homograph-transpose`/`-a` (song keys), `--homograph-max-retune`,
+Other knobs: `--homograph-max-discomfort` (reject tabs much less playable than A's own; the
+report prints each tab's discomfort and fret range), `--homograph-transpose`/`-a` (song keys),
+`--homograph-max-retune`,
 `--homograph-octaves` (octave-displace notes to lower the richness), `--homograph-neutral`
 (number the strings and omit the default tuning, so the text favors no song),
 `--scale-length`, `--string-gauges`. Every liberty taken is disclosed in the report

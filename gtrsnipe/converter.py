@@ -451,7 +451,8 @@ def run_homograph(args, command_line: str = "") -> int:
                         subdivide=args.homograph_subdivide, transpose=transpose,
                         transpose_a=transpose_a, max_retune=args.homograph_max_retune,
                         octaves=args.homograph_octaves,
-                        resolution=args.quantization_resolution, tab_tuning=tab_tuning)
+                        resolution=args.quantization_resolution, tab_tuning=tab_tuning,
+                        max_discomfort=args.homograph_max_discomfort)
     print(hg.format_report(report))
     sol = report.solution
     if sol is None:
