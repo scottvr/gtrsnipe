@@ -1,6 +1,6 @@
 # gtrsnipe backlog
 
-The single list of open work, as of **v0.6.8 (2026-09-27)**. It collates the old parking
+The single list of open work, as of **v0.6.9 (2026-09-27)**. It collates the old parking
 lot, the CHANGELOG's known limitations, the design docs, the v0.3.0-era audit and plans,
 GitHub issues, and findings from recent sessions.
 
@@ -57,7 +57,7 @@ written (v0.6.5); R06 the literature search (v0.6.2). Results: `RESULTS-R03-fami
 
 ### Step 3: features, one at a time (next)
 
-B07 ✓ and F06 ✓ (v0.6.6), F03 ✓ (v0.6.7), P01 ✓ (v0.6.8).
+B07 ✓ and F06 ✓ (v0.6.6), F03 ✓ (v0.6.7), P01 ✓ (v0.6.8), P03 ✓ (v0.6.9).
 
 Then, as before (swap freely if something else is more fun): P01 true note durations in
 playback, P03 instrument defaults from the MIDI file, C01 chord names over the tab, F04
@@ -93,7 +93,7 @@ changes, P04 pager search, P05 other renderers.
 |---|---|---|---|
 | P01 | ✓ v0.6.8 **True note durations and rests** in playback (`--legato` for the old way); the MIDI reader keeps notes shorter than a sixteenth; `--sustain string` lets tab notes ring until their string is restruck. | M | CHANGELOG 0.4.0 |
 | P02 | Honor tempo changes in playback (constant tempo today). | M | player notes |
-| P03 | **Default the audio instrument and channel from the MIDI file's program change.** The reader keeps the instrument name but not the GM program number. | S–M | parking lot |
+| P03 | ✓ v0.6.9 **Default the audio instrument and channel from the MIDI file's program change** (the reader keeps each track's program and channel; `--instrument` still wins). | S–M | parking lot |
 | P04 | Search (`/`) and `:goto` in the pager. | S | DESIGN-unified-io |
 | P05 | Browser and Qt renderers (they slot in under `render/`). | L | player notes |
 | P06 | Windows: document or declare `windows-curses` (the plain output works everywhere). | S | DESIGN-unified-io |

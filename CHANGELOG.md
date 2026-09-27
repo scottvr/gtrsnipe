@@ -10,6 +10,19 @@ and Cargo apply to 0.x version ranges. Full SemVer applies from 1.0.0. The publi
 is the CLI flags and the file formats gtrsnipe reads and writes; report wording is
 not part of it.
 
+## [0.6.9] — 2026-09-27
+
+Step 3 continues: P03 from `docs/dev/BACKLOG.md`.
+
+### Changed
+- **Playback sound defaults to the MIDI file's own instrument (P03).**
+  - Without `--instrument`, `--audio midi|fluidsynth` uses the General MIDI program and
+    channel of the first track with notes, and logs which it picked. An explicit
+    `--instrument` still wins.
+  - The MIDI reader now keeps each track's program and channel, the same way it keeps
+    its name.
+  - `gtrsnipe-play` parses the file before opening audio, so it can choose.
+
 ## [0.6.8] — 2026-09-27
 
 Step 3 continues: P01 from `docs/dev/BACKLOG.md`.

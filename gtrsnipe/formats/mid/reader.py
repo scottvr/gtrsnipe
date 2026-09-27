@@ -295,9 +295,13 @@ class MidiReader:
             absolute_time_ticks = 0
             temp_track_name = None
             temp_instrument_name = None
+            programs: Dict[int, int] = {}          # channel -> first program change
+            first_channel: Optional[int] = None    # the channel of the first note
     
             for event in track_data:
                 absolute_time_ticks += event.time
+                if event.type == "program_change":
+                    programs.setdefault(event.channel, event.program)
     
                 if event.is_meta and event.type == "set_tempo":
                     song.tempo = mido.tempo2bpm(event.tempo)
@@ -308,6 +312,8 @@ class MidiReader:
                     temp_instrument_name = _safe_decode(event.name)
 
                 if event.type == "note_on" and event.velocity > 0:
+                    if first_channel is None:
+                        first_channel = event.channel
                     beat_time = MidiReader._get_correct_beat_time(
                         absolute_time_ticks, ticks_per_beat, midi_tempo_usec, song.tempo
                     )
@@ -351,6 +357,8 @@ class MidiReader:
                     )
     
             track.instrument_name = temp_track_name or temp_instrument_name or track.instrument_name
+            track.channel = first_channel
+            track.program = programs.get(first_channel) if first_channel is not None else None
             if track.events:
                 song.tracks.append(track)
     

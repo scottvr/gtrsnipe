@@ -4,7 +4,7 @@
 
 Convert to and from .mid, .abc, .vex, and .tab files. (and more.)
 
-## v0.6.8
+## v0.6.9
 Released 2026-09-27. See [CHANGELOG](https://github.com/scottvr/gtrsnipe/blob/main/CHANGELOG.md)
 
 # What?
@@ -289,7 +289,8 @@ count), `--width N` (tab viewport width), `--track N` (select a single MIDI
 track, 1-indexed, same as the converter), `--orientation {horizontal,vertical}`,
 `--hand {right,left}`, `--fps N` (animation smoothness),
 `--audio {none,midi,fluidsynth}` (`--midi-port`, `--soundfont`, `--instrument`
-NAME-or-0..127, `--list-instruments`), plus the usual `--tuning`,
+NAME-or-0..127, which defaults to the MIDI file's own instrument; `--list-instruments`),
+plus the usual `--tuning`,
 `--num-strings`, `--max-fret`, `--capo`, and `--optimizer`.
 
 **Note lengths.** Playback honors each note's own length: a held bass note rings under a

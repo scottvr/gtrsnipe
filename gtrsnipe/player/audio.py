@@ -258,14 +258,18 @@ class FluidSynthSink(AudioSink):
 
 def make_audio_sink(kind: str, *, midi_port: Optional[str] = None,
                     soundfont: Optional[str] = None,
-                    instrument=None) -> AudioSink:
-    """Factory used by the CLI: map an ``--audio`` choice to a sink instance."""
+                    instrument=None, program: Optional[int] = None,
+                    channel: int = 0) -> AudioSink:
+    """Factory used by the CLI: map an ``--audio`` choice to a sink instance.
+    ``instrument`` (the user's --instrument) wins over ``program`` (e.g. the
+    source file's own program change); with neither, GM program 0."""
     if kind == "none":
         return NullSink()
-    program = resolve_instrument(instrument)  # validates even for 'none'? only used below
+    if instrument is not None or program is None:
+        program = resolve_instrument(instrument)
     if kind == "midi":
-        return MidiOutSink(port_name=midi_port, program=program)
+        return MidiOutSink(port_name=midi_port, program=program, channel=channel)
     if kind == "fluidsynth":
-        return FluidSynthSink(soundfont=soundfont, program=program)
+        return FluidSynthSink(soundfont=soundfont, program=program, channel=channel)
     raise ValueError(f"unknown audio backend {kind!r}; "
                      "choose from none, midi, fluidsynth")
