@@ -10,6 +10,29 @@ and Cargo apply to 0.x version ranges. Full SemVer applies from 1.0.0. The publi
 is the CLI flags and the file formats gtrsnipe reads and writes; report wording is
 not part of it.
 
+## [0.6.6] — 2026-09-27
+
+Step 3 begins: B07 and F06 from `docs/dev/BACKLOG.md`.
+
+### Added
+- **Playability of homograph tabs (F06).**
+  - Each anchored or middle solution now reports its *discomfort*: how many mapper points
+    per note its fingering of song A scores below the tab gtrsnipe writes for A alone, in the
+    same tuning and key. It also reports the fret range used.
+  - `--homograph-max-discomfort POINTS` rejects placements over the limit. The solver then
+    fingers up to 16× more placements looking for one within it.
+  - `gtrsnipe-research scan` takes `--max-discomfort` and `--max-fret`, and lists each
+    candidate's discomfort.
+  - Finding (DESIGN-homograph, RESULTS-R04 "Playability"): string tension barely filters
+    shared tabs, but comfort does. Of 50 sampled folk pairs, 49 have a tab, but only 19 have
+    one within 50 points per note, 4 within 20, and none within 5. A's own tab scores −2 to
+    −7 per note.
+
+### Fixed
+- **MIDI track and instrument names were dropped (B07).** The mido path never read
+  `track_name`/`instrument_name` events, so every track was "Acoustic Grand Piano". *Tab
+  titles for named tracks now read "Title (Melody)".*
+
 ## [0.6.5] — 2026-09-27
 
 R05 finishes the research items planned for step 2 of `docs/dev/BACKLOG.md`.

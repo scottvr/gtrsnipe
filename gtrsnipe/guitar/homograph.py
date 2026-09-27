@@ -83,6 +83,7 @@ INF = float("inf")
 PERM_CAP = 720          # max chord-voice pairings tried per onset group
 ENUM_CAP = 20000        # max string assignments enumerated (physical modes)
 MAP_TOP = 64            # assignments re-scored with the real (Viterbi) mapper
+DISCOMFORT_DEPTH = 16   # ... times this many when --homograph-max-discomfort is set
 EXTRA_STRINGS = 1       # redundant strings a class may take beyond a minimal set
 UP_WEIGHT = 1.5         # tightening a string costs more than slackening (down never snaps)
 REGAUGE_PENALTY = 10.0  # per string that must be swapped for another gauge
@@ -148,6 +149,7 @@ class Solution:
     shifts: List[int]
     retune_cost: float = 0.0
     playability: Optional[float] = None
+    discomfort: Optional[float] = None   # mapper points per note below song 0's own best tab
     instrument: Optional[Instrument] = None
     note: str = ""
 
@@ -851,6 +853,21 @@ def _map_pinned(slots: List[Slot], cfg: MapperConfig, string_key: List[Optional[
     return [(ev.string, ev.fret) for ev in events], mapper.last_path_score or 0.0
 
 
+def _map_free(slots: List[Slot], cfg: MapperConfig) -> float:
+    """Path score of song 0's best fingering with no string restrictions, in the
+    same tuning and key: the yardstick for a homograph tab's discomfort. (The
+    pinned search is a restriction of this one, so it can never score higher.)"""
+    events = [MusicalEvent(s.time, s.pitches[0], s.duration, 100) for s in slots]
+    groups: Dict[int, List[MusicalEvent]] = defaultdict(list)
+    for s, ev in zip(slots, events):
+        groups[s.group].append(ev)
+    mapper = GuitarMapper(cfg)
+    mapper.map_multi_string([groups[g] for g in sorted(groups)])
+    if any(ev.string is None for ev in events):
+        return float("nan")
+    return mapper.last_path_score or 0.0
+
+
 def _proxy_cost(slots: List[Slot], open0: List[int], string_key: List[Optional[Key]]) -> float:
     """Cheap playability estimate used to score assignments before the real
     mapper runs: hand movement + high frets (first string of each class)."""
@@ -1078,33 +1095,55 @@ def _needs_regauge(c: _Cand, cost: RetuneCost) -> bool:
     return False
 
 
-def _finalize(cands: List[_Cand], mode: str, instrument: Optional[Instrument]
-              ) -> Optional[Solution]:
+def _finalize(cands: List[_Cand], mode: str, instrument: Optional[Instrument],
+              max_discomfort: Optional[float] = None
+              ) -> Tuple[Optional[Solution], Optional[float]]:
     """The expensive phase: finger the most promising placements with the
-    Viterbi mapper and keep the best (retune cost vs per-note playability)."""
+    Viterbi mapper and keep the best (retune cost vs per-note playability).
+
+    Each placement's *discomfort* is how many mapper points per note its
+    fingering of song 0 scores below the best fingering of song 0 alone (same
+    tuning, same key); 0 means the homograph costs no comfort at all. With
+    ``max_discomfort``, placements over the limit are skipped and the search
+    looks DISCOMFORT_DEPTH times further down the list. Returns (solution, the
+    lowest discomfort seen when every placement was over the limit)."""
     cands = sorted(cands, key=lambda c: (c.primary, abs(c.t), c.t, c.order))
-    cutoff = cands[min(len(cands), 4 * MAP_TOP) - 1].primary
+    # With a comfort limit, look much deeper: on R04's folk pairs, fingering 1,024
+    # placements instead of 256 more than doubled the tabs found within 50 points.
+    budget = MAP_TOP if max_discomfort is None else DISCOMFORT_DEPTH * MAP_TOP
+    cutoff = cands[min(len(cands), max(4 * MAP_TOP, budget)) - 1].primary
     pool = [c for c in cands if c.primary <= cutoff][:5000]
     pool.sort(key=lambda c: (c.primary, _proxy_cost(c.slots, c.tau0, c.string_key),
                              abs(c.t), c.t, c.order))
     best = None
+    lowest_rejected: Optional[float] = None
+    refs: Dict[Tuple, float] = {}
     mapper_log = logging.getLogger(GuitarMapper.__module__)
     saved_level = mapper_log.level
     mapper_log.setLevel(logging.WARNING)             # one init line per candidate is noise
     try:
-        for c in pool[:MAP_TOP]:
-            positions, play = _map_pinned(c.slots, _config_for_tuning(c.base_cfg, c.tau0),
-                                          c.string_key)
+        for n_tried, c in enumerate(pool[:budget]):
+            if best is not None and n_tried >= MAP_TOP:
+                break                                 # the usual budget, once something fits
+            cfg = _config_for_tuning(c.base_cfg, c.tau0)
+            positions, play = _map_pinned(c.slots, cfg, c.string_key)
             if positions is None:
+                continue
+            key = (tuple(c.tau0), c.t)
+            if key not in refs:
+                refs[key] = _map_free(c.slots, cfg)
+            disc = max(0.0, (refs[key] - play) / len(c.slots)) if refs[key] == refs[key] else None
+            if max_discomfort is not None and disc is not None and disc > max_discomfort + 1e-9:
+                lowest_rejected = disc if lowest_rejected is None else min(lowest_rejected, disc)
                 continue
             obj = c.primary - play / len(c.slots)
             if best is None or obj < best[0]:
-                best = (obj, c, play, positions)
+                best = (obj, c, play, positions, disc)
     finally:
         mapper_log.setLevel(saved_level)
     if best is None:
-        return None
-    _obj, c, play, positions = best
+        return None, lowest_rejected
+    _obj, c, play, positions, disc = best
     K = len(c.slots[0].pitches)
     opens = [list(c.tau0)]
     for j in range(K - 1):
@@ -1113,7 +1152,7 @@ def _finalize(cands: List[_Cand], mode: str, instrument: Optional[Instrument]
     note = f"search truncated at {ENUM_CAP} assignments" if c.truncated else ""
     return Solution(mode, opens, [k is not None for k in c.string_key], positions,
                     [c.t] + list(c.kv), retune_cost=c.rc, playability=play,
-                    instrument=instrument, note=note)
+                    discomfort=disc, instrument=instrument, note=note), None
 
 
 def _shift_song0(slots: List[Slot], t: int) -> List[Slot]:
@@ -1123,7 +1162,8 @@ def _shift_song0(slots: List[Slot], t: int) -> List[Slot]:
 
 def solve_physical(slots: List[Slot], config: MapperConfig, *, mode: str = "anchored",
                    instrument: Optional[Instrument] = None, transpose="auto",
-                   transpose_a="auto", max_retune: Optional[int] = None
+                   transpose_a="auto", max_retune: Optional[int] = None,
+                   max_discomfort: Optional[float] = None
                    ) -> Tuple[Optional[Solution], str]:
     """Anchored/middle solve, also weighing transpositions of song 0 (the tab's
     own song): 'keep' never moves it, an int moves it that far, 'auto' keeps its
@@ -1158,7 +1198,11 @@ def solve_physical(slots: List[Slot], config: MapperConfig, *, mode: str = "anch
                 cands += gather(t)[0]
     if not cands:
         return None, reason
-    sol = _finalize(cands, mode, instrument)
+    sol, lowest = _finalize(cands, mode, instrument, max_discomfort)
+    if sol is None and lowest is not None:
+        return None, (f"every fingering is more than {max_discomfort:g} points per note less "
+                      f"playable than A's own best tab (the closest: {lowest:.2f}); "
+                      "raise --homograph-max-discomfort")
     if sol is None:
         return None, "the mapper found no playable fingering for any string assignment"
     return sol, ""
@@ -1357,7 +1401,8 @@ def analyze(songs: Sequence[Song], *, labels: Optional[Sequence[str]] = None,
             max_retune: Optional[int] = None, octaves: bool = False,
             permute: bool = True, resolution: float = 0.125,
             tab_tuning: Optional[List[int]] = None, physical: bool = True,
-            string_physics: bool = True) -> HomographReport:
+            string_physics: bool = True,
+            max_discomfort: Optional[float] = None) -> HomographReport:
     """Eligibility + solutions for a set of songs (song 0 = the tab's own song).
 
     ``anchor``: the instrument's tuning (a MapperConfig); without it only free
@@ -1366,7 +1411,9 @@ def analyze(songs: Sequence[Song], *, labels: Optional[Sequence[str]] = None,
     the conventional set for the anchor tuning). ``physical=False`` skips the
     anchored/middle searches (a quick richness/free check); ``string_physics=False``
     costs retunes in bare semitones (no breaking limits). ``tab_tuning``: if song
-    0 was read from a tab, the open pitches (high->low) it was decoded in."""
+    0 was read from a tab, the open pitches (high->low) it was decoded in.
+    ``max_discomfort``: the most mapper points per note the anchored/middle tab
+    may score below song 0's own best tab (see ``_finalize``)."""
     from .strings import default_instrument
 
     mode = mode or ("anchored" if anchor is not None else "free")
@@ -1406,7 +1453,7 @@ def analyze(songs: Sequence[Song], *, labels: Optional[Sequence[str]] = None,
         for m in ("anchored", "middle"):
             sol, why = solve_physical(rep.slots, anchor, mode=m, instrument=rep.instrument,
                                       transpose=transpose, transpose_a=transpose_a,
-                                      max_retune=max_retune)
+                                      max_retune=max_retune, max_discomfort=max_discomfort)
             setattr(rep, m, sol)
             setattr(rep, f"{m}_reason", why)
     rep.as_written, rep.as_written_reason = check_as_written(
@@ -1511,6 +1558,17 @@ def _shift_lines(rep: HomographReport, sol: Solution, indent: str) -> List[str]:
     return out
 
 
+def _comfort_line(rep: HomographReport, sol: Solution) -> str:
+    """'Playability: 1.25 points/note below A's own best tab; frets 0-7'."""
+    if sol.discomfort is None or not sol.positions:
+        return ""
+    frets = [f for _, f in sol.positions]
+    how = ("as playable as" if sol.discomfort < 0.005 else
+           f"{sol.discomfort:.2f} mapper points per note below")
+    return (f"Playability: {how} {rep.labels[0]}'s own best tab in this tuning; "
+            f"frets {min(frets)}-{max(frets)}")
+
+
 def format_report(rep: HomographReport) -> str:
     L: List[str] = []
     K = len(rep.labels)
@@ -1563,9 +1621,12 @@ def format_report(rep: HomographReport) -> str:
             L.append(f"{tag:<10} NOT ELIGIBLE - {reason}")
             return
         L.append(f"{tag:<10} ELIGIBLE - {headline}")
+        comfort = _comfort_line(rep, sol)
         if full:
             L.extend(_tuning_table(rep, sol, ind))
             L.extend(_shift_lines(rep, sol, ind))
+            if comfort:
+                L.append(f"{ind}{comfort}")
             if sol.note:
                 L.append(f"{ind}({sol.note})")
         else:
@@ -1574,6 +1635,8 @@ def format_report(rep: HomographReport) -> str:
                 "every string within safe tension; " if not rg else
                 f"{rg} string{'s' if rg > 1 else ''} outside safe tension; ")
             L.append(f"{ind}({phys}--homograph-mode {tag.lower()} for its tab)")
+            if comfort:
+                L.append(f"{ind}{comfort}")
 
     free_head = (f"{rep.free_needed} strings, any tunings (max {rep.max_strings}, "
                  f"{rep.max_fret} frets)") if rep.free else ""

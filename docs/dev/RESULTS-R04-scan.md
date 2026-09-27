@@ -62,9 +62,12 @@ golden cases. This note keeps only references (corpus:id@notes).
     sounds unrelated is about a third at 8–9 notes, 8% at 12, 3% at 16 and 1.5% at 20.
   - Put the other way: 84% of 8-note phrases, 45% of 12-note phrases and 14% of 16-note
     phrases have at least one such partner among the 26,581 tunes.
-- **Physics barely filters.** At 7–20 notes the full solver places 93–100% of the sampled pairs
-  on a real guitar: an ordinary STANDARD tab of A, with B a retune of the same guitar.
+- **String tension barely filters, but comfort does.** At 7–20 notes the full solver places
+  93–100% of the sampled pairs on a real guitar: an ordinary STANDARD tab of A, with B a
+  retune of the same guitar.
   - For a quarter to a half of them, no string needs a different gauge.
+  - But most of those tabs are awkward: big leaps, and usually fret 24. With a playability
+    limit only a minority survive (see "Playability" below, added with F06 in v0.6.6).
   - Letting both songs retune one guitar ("middle") solves 100%.
   - Rhythm plus the offset count is the binding constraint, not the strings.
 - **Pop melodies look easy, but are mostly trivial.**
@@ -135,6 +138,31 @@ van het Eykenhout* (NLB134820_01, notes 17–32).
     World*.
   - These are pairs of MIDI transcriptions from the web, and should be checked against the
     records before anyone quotes them.
+
+## Playability (added in v0.6.6, F06)
+
+The solver scores each shared tab against the tab gtrsnipe writes for song A alone, in the
+same tuning and key. *Discomfort* is how many mapper points per note worse the shared tab is.
+With default weights that's mostly hand movement (3 points per fret shifted between notes)
+and high-fret penalties. A's own best tab typically scores −2 to −7 per note. On 50 random
+unrelated-sounding eligible folk pairs from the samples above:
+
+| | anchored tabs found | notes |
+|---|---|---|
+| no limit | 49/50 | median discomfort ≈ 100 points per note, top fret usually 24 |
+| ≤ 50 points per note (about a 17-fret leap per note) | 19/50 | median top fret 19 (measured in the shallower search) |
+| ≤ 20 | 4/50 | |
+| ≤ 5 | 0/50 | |
+
+So the earlier "the solver places 93–100% on a real guitar" is true of *string tension*, not
+of comfort. A comfortable homograph (within a few points of A's own tab) was not found for any
+sampled pair. These counts are lower bounds:
+- the solver fingers at most 1,024 placements per mode;
+- a class may use only its assigned strings plus one spare (see DESIGN-homograph
+  "Playability").
+
+For the argument, this doesn't change existence: these are valid, fingerable tabs. It does
+mean that a *practical* demonstration needs hand-picked pairs and `--homograph-max-discomfort`.
 
 ## Caveats
 

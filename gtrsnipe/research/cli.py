@@ -202,12 +202,13 @@ def cmd_scan(a) -> int:
                                  sample_per_length=a.physics_sample,
                                  cross_corpus=a.cross_corpus, seed=a.seed)
     print(S.format_stats(stats, " + ".join(names)))
+    lim = dict(max_fret=a.max_fret, max_discomfort=a.max_discomfort)
     for c in top[:a.solve]:
-        c.solved = S.solve(c, by_ref)
+        c.solved = S.solve(c, by_ref, **lim)
     physics = {}
     for L, cs in samples.items():
         for c in cs:
-            c.solved = S.solve(c, by_ref)
+            c.solved = S.solve(c, by_ref, **lim)
         physics[L] = {"sampled": len(cs),
                       "free": sum(bool(c.solved["free"]) for c in cs),
                       "anchored": sum(bool(c.solved["anchored"]) for c in cs),
@@ -234,7 +235,7 @@ def cmd_scan(a) -> int:
         for k, c in enumerate(top[:a.solve], 1):
             if not (c.solved and c.solved.get("anchored")):
                 continue
-            text = S.render(c, by_ref)
+            text = S.render(c, by_ref, **lim)
             if text:
                 fn = os.path.join(a.tabs, f"{k:03d}-{c.pairs}pairs-{c.length}notes.tab")
                 with open(fn, "w") as f:
@@ -364,6 +365,11 @@ def build_parser() -> argparse.ArgumentParser:
                     help="also solve N random different-sounding eligible pairs per length")
     sc.add_argument("--show", type=int, default=25, help="candidates listed (default 25)")
     sc.add_argument("--tabs", help="write the verified shared tabs of solved candidates here")
+    sc.add_argument("--max-fret", type=int, default=24,
+                    help="highest fret the solver may use (default 24)")
+    sc.add_argument("--max-discomfort", type=float, default=None, metavar="POINTS",
+                    help="reject shared tabs more than POINTS mapper points per note below "
+                         "A's own best tab (see --homograph-max-discomfort)")
     sc.add_argument("--cross-corpus", action="store_true",
                     help="only pair passages from different corpora")
     sc.add_argument("--named-melodies", action="store_true",

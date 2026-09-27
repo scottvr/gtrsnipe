@@ -559,3 +559,35 @@ def test_printed_commands_are_shell_quoted(tmp_path, capsys):
     cmd = next(ln for ln in text.splitlines() if ln.strip().startswith("gtrsnipe -i"))
     argv = shlex.split(cmd, comments=True)
     assert argv[argv.index("-i") + 1] == str(out)
+
+
+# -- F06: playability of the shared tab ------------------------------------------
+
+def test_discomfort_is_reported_and_small_for_a_plain_transposition():
+    a = song("C4 D4 E4 C4 E4 F4 G4:2")
+    up = song("G4 A4 B4 G4 B4 C5 D5:2")               # richness 1: one interval class
+    rep = hg.analyze([a, up], anchor=MapperConfig())
+    rep2 = hg.analyze([a, song("G4 A4 G4 E4 C5 A4 G4:2")], anchor=MapperConfig())
+    assert rep.anchored is not None and rep2.anchored is not None
+    # never negative: the pinned search is a restriction of A's own best fingering.
+    # (Not exactly 0 for the transposition: the class gets only the strings the
+    # placement assigned it -- a known limit, see DESIGN-homograph.)
+    assert 0 <= rep.anchored.discomfort < rep2.anchored.discomfort
+    assert "Playability:" in hg.format_report(rep2)
+
+
+def test_max_discomfort_rejects_uncomfortable_tabs_with_a_reason():
+    a, b = song("C4 D4 E4 C4 E4 F4 G4:2"), song("G4 A4 G4 E4 C5 A4 G4:2")
+    free = hg.analyze([a, b], anchor=MapperConfig())
+    d = free.anchored.discomfort
+    assert d > 0.5                                    # this pair costs comfort
+    strict = hg.analyze([a, b], anchor=MapperConfig(), max_discomfort=d / 10)
+    assert strict.anchored is None and "--homograph-max-discomfort" in strict.anchored_reason
+    loose = hg.analyze([a, b], anchor=MapperConfig(), max_discomfort=d + 1)
+    assert loose.anchored is not None and loose.anchored.discomfort <= d + 1
+
+
+def test_cli_max_discomfort(capsys):
+    code, text = _run_cli(["--homograph", "C4 D4 E4 C4 E4 F4 G4:2", "G4 A4 G4 E4 C5 A4 G4:2",
+                           "--homograph-max-discomfort", "0.01"], capsys)
+    assert code == 1 and "raise --homograph-max-discomfort" in text

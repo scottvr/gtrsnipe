@@ -618,6 +618,11 @@ def setup_parser() -> ArgumentParser:
         '--homograph-max-retune', type=int, default=None, metavar='SEMITONES',
         help="Cap how far any string may be retuned from song 1's tuning.")
     homograph_group.add_argument(
+        '--homograph-max-discomfort', type=float, default=None, metavar='POINTS',
+        help="Reject shared tabs whose fingering of song 1 scores more than POINTS "
+             "mapper points per note below the best tab of song 1 alone (0 = no "
+             "comfort lost). The report prints each tab's value.")
+    homograph_group.add_argument(
         '--homograph-octaves', action='store_true',
         help="Arrangement liberty: allow octave displacement of individual notes of "
              "songs 2.. (lowers the richness; the report counts displaced notes).")
