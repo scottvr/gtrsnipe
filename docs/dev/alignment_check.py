@@ -12,6 +12,7 @@ d(A,C) > d(A,B) + d(B,C):
   total variation TV along the path  -- holds: likewise
   largest jump J along the path      -- holds: likewise
   range R = max - min offset         -- holds: 2x a transposition-invariant discrete Frechet
+                                        distance (real-valued transposition; ceil(R/2) in semitones)
   Shannon entropy of the offsets     -- FAILS: path multiplicities re-weight notes
   1 - modal share (TI-Hamming)        -- FAILS: likewise
 (the stutter-invariance principle and its proof: PROOF-alignment.md)
