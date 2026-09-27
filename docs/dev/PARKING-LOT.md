@@ -32,3 +32,9 @@ backlog, and the original notes are in git history.
   - Build and scan LMD-full (178k files, about 3 h to cache).
 - **R03 follow-up**: richness under its *own* optimal warping (a minimum-label path) as the fair
   similarity test; see RESULTS-R03 "Limits".
+- **R06/R07 follow-up: a targeted literature search** for the stutter-invariance principle in
+  PROOF-alignment.md: warping-minimized, stutter-invariant, subadditive statistics are
+  pseudometrics. Start from the discrete Fréchet distance (Eiter & Mannila 1994; Alt & Godau
+  1995), whose triangle-inequality proof is the same path composition, and the elastic
+  distances built to be metrics (ERP, TWED, Move-Split-Merge). Needed before any novelty
+  claim about the general statement.

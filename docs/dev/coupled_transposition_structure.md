@@ -262,9 +262,11 @@ novelty (§10).
 ## 7. Alignment
 
 > **Update (R07, 2026-09-26):** settled in [`PROOF-alignment.md`](PROOF-alignment.md). Under
-> warping-path alignment, log-richness, **S and TV all stay pseudometrics** (the sketch
-> below guessed S and TV would not); Shannon entropy and 1 − C₁ fail, with a 3-note
-> counterexample. The capped re-rhythm remains outside the result.
+> warping-path alignment, every offset statistic that ignores consecutive repeats and is
+> subadditive stays a pseudometric: log-richness, **S and TV** (the sketch below guessed S
+> and TV would not), the largest jump, and the offset range (a transposition-invariant
+> discrete Fréchet distance). Shannon entropy and 1 − C₁ count occupancy and fail, with a
+> 3-note counterexample. The capped re-rhythm remains outside the result.
 
 Everything above assumes the alignment `a_i <-> b_i` is given. Once the alignment is
 *optimized* per pair, the triangle inequality is no longer automatic. Dynamic time

@@ -10,9 +10,11 @@ d(A,C) > d(A,B) + d(B,C):
   log2 richness (distinct offsets)   -- holds: depends on the offset SET
   switch count S along the path      -- holds: repeats along a path add no switches
   total variation TV along the path  -- holds: likewise
+  largest jump J along the path      -- holds: likewise
+  range R = max - min offset         -- holds: 2x a transposition-invariant discrete Frechet
   Shannon entropy of the offsets     -- FAILS: path multiplicities re-weight notes
   1 - modal share (TI-Hamming)        -- FAILS: likewise
-(proofs in PROOF-alignment.md)
+(the stutter-invariance principle and its proof: PROOF-alignment.md)
 
 It also prints the smallest violation found for each, as a certificate.
 
@@ -59,7 +61,16 @@ def variation(offs):
     return sum(abs(y - x) for x, y in zip(offs, offs[1:]))
 
 
+def jump(offs):
+    return max((abs(y - x) for x, y in zip(offs, offs[1:])), default=0)
+
+
+def spread(offs):
+    return max(offs) - min(offs)
+
+
 STATS = {"log2 richness": richness, "switch count": switches, "total variation": variation,
+         "largest jump": jump, "range": spread,
          "entropy": entropy, "1 - modal share": ti_hamming}
 
 
