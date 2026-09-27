@@ -30,9 +30,10 @@ for free, however long it is. Candidates are ranked by distinct pairs first
 
 Excluded from the candidates (but counted): pairs from the same work (another
 voice or stanza of one song, a duplicate MIDI of one title), pairs from the same
-labelled tune family, phrases that are mechanical (<= 2 distinct pitches, or a
+labelled tune family, phrases that are mechanical (<= 2 distinct pitches; a
 figure repeating with a period of <= 6 notes: arpeggios, ostinatos, Alberti
-basses), and pairs with <= 6 distinct aligned pitch pairs.
+basses; or broken chords: under a quarter of its moves are steps of <= 2
+semitones), and pairs with <= 6 distinct aligned pitch pairs.
 """
 from __future__ import annotations
 
@@ -104,11 +105,17 @@ def units_of(melodies: Sequence[Melody], unit: str, min_len: int, max_len: int,
     return out
 
 
-def mechanical(p: Sequence[int], max_period: int = STRINGS) -> bool:
-    """<= 2 distinct pitches, or a figure repeating with a period of at most
-    ``max_period`` notes over >= 80% of the phrase (Alberti bass, arpeggio,
-    ostinato, trill)."""
+def mechanical(p: Sequence[int], max_period: int = STRINGS, min_steps: float = 0.25) -> bool:
+    """Figuration rather than melody: <= 2 distinct pitches; a figure repeating
+    with a period of at most ``max_period`` notes over >= 80% of the phrase
+    (Alberti bass, arpeggio, ostinato, trill); or broken chords -- fewer than
+    ``min_steps`` of its pitch changes are steps of <= 2 semitones. (Folk-song
+    phrases are mostly stepwise: about 5-7% of Essen and Meertens phrases fall
+    under 1/4, 1-2% of the sung MTC-ANN ones.)"""
     if len(set(p)) <= 2:
+        return True
+    moves = [abs(b - a) for a, b in zip(p, p[1:]) if b != a]
+    if moves and sum(m <= 2 for m in moves) < min_steps * len(moves):
         return True
     n = len(p)
     return any(n >= 2 * k and sum(p[i] == p[i + k] for i in range(n - k)) >= 0.8 * (n - k)

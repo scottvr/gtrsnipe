@@ -55,7 +55,9 @@ def test_mechanical_figures():
     assert S.mechanical([60, 64, 67, 64] * 3)          # Alberti bass
     assert S.mechanical([60, 62] * 5)                  # two pitches
     assert S.mechanical([70, 73, 77, 73, 77, 73] * 4)  # a 6-note arpeggio cell, repeated
+    assert S.mechanical([65, 69, 72, 77, 81, 84, 70, 74, 77, 82, 86, 89])  # broken chords
     assert not S.mechanical(A)
+    assert not S.mechanical([67, 64, 67, 72, 71, 69, 67, 64])  # a leap or two is still a tune
 
 
 def test_distinct_pairs_bound_richness():
