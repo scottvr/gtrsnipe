@@ -35,7 +35,7 @@ gtrsnipe-chords = "gtrsnipe.chords.cli:main"
 "Homepage" = "https://github.com/scottvr/gtrsnipe" 
 
 [tool.setuptools.packages.find]
-include = ["gtrsnipe"]
+include = ["gtrsnipe", "gtrsnipe.*"]
 exclude = ["separated", "docs"]
 
 [project.optional-dependencies]
