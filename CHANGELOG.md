@@ -10,6 +10,32 @@ and Cargo apply to 0.x version ranges. Full SemVer applies from 1.0.0. The publi
 is the CLI flags and the file formats gtrsnipe reads and writes; report wording is
 not part of it.
 
+## [0.6.8] — 2026-09-27
+
+Step 3 continues: P01 from `docs/dev/BACKLOG.md`.
+
+### Changed
+- **Playback honors note lengths and rests (P01).** Each note now stops at its own end,
+  instead of every note sounding until the next onset.
+  - A held note rings under later ones, and a rest is silent.
+  - A re-struck pitch is never cut short by its earlier note's release.
+  - Pausing in a rest stays silent; step mode still sounds each frame on its own; the
+    metronome clock stays legato on its grid.
+  - `--legato` restores the old playback.
+- **The MIDI reader keeps short notes.** It used to stretch every note shorter than a
+  sixteenth (0.25 beats) to a sixteenth, a leftover of early tab-spacing experiments. The
+  tab generator spaces notes by onset, so that no longer matters. The floor is now 1/64 of a
+  beat. *MIDI output from MIDI input can change: short notes stay short.*
+
+### Added
+- **`--sustain {legato,string}` for tab input**, in `gtrsnipe` and `gtrsnipe-play`. A tab
+  says when to strike a string, not when to stop.
+  - `legato` (default, as before) holds each note until the next onset.
+  - `string` lets each note ring until its own string is struck again, at most one bar.
+    Arpeggios and pedal notes then keep sounding: on the Asturias v6 tab, the average note
+    lasts 1.03 beats instead of 0.37.
+  - It applies to the parsed Song, so playback and MIDI output agree.
+
 ## [0.6.7] — 2026-09-27
 
 Step 3 continues: F03 from `docs/dev/BACKLOG.md`.

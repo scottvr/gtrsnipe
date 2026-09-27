@@ -64,12 +64,17 @@ class Frame:
         pitches: The sounding MIDI pitches during this frame. Presentation
             layers (renderers) ignore this; the audio sink uses it to emit
             note-on/off. Defaults to empty so diagram-only callers need not set it.
+        ends: When each of ``pitches`` stops sounding, in beats (aligned with
+            ``pitches``). A note may ring past later onsets or stop before the
+            next one (a rest). Empty = legacy behavior: every note sounds until
+            the next onset.
     """
     time: float
     duration: float
     positions: Tuple[FretPosition, ...]
     window: Tuple[int, int]
     pitches: Tuple[int, ...] = ()
+    ends: Tuple[float, ...] = ()
 
     @property
     def window_low(self) -> int:

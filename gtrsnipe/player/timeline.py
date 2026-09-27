@@ -31,12 +31,16 @@ class TimelineBuilder:
 
     # -- public API ---------------------------------------------------------
 
-    def build(self, mapped_events: Sequence[MusicalEvent]) -> List[Frame]:
+    def build(self, mapped_events: Sequence[MusicalEvent], legato: bool = False) -> List[Frame]:
         """Build frames from a flat list of already-mapped events.
 
         Events without a string/fret assignment (dead-ends the mapper could not
         place) are skipped. Frames are ordered by onset; each frame's duration
         spans the gap to the next frame so the frames tile the timeline.
+
+        Each frame's ``ends`` give when its notes stop: the notes' own durations
+        (so a held note rings on and a rest is silent), or, with ``legato``, the
+        next onset for every note (the pre-0.6.8 playback).
         """
         events = [e for e in mapped_events
                   if e.string is not None and e.fret is not None]
@@ -49,6 +53,7 @@ class TimelineBuilder:
 
         frames: List[Frame] = []
         group_durations: List[float] = []
+        note_ends: List[dict] = []
         for gtime, group in groupby(events, key=lambda e: quantize(e.time)):
             group = list(group)
             positions = tuple(sorted(
@@ -62,17 +67,23 @@ class TimelineBuilder:
             # Fallback duration for the final frame: the longest note in the
             # group (never below the quantization grid).
             group_durations.append(max((e.duration for e in group), default=qr))
+            ends: dict = {}
+            for e in group:
+                ends[e.pitch] = max(ends.get(e.pitch, 0.0), gtime + max(e.duration, 1e-6))
+            note_ends.append(ends)
 
         self._assign_durations(frames, group_durations, qr)
+        for f, ends in zip(frames, note_ends):
+            f.ends = tuple(f.time + f.duration if legato else ends[p] for p in f.pitches)
         self._assign_windows(frames)
         return frames
 
-    def build_from_song(self, song: Song) -> List[Frame]:
+    def build_from_song(self, song: Song, legato: bool = False) -> List[Frame]:
         """Build frames from a mapped Song, merging all tracks onto one neck."""
         events: List[MusicalEvent] = []
         for track in song.tracks:
             events.extend(track.events)
-        return self.build(events)
+        return self.build(events, legato=legato)
 
     # -- internals ----------------------------------------------------------
 

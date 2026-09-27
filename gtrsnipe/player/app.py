@@ -16,6 +16,7 @@ from ..arguments import (
     add_mapper_args,
     add_player_args,
     add_profile_args,
+    add_tab_input_args,
     add_tuning_args,
     apply_profiles,
     build_mapper_config,
@@ -53,7 +54,13 @@ class _Driver:
 
     def fire(self, frames: Sequence[Frame]) -> None:
         pitches = [p for f in frames for p in f.pitches]
-        self.audio.attack(pitches)
+        if all(f.ends for f in frames):
+            self.audio.strike(pitches)      # note ends drive the releases
+        else:
+            self.audio.attack(pitches)      # legacy: each onset replaces the last
+
+    def release(self, pitches: Sequence[int]) -> None:
+        self.audio.release(pitches)
 
     def silence(self) -> None:
         self.audio.all_off()
@@ -67,7 +74,7 @@ class _Driver:
 
 def parse_and_map(input_path: str, mapper_config: MapperConfig, *,
                   track: Optional[int] = None,
-                  no_articulations: bool = True) -> Song:
+                  no_articulations: bool = True, sustain: str = "legato") -> Song:
     """Parse an input file and map every track onto the fretboard."""
     # Imported here to avoid a converter<->player import cycle at package load.
     from ..converter import MusicConverter
@@ -78,6 +85,7 @@ def parse_and_map(input_path: str, mapper_config: MapperConfig, *,
         quantization_resolution=mapper_config.quantization_resolution,
         open_string_pitches=open_string_pitches_for(
             mapper_config.tuning, getattr(mapper_config, "custom_tuning", None)),
+        sustain=sustain,
     )
     mapper = GuitarMapper(mapper_config)
     for trk in song.tracks:
@@ -87,8 +95,9 @@ def parse_and_map(input_path: str, mapper_config: MapperConfig, *,
 
 
 def build_timeline(song: Song, mapper_config: MapperConfig,
-                   window_size: int = DEFAULT_WINDOW_SIZE) -> List[Frame]:
-    return TimelineBuilder(mapper_config, window_size=window_size).build_from_song(song)
+                   window_size: int = DEFAULT_WINDOW_SIZE, legato: bool = False) -> List[Frame]:
+    return TimelineBuilder(mapper_config, window_size=window_size).build_from_song(
+        song, legato=legato)
 
 
 def build_renderer(cfg: MapperConfig, *, view: str = "fretboard",
@@ -126,13 +135,14 @@ def run_player(mapped_song: Song, cfg: MapperConfig, *, clock: str = "tempo",
                orientation: str = "horizontal", handed: str = "right",
                width: int = 48, fps: float = 12.0,
                audio: Optional[AudioSink] = None, sink: Optional[Sink] = None,
+               legato: bool = False,
                now=time.monotonic, sleep=time.sleep) -> int:
     """Play an already parsed+mapped Song. Returns a process exit code.
 
     ``clock`` maps to Transport state: ``tempo``/``metronome`` play; ``step``
     starts paused. ``metronome`` also re-times the timeline to an even grid.
     """
-    timeline = build_timeline(mapped_song, cfg, window_size=window_size)
+    timeline = build_timeline(mapped_song, cfg, window_size=window_size, legato=legato)
     the_audio = audio or NullSink()
     the_sink = sink or PlainSink(interactive=True)
     try:
@@ -176,7 +186,7 @@ def run_player_from_args(song: Song, cfg: MapperConfig, args, *,
         song, cfg, clock=args.clock, tempo=args.tempo, grid_beats=args.grid,
         window_size=args.window, view=args.view, orientation=args.orientation,
         handed=args.hand, width=args.width, fps=args.fps,
-        audio=audio, sink=sink, now=now, sleep=sleep)
+        audio=audio, sink=sink, legato=getattr(args, "legato", False), now=now, sleep=sleep)
 
 
 def play_file(input_path: str, *, clock: str = "tempo",
@@ -186,14 +196,16 @@ def play_file(input_path: str, *, clock: str = "tempo",
               view: str = "fretboard", orientation: str = "horizontal",
               handed: str = "right", width: int = 48, fps: float = 12.0,
               audio: Optional[AudioSink] = None, sink: Optional[Sink] = None,
+              sustain: str = "legato", legato: bool = False,
               now=time.monotonic, sleep=time.sleep) -> int:
     """Parse, map, and play a file (thin wrapper over :func:`run_player`)."""
     cfg = mapper_config or MapperConfig()
-    song = parse_and_map(input_path, cfg, track=track)
+    song = parse_and_map(input_path, cfg, track=track, sustain=sustain)
     return run_player(
         song, cfg, clock=clock, tempo=tempo, grid_beats=grid_beats,
         window_size=window_size, view=view, orientation=orientation, handed=handed,
-        width=width, fps=fps, audio=audio, sink=sink, now=now, sleep=sleep)
+        width=width, fps=fps, audio=audio, sink=sink, legato=legato,
+        now=now, sleep=sleep)
 
 
 def audio_from_args(args) -> AudioSink:
@@ -214,6 +226,7 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     add_tuning_args(p.add_argument_group("Instrument"))
     add_mapper_args(p.add_argument_group("Mapper (advanced)"))
     add_player_args(p.add_argument_group("Player"))
+    add_tab_input_args(p.add_argument_group("Tab input"))
     add_profile_args(p)
     p.add_argument("--list-instruments", action="store_true",
                    help="Print the General MIDI instrument names and exit.")
@@ -263,6 +276,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             window_size=args.window, track=args.track, mapper_config=cfg,
             view=args.view, orientation=args.orientation, handed=args.hand,
             width=args.width, fps=args.fps, audio=audio, sink=sink,
+            sustain=args.sustain, legato=args.legato,
         )
     except KeyboardInterrupt:  # pragma: no cover - interactive
         sys.stderr.write("\nStopped.\n")

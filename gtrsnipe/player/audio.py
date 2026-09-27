@@ -110,6 +110,23 @@ class AudioSink:
             self._note_on(p, velocity)
         self._active = new
 
+    def strike(self, pitches: Iterable[int], velocity: int = DEFAULT_VELOCITY) -> None:
+        """Strike ``pitches`` (re-articulating any already ringing) and leave every
+        other ringing note alone: with note durations, a held note outlasts the
+        next onset and is released by :meth:`release`, not by the next strike."""
+        for p in set(pitches):
+            if p in self._active:
+                self._note_off(p)
+            self._note_on(p, velocity)
+            self._active.add(p)
+
+    def release(self, pitches: Iterable[int]) -> None:
+        """End ``pitches`` (those still ringing)."""
+        for p in set(pitches):
+            if p in self._active:
+                self._note_off(p)
+                self._active.discard(p)
+
     def all_off(self) -> None:
         """Release every ringing note but keep the backend open (pause/seek)."""
         for p in list(self._active):

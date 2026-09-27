@@ -22,8 +22,30 @@ class AsciiTabParser:
     inferring rhythm from note spacing.
     """
     @staticmethod
+    def _string_sustain(events, tab_string: str) -> None:
+        """Let each note ring until the next note on the same string (the last one
+        on a string: until the piece ends), never longer than one bar."""
+        m = re.search(r"Time:\s*(\d+)\s*/\s*(\d+)", tab_string, re.IGNORECASE)
+        bar = int(m.group(1)) * 4.0 / int(m.group(2)) if m and int(m.group(2)) else 4.0
+        end = max(e.time + e.duration for e in events)
+        by_string = {}
+        for e in events:
+            by_string.setdefault(e.string, []).append(e)
+        for evs in by_string.values():
+            evs.sort(key=lambda e: e.time)
+            for a, b in zip(evs, evs[1:]):
+                if b.time > a.time:
+                    a.duration = min(b.time - a.time, bar)
+            last = evs[-1]
+            last.duration = min(max(end - last.time, last.duration), bar)
+
+    @staticmethod
     def parse(tab_string: str, staccato: bool = False, quantization_resolution: float = 0.125,
-              open_string_pitches: Optional[List[int]] = None) -> Song:
+              open_string_pitches: Optional[List[int]] = None, sustain: str = "legato") -> Song:
+        """``sustain`` (ignored with ``staccato``): how long a note lasts, since a tab
+        only says when to strike. 'legato' (default): until the next onset.
+        'string': until the same string is struck again -- how a guitar actually
+        rings (arpeggios and pedal notes keep sounding) -- capped at one bar."""
         logger.debug("Starting ASCII Tab parsing.")
         song = Song()
         track = Track()
@@ -151,6 +173,10 @@ class AsciiTabParser:
                         event.duration = duration
         elif staccato:
             logger.debug("Staccato flag set, skipping legato processing.")
+
+        # --- Pass 4: 'string' sustain: a note rings until its own string is struck again
+        if sustain == "string" and not staccato and track.events:
+            AsciiTabParser._string_sustain(track.events, tab_string)
 
         song.tracks.append(track)
         logger.debug("Finished creating Song object.")

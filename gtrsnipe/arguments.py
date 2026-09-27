@@ -173,6 +173,19 @@ def add_player_args(target) -> None:
                         help="Instrument for --audio: GM number (0-127) or name substring.")
     target.add_argument("--no-clear", action="store_true",
                         help="Do not clear the screen between frames (scrolls).")
+    target.add_argument("--legato", action="store_true",
+                        help="Sound every note until the next onset, ignoring written "
+                             "note lengths and rests (the pre-0.6.8 playback).")
+
+
+def add_tab_input_args(target) -> None:
+    """How notes read from an ASCII tab last (a tab says when to strike, not when to
+    stop). Shared by `gtrsnipe` and gtrsnipe-play."""
+    target.add_argument("--sustain", choices=["legato", "string"], default="legato",
+                        help="Tab input: 'legato' (default) holds each note until the next "
+                             "onset; 'string' lets it ring until its own string is struck "
+                             "again, as a guitar does (at most one bar). Shapes playback "
+                             "and MIDI output alike.")
 
 
 def add_chart_args(target) -> None:
@@ -646,6 +659,7 @@ def setup_parser() -> ArgumentParser:
         action='store_true',
         help="Transcribe with no legato, taps, hammer-ons, pull-offs, etc."
     )
+    add_tab_input_args(parser)
     parser.add_argument(
         "--staccato",
         action='store_true',
