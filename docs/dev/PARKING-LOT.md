@@ -37,4 +37,5 @@ backlog, and the original notes are in git history.
   pseudometrics. Start from the discrete Fréchet distance (Eiter & Mannila 1994; Alt & Godau
   1995), whose triangle-inequality proof is the same path composition, and the elastic
   distances built to be metrics (ERP, TWED, Move-Split-Merge). Needed before any novelty
-  claim about the general statement.
+  claim about the general statement. The citation checklist and the questions to answer are in
+  PROOF-alignment.md, "Citations to verify" (scottvr starting a verification pass 2026-09-27).
