@@ -145,7 +145,7 @@ Each statistic below satisfies (a)–(d). Since richness ≥ 1, the first uses l
 | switches S | x + y changes only where x or y changes | the fewest changes of relative transposition, with free note-stretching |
 | variation TV | \|Δx + Δy\| ≤ \|Δx\| + \|Δy\|, summed | |
 | largest jump J | the same, as a maximum | |
-| range R | max(x + y) ≤ max x + max y, and min(x + y) ≥ min x + min y | R/2 = the least possible max\|δ − c\| over transpositions c: **a transposition-invariant discrete Fréchet distance** (below) |
+| range R | max(x + y) ≤ max x + max y, and min(x + y) ≥ min x + min y | R/2 = the least possible max\|δ − c\| over real transpositions c: **a transposition-invariant discrete Fréchet distance** (below). With whole-semitone c it is ⌈R/2⌉, still a pseudometric since ⌈(a+b)/2⌉ ≤ ⌈a/2⌉ + ⌈b/2⌉ |
 
 The class is closed under non-negative sums and under maxima of its members, so S + TV or
 max(R, J) qualify too. Stutter-invariance is *sufficient*, not claimed necessary. Entropy and
@@ -168,7 +168,7 @@ lemma's terms, the lifted walk here is (1,1,1), (1,1,2), (1,2,2):
 - a legal path cannot keep that repeat, and dropping it is exactly the reweighting that
   breaks entropy.
 
-## Relation to known work: the discrete Fréchet distance
+## Relation to known work: the discrete Fréchet (Frechet) distance
 
 The discrete Fréchet distance between two point sequences is the minimum, over couplings
 (exactly our warping paths), of the largest pointwise distance. It is known to be a
@@ -176,7 +176,8 @@ pseudometric, zero exactly when the sequences agree after merging consecutive re
 triangle inequality is proved, I believe, by composing couplings through the middle sequence,
 which is this lemma. The maximum is stutter-invariant, so the discrete Fréchet distance is the
 prototype of the class above. Applied to pitch with transposition factored out, it is R/2 in
-the corollary table.
+the corollary table: exactly R/2 when the transposition may be any real number, ⌈R/2⌉ when
+it must be whole semitones.
 
 So **the composition argument is not new**. What this note adds:
 - the explicit condition, stutter-invariance plus subadditivity;
@@ -221,4 +222,5 @@ Reviewed 2026-09-26 by scottvr with ChatGPT. Incorporated from that review:
 - the canonical zero-set wording and the quotient;
 - extracting the general principle.
 
-The Fréchet connection and the extra members (J, R) were added in the revision.
+The Fréchet connection and the extra members (J, R) were added in the revision. The
+whole-semitone ⌈R/2⌉ refinement also came from the review.
