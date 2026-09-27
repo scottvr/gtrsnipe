@@ -22,7 +22,13 @@ backlog, and the original notes are in git history.
   - Scan with re-rhythm (a rhythm slop ratio, `--homograph-subdivide`); today only identical or
     proportional rhythms meet.
   - Rank candidates by playability, since the solver happily reaches fret 24 on the low
-    strings.
+    strings. Proposed design (scottvr, 2026-09-26): a `--homograph-max-discomfort` flag (or
+    `--homograph-min-playability`) built on the mapper's existing Viterbi score, which is
+    already on `Solution.playability`. It would report the score per note, reject solutions
+    over the limit so the solver tries its next candidate, and let `scan` rank and filter by
+    it. Calibrate it against the tab gtrsnipe writes for song A alone ("1.5 = at most 1.5x
+    as awkward per note"); check the score's sign and scale first. Quick win meanwhile:
+    `scan`'s `solve()` should pass `--max-fret` through, which `--homograph` already takes.
   - Build and scan LMD-full (178k files, about 3 h to cache).
 - **R03 follow-up**: richness under its *own* optimal warping (a minimum-label path) as the fair
   similarity test; see RESULTS-R03 "Limits".
