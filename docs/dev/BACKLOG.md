@@ -85,7 +85,7 @@ changes, P04 pager search, P05 other renderers.
 | R10 | **Scan with re-rhythm**: a rhythm slop ratio and `--homograph-subdivide` in `scan`/`aswritten`. Today only identical (or proportional) rhythms meet. | M | R04, parking lot |
 | R11 | **LMD-full**: build the cache (about 3 h) and scan it. Mostly unattended machine time; R04's curves already look saturated. | L (machine) | R04, parking lot |
 | R12 | **Richness under its own optimal warping** as the fair similarity test for R03: a minimum-label path per pair, exact for k ≤ 6. Unlikely to overturn R03. | M–L | R03 "Limits", parking lot |
-| R13 | **Literature search for the stutter-invariance principle** (*scottvr, in progress*): the checklist in `PROOF-alignment.md`, "Citations to verify". Needed before any novelty claim about the general statement. | S–M | R07, parking lot |
+| R13 | **Literature search for the stutter-invariance principle** (*scottvr, in progress; StegTab identified 2026-09-28*): the checklist in `PROOF-alignment.md`, "Citations to verify". Needed before any novelty claim about the general statement. | S–M | R07, parking lot |
 
 ### Player and audio
 
