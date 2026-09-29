@@ -223,10 +223,12 @@ The two distinguishing choices:
 - **The members are functionals of the sequence as a whole,** not only a maximum: the number of
   distinct values, the number of changes, the total and largest change, the range.
 
-**What is probably known, and what might not be.**
+**What is known, and what is probably folklore.**
 - The composition argument is certainly known: it is the Fréchet proof.
 - Whether the general sufficient condition (any stutter-invariant, subadditive functional of
-  the coupled differences) is stated anywhere is **not known here**.
+  the coupled differences) is stated anywhere is not known here. It is the kind of
+  generalization an expert in Fréchet-type distances would call immediate, so treat it as
+  folklore and don't present it as new.
 - Likewise unknown: whether d_S (the fewest changes of relative transposition, with free
   stretching) or d_richness (the fewest distinct transpositions, with free stretching) appear
   under other names. The closest known relatives are local-transposition alignment (Allali et

@@ -73,8 +73,8 @@ scottvr then reviewed the proof with ChatGPT. That review was useful:
 
 The revision then placed the result: its composition step is the classical proof that the
 *discrete Fréchet distance* is a metric. Fréchet's distance (the largest pointwise gap) is the
-prototype of this class. So the argument is known. Whether the general condition is stated
-anywhere is the open question for scottvr's citation pass (R13).
+prototype of this class. So the argument is known, and the general condition is the kind of
+generalization an expert would call immediate: best treated as folklore, not a new result.
 
 ## Homographs in the wild (R04)
 

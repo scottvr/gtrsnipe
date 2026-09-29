@@ -50,6 +50,8 @@ Between 2026-09-23 and 09-27 there were 14 releases, and the test suite grew fro
 | the tuned Bach measure was fingered by hand | Claude | scottvr: it's gtrsnipe output from tuned options |
 | StegTab hides bits in redundant fingerings | the literature agent's guess | scottvr found the source: a letter cipher |
 | a minimum-note-length filter was needed with P01 | Claude | scottvr: `--velocity-cutoff` was always the cruft filter |
+| "vocabulary vs. switches" might be new | the structure note, revision 1 (Claude) | scottvr's question about image processing: it's label costs vs. the Potts term (revision 3) |
+| the general alignment condition might be unpublished | Claude (PROOF-alignment) | on reflection, an immediate generalization of Fréchet's proof: treat it as folklore |
 
 The pattern in Claude's column is mostly **summary overreach**: a true finding stated one
 notch more broadly than the evidence. Two things caught these: running the check, and

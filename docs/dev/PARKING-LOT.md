@@ -133,8 +133,9 @@ notes are in git history.
     model, classically fitting several *homographies*. The tab homograph is 1-D multi-model
     fitting: correspondences (aᵢ, bᵢ), models = constant offsets (a string's retune), at most
     N models, exact inliers. Layered motion (Wang & Adelson 1994) is the same idea for flow.
-    Consequence: weakens the §6 "vocabulary vs. switches" novelty further (a named analogue),
-    but gives citations and algorithms (α-expansion with label costs for the fewest-offsets
+    Folded into the structure note's revision 3 (2026-09-29), which now presents vocabulary vs.
+    switches as this known distinction, and into LITERATURE §6. Still open: verifying the
+    citations (R13), and the algorithms (α-expansion with label costs for the fewest-offsets
     warping path, d_richness).
   - **A practical use: robust fitting for the tab checker.** RANSAC or PEARL over offsets
     would find the most likely tuning key for a tab with a few wrong notes and name the

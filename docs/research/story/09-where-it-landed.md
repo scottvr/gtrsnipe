@@ -15,9 +15,10 @@ claims stand"). In short:
   or not at all.
 - **Deflated:** the offset statistics' metric properties are elementary. Richness is not a
   useful melodic similarity.
-- **Possibly general:** the stutter-invariance principle for distances under optimized
-  alignment. The argument is Fréchet's; whether the general condition is published is the
-  open question in the citation pass (R13).
+- **Also deflated, later:** the condition for distances to survive optimized alignment runs
+  on the Fréchet distance's proof and is probably folklore; and "vocabulary vs. switches" is
+  computer vision's label cost against its Potts term. The tech note (revision 3) now claims
+  nothing as new: it's a dictionary and a synthesis.
 
 ## Fodder: posts
 
@@ -29,7 +30,7 @@ Each of these is roughly one chapter, or one results doc, with a demo:
 | How often do two songs share a tab? | a third of short folk phrase pairs; the charts | chapter 6, R04 |
 | The real filter is your hand | tension says yes, comfort says no | chapter 7, F06 |
 | Your tab says more than you think | real fingerings pin the music down | chapter 7, R05 |
-| My metric wasn't new, and that's fine | a casual claim, a draft of "novel" results, folklore, Fréchet | chapters 4 and 6 |
+| My metric wasn't new, and that's fine | a casual claim, a draft of "novel" results, folklore, Fréchet, label costs | chapters 4 and 6 |
 | A free tab checker | "wrong-wrong" tabs, detected by the homograph machinery | chapter 8 |
 | Thirty knobs, tuned by hand | 22 mapper options today (closer to 30 at their peak), each added for one transcription, and how to learn them | chapter 8 |
 | Two LLMs and a guitarist | the collaboration itself | chapter 10 |
@@ -52,9 +53,10 @@ A sketch, for scottvr to overrule:
    R05's as-written test. It would also report R03's negative result, since it saves the
    next person from trying richness as a similarity. The survey's suggested wording for
    related work is in [`../literature/LITERATURE-offsets.md`](../literature/LITERATURE-offsets.md).
-3. **A short math note**, only if the citation pass finds the stutter-invariance principle
-   unpublished: the general condition, its members (richness, switches, total variation, the
-   largest jump, the range), and the counterexample for entropy.
+3. **An optional expository note or post**, not a research paper: the dictionary that connects
+   the tab problem to music-retrieval measures and image-regularization terms, and which of
+   those terms survive optimized alignment, and why. Framed as a synthesis, it claims nothing
+   new.
 
 > ✎ **scottvr:** what you actually plan to write, and where.
 
