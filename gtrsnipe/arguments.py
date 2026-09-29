@@ -676,6 +676,13 @@ def setup_parser() -> ArgumentParser:
         help="Max number of vertical columns per line of ASCII tab. (default: 40)"
     )
     parser.add_argument(
+        "--name-chords",
+        action='store_true',
+        help="ASCII tab output: write chord names (concert pitch) above the staff, one per "
+             "bar, where the chord changes and at the start of each line. Bars are named "
+             "as in chord charts (see --chord-tone-threshold)."
+    )
+    parser.add_argument(
         "--single-string",
         type=int,
         default=None,
@@ -706,6 +713,15 @@ def setup_parser() -> ArgumentParser:
         type=str,
         metavar='TUNING_NAME',
         help='Show the notes for a specific tuning and exit.'
+    )
+    info_group.add_argument(
+        '--name-chord',
+        action='append',
+        metavar='SHAPE',
+        help="Name the chord a fret shape plays, and exit. SHAPE lists frets from the lowest "
+             "string to the highest, x for a muted string: e.g. x,3,2,0,1,0 (or x32010 when "
+             "every fret is one digit). Uses --tuning/--tuning-pitches, --capo and "
+             "--num-strings. Repeat for several shapes."
     )
 
     player_group = parser.add_argument_group('Player mode (--play; interactive terminal)')

@@ -1,6 +1,6 @@
 # gtrsnipe backlog
 
-The single list of open work, as of **v0.6.10 (2026-09-28)**. It collates the old parking
+The single list of open work, as of **v0.6.11 (2026-09-29)**. It collates the old parking
 lot, the CHANGELOG's known limitations, the design docs, the v0.3.0-era audit and plans,
 GitHub issues, and findings from recent sessions.
 
@@ -57,7 +57,9 @@ stay open, low priority.
 
 ### Step 3: features, one at a time (next)
 
-B07 ✓ and F06 ✓ (v0.6.6), F03 ✓ (v0.6.7), P01 ✓ (v0.6.8), P03 ✓ (v0.6.9).
+B07 ✓ and F06 ✓ (v0.6.6), F03 ✓ (v0.6.7), P01 ✓ (v0.6.8), P03 ✓ (v0.6.9); a docs
+interlude (H05–H07, v0.6.10). C01 with C06 ✓ (v0.6.11). Next in the suggested order: F04 (tension
+display), then C03, C02, …
 
 Then, as before (swap freely if something else is more fun): P01 true note durations in
 playback, P03 instrument defaults from the MIDI file, C01 chord names over the tab, F04
@@ -103,11 +105,12 @@ changes, P04 pager search, P05 other renderers.
 
 | ID | Item | Size | Source |
 |---|---|---|---|
-| C01 | **`--name-chords`**: chord names above the tab staff, aligned, and wrapping in step with `--max-line-width`. | M | player notes |
+| C01 | ✓ v0.6.11 **`--name-chords`**: chord names above the tab staff, over each bar's first note, where the chord changes and at each line start; half-bar changes named; only plainly spelled chords. | M | player notes |
 | C02 | **`--prefer-open-chords`**: open-position voicings. Mapper weights alone don't change the diagrams (tested). The voicing generator must pick the register by open strings and low position, and add doublings so full shapes can form. | M–L | player notes |
 | C03 | **Shape-relative chord names** (`--shape-names`, a "generalized capo"). Always print a banner saying so. Only valid for uniformly shifted tunings (baritone, E♭, D standard); fall back to concert pitch for drop and open tunings, and say so. | M | player notes |
 | C04 | Extended chords (9ths, 11ths, 13ths). | M | CHANGELOG 0.4.0 |
 | C05 | Key-aware enharmonic spelling (sharps only today). Shares work with F02. | M | CHANGELOG 0.4.0 |
+| C06 | ✓ v0.6.11 **`--name-chord SHAPE`**: name a fret shape (`x,x,3,2,1,0`) in any tuning, with no input file. | S | scottvr, parking lot |
 
 ### Formats and analysis
 

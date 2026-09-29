@@ -4,8 +4,8 @@
 
 Convert to and from .mid, .abc, .vex, and .tab files. (and more.)
 
-## v0.6.10
-Released 2026-09-28. See [CHANGELOG](https://github.com/scottvr/gtrsnipe/blob/main/CHANGELOG.md)
+## v0.6.11
+Released 2026-09-29. See [CHANGELOG](https://github.com/scottvr/gtrsnipe/blob/main/CHANGELOG.md)
 
 # What?
 
@@ -337,6 +337,47 @@ plus the usual `--tuning`, `--num-strings`, `--capo`, and `--optimizer`. Mapper
 weights such as `--prefer-open` don't change the diagrams; open-position
 voicings are planned (C02 in [`docs/dev/BACKLOG.md`](docs/dev/BACKLOG.md)).
 
+### Chord names over a tab (`--name-chords`)
+
+Add `--name-chords` to ASCII tab output to write chord names above the staff:
+
+```
+   C                                G            Am
+e|--------------------------------|-----------3|----------|
+B|-5------------------------------|------------|---------5|
+G|-5------------------------------|---------4--|-----2h5--|
+D|-5------------------------------|-------5----|---2------|
+A|-7------------------------------|---2h5------|-0--------|
+E|-8------------------------------|-3----------|----------|
+```
+
+- Each bar is named as in a chord chart (`--chord-tone-threshold` applies). The lowest note
+  at the start of a bar also counts, so an arpeggio's bass isn't lost among short notes.
+- A name sits over its bar's first note. It's written where the chord changes, and again at
+  the start of each line, which wraps with the tab (`--max-line-width`).
+- Only plainly spelled chords are named: every chord tone present except perhaps the fifth,
+  at most one extra note. A melody bar or a doubtful chord gets no name rather than a wrong one.
+- Each bar is also named by halves, so a bar that changes chord midway gets both names (C
+  then G, where naming the whole bar would read "G6"). Finer changes aren't named.
+- Names are concert pitch (with a capo or an unusual tuning, the sounding chord).
+- The name line is ignored when the tab is read back in.
+
+### Naming a chord shape (`--name-chord`)
+
+Name the chord a fret shape plays, without any input file. List the frets from the lowest
+string to the highest, `x` for a muted string:
+
+```bash
+gtrsnipe --name-chord x,3,2,0,1,0 --name-chord x,x,3,2,1,0
+#   x,3,2,0,1,0      C          C3 E3 G3 C4 E4
+#   x,x,3,2,1,0      Fmaj7      F3 A3 C4 E4
+gtrsnipe --tuning BARITONE_B --name-chord x,3,2,0,1,0      # the C shape plays G
+gtrsnipe --capo 2 --name-chord x02220                      # compact form: B
+```
+
+The shape is read in `--tuning` (or `--tuning-pitches`), with `--capo` and `--num-strings`.
+The compact form (`x32010`) works when every fret is one digit.
+
 ### Command-line help
 
 Run `gtrsnipe --help` for the complete list of options. An abridged reference is in
@@ -405,6 +446,7 @@ An abridged reference, grouped as in `gtrsnipe --help`. Run `gtrsnipe --help` fo
 - `--sustain {legato,string}`: Tab input: `legato` (default) holds each note until the next onset; `string` lets it ring until its own string is struck again, as a guitar does (at most one bar). Shapes playback and MIDI output alike.
 - `--staccato`: Do not extend note durations to the start of the next note, instead giving each note an 1/8 note duration. When converting from ASCII tab.
 - `--max-line-width MAX_LINE_WIDTH`: Max number of vertical columns per line of ASCII tab (default: 40).
+- `--name-chords`: ASCII tab output: chord names above the staff (see [Chord names over a tab](#chord-names-over-a-tab---name-chords)).
 - `--single-string {1,2,3,4,5,6}`: Force all notes onto a single string (1-6, high e to low E). Ideal for transcribing legato/tapping runs.
 - `--normalize-pitch`: Shift notes (+12 or -12) until they fit within the specified tuning and max fret range. Used when the input has many out-of-range notes that would otherwise be dropped.
 - `--debug`: Enable detailed debug logging messages.
@@ -436,6 +478,7 @@ An abridged reference, grouped as in `gtrsnipe --help`. Run `gtrsnipe --help` fo
 **Tuning information**
 - `--list-tunings`: List all available tuning names and exit.
 - `--show-tuning TUNING_NAME`: Show the notes for a specific tuning and exit.
+- `--name-chord SHAPE`: Name the chord a fret shape plays (e.g. `x,3,2,0,1,0`) in the current tuning, and exit. Repeatable (see [Naming a chord shape](#naming-a-chord-shape---name-chord)).
 
 **Player mode** (`--play`; interactive terminal): `--play`, `--view`, `--clock`, `--tempo`, `--grid`, `--window`, `--width`, `--fps`, `--orientation`, `--hand`, `--audio`, `--midi-port`, `--soundfont`, `--instrument`, `--no-clear`, `--legato`. See [Player / Visualizer](#player--visualizer).
 

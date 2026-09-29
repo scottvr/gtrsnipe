@@ -47,8 +47,19 @@ def beats_per_measure(time_signature: str) -> float:
 def segment_by_measure(
     song: Song,
     chord_tone_threshold: float = DEFAULT_CHORD_TONE_THRESHOLD,
+    keep_downbeat_bass: bool = False,
+    parts: int = 1,
 ) -> List[ChordSpan]:
-    """Return one :class:`ChordSpan` per measure spanned by the song."""
+    """Return one :class:`ChordSpan` per measure spanned by the song.
+
+    ``keep_downbeat_bass``: always count the lowest note at the measure's first
+    onset as a chord tone. In an arpeggio every note is short, so a bass struck
+    once or twice per bar falls under the duration threshold along with passing
+    notes; its position, not its duration, marks it as structural. (Used by
+    ``--name-chords``; chord charts keep the plain duration rule.)
+
+    ``parts``: split each measure into this many equal windows (2 = half bars) and
+    name each; ``ChordSpan.index`` then counts windows, not measures."""
     events = sorted(
         (e for track in song.tracks for e in track.events),
         key=lambda e: e.time,
@@ -56,25 +67,26 @@ def segment_by_measure(
     if not events:
         return []
 
-    bpm = beats_per_measure(song.time_signature)
+    window = beats_per_measure(song.time_signature) / max(1, int(parts))
     onsets = [e.time for e in events]
     end_beat = max(e.time + max(e.duration, 0.0) for e in events)
 
     # Cover every measure any note touches: a leading pickup (negative onset), the
     # last sounding beat, and an onset landing exactly on a measure boundary.
-    first_measure = min(0, math.floor(min(onsets) / bpm))
+    first_measure = min(0, math.floor(min(onsets) / window))
     last_measure = max(
-        math.ceil((end_beat - 1e-9) / bpm) - 1,   # measure of the last sounding beat
-        math.floor(max(onsets) / bpm),            # measure of the last onset
+        math.ceil((end_beat - 1e-9) / window) - 1,   # measure of the last sounding beat
+        math.floor(max(onsets) / window),            # measure of the last onset
         first_measure,
     )
 
     spans: List[ChordSpan] = []
     for m in range(first_measure, last_measure + 1):
-        lo = m * bpm
-        hi = lo + bpm
+        lo = m * window
+        hi = lo + window
         in_measure = [e for e in events if _touches_measure(e, lo, hi)]
-        spans.append(_span_for_measure(m, lo, hi, in_measure, chord_tone_threshold))
+        spans.append(_span_for_measure(m, lo, hi, in_measure, chord_tone_threshold,
+                                       keep_downbeat_bass))
     return spans
 
 
@@ -90,7 +102,8 @@ def _touches_measure(event, lo: float, hi: float) -> bool:
     return onset_here or sustains_through
 
 
-def _span_for_measure(index, start, end, events, threshold) -> ChordSpan:
+def _span_for_measure(index, start, end, events, threshold,
+                      keep_downbeat_bass: bool = False) -> ChordSpan:
     if not events:
         return ChordSpan(index=index, start_beat=start, chord=None, pitches=())
 
@@ -111,6 +124,12 @@ def _span_for_measure(index, start, end, events, threshold) -> ChordSpan:
 
     min_dur = threshold * measure_len
     kept = [pc for pc, d in pc_duration.items() if d >= min_dur]
+    if keep_downbeat_bass:
+        first = min(max(e.time, start) for e in events)
+        downbeat = [e.pitch for e in events if max(e.time, start) <= first + 1e-6]
+        bass_pc = min(downbeat) % 12
+        if bass_pc not in kept:
+            kept.append(bass_pc)
     # Fall back to every sounding pitch class if the threshold filtered too hard
     # (e.g. a bar of short notes) so we still name something.
     if len(kept) < 2:

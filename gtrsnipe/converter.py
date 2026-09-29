@@ -185,7 +185,9 @@ class MusicConverter:
                 transpose: int = 0,
                 no_articulations: bool = False,
                 single_string: Optional[int] = None,
-                mapper_config: Optional[MapperConfig] = None) -> object | str:
+                mapper_config: Optional[MapperConfig] = None,
+                name_chords: bool = False,
+                chord_tone_threshold: Optional[float] = None) -> object | str:
         """
         Converts a Song object from one format to another.
         Assumes the Song has already been parsed and filtered.
@@ -214,7 +216,8 @@ class MusicConverter:
                 for event in track.events:
                     event.time += beat_offset
 
-        output_data = self._generate(song, to_format, command_line=command_line, no_articulations=no_articulations, single_string=single_string, max_line_width=max_line_width, mapper_config=mapper_config)
+        output_data = self._generate(song, to_format, command_line=command_line, no_articulations=no_articulations, single_string=single_string, max_line_width=max_line_width, mapper_config=mapper_config,
+                                     name_chords=name_chords, chord_tone_threshold=chord_tone_threshold)
 
         return output_data
 
@@ -241,7 +244,8 @@ class MusicConverter:
             raise ValueError(f"Unsupported input format: {format}")
 
     def _generate(self, song: Song, format: str, command_line: str, no_articulations: bool = False, max_line_width = 80,
-                  single_string: Optional[int] = None, staccato: bool = False, mapper_config: Optional[MapperConfig] = None) -> object | str:
+                  single_string: Optional[int] = None, staccato: bool = False, mapper_config: Optional[MapperConfig] = None,
+                  name_chords: bool = False, chord_tone_threshold: Optional[float] = None) -> object | str:
         if format == 'mid':
             return mid.MidiGenerator.generate(song)
         elif format == 'abc':
@@ -249,7 +253,8 @@ class MusicConverter:
         elif format == 'vex':
             return vex.VextabGenerator.generate(song, no_articulations=no_articulations, single_string=single_string, mapper_config=mapper_config)
         elif format == 'tab':
-            return tab.AsciiTabGenerator.generate(song, command_line=command_line, no_articulations=no_articulations, single_string=single_string, max_line_width=max_line_width, mapper_config=mapper_config)
+            return tab.AsciiTabGenerator.generate(song, command_line=command_line, no_articulations=no_articulations, single_string=single_string, max_line_width=max_line_width, mapper_config=mapper_config,
+                                                  name_chords=name_chords, chord_tone_threshold=chord_tone_threshold)
         else:
             raise ValueError(f"Unsupported output format: {format}")
 
@@ -542,6 +547,10 @@ def main():
             exit(1)
         exit(0)    
     
+    if args.name_chord:
+        from .chords.shape import run_name_chord
+        exit(run_name_chord(args))
+
     if args.solve_tuning:
         setup_logger(logging.DEBUG if args.debug else logging.INFO)
         exit(run_solve_tuning(args) or 0)
@@ -908,7 +917,9 @@ def main():
                     max_line_width=args.max_line_width,
                     no_articulations=args.no_articulations,
                     single_string=args.single_string,
-                    mapper_config=config_for_conversion
+                    mapper_config=config_for_conversion,
+                    name_chords=args.name_chords,
+                    chord_tone_threshold=getattr(args, "chord_tone_threshold", None),
                 )
 
             if output_path.exists() and not args.yes:
