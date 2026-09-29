@@ -1,4 +1,3 @@
-$ gtrsnipe --homograph oldmac.abc@1-7 twinkle.abc@1-7 mary.abc@1-7 --homograph-mode middle -o nursery-trio.tab
 Tab homograph check: 3 songs
   A  oldmac@1-7   (7 notes, 7 onsets)
   B  twinkle@1-7  (7 notes, 7 onsets)
@@ -10,6 +9,7 @@ Free       ELIGIBLE - 5 strings, any tunings (max 12, 24 frets)
              (--homograph-mode free for its tab)
 Anchored   ELIGIBLE - an ordinary STANDARD tab of A, retuned, plays B, C (10-46 set, 25.5" scale):
              (3 strings outside safe tension; --homograph-mode anchored for its tab)
+             Playability: 30.07 mapper points per note below A's own best tab in this tuning; frets 1-15
 Middle     ELIGIBLE - every song a retune of one STANDARD-strung guitar (10-46 set, 25.5" scale); the tab is in tuning A:
              string gauge  A                  B                  C
               1 e   .010   E4   (unused)
@@ -20,6 +20,7 @@ Middle     ELIGIBLE - every song a retune of one STANDARD-strung guitar (10-46 s
               6 E   .046w  F#2   +2  22.5lb   B1    -5  10.0lb   F#2   +2  22.5lb
              B sounds -7 semitones from its input key (chosen to minimize retuning; --homograph-transpose keep holds it)
              C sounds -4 semitones from its input key (chosen to minimize retuning; --homograph-transpose keep holds it)
+             Playability: 61.71 mapper points per note below A's own best tab in this tuning; frets 1-18
 Verified   decoding the tab in each tuning reproduces every note of every song
 
 // Title: oldmac@1-7
@@ -40,6 +41,7 @@ D|-------10--|------|
 B|----13-----|------|
 F|-18--------|------|
 
+Wrote nursery-trio.tab
 
 Same tab, one tuning per song:
   gtrsnipe -i nursery-trio.tab --tuning-pitches 'F#2,B2,D3,E3,F#3,E4' -o a.mid     # A: oldmac@1-7

@@ -2,7 +2,7 @@ import logging
 from pathlib import Path
 
 from importlib.util import find_spec
-if importlib.util.find_spec("demucs") is None:
+if find_spec("demucs") is None:
     raise ImportError("The 'demucs' library is required for instrument separation. Try reinstalling gtrsnipe with [all] extras")
    
 from demucs.separate import main as demucs_run
@@ -24,8 +24,10 @@ def separate_instrument(audio_file: str, instrument: str = "guitar", model_name:
     # The default 4-stem model in Demucs is 'htdemucs', which separates
     # audio into 'bass', 'drums', 'vocals', and 'other'. Guitars, pianos,
     # and other melodic instruments are typically in the 'other' stem.
-    # We map our "guitar" input to "other" for demucs.
-    target_stem = "other" if instrument == "guitar" and model_name not in 'htdemucs_6s' else instrument
+    # We map our "guitar" input to "other" for demucs. Only the 6-stem model has a
+    # guitar stem. (This was a substring test, `model_name not in 'htdemucs_6s'`,
+    # which is False for 'htdemucs' itself, so guitar was never mapped.)
+    target_stem = "other" if instrument == "guitar" and model_name != "htdemucs_6s" else instrument
     
     logger.info(f"--- Isolating '{target_stem}' stem with Demucs... ---")
     logger.info("This may take a moment depending on the file size and your hardware...")

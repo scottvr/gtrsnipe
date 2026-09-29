@@ -5,10 +5,10 @@ swappable and testable.
 
 * :class:`PlainSink` — writes to a stream (stdout, or a recorder in tests) with
   ANSI clear-between-frames; blocking key reads via the terminal for step mode.
-  Non-blocking polling is a no-op here (live transport controls arrive with the
-  curses sink in a later phase).
-* ``CursesSink`` (later phase) will add the alternate screen, non-blocking poll,
-  resize, and guaranteed restore.
+  Non-blocking polling is a no-op here; live transport controls need the curses
+  sink.
+* :class:`CursesSink` — the interactive terminal: alternate screen, non-blocking
+  key polling (live pause, seek, tempo), resize, and a guaranteed restore.
 """
 import sys
 from typing import Callable, List, Optional

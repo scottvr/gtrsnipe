@@ -4,8 +4,12 @@ A literature search made before any novelty claim, for
 [`coupled_transposition_structure.md`](../theory/coupled_transposition_structure.md) and the homograph
 work. Compiled 2026-09-26 by a Claude research agent (web search). The "Verified" column says
 how each source was checked: *read* means the full text or PDF was opened, *abstract* or
-*listing* means less. **Re-check every citation before it goes in the paper**, especially the
-rows not marked read.
+*listing* means less, and "check level not recorded" means only the DOI was noted. **Re-check
+every citation before it goes in the paper**, especially the rows not marked read.
+
+*Revised 2026-09-28:* the StegTab row was corrected (scottvr located the source; R13); the
+bottom line and the suggested wording were updated for R03 (richness is not a useful
+similarity), R05 and R07.
 
 ## Bottom line
 
@@ -21,8 +25,10 @@ rows not marked read.
   - L1 or spread: SIMILE's `diff` (this is TV), Straus's "offset", SAD/MAD, (δ,γ)-matching.
   - Switches: Allali et al. (a penalty per local transposition), Lemström–Mäkinen (minimum
     number of pieces), edit distance on the interval encoding.
-- **Risk, richness as a similarity measure: low to moderate.** The risk is a reviewer calling it
-  obvious, not an earlier claim. Credit MNU §6 for the object and claim the use.
+- **Risk, richness as a similarity measure: low to moderate** (the risk is a reviewer calling
+  it obvious, not an earlier claim). **But R03 has since shown the use fails:** richness is a
+  weak tune-family similarity. What is left to claim is richness as a *string budget* for the
+  homograph, crediting MNU §6 for the object. R03 also suggests why nobody uses it.
 - **Risk, the tab homograph: low in the scholarship.** The ingredients are old:
   - Tablature and scordatura notation (Griffschrift) mean something only relative to a tuning:
     Biber, lyra viol, the French lute's accords nouveaux.
@@ -78,8 +84,8 @@ rows not marked read.
 
 | Citation | Defines | Relation | Verified |
 |---|---|---|---|
-| Callender, Quinn & Tymoczko, *Science* 320:346–348 (2008) | OPTIC quotient spaces | The offset vector is a voice leading in ordered pitch space; transposition invariance is the T quotient | doi:10.1126/science.1153021 |
-| Tymoczko, *Science* 313:72–74 (2006); Hall & Tymoczko, *Amer. Math. Monthly* 119(4):263–283 (2012) | Voice-leading size as norms of the displacement vector | Norms, not distinct counts | doi:10.1126/science.1126287; doi:10.4169/amer.math.monthly.119.04.263 |
+| Callender, Quinn & Tymoczko, *Science* 320:346–348 (2008) | OPTIC quotient spaces | The offset vector is a voice leading in ordered pitch space; transposition invariance is the T quotient | doi:10.1126/science.1153021 (check level not recorded) |
+| Tymoczko, *Science* 313:72–74 (2006); Hall & Tymoczko, *Amer. Math. Monthly* 119(4):263–283 (2012) | Voice-leading size as norms of the displacement vector | Norms, not distinct counts | doi:10.1126/science.1126287; doi:10.4169/amer.math.monthly.119.04.263 (check level not recorded) |
 | Straus, *Music Theory Spectrum* 25(2):305–352 (2003); *JMT* 49(1):45–108 (2005) | Uniformity as **offset** (semitones from a crisp transposition) or **consistency** (number of voices moving the same distance); fuzzy transposition | Offset is L1-like; consistency is our order-∞ measure. No "number of distinct displacements" anywhere | doi:10.1525/mts.2003.25.2.305; doi:10.1215/00222909-2007-002; definitions via De Souza 2020 ¶1.2 |
 | De Souza, "Instrumental Transformations in Biber's Mystery Sonatas," *MTO* 26.4 (2020) | Scordatura as voice leading between tunings, measured with Straus's criteria | **Very close to our per-string offset vector.** He measures how uniform a retuning is, not tab reuse across songs | read; doi:10.30535/mto.26.4.1 |
 
@@ -88,14 +94,14 @@ rows not marked read.
 | Citation | What it does | Relation | Verified |
 |---|---|---|---|
 | Allen & Goudeseune, "Topological Considerations for Tuning and Fingering Stringed Instruments," arXiv:1105.1383 (2011) | "Retuning cipher" = the difference of two tuning vectors, applied as fret offsets to *preserve* pitch; listeners must find the "hidden" tuning | **The exact dual of the homograph**: same sound from a different tab, where ours is the same tab with a different sound. Must cite | read |
-| De Souza, "Fretboard Transformations," *JMT* 62(1):1–39 (2018) | Transformations on the fret × string space | The framework the offsets live in | doi:10.1215/00222909-4450624 |
+| De Souza, "Fretboard Transformations," *JMT* 62(1):1–39 (2018) | Transformations on the fret × string space | The framework the offsets live in | doi:10.1215/00222909-4450624 (check level not recorded) |
 | De Souza 2020, on Biber's Griffschrift | Notated fingering differs from the sounding pitch; "subject and answer have the same fingering" | Same notation, different sound, but one piece and one intended tuning | as in §3 |
 | Lyra-viol tunings; French lute *accords nouveaux* | Many tunings; tablature means something only relative to one | Known to players; no deliberate encoding of two songs found | web sources only |
-| A. Anugrah, "StegTab" (steganography in guitar tablature), WordPress blog post, 2012; later academic variants (not catalogued here) | Text hidden in the fret numbers: a letter = the string's own letter name plus the fret, counting through the alphabet (A1Z26 keyed per string, so no 26-fret neck is needed). The "tab" is not meant to be music. | **Not prior art** for melodic homographs: no pitch, no tuning, no second song. It does share the additive structure (symbol = string base + fret, as pitch = open + fret), so relabelling the strings *re-keys* the message: the same idea as a homograph, applied to letters. | located by scottvr (R13, 2026-09-28); the earlier guess "hides bits in redundant fingerings" was wrong |
-| Seeger, *Musical Quarterly* 44(2):184–195 (1958); Kanno, *Contemporary Music Review* 26(2):231–254 (2007) | Prescriptive vs. descriptive notation; action notation | Frames tab as action notation | doi:10.1093/mq/XLIV.2.184; doi:10.1080/07494460701250890 |
+| Archie Anugrah, "StegTab" (steganography in guitar tablature), WordPress blog post, 2012 (URL: ✎ scottvr); later academic variants (not yet examined) | Text hidden in the fret numbers: a letter = the string's own letter name plus the fret, counting through the alphabet (A1Z26 keyed per string, so no 26-fret neck is needed). The "tab" is not meant to be music. | **Not prior art** for melodic homographs: no pitch, no tuning, no second song. It does share the additive structure (symbol = string base + fret, as pitch = open + fret), so relabelling the strings *re-keys* the message: the same idea as a homograph, applied to letters. | located by scottvr (R13, 2026-09-28); the earlier guess "hides bits in redundant fingerings" was wrong |
+| Seeger, *Musical Quarterly* 44(2):184–195 (1958); Kanno, *Contemporary Music Review* 26(2):231–254 (2007) | Prescriptive vs. descriptive notation; action notation | Frames tab as action notation | doi:10.1093/mq/XLIV.2.184; doi:10.1080/07494460701250890 (check level not recorded) |
 | Goodman, *Languages of Art*, 2nd ed. (1976), 186–87 | Score compliance; semantic disjointness; the "Beethoven's Fifth to Three Blind Mice" sorites | A tab without a tuning violates semantic disjointness; the reductio is a one-step counterpart to his sorites | via the Stanford Encyclopedia of Philosophy |
 | Gary, 9 Vand. J. Ent. & Tech. L. 831 (2007); Simon, 50 Ariz. L. Rev. 611 (2008); Kempema, 49 Wm. & Mary L. Rev. 2265 (2008) | Tabs as infringement / fair use | None raises tuning ambiguity (Simon and Kempema full texts searched for "tuning") | Simon, Kempema read; Gary as cited |
-| Rahmatian, "The Musical Work in Copyright Law," *GRUR Int.* 73(1):18–33 (2024) | "Similarity of notation without similarity of the listening experience points away from infringement" | The doctrine the construction instantiates | doi:10.1093/grurint/ikad105 |
+| Rahmatian, "The Musical Work in Copyright Law," *GRUR Int.* 73(1):18–33 (2024) | "Similarity of notation without similarity of the listening experience points away from infringement" | The doctrine the construction instantiates | doi:10.1093/grurint/ikad105 (check level not recorded) |
 | Selfridge-Field, 16 Colo. Tech. L.J. 249 (2018); Cronin, *Computing in Musicology* 11:187–210 (1998); Fishman, 131 Harv. L. Rev. 1861 (2018) | Notation vs. sound; melody-centrism | No tab/tuning argument found | Selfridge-Field read; others via listings |
 | *Skidmore v. Led Zeppelin*, 952 F.3d 1051 (9th Cir. 2020) (en banc); *Williams v. Gaye*, 895 F.3d 1106 (9th Cir. 2018); *Gray v. Hudson*, 28 F.4th 87 (9th Cir. 2022) | Under the 1909 Act the deposit copy defines the work; commonplace building blocks | Hook: a tab as the deposit copy would not pin the work down. (The appeal is *Gray v. Hudson*; the district court case is *Gray v. Perry*) | opinions seen |
 
@@ -108,6 +114,8 @@ different song, tablature steganography via retuning, copyright plus scordatura 
 tuning, cross-tuning in fiddle and banjo traditions, puzzle canons.
 
 ## 5. Math sources
+
+(DOIs recorded; whether each source was read was not. Re-check before citing.)
 
 - **Sumsets and entropy.**
   - Ruzsa, "Sumsets and entropy," *Random Structures & Algorithms* 34(1):1–10 (2009),
@@ -142,15 +150,24 @@ tuning, cross-tuning in fiddle and banjo traditions, puzzle canons.
 
 ## Suggested wording (for the paper)
 
+*Revised 2026-09-28 for R03, R05 and R07; the earlier version claimed the vocabulary as a
+similarity measure, which R03 then failed to support.*
+
 > Mäkinen, Navarro and Ukkonen (2005) define the set of pointwise transpositions between
 > aligned strings but use only its mode (transposition-invariant Hamming distance);
 > transposition-aware alignment (Allali et al. 2007) and multi-track splitting (Lemström &
-> Mäkinen 2005) charge each *change* of transposition. We instead count the *vocabulary* of
-> offsets, a Hill number of order 0. Its triangle inequality, like that of its order-1
-> counterpart, follows from elementary sumset and subadditivity bounds, and no other Rényi
-> order qualifies, which reflects the classical characterization of Aczél, Forte and Ng
-> (1974). On a fretted instrument this vocabulary has a physical reading. Building on the
-> per-string retuning vectors of Allen & Goudeseune (2011) and De Souza's (2018, 2020)
-> treatment of scordatura as voice leading, we show that one tablature can denote unrelated
-> melodies under two tunings: a concrete case of Goodman's semantic-ambiguity problem for
-> notation that, to our knowledge, the copyright literature on tablature has not addressed.
+> Mäkinen 2005) charge each *change* of transposition. On a fretted instrument, the *number*
+> of distinct offsets (a Hill number of order 0) has a physical reading: it is a lower bound
+> on the strings two melodies need to share one tablature. Building on the per-string retuning
+> vectors of Allen & Goudeseune (2011) and De Souza's (2018, 2020) treatment of scordatura as
+> voice leading, we give an exact criterion for when one tablature denotes two given melodies
+> under two tunings, a solver that finds such tablatures, and their frequency in folk and
+> popular corpora. As a melodic similarity measure the offset vocabulary is weak: on
+> tune-family retrieval it is outperformed by transposition-invariant Hamming distance. Its
+> metric properties follow from elementary sumset and subadditivity bounds (no other Rényi
+> order qualifies, per Aczél, Forte and Ng 1974), and survive optimized alignment by the
+> composition argument familiar from the discrete Fréchet distance. The construction is a
+> concrete case of Goodman's semantic-ambiguity problem for notation that, to our knowledge,
+> the copyright literature on tablature has not addressed. It is sharpest for short passages
+> and for tablature stripped of its tuning; a long tablature with its tuning stated nearly
+> determines its music.

@@ -8,9 +8,10 @@ For each phrase length (notes), among same-rhythm pairs from different works:
   unrelated-sounding    ... with more distinct pitch pairs than strings, no single
                         transposition explaining half the notes, contour agreement
                         <= 0.6, and no mechanical figure (arpeggio, ostinato...)
-  playable              ... times the share of sampled pairs the full solver
-                        places on a real guitar: one tab of A in STANDARD, the
-                        other song a retune of it, string physics on
+  placeable             ... times the share of sampled pairs the full solver
+                        places on a real guitar with string tension OK: one tab
+                        of A in STANDARD, the other song a retune of it. (Not
+                        necessarily comfortable to play: see R04 "Playability".)
   no restring           ... the same without swapping any string's gauge
 
 Run:  python docs/research/results/r04_plot.py scan.json [more.json ...] [--out fig.png] [--min-sample 10]
@@ -76,7 +77,7 @@ def main():
     ax.plot(xs, dist, label='... and the passages sound unrelated', color='#ff7f0e',
             linewidth=2.5, linestyle='--')
     if play:
-        ax.plot(*zip(*play), label='... and playable: A in STANDARD, B a retune',
+        ax.plot(*zip(*play), label='... and placeable (string tension OK): A in STANDARD, B a retune',
                 color='#2ca02c', linewidth=2, marker='o', markersize=4)
         ax.plot(*zip(*norestr), label='... with no string re-gauged', color='#d62728',
                 linewidth=2, linestyle=':', marker='s', markersize=4)

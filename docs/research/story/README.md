@@ -29,7 +29,7 @@ separately, or cut up into posts.
 | 2026-09-25 | v0.5.0 | unified I/O, profiles, custom tunings, **`--solve-tuning`** |
 | 2026-09-26 | v0.6.0 | **`--homograph`** and string physics; the structure note; the Dull Protocol |
 | 2026-09-26 | v0.6.1–v0.6.4 | the correctness sweep; research tools, literature survey, R03, R07, R04 |
-| 2026-09-27 | v0.6.5 | R05: published tabs as written |
+| 2026-09-27 | v0.6.5 | R05: real fingerings, as written (gtrsnipe's wiki tabs) |
 | 2026-09-27 | v0.6.6–v0.6.9 | playability (F06), `--analyze`, note lengths, instruments |
 | 2026-09-28 | | the StegTab source found; these docs organized |
 

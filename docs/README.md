@@ -15,8 +15,8 @@ A map of everything under `docs/`, by who it's for.
 
 | doc | what it covers |
 |---|---|
-| [`DESIGN-viterbi-mapper.md`](app/DESIGN-viterbi-mapper.md) | The fretboard mapper as dynamic programming over a trellis (v0.3.0), replacing the greedy per-note choice. |
-| [`DESIGN-unified-io.md`](app/DESIGN-unified-io.md) | Renderer × sink × schedule: one pipeline for files, the pager and the player; the event-driven transport (v0.5.0). |
+| [`DESIGN-viterbi-mapper.md`](app/DESIGN-viterbi-mapper.md) | The fretboard mapper as dynamic programming over a trellis (v0.3.0), replacing the greedy per-chord choice (still available with `--optimizer greedy`). |
+| [`DESIGN-unified-io.md`](app/DESIGN-unified-io.md) | Renderer × sink × schedule: one pipeline for files and the interactive player; the event-driven transport (v0.5.0), note lengths (v0.6.8). |
 | [`DESIGN-homograph.md`](app/DESIGN-homograph.md) | `--homograph`: the eligibility theorem, the solver's modes, string physics, playability, alignment and re-rhythm. |
 
 ## The research: [`research/`](research/)
@@ -31,4 +31,5 @@ the story of how it happened. Start at [`research/README.md`](research/README.md
 - [`PARKING-LOT.md`](dev/PARKING-LOT.md): new ideas waiting for triage.
 - [`archive/`](dev/archive/): the v0.3.0-era plans and audit, frozen.
 
-The images in this folder (`gtrsnipe-*.png`) are the README's logos.
+The images in this folder (`gtrsnipe-*.png`) are logo assets.
+[`dev/DOCS-AUDIT.md`](dev/DOCS-AUDIT.md) records the state-of-the-docs audit of 2026-09-28.

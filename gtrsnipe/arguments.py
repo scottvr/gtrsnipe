@@ -6,11 +6,12 @@ from pathlib import Path
 from typing import List, Optional
 
 from .core.config import MapperConfig
+from .core.types import Tuning
 
-# Single source of truth for tuning names, shared by every CLI/mode.
-TUNING_CHOICES = ['STANDARD', 'E_FLAT', 'DROP_D', 'OPEN_G', 'BASS_STANDARD', 'BASS_DROP_D',
-                  'BASS_E_FLAT', 'SEVEN_STRING_STANDARD', 'BARITONE_B', 'BARITONE_A',
-                  'BARITONE_C', 'C_SHARP_STANDARD', 'OPEN_C6', 'DROP_C', 'PIANO']
+# Single source of truth for tuning names, shared by every CLI/mode: every named
+# tuning (derived from the enum, so --tuning and --list-tunings can't drift apart
+# again; six tunings were once listed but rejected), plus PIANO for MIDI output.
+TUNING_CHOICES = [t.name for t in Tuning] + ['PIANO']
 
 QUANTIZATION_CHOICES = [0.0125, 0.025, 0.0625, 0.125, 0.25, 0.5, 1.0]
 
@@ -110,7 +111,8 @@ def add_mapper_args(target) -> None:
         help='Max time in beats between notes for a legato phrase (h/p) (default: 0.5).')
     target.add_argument(
         '--tapping-run-threshold', type=int, default=2,
-        help='Min number of notes in a run to be considered for tapping (default: 2).')
+        help='With --single-string: runs longer than this many notes are considered for '
+             'tapping (default: 2, i.e. runs of 3 or more).')
     target.add_argument(
         '--dedupe', action='store_true',
         help="Enable de-duplication of notes with the same pitch within a chord. "
@@ -505,13 +507,13 @@ def setup_parser() -> ArgumentParser:
         '--min-note-override',
         type=str,
         default=None,
-        help="Override the calculated lowest note for frequency constraining (e.g., 'E2'). Requires --constrain-frequency."
+        help="Override the calculated lowest note for frequency constraining (e.g., 'E2'). Ignored with --no-constrain-frequency."
     )
     instrument_group.add_argument(
         '--max-note-override',
         type=str,
         default=None,
-        help="Override the calculated highest note for frequency constraining (e.g., 'E4'). Requires --constrain-frequency."
+        help="Override the calculated highest note for frequency constraining (e.g., 'E4'). Ignored with --no-constrain-frequency."
     )
 
     pipeline_group = parser.add_argument_group('Audio-to-MIDI Pipeline Options')
@@ -521,19 +523,21 @@ def setup_parser() -> ArgumentParser:
         type=str,
         default=None,
         choices=['guitar', 'bass', 'drums', 'vocals', 'piano', 'other'],
-        help="The instrument stem to isolate with Demucs. 'guitar' defaults to the 'other' stem."
+        help="The instrument stem to isolate with Demucs. 'guitar' is its own stem with the default "
+             "model (htdemucs_6s), and the 'other' stem with 4-stem models."
     )
     pipeline_group.add_argument(
         '--demucs-model',
         type=str,
         default='htdemucs_6s',
-        help="The demucs model to use for separation (e.g., htdemucs, htdemucs_fti, htdemucs_6s, mdx_extra)."
+        help="The demucs model to use for separation (e.g., htdemucs_6s, htdemucs, htdemucs_ft, mdx_extra). "
+             "Only htdemucs_6s has a guitar stem; with the others, --stem-track guitar uses the 'other' stem."
     )
     pipeline_group.add_argument(
         '--no-constrain-frequency',
         default=False,
         action='store_true',
-        help="Constrain pitch detection to the frequency range of the selected tuning."
+        help="Audio input: don't constrain pitch detection to the tuning's range (constraining is on by default)."
     )
     pipeline_group.add_argument(
        '--low-pass-filter',
@@ -723,7 +727,7 @@ def setup_parser() -> ArgumentParser:
         '--no-pre-quantize',
         default=False,
         action='store_true',
-        help='Force a pre-quantization pass, snapping all notes to the quantization grid before mapping.'
+        help='Skip the default pre-quantization pass (which snaps all notes to the quantization grid before mapping).'
     )
     mapper_group.add_argument(
         '--dynamic-quantize',

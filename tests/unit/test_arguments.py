@@ -104,3 +104,13 @@ def test_converter_output_optional_with_play():
     # -o is no longer required at the parser level (validated in main w/ --play).
     args = setup_parser().parse_args(["-i", "x.mid", "--play"])
     assert args.output is None
+
+
+def test_every_named_tuning_is_accepted_by_tuning():
+    # six tunings (DADGAD, DROP_B, D_STANDARD, OPEN_D, OPEN_E, SEVEN_STRING_DROP_A) were
+    # listed by --list-tunings but rejected by --tuning: the choices were a hand-kept list
+    from gtrsnipe.arguments import setup_parser
+    from gtrsnipe.core.types import Tuning
+    p = setup_parser()
+    for t in Tuning:
+        assert p.parse_args(["--tuning", t.name]).tuning == t.name

@@ -18,7 +18,10 @@ needs exact richness as a string budget, not as a similarity.
 What the data do say is **the more a measure concentrates on the single dominant offset, the
 better it finds variants**:
 
-1 − C₁ (TI-Hamming) ≥ 1 − C₂ ≈ entropy > 1 − C₃ > trimmed vocabulary (75%) > 1 − C₆ ≈ vocabulary (90%) > richness.
+1 − C₁ (TI-Hamming) ≥ 1 − C₂ ≈ entropy > 1 − C₃ > trimmed vocabulary (75%) > 1 − C₆ ≈ vocabulary (90%) > richness
+
+(the order on MTC-FS-INST; on MTC-ANN at N = 64 the gap between 1 − C₆ and the 90% vocabulary is
+wider, 0.028, so the last ≈ holds only at scale).
 
 Variants of a tune mostly keep one transposition and depart from it here and there, so a
 measure that counts *every* departing offset (Hill order 0) is dominated by noise. That is the
@@ -86,7 +89,7 @@ which is what a model does when a feature carries no stable extra signal.
 ## MTC-FS-INST, scale check
 
 There are 18,109 melodies, 1,000 random labelled queries among 12,344 labelled melodies in 5,102
-families, and 5,765 unlabelled distractors. Chance MAP is 0.001; the grid is N = 64.
+families, and 5,765 unlabelled distractors. Chance MAP is 0.0006; the grid is N = 64.
 
 | measure | MAP (95% CI) | AUC | MAP − TI-Hamming (95% CI) |
 |---|---|---|---|
@@ -103,9 +106,10 @@ families, and 5,765 unlabelled distractors. Chance MAP is 0.001; the grid is N =
 | 1 − C₆ | 0.322 | 0.850 | −0.151 |
 
 The pair models give 0.470 for the baselines and 0.473 with the candidates added: a gain of
-**+0.003 (95% CI +0.000 to +0.006)**. The order of the measures is the same as on MTC-ANN.
-Richness falls further behind at scale, because a large corpus is full of unrelated melodies
-that happen to share a small offset vocabulary.
+**+0.003 (95% CI +0.000 to +0.006)**. The candidates keep their order from MTC-ANN, but
+richness now falls below the switch count and total variation (0.267 against 0.316 and 0.299),
+and 1 − C₆ below the no-transposition floor. Richness falls further behind at scale, because a
+large corpus is full of unrelated melodies that happen to share a small offset vocabulary.
 
 ## Limits
 

@@ -1,6 +1,6 @@
 # gtrsnipe backlog
 
-The single list of open work, as of **v0.6.9 (2026-09-27)**. It collates the old parking
+The single list of open work, as of **v0.6.10 (2026-09-28)**. It collates the old parking
 lot, the CHANGELOG's known limitations, the design docs, the v0.3.0-era audit and plans,
 GitHub issues, and findings from recent sessions.
 
@@ -44,8 +44,10 @@ track. Triage at the end of this step: the parking lot was empty.
 ### Step 2: the research track ✓ (v0.6.2–v0.6.5)
 
 R01 corpus loaders and R02 the offset profile (v0.6.2); R03 the Meertens experiment and R07
-the alignment proof (v0.6.3); R04 the corpus homograph scan (v0.6.4); R05 published tabs as
-written (v0.6.5); R06 the literature search (v0.6.2). Results, proofs and the literature survey are in [`docs/research/`](../research/README.md). R08 and R09 stay open, low priority.
+the alignment proof (v0.6.3); R04 the corpus homograph scan (v0.6.4); R05 real fingerings as
+written, on gtrsnipe's wiki tabs (v0.6.5); R06 the literature search (v0.6.2). Results,
+proofs and the literature survey are in [`docs/research/`](../research/README.md). R08 and R09
+stay open, low priority.
 
 **Triage at the end of this step (2026-09-27).** The parking lot's six entries became:
 - B07, the MIDI track-name bug;
@@ -84,6 +86,7 @@ changes, P04 pager search, P05 other renderers.
 | R11 | **LMD-full**: build the cache (about 3 h) and scan it. Mostly unattended machine time; R04's curves already look saturated. | L (machine) | R04, parking lot |
 | R12 | **Richness under its own optimal warping** as the fair similarity test for R03: a minimum-label path per pair, exact for k ≤ 6. Unlikely to overturn R03. | M–L | R03 "Limits", parking lot |
 | R13 | **Literature search for the stutter-invariance principle** (*scottvr, in progress; StegTab identified 2026-09-28*): the checklist in `PROOF-alignment.md`, "Citations to verify". Needed before any novelty claim about the general statement. | S–M | R07, parking lot |
+| R14 | **Third-party tabs as written**: R05's natural next input (tabs from community sites, checked against a reference MIDI). Kept local for copyright reasons. Pairs with the tab checker (parking lot). | M | R05, docs audit |
 
 ### Player and audio
 
@@ -123,6 +126,6 @@ changes, P04 pager search, P05 other renderers.
 |---|---|---|---|
 | H01 | **The golden gate has no local cases on this machine.** Add the wiki examples (Mr Crowley, Bach Cello Prelude, Asturias, Barney Miller) as local golden cases. The expected tabs are now in `docs/wiki/` and `examples/aswritten/`, but the MIDI/audio inputs aren't (they're on the machine in pieces). | S | RELEASE-PLAN v0.3.0 |
 | H03 | Wiki: document v0.6.0 (homographs, string physics, `.tab` header behavior). | S–M | release |
-| H05 | **Docs reorg** (interlude in step 3): `docs/app/` (how gtrsnipe works), `docs/research/` (theory, literature, results, story), `docs/dev/` (process); maps in `docs/README.md` and `docs/research/README.md`. | S | scottvr, 2026-09-28 |
-| H06 | **State-of-the-docs audit**: every doc marked current, stale or wrong, with the fixes needed; agree the list, then apply it. | M | scottvr, 2026-09-28 |
-| H07 | **The story** (`docs/research/story/`): from the idea to the research, in chapters scottvr can link from an HTML page, as fodder for posts and the paper. | M | scottvr, 2026-09-28 |
+| H05 | ✓ v0.6.10 **Docs reorg** (interlude in step 3): `docs/app/` (how gtrsnipe works), `docs/research/` (theory, literature, results, story), `docs/dev/` (process); maps in `docs/README.md` and `docs/research/README.md`. | S | scottvr, 2026-09-28 |
+| H06 | ✓ v0.6.10 **State-of-the-docs audit**: every doc marked current, stale or wrong, with the fixes needed; agree the list, then apply it. | M | scottvr, 2026-09-28 |
+| H07 | **The story** (first draft v0.6.10; awaiting scottvr's accounts) (`docs/research/story/`): from the idea to the research, in chapters scottvr can link from an HTML page, as fodder for posts and the paper. | M | scottvr, 2026-09-28 |

@@ -10,6 +10,45 @@ and Cargo apply to 0.x version ranges. Full SemVer applies from 1.0.0. The publi
 is the CLI flags and the file formats gtrsnipe reads and writes; report wording is
 not part of it.
 
+## [0.6.10] — 2026-09-28
+
+A docs interlude in step 3 (backlog H05–H07), and the bugs it turned up.
+
+### Fixed
+- **`--stem-track` crashed on every run since v0.3.0.** A NameError in the Demucs wrapper
+  (`importlib` was never imported) stopped it before separation began. It also never mapped
+  "guitar" to the "other" stem for 4-stem models: the check was a substring test that the
+  4-stem `htdemucs` itself passed. Tests added, with Demucs stubbed.
+- **`--tuning` rejected six tunings that `--list-tunings` shows** (DADGAD, DROP_B,
+  D_STANDARD, OPEN_D, OPEN_E, SEVEN_STRING_DROP_A). The choices are now derived from the tuning
+  list, with a test.
+- **Help texts that said the opposite of what the flag does:** `--no-pre-quantize`,
+  `--no-constrain-frequency`, `--min/--max-note-override` (which cited a removed flag),
+  `--tapping-run-threshold` (off by one), and `--demucs-model` (a misspelled model name).
+
+### Documentation
+- **`docs/` reorganized** into `app/` (how gtrsnipe works), `research/` (theory, literature,
+  results, story) and `dev/` (process), with a map in `docs/README.md` and a reading order
+  plus a claims table in `docs/research/README.md`.
+- **A state-of-the-docs audit** (`docs/dev/DOCS-AUDIT.md`) checked every doc against the code
+  and each other, and its fixes are applied:
+  - the README's options list, examples and tuning list are corrected (several documented
+    flags and commands no longer existed);
+  - the wiki snapshot's reference page is rewritten, and its example pages note that they
+    show v0.2's greedy mapper;
+  - the design docs are current;
+  - the homograph examples' reports now include playability.
+- **R05 correction:** the Bach measure labelled "default mapper scoring" was the wiki's
+  second step (`--string-switch-penalty 0`). It's relabelled, and the true v0.2 default (all on
+  the A string) is added: it has no as-written partner at all beyond transpositions of itself.
+  One measure, three fingerings, from fully determined to maximally ambiguous.
+- **The structure note's revision 2:** provenance, and "answered by" boxes pointing to R03,
+  R06 and R07. The literature survey's suggested paper wording is revised for R03 and R07.
+- **Provenance of the research docs**, including a third model: Gemini reviewed the
+  alignment proof and contributed the figure template.
+- New script `docs/research/results/r04_playability.py` reproduces R04's playability counts.
+- R04's figures are relabelled: "placeable (string tension OK)", not "playable".
+
 ## [0.6.9] — 2026-09-27
 
 Step 3 continues: P03 from `docs/dev/BACKLOG.md`.
@@ -159,7 +198,7 @@ Step 2 of `docs/dev/BACKLOG.md`, continued: R03 and R07.
     measure.
 - `docs/research/theory/PROOF-alignment.md` and `alignment_check.py` (R07): under optimized
   (warping-path) alignment, log-richness, switch count and total variation stay
-  pseudometrics; entropy and modal share don't (a 3-note counterexample).
+  pseudometrics; entropy and modal share don't (a counterexample on melodies of 1, 2 and 2 notes).
   - `coupled_transposition_structure.md` gets pointers in §4.4 and §7.
 
 ## [0.6.2] — 2026-09-26
