@@ -4,8 +4,8 @@
     gtrsnipe-research [--data DIR] corpus build essen
     gtrsnipe-research corpus info essen
     gtrsnipe-research corpus show essen:deut4659
-    gtrsnipe-research profile essen:deut4659#p1 essen:deut4659#p3
-    gtrsnipe-research profile a.mid:2@1-16 "C4 D4 E4 C4" --rhythm sequence
+    gtrsnipe-research profile essen:deut4659#p1 essen:deut4659#p3 --subdivide 2
+    gtrsnipe-research profile a.mid:2@1-4 "C4 D4 E4 C4" --rhythm sequence
     gtrsnipe-research families mtc-ann
     gtrsnipe-research scan essen mtc-fs --solve 50 --tabs out/
     gtrsnipe-research aswritten song.tab --corpora essen mtc-fs lakh-clean
