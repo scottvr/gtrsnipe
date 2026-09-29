@@ -10,6 +10,35 @@ and Cargo apply to 0.x version ranges. Full SemVer applies from 1.0.0. The publi
 is the CLI flags and the file formats gtrsnipe reads and writes; report wording is
 not part of it.
 
+## [0.6.11] — 2026-09-29
+
+Step 3 continues: C01 with C06 from `docs/dev/BACKLOG.md`.
+
+### Added
+- **`--name-chords`: chord names above an ASCII tab (C01).**
+  - A name sits over the first note of its bar. It's written where the chord changes and
+    again at the start of each line, and wraps with `--max-line-width`.
+  - Bars are named as in chord charts, with two refinements:
+    - the lowest note at the start of a bar always counts, so an arpeggio's bass isn't
+      lost among short notes (Bach's Prelude reads G, C/G);
+    - each bar is also named by halves, so a bar that changes chord midway gets both names.
+  - Only plainly spelled chords are named (`core.chords.is_clear`): every chord tone
+    except perhaps the fifth, at most one extra note, and exact power chords. A melody bar
+    or a doubtful chord gets no name rather than a wrong one.
+  - Names are concert pitch. The name line is ignored when the tab is read back in.
+- **`--name-chord SHAPE`: name a fret shape without an input file (C06, scottvr's idea).**
+  - The frets are listed from the lowest string, `x` for muted:
+    `gtrsnipe --name-chord x,x,3,2,1,0` prints Fmaj7 and its notes.
+  - The shape is read in `--tuning` or `--tuning-pitches`, with `--capo` and
+    `--num-strings`, so the same shape names the chord it plays on your guitar: the C
+    shape is G on a baritone.
+  - The option can be repeated, and the compact `x32010` form works when every fret is
+    one digit.
+
+### Changed
+- `chords.segment.segment_by_measure` gains `keep_downbeat_bass` and `parts` (both off by
+  default, so chord charts are unchanged).
+
 ## [0.6.10] — 2026-09-28
 
 A docs interlude in step 3 (backlog H05–H07), and the bugs it turned up.

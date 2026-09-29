@@ -99,3 +99,22 @@ def identify(pitches: Iterable[int], bass: Optional[int] = None) -> Optional[Cho
         return None
     root, suffix = best
     return Chord(root=root, quality=suffix, bass=bass_pc)
+
+
+def is_clear(chord: Chord, pitches: Iterable[int]) -> bool:
+    """True when ``pitches`` spell ``chord`` plainly: every chord tone present except
+    perhaps the fifth, at most one pitch class outside the chord, and at least three
+    chord tones. A power chord must be exactly its root and fifth: with anything else
+    added it is some other chord with a missing third. :func:`identify` always
+    returns its best guess, which a chart needs for every bar; this is the stricter
+    test for places where no name beats a doubtful one (``--name-chords``)."""
+    pcs = {p % 12 for p in pitches}
+    tones = {(chord.root + iv) % 12 for iv in chord.intervals}
+    if chord.quality == "5":
+        return pcs == tones
+    missing = tones - pcs
+    if missing - {(chord.root + 7) % 12}:
+        return False
+    if len(pcs - tones) > 1:
+        return False
+    return len(pcs & tones) >= 3
