@@ -53,15 +53,23 @@ notes are in git history.
        travel". The Viterbi fingering depends only on weight *ratios*. Today a string switch
        = 1.7 frets of travel, a fret above the sweet spot = 1.7 (17 on the low strings), a
        fretted-open note = 6.7, chord span = 33 per fret.
-    3. **Separate the kinds of knob.** Trade-offs (search log-ratios) are different from
+    3. **Which weights are structural?** (scottvr, 2026-09-28) Some weights may matter to the
+       scorer's basic behavior whatever the player's taste or the genre; others are
+       preferences. Find out which, from the code. **Also quantify whether the Viterbi mapper's
+       improvement over the old greedy one generalizes.** The docs audit found that under
+       Viterbi, the wiki's Asturias steps 2–5 no longer show the problems that the long
+       command line was built to fix, and the step-5 flags already give nearly the final tab.
+       Measure it across many songs (e.g. the mapper's score per note and hand travel, greedy vs
+       Viterbi, on a corpus sample), not on one piece.
+    4. **Separate the kinds of knob.** Trade-offs (search log-ratios) are different from
        priorities disguised as big numbers: e.g. `--let-ring-bonus 210` = 70 frets of travel,
        i.e. "ringing always wins". Priorities are a lexicographic ordering, better expressed
        as one. Structural settings (sweet-spot bounds, unplayable span, flags) are discrete.
        `barre_bonus`/`barre_penalty` multiply the same count, so only their difference
        matters: one knob, not two.
-    4. **Sensitivity sweep**: vary one knob at a time on a few tricky songs and count the
+    5. **Sensitivity sweep**: vary one knob at a time on a few tricky songs and count the
        *distinct* tabs.
-    5. **Open strings** (found by F03's `--analyze`, 2026-09-27): with default weights an open
+    6. **Open strings** (found by F03's `--analyze`, 2026-09-27): with default weights an open
        string scores no better than a fretted note in the sweet spot. An open-G riff scored
        the same in OPEN_G (all open) as in OPEN_E (a barre at fret 3). `--prefer-open` only
        penalizes fretting a pitch that exists as an open string.
@@ -107,13 +115,8 @@ notes are in git history.
     - This fits the weights audit's exchange-rate units: "I'd drop a doubled root rather
       than move 5 frets".
   - Report what was dropped, the way the homograph report discloses its liberties.
-- **Code bugs found by the docs audit (H06, 2026-09-28)**, see `DOCS-AUDIT.md`:
-  - `--tuning` rejects six tunings that `--list-tunings` shows (DADGAD, DROP_B, D_STANDARD,
-    OPEN_D, OPEN_E, SEVEN_STRING_DROP_A): they're missing from `TUNING_CHOICES`.
-  - Inverted help text: `--no-constrain-frequency` and `--no-pre-quantize` describe the
-    opposite of what they do; `--min/--max-note-override` cite a flag that no longer exists;
-    `--tapping-run-threshold` is off by one.
+- **Code bugs found by the docs audit (H06, 2026-09-28)**, see `DOCS-AUDIT.md`. Fixed
+  already (v0.6.10): the six tunings `--tuning` rejected, and the inverted or off-by-one help
+  texts. Still open:
   - `--bass` overrides any `--tuning`, including `BASS_DROP_D`.
-  - Dead or stale: `player/clock.py` (nothing imports it); `sink.py` calls CursesSink "later
-    phase"; `config.py` says greedy is kept "for one release"; `research/cli.py`'s docstring
-    puts `--data` after the subcommand.
+  - `player/clock.py` is dead code (nothing imports it).

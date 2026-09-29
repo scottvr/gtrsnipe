@@ -1,7 +1,7 @@
 """``gtrsnipe-research``: corpus caches and offset profiles.
 
     gtrsnipe-research corpus list
-    gtrsnipe-research corpus build essen [--data DIR]
+    gtrsnipe-research [--data DIR] corpus build essen
     gtrsnipe-research corpus info essen
     gtrsnipe-research corpus show essen:deut4659
     gtrsnipe-research profile essen:deut4659#p1 essen:deut4659#p3

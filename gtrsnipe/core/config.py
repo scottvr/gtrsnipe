@@ -56,7 +56,7 @@ class MapperConfig:
     diagonal_span_penalty: bool = False
 
     # Fretboard optimizer: "viterbi" (global DP optimum, default) or "greedy"
-    # (legacy per-step argmax, kept behind the flag for one release).
+    # (legacy per-step argmax, kept behind the flag to reproduce older fingerings).
     optimizer: str = "viterbi"
     # Pathological safety valve for per-chord candidate enumeration. Expected to
     # never fire on real music; if it does, the DP logs a warning and that
