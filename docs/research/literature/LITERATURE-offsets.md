@@ -23,7 +23,8 @@ similarity), R05 and R07. *Revised 2026-09-29:* a computer-vision section (§6).
   counts distinct offsets.**
   - Mode: MNU's Hamming distance, SIAM/P2, Straus's "consistency", jSymbolic's "prevalence of
     most common vertical interval".
-  - L1 or spread: SIMILE's `diff` (this is TV), Straus's "offset", SAD/MAD, (δ,γ)-matching.
+  - L1 or spread: SIMILE's `diff` (a normalized similarity built on the L1 term that is TV),
+    Straus's "offset", SAD/MAD, (δ,γ)-matching.
   - Switches: Allali et al. (a penalty per local transposition), Lemström–Mäkinen (minimum
     number of pieces), edit distance on the interval encoding.
 - **Risk, richness as a similarity measure: low to moderate** (the risk is a reviewer calling
@@ -75,7 +76,8 @@ similarity), R05 and R07. *Revised 2026-09-29:* a computer-vision section (§6).
 
 | Citation | Defines | Relation | Verified |
 |---|---|---|---|
-| Müllensiefen & Frieler, *Computing in Musicology* 13:147–176 (2004); 2006 chapter, doi:10.1007/3-540-34416-0_32; SIMILE docs v0.3 (2006) | About 50 measures | **`diff`/`diffexp` = L1 distance between interval sequences = our TV: prior art for TV.** Transposition is chosen from the differences of the highest, lowest, most common and mean pitches. Their "count distinct" counts n-grams, not offsets | SIMILE docs read; CM13 via a listing |
+| Müllensiefen & Frieler, *Computing in Musicology* 13:147–176 (2004); 2006 chapter, doi:10.1007/3-540-34416-0_32; SIMILE docs v0.3 (2006) | About 50 measures | **`diff`/`diffexp` are normalized similarities built on the L1 distance between interval
+sequences, which is our TV (unnormalized): prior art for TV's core term.** Transposition is chosen from the differences of the highest, lowest, most common and mean pitches. Their "count distinct" counts n-grams, not offsets | SIMILE docs read; CM13 via a listing |
 | Janssen, van Kranenburg & Volk, *JNMR* 46(2):118–134 (2017) | Six measures: CD, CBD, ED, LA, SIAM, WT | SIAM = max_T \|MTP\|/n (a mode, unaligned). Transposition is fixed by pitch-histogram intersection (van Kranenburg, Volk & Wiering, *JNMR* 42(1):1–18, 2013) | doi:10.1080/09298215.2017.1316292; content read in Janssen's 2018 thesis, ch. 4 |
 | Velardo, Vallati & Jan, *Computer Music Journal* 40(2):70–83 (2016) | Survey and taxonomy | Not checked in full | abstract; doi:10.1162/COMJ_a_00359 |
 | Lewin, "Re: Intervallic relations between two collections of notes," *JMT* 3(2):298–301 (1959); *GMIT* (1987) | IFUNC(X,Y)(i) = #{(x,y): y − x = i} | **Confirmed unaligned (all pairs).** Our δ histogram is IFUNC restricted to the alignment diagonal | doi:10.2307/842856; definition via secondary sources |
@@ -87,7 +89,7 @@ similarity), R05 and R07. *Revised 2026-09-29:* a computer-vision section (§6).
 |---|---|---|---|
 | Callender, Quinn & Tymoczko, *Science* 320:346–348 (2008) | OPTIC quotient spaces | The offset vector is a voice leading in ordered pitch space; transposition invariance is the T quotient | doi:10.1126/science.1153021 (check level not recorded) |
 | Tymoczko, *Science* 313:72–74 (2006); Hall & Tymoczko, *Amer. Math. Monthly* 119(4):263–283 (2012) | Voice-leading size as norms of the displacement vector | Norms, not distinct counts | doi:10.1126/science.1126287; doi:10.4169/amer.math.monthly.119.04.263 (check level not recorded) |
-| Straus, *Music Theory Spectrum* 25(2):305–352 (2003); *JMT* 49(1):45–108 (2005) | Uniformity as **offset** (semitones from a crisp transposition) or **consistency** (number of voices moving the same distance); fuzzy transposition | Offset is L1-like; consistency is our order-∞ measure. No "number of distinct displacements" anywhere | doi:10.1525/mts.2003.25.2.305; doi:10.1215/00222909-2007-002; definitions via De Souza 2020 ¶1.2 |
+| Straus, *Music Theory Spectrum* 25(2):305–352 (2003); *JMT* 49(1):45–108 (2005) | Uniformity as **offset** (semitones from a crisp transposition) or **consistency** (number of voices moving the same distance); fuzzy transposition | Offset is L1-like; consistency counts the voices moving the same distance, the analogue of the modal count n·C1 (our C1 is its normalized form). No "number of distinct displacements" anywhere | doi:10.1525/mts.2003.25.2.305; doi:10.1215/00222909-2007-002; definitions via De Souza 2020 ¶1.2 |
 | De Souza, "Instrumental Transformations in Biber's Mystery Sonatas," *MTO* 26.4 (2020) | Scordatura as voice leading between tunings, measured with Straus's criteria | **Very close to our per-string offset vector.** He measures how uniform a retuning is, not tab reuse across songs | read; doi:10.30535/mto.26.4.1 |
 
 ## 4. Prior art for the tab homograph
@@ -157,15 +159,18 @@ are standard terms in image regularization and labeling:
   variation (Rudin, Osher & Fatemi 1992); **richness** is a palette size, or a label count.
 - **Vocabulary vs. switches** is the split between a *label cost*, paid once for each label used
   (Delong, Osokin, Isack & Boykov, IJCV 2012), and the *Potts* term, paid at every label change.
-- **Finding a homograph** is multi-model fitting with a label budget: PEARL (Isack & Boykov,
-  IJCV 2012) assigns point correspondences to a few geometric models, classically homographies.
-  Layered motion (Wang & Adelson 1994) is the same idea for optical flow.
+- **Finding a homograph** is an analogue of multi-model fitting: PEARL (Isack & Boykov, IJCV
+  2012) assigns point correspondences to a few geometric models, classically homographies, and
+  layered motion (Wang & Adelson 1994) is the same idea for optical flow. The guitar version is
+  a constrained labeling problem in which the labels are strings, several strings may realize
+  the same constant-offset model, and the number of labels is a hard budget.
 - **Decoder-relative sameness** has a visual analogue in hybrid images (Oliva, Torralba &
   Schyns 2006): one picture that reads as two, depending on viewing distance.
 
 Consequence: the structure note's last possibly-new item (vocabulary vs. switches) is a known
-distinction, and the note's revision 3 claims nothing as new. Verify these citations before
-using them (R13).
+distinction in computer vision. What we did not find documented is its combination with the
+guitar criterion; the note (revision 4) states what was and wasn't found, claiming neither
+novelty nor its absence. Verify these citations before using them (R13).
 
 ## Suggested wording (for the paper)
 

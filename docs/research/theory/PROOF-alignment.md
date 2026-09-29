@@ -9,7 +9,8 @@ wrong.** The general statement:
 > **A statistic of the offset sequence that ignores consecutive repeats and is subadditive
 > stays a pseudometric when minimized over warping paths.** Log-richness, S and TV are
 > instances; so are the largest jump and the offset range (twice a transposition-invariant
-> discrete Fréchet distance). Shannon entropy and TI-Hamming (1 − C₁) count how long each
+> discrete Fréchet distance when the transposition may be any real number; with whole
+> semitones, up to rounding: see "Relation to known work" below). Shannon entropy and TI-Hamming (1 − C₁) count how long each
 > offset lasts, and they fail.
 
 A warping path may hold a note against several notes of the other melody, which *stretches*
@@ -223,12 +224,12 @@ The two distinguishing choices:
 - **The members are functionals of the sequence as a whole,** not only a maximum: the number of
   distinct values, the number of changes, the total and largest change, the range.
 
-**What is known, and what is probably folklore.**
-- The composition argument is certainly known: it is the Fréchet proof.
-- Whether the general sufficient condition (any stutter-invariant, subadditive functional of
-  the coupled differences) is stated anywhere is not known here. It is the kind of
-  generalization an expert in Fréchet-type distances would call immediate, so treat it as
-  folklore and don't present it as new.
+**What is known, and what we did not find.**
+- The composition mechanism is known: it is the one in the standard proof that the discrete
+  Fréchet distance is a metric.
+- We did not find the general sufficient condition (any stutter-invariant, subadditive
+  functional of the coupled differences) stated elsewhere; it may be known informally. It is
+  presented with its proof, without a claim of priority.
 - Likewise unknown: whether d_S (the fewest changes of relative transposition, with free
   stretching) or d_richness (the fewest distinct transpositions, with free stretching) appear
   under other names. The closest known relatives are local-transposition alignment (Allali et
@@ -296,8 +297,9 @@ Reviewed 2026-09-26 by scottvr with ChatGPT. Incorporated from that review:
 - extracting the general principle (stated as the theorem above);
 - the whole-semitone ⌈R/2⌉ refinement.
 
-In Claude's revision after that review: the Fréchet connection (the composition step is the
-discrete Fréchet distance's own triangle proof), and the extra members J and R.
+In Claude's revision after that review: the Fréchet connection (the composition step uses the
+same mechanism as the discrete Fréchet distance's triangle proof), and the extra members J and
+R.
 
 scottvr then took the revised proof to Gemini, which approved it and contributed a figure
 template ([`../results/collision_plot_template.py`](../results/collision_plot_template.py)).

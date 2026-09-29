@@ -15,10 +15,12 @@ claims stand"). In short:
   or not at all.
 - **Deflated:** the offset statistics' metric properties are elementary. Richness is not a
   useful melodic similarity.
-- **Also deflated, later:** the condition for distances to survive optimized alignment runs
-  on the Fréchet distance's proof and is probably folklore; and "vocabulary vs. switches" is
-  computer vision's label cost against its Potts term. The tech note (revision 3) now claims
-  nothing as new: it's a dictionary and a synthesis.
+- **Placed, not deflated:** the condition for distances to survive optimized alignment uses
+  the Fréchet distance's proof mechanism, and wasn't found stated in general form; "vocabulary
+  vs. switches" parallels computer vision's label cost against its Potts term. The tech note
+  (revision 4) makes no claim of a new mathematical result, and says which combinations we
+  didn't find documented: the homograph criterion, its decoder reading, and the general
+  alignment condition.
 
 ## Fodder: posts
 
@@ -30,7 +32,7 @@ Each of these is roughly one chapter, or one results doc, with a demo:
 | How often do two songs share a tab? | a third of short folk phrase pairs; the charts | chapter 6, R04 |
 | The real filter is your hand | tension says yes, comfort says no | chapter 7, F06 |
 | Your tab says more than you think | real fingerings pin the music down | chapter 7, R05 |
-| My metric wasn't new, and that's fine | a casual claim, a draft of "novel" results, folklore, Fréchet, label costs | chapters 4 and 6 |
+| My metric wasn't new, and that's fine | a casual claim, a draft of "novel" results, named prior art, Fréchet, label costs, and not overcorrecting | chapters 4 and 6 |
 | A free tab checker | "wrong-wrong" tabs, detected by the homograph machinery | chapter 8 |
 | Thirty knobs, tuned by hand | 22 mapper options today (closer to 30 at their peak), each added for one transcription, and how to learn them | chapter 8 |
 | Two LLMs and a guitarist | the collaboration itself | chapter 10 |
@@ -55,8 +57,8 @@ A sketch, for scottvr to overrule:
    related work is in [`../literature/LITERATURE-offsets.md`](../literature/LITERATURE-offsets.md).
 3. **An optional expository note or post**, not a research paper: the dictionary that connects
    the tab problem to music-retrieval measures and image-regularization terms, and which of
-   those terms survive optimized alignment, and why. Framed as a synthesis, it claims nothing
-   new.
+   those terms survive optimized alignment, and why. Framed as a synthesis, it makes no claim
+   of a new mathematical result, and says which combinations weren't found documented.
 
 > ✎ **scottvr:** what you actually plan to write, and where.
 

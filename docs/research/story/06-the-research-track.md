@@ -38,8 +38,9 @@ A Claude research agent searched the literature and recorded how it checked each
 ## Tune families (R03): the decision rule fires
 
 The experiment the note had specified in advance: on the Meertens collections, does richness
-find variants of the same tune better than established measures? **No.** Transposition-invariant
-Hamming distance, which scores only the single most common offset, wins. Richness trails it by
+find variants of the same tune better than established measures? **In the test run, no.**
+Transposition-invariant Hamming distance, which scores only the single most common offset, was
+best. Richness trails it by
 0.13–0.21 mean average precision, and adding richness, entropy and reuse to the baselines gains
 at most 0.006.
 
@@ -48,7 +49,8 @@ and there, so a measure that counts *every* departing offset is dominated by noi
 the ecologists' old warning about order-0 diversity (a rare species counts as much as a common
 one), met in melodies.
 
-So richness is a guitar statistic. The homograph work was unaffected, since it needs richness
+So, by the rule set in advance, richness stays a guitar statistic (a negative result, not a
+proof of uselessness). The homograph work was unaffected, since it needs richness
 as a string budget, not as a similarity. [`RESULTS-R03`](../results/RESULTS-R03-families.md).
 
 ## The alignment proof (R07): half a guess wrong, and a principle
@@ -73,8 +75,8 @@ scottvr then reviewed the proof with ChatGPT. That review was useful:
 
 The revision then placed the result: its composition step is the classical proof that the
 *discrete Fréchet distance* is a metric. Fréchet's distance (the largest pointwise gap) is the
-prototype of this class. So the argument is known, and the general condition is the kind of
-generalization an expert would call immediate: best treated as folklore, not a new result.
+prototype of this class. So the mechanism is known. The general condition wasn't found
+stated elsewhere, and is presented with its proof, without a claim of priority.
 
 ## Homographs in the wild (R04)
 

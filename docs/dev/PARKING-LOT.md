@@ -115,6 +115,15 @@ notes are in git history.
     - This fits the weights audit's exchange-rate units: "I'd drop a doubled root rather
       than move 5 frets".
   - Report what was dropped, the way the homograph report discloses its liberties.
+- **Before publishing the offset/structure material: finish what R03 left open** (scottvr,
+  2026-09-29). R03 was a negative result, not a verdict, and we have tooling nobody else seems
+  to have, so testing further is a contribution either way (with the code in the repo):
+  - the §6 hypothesis: does low richness with high reuse mark sequences, echoes or
+    call-and-response at a fixed interval? Needs labelled examples (e.g. motif/sequence
+    annotations, or synthetic sequences as a sanity check);
+  - the retrieval experiments R03 didn't run: an alignment-based baseline, the Janssen, van
+    Kranenburg & Volk (2017) benchmark, phrase-level retrieval;
+  - R12 (richness under its own optimal warping) belongs with these.
 - **Computer-vision analogues** (scottvr's question, 2026-09-28: is there relevance to
   CV and image processing, e.g. total variation in image interpolation?). Claude's reading,
   from memory: *check every citation* (these belong on the R13 checklist).

@@ -32,7 +32,7 @@ separately, or cut up into posts.
 | 2026-09-27 | v0.6.5 | R05: real fingerings, as written (gtrsnipe's wiki tabs) |
 | 2026-09-27 | v0.6.6–v0.6.9 | playability (F06), `--analyze`, note lengths, instruments |
 | 2026-09-28 | v0.6.10 | the StegTab source found; these docs organized and audited |
-| 2026-09-29 | v0.6.11 | chord names over the tab; the tech note's revision 3: vocabulary vs. switches is computer vision's label cost, and nothing is claimed as new |
+| 2026-09-29 | v0.6.11 | chord names over the tab; the tech note's revisions 3 and 4: vocabulary vs. switches parallels computer vision's label costs; an overcorrection to "nothing is new", then calibrated |
 
 ## About these chapters
 
