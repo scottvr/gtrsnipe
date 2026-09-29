@@ -45,9 +45,7 @@ track. Triage at the end of this step: the parking lot was empty.
 
 R01 corpus loaders and R02 the offset profile (v0.6.2); R03 the Meertens experiment and R07
 the alignment proof (v0.6.3); R04 the corpus homograph scan (v0.6.4); R05 published tabs as
-written (v0.6.5); R06 the literature search (v0.6.2). Results: `RESULTS-R03-families.md`,
-`RESULTS-R04-scan.md`, `RESULTS-R05-aswritten.md`, `PROOF-alignment.md`,
-`LITERATURE-offsets.md`. R08 and R09 stay open, low priority.
+written (v0.6.5); R06 the literature search (v0.6.2). Results, proofs and the literature survey are in [`docs/research/`](../research/README.md). R08 and R09 stay open, low priority.
 
 **Triage at the end of this step (2026-09-27).** The parking lot's six entries became:
 - B07, the MIDI track-name bug;
@@ -125,3 +123,6 @@ changes, P04 pager search, P05 other renderers.
 |---|---|---|---|
 | H01 | **The golden gate has no local cases on this machine.** Add the wiki examples (Mr Crowley, Bach Cello Prelude, Asturias, Barney Miller) as local golden cases. The expected tabs are now in `docs/wiki/` and `examples/aswritten/`, but the MIDI/audio inputs aren't (they're on the machine in pieces). | S | RELEASE-PLAN v0.3.0 |
 | H03 | Wiki: document v0.6.0 (homographs, string physics, `.tab` header behavior). | S–M | release |
+| H05 | **Docs reorg** (interlude in step 3): `docs/app/` (how gtrsnipe works), `docs/research/` (theory, literature, results, story), `docs/dev/` (process); maps in `docs/README.md` and `docs/research/README.md`. | S | scottvr, 2026-09-28 |
+| H06 | **State-of-the-docs audit**: every doc marked current, stale or wrong, with the fixes needed; agree the list, then apply it. | M | scottvr, 2026-09-28 |
+| H07 | **The story** (`docs/research/story/`): from the idea to the research, in chapters scottvr can link from an HTML page, as fodder for posts and the paper. | M | scottvr, 2026-09-28 |

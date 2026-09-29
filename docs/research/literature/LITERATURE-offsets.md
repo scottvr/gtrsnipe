@@ -1,7 +1,7 @@
 # Prior art: offset vocabulary, tab homographs, offset metrics (backlog R06)
 
 A literature search made before any novelty claim, for
-[`coupled_transposition_structure.md`](coupled_transposition_structure.md) and the homograph
+[`coupled_transposition_structure.md`](../theory/coupled_transposition_structure.md) and the homograph
 work. Compiled 2026-09-26 by a Claude research agent (web search). The "Verified" column says
 how each source was checked: *read* means the full text or PDF was opened, *abstract* or
 *listing* means less. **Re-check every citation before it goes in the paper**, especially the

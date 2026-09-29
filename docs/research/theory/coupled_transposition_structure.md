@@ -3,7 +3,7 @@
 ## Working technical note, revision 1 (2026-09-26)
 
 **What changed from the original draft.** A triangle-inequality check
-(`docs/dev/triangle_check.py`) and a prior-art pass. The metric facts all
+(`docs/research/theory/triangle_check.py`) and a prior-art pass. The metric facts all
 survived, but they are elementary, and most of the statistics already have
 established names (§10). Three more of our statistics turned out to be metrics
 too (§4.3, §5.2). The metric property is proved here for Hill orders 0 and 1;
@@ -78,7 +78,7 @@ exact free-tuning homograph on an s-string instrument  requires  richness(A,B) <
 ```
 
 It is necessary but not sufficient: fret span, simultaneous notes, reach and
-physics also constrain (see `DESIGN-homograph.md`).
+physics also constrain (see [`DESIGN-homograph.md`](../../app/DESIGN-homograph.md)).
 
 ---
 
@@ -177,7 +177,7 @@ and neither is -log C1, even though 1 - C1 is.
 > **Update (R06, 2026-09-26):** it fails at *every* order except 0 and 1. Rényi entropy is not
 > subadditive for α ∉ {0, 1}, and offsets whose pairwise sums are distinct turn any
 > non-subadditive joint distribution into a triangle violation. See
-> [`LITERATURE-offsets.md`](LITERATURE-offsets.md) §5 (Aczél, Forte & Ng 1974).
+> [`LITERATURE-offsets.md`](../literature/LITERATURE-offsets.md) §5 (Aczél, Forte & Ng 1974).
 
 ### 4.5 Top-k coverage: a prefilter, not a distance
 
