@@ -10,10 +10,13 @@ gtrsnipe-research --data DIR families mtc-fs --queries 1000 --bootstrap 1000    
 
 ## Verdict
 
-**No gain.** Richness is a weak tune-family similarity measure. Adding richness, entropy and
-reuse to the baselines does not measurably improve retrieval. Per the note's own decision rule,
-richness is a guitar statistic, not a similarity measure. The homograph work is unaffected: it
-needs exact richness as a string budget, not as a similarity.
+**No gain.** In this test, richness is a weak tune-family similarity measure, and adding
+richness, entropy and reuse to the baselines does not measurably improve retrieval. Under the
+note's pre-stated decision rule, the result does not support using richness as a similarity
+measure; it stays a guitar statistic (a string budget). Experiments not run here (see
+"Limits") could still say otherwise, so this is a negative result, not a proof of uselessness.
+The homograph work is unaffected: it needs exact richness as a string budget, not as a
+similarity.
 
 What the data do say is **the more a measure concentrates on the single dominant offset, the
 better it finds variants**:

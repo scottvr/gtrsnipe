@@ -51,13 +51,19 @@ Between 2026-09-23 and 09-27 there were 14 releases, and the test suite grew fro
 | StegTab hides bits in redundant fingerings | the literature agent's guess | scottvr found the source: a letter cipher |
 | a minimum-note-length filter was needed with P01 | Claude | scottvr: `--velocity-cutoff` was always the cruft filter |
 | "vocabulary vs. switches" might be new | the structure note, revision 1 (Claude) | scottvr's question about image processing: it's label costs vs. the Potts term (revision 3) |
-| the general alignment condition might be unpublished | Claude (PROOF-alignment) | on reflection, an immediate generalization of Fréchet's proof: treat it as folklore |
+| "the note claims no new result"; the alignment condition is "folklore"; richness is "not useful" | Claude, the tech note's revision 3 | scottvr: an overcorrection. Claiming there's nothing new needs knowledge we don't have, just as claiming novelty does (revision 4) |
 
 The pattern in Claude's column is mostly **summary overreach**: a true finding stated one
 notch more broadly than the evidence. Two things caught these: running the check, and
 scottvr knowing something the data couldn't say (how the wiki tabs were really made, the
 codebase's past, how a guitar feels). Neither model was a reliable judge of its own novelty
 claims. The literature search and the experiments were.
+
+**Underclaiming is overclaiming too.** Revision 3 of the tech note swung from "possibly new"
+to "nothing here is new", from "useful?" to "not useful", and from "the same mechanism as
+Fréchet's proof" to "Fréchet's proof". Each was as unsupported as the claim it replaced. The
+fix (revision 4) was to say what was tested and what was searched, and to stop there:
+neither novelty nor its absence, and a negative result reported as a negative result.
 
 ## scottvr's account
 

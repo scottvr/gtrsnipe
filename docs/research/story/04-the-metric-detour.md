@@ -69,12 +69,14 @@ scottvr then corrected the revision in turn:
   unused, but the risk of calling the metric facts new theorems is high.
 - **The experiment (R03)** said no: richness is a weak similarity measure, and the
   plain transposition-invariant Hamming distance beats it.
-- **What was left went the same way, later.** The alignment result (chapter 6) runs on the
-  Fréchet distance's proof, and its general form is probably folklore. And "vocabulary vs.
-  switches" turned out to have a name in computer vision: label costs against the Potts
-  smoothness term. The note's revision 3 (2026-09-29) claims nothing as new.
+- **What was left got its bearings later.** The alignment result (chapter 6) uses the same
+  mechanism as the Fréchet distance's proof, and its general form wasn't found stated anywhere
+  (no priority claimed). "Vocabulary vs. switches" has a counterpart in computer vision: label
+  costs against the Potts smoothness term. Revision 3 of the note then overcorrected, saying
+  nothing in it was new; revision 4 states what was and wasn't found, claiming neither
+  (chapter 10).
 
 ## scottvr's account
 
 > ✎ what it was like to have one model spark the idea and another inflate it, and when it
-> became clear which parts were folklore.
+> became clear which parts were already known.

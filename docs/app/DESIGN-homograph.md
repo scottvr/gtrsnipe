@@ -61,9 +61,9 @@ class:
   choices must carry to tell the songs apart; the tunings carry the rest. More in
   the [structure note](../research/theory/coupled_transposition_structure.md) and
   [PROOF-alignment](../research/theory/PROOF-alignment.md), which shows it stays a
-  pseudometric under optimized alignment. As a *similarity*, though, richness is
-  not useful: in [R03](../research/results/RESULTS-R03-families.md),
-  transposition-invariant Hamming wins.
+  pseudometric under optimized alignment. As a *similarity*, though, the one test run gave a
+  negative result: in [R03](../research/results/RESULTS-R03-families.md),
+  transposition-invariant Hamming was best among the tested measures.
 - **The tell.** A constructed homograph often plays one pitch on different strings
   for no ergonomic reason (Old MacDonald's three opening C4s land on D10, D10, G5
   because the third one must also be Twinkle's leap). That's a forensic signature

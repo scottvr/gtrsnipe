@@ -1,6 +1,6 @@
 # Coupled Transposition Structure in Aligned Melodies
 
-## Working technical note, revision 3 (2026-09-29)
+## Working technical note, revision 4 (2026-09-29)
 
 **What this note is.** A dictionary and a synthesis, written for the guitar-tab homograph
 (one tab, a different melody in each tuning; [`../../app/DESIGN-homograph.md`](../../app/DESIGN-homograph.md)).
@@ -8,12 +8,14 @@ It collects what is known about the pointwise pitch differences between two alig
 melodies: which statistics of them are distances, what they are called in other fields, and
 what the homograph needs from them.
 
-**What it is not.** It claims no new result. Every fact below is either elementary or already
-named elsewhere, as far as the literature survey
-([`../literature/LITERATURE-offsets.md`](../literature/LITERATURE-offsets.md)) and later reading
-could tell. The one statement that may not be written down anywhere in general form, the
-condition for surviving optimized alignment (§7), is almost certainly folklore to anyone who
-knows the Fréchet distance. How the note got here is in §14.
+**What it claims.** It makes no claim of a new mathematical result: its components are
+elementary or already named elsewhere (§10). What we did not find documented, in the
+literature we searched ([`../literature/LITERATURE-offsets.md`](../literature/LITERATURE-offsets.md)),
+is how they combine here: the exact criterion for a tab homograph (§2), its decoder-relative
+reading (§9), and the general condition under which offset functionals survive optimized
+alignment (§7). These are given as observations with proofs. We claim neither priority for them
+nor that none exists; the history of this note (§14) shows both mistakes being made and
+corrected.
 
 ---
 
@@ -27,18 +29,21 @@ knows the Fréchet distance. How the note got here is in §14.
   - the *changes* in delta: the switch count and total variation, which are the Hamming and
     L1 distances between the melodies' interval sequences.
   All five are pseudometrics, and metrics once transposed melodies count as equal, by one
-  elementary lemma (§3). No other Rényi/Hill order gives a metric (§4.4).
-- **Vocabulary vs. switches is a known distinction** (§6). How many distinct offsets a pair
-  needs, as against how often it changes offset, is the split between *label costs* (paid
-  once per label used) and *Potts* smoothness costs (paid at every change) in computer-vision
-  energy minimization. The guitar gives it a physical reading: richness is a lower bound on
+  elementary lemma (§3). Within the Rényi entropy family, only q = 0 (Hartley, log-richness)
+  and q = 1 (Shannon) give metrics here; separately, 1 − C1 is a metric although the
+  q = ∞ Rényi entropy, −log C1, is not (§4.4).
+- **Vocabulary vs. switches has a counterpart in computer vision** (§6). How many distinct
+  offsets a pair needs, as against how often it changes offset, parallels the split between
+  *label costs* (paid once per label used) and *Potts* smoothness costs (paid at every change)
+  in energy minimization. The guitar gives it a physical reading: richness is a lower bound on
   the number of strings a shared tab needs.
 - **Under optimized (warping) alignment** (§7), a statistic that ignores consecutive repeats
   and is subadditive stays a pseudometric: log richness, the switch count, total variation,
   the largest jump and the range survive. Entropy and one minus the modal share, which count
-  how *long* each offset lasts, do not. The proof is the Fréchet distance's.
-- **As a melodic similarity, richness is not useful** (§11). On tune-family retrieval,
-  transposition-invariant Hamming distance beats it. Its role is the string budget.
+  how *long* each offset lasts, do not. The proof uses the same coupling-composition mechanism
+  as the standard proof for the Fréchet distance.
+- **Tune-family retrieval gave a negative result** (§11): in the test run, richness did not
+  beat the established baselines. Its role here is the string budget.
 
 ---
 
@@ -77,9 +82,10 @@ exact free-tuning homograph on an s-string instrument  requires  richness(A,B) <
 It is necessary but not sufficient: fret span, simultaneous notes and string physics also
 constrain. The exact criterion (a partition of the aligned notes into at most s classes of
 constant offset, with no two simultaneous notes in a class and each class within the fret
-range) is DESIGN-homograph §1. In the language of §10, finding a homograph is
-**multi-model fitting with a label budget**: each note pair is a correspondence, each string's
-retune is a model (a constant offset), and at most s models are allowed.
+range) is DESIGN-homograph §1. In the language of §10, finding a homograph is an analogue of
+**multi-model fitting**: a constrained labeling problem in which each note pair (a
+correspondence) is assigned a string (a label), each string realizes a constant-offset model,
+at most s labels exist, and several strings may realize the same offset.
 
 ---
 
@@ -140,14 +146,19 @@ Subadditive because at least `m_x + m_y - n` positions carry both modal values, 
 `m_(x+y) >= m_x + m_y - n`. `n * d_H` is the **transposition-invariant Hamming distance**
 of Mäkinen, Navarro & Ukkonen (2005), computed from exactly this histogram.
 
-### 4.4 No other order
+### 4.4 Which orders give metrics
 
-Richness, `R_eff` and `1/C_1` are Hill numbers of orders 0, 1 and ∞ (Hill 1973; Jost 2006),
-and their logs are Rényi entropies. **Only orders 0 and 1 give metrics.** Rényi entropy is
-subadditive only at those orders (the classical characterization: Aczél, Forte & Ng 1974), and
-choosing offsets whose pairwise sums are all distinct turns any non-subadditive joint
-distribution into a triangle violation (LITERATURE §5). Two explicit examples, from
-[`triangle_check.py`](triangle_check.py):
+Richness, `R_eff` and `1/C_1` are Hill numbers of orders 0, 1 and ∞ (Hill 1973; Jost 2006).
+The Hill numbers themselves are not distances: each is 1, not 0, for a transposition. Their
+logs, the Rényi entropies `H_q`, are the candidates.
+
+**Within the Rényi entropy family `H_q`, only q = 0 (Hartley, log-richness) and q = 1
+(Shannon) give metrics here.** Rényi entropy is subadditive only at those orders (the
+classical characterization: Aczél, Forte & Ng 1974), and choosing offsets whose pairwise sums
+are all distinct turns any non-subadditive joint distribution into a triangle violation
+(LITERATURE §5). **Separately, 1 − C1 is the normalized transposition-invariant Hamming
+distance and is also a metric (§4.3), although the q = ∞ Rényi entropy, −log C1, is not.**
+Two explicit examples, from [`triangle_check.py`](triangle_check.py):
 
 **Example 1 (16 notes).** `B - A` is 0 on the first 8 notes, then eight distinct nonzero
 singleton values (9 distinct offsets in all); `C - B` is the mirror image; `C - A` has 16
@@ -170,8 +181,6 @@ distinct values.
 | Rényi q=1/2 | 0.9385 | 0.9385 | 1.8770 | 1.8788 | **fails** |
 | Shannon (q=1) | 0.8813 | 0.8813 | 1.7626 | 1.7610 | holds (by 0.002) |
 | 1 − C1 | 0.300 | 0.300 | 0.600 | 0.500 | holds |
-
-At order ∞ the metric is `1 − C_1`, not `−log C_1`: min-entropy is not subadditive.
 
 ### 4.5 Top-k coverage: a prefilter, not a distance
 
@@ -208,7 +217,8 @@ TV(A,B) = sum_i |delta_(i+1) - delta_i|      = L1 distance between I_A and I_B
 
 Both satisfy the lemma: a position switches in `x + y` only if it switches in `x` or in `y`,
 and TV inherits the triangle inequality of `|.|`. Both are zero exactly for transpositions.
-S is interval-encoding Hamming distance (e.g. Lemström & Ukkonen 2000); TV is SIMILE's `diff`
+S is interval-encoding Hamming distance (e.g. Lemström & Ukkonen 2000); TV is the
+unnormalized L1 term underlying SIMILE's `diff`, which is a normalized similarity
 (Müllensiefen & Frieler 2004). As signal regularizers (§10), S is the "L0 norm" of the
 gradient and TV is classic total variation.
 
@@ -249,15 +259,18 @@ Two different costs can be charged for a sequence of offsets:
   cost for each label used at all: r), e.g. Delong, Osokin, Isack & Boykov (2012) and the PEARL
   multi-model fitting of Isack & Boykov (2012), which assigns point correspondences to a few
   geometric models, classically homographies. Layered motion (Wang & Adelson 1994) is the same
-  idea for optical flow. *(Citations from memory; see References.)*
+  idea for optical flow. The guitar problem is an analogue rather than an instance: its labels
+  are strings, several strings may realize the same offset (fret range, simultaneous notes),
+  and the number of labels is a hard budget rather than a cost. *(Citations from memory; see
+  References.)*
 - *On a guitar,* the vocabulary cost is physical: each distinct offset needs a string retuned
   by that interval, and going back to it costs nothing. So `r` is the string-budget lower bound
   of §2, and `u` is free.
 
-**What was tested.** Whether a small vocabulary marks melodic variants: it doesn't (§11).
-**What wasn't:** whether low richness with high reuse marks sequences, echoes or
-call-and-response at a fixed interval. That remains an open, low-priority question. Rows 3
-and 4 of the table are also a warning: richness ignores how big the offsets are (§8).
+**What was tested.** Whether a small vocabulary marks melodic variants: in the one retrieval
+test run, it didn't (§11). **What wasn't:** whether low richness with high reuse marks
+sequences, echoes or call-and-response at a fixed interval. That remains open. Rows 3 and 4
+of the table are also a warning: richness ignores how big the offsets are (§8).
 
 ---
 
@@ -276,7 +289,8 @@ offset sequence stays a pseudometric if it is
 - *subadditive*, even, and zero exactly on constant sequences (the lemma's conditions).
 
 The zero set becomes "the same melody up to transposition and to splitting or merging repeated
-notes".
+notes". Two members need defining: the largest jump `J = max_i |delta_(i+1) - delta_i|` and
+the range `R = max(delta) - min(delta)`.
 
 | survives | fails |
 |---|---|
@@ -286,16 +300,19 @@ The survivors depend only on *which* offsets occur and *how* they change; the fa
 how *long* each offset lasts, which a warping path can inflate. The smallest counterexample has
 melodies of 1, 2 and 2 notes.
 
-**What is known.** The proof composes the two optimal paths through the middle melody. That is
-the classical proof that the discrete Fréchet distance (the largest pointwise gap, minimized
-over couplings) is a metric, and Fréchet's distance is the prototype of the class: with
-transposition factored out, the range R is twice a transposition-invariant discrete Fréchet
-distance. Whether the general condition (any stutter-invariant subadditive functional of the
-coupled differences) is stated anywhere is not known here; it is the kind of generalization an
-expert would call immediate. The measures `d_S` (fewest offset changes with free stretching)
-and `d_richness` (fewest distinct offsets with free stretching) were not found under other
-names. The capped re-rhythm of `--homograph-subdivide K` is not covered: capped paths are not
-closed under composition.
+**What is known, and what we did not find.** The proof composes the two optimal paths through
+the middle melody: the same coupling-composition mechanism as the standard proof that the
+discrete Fréchet distance (the largest pointwise gap, minimized over couplings) is a metric.
+The Fréchet distance is a member of the class. With transposition factored out,
+`min_c max_i |delta_i - c|` is `R/2` if the transposition `c` may be any real number, and
+`ceil(R/2)` if it must be a whole number of semitones; so R is twice the continuously
+transposed Fréchet distance, up to semitone quantization (for odd R, twice the whole-semitone
+one is R + 1). We did not find the general condition (any stutter-invariant, subadditive
+functional of the coupled differences) stated elsewhere; it may be known informally. It is
+given here with its proof, without a claim of priority. Nor did we find `d_S` (fewest offset
+changes with free stretching) or `d_richness` (fewest distinct offsets with free stretching)
+under other names. The capped re-rhythm of `--homograph-subdivide K` is not covered: capped
+paths are not closed under composition.
 
 ---
 
@@ -343,9 +360,9 @@ one picture that reads as two, depending on viewing distance.
 |---|---|---|
 | offset histogram | difference histogram for transposition-invariant matching | Mäkinen, Navarro & Ukkonen 2005 |
 | 1 − C1 | transposition-invariant Hamming distance (normalized) | same; the unaligned analogue is "P2" (the mode over all note pairs) in Ukkonen, Lemström & Mäkinen 2003 |
-| C1 | "consistency": the number of voices moving the same distance | Straus 2003, 2005 |
+| n · C1 (the modal count) | "consistency": the number of voices moving the same distance (C1 is its normalized form) | Straus 2003, 2005 |
 | S | Hamming distance between interval sequences | Lemström & Ukkonen 2000 |
-| TV | L1 distance between interval sequences | SIMILE's `diff` (Müllensiefen & Frieler 2004) |
+| TV | L1 distance between interval sequences; the unnormalized term underlying SIMILE's `diff` | Müllensiefen & Frieler 2004 |
 | richness, R_eff, 1/C1 | Hill numbers of order 0, 1, infinity | Hill 1973; Jost 2006; Berger & Parker 1970 |
 | unaligned all-pairs histogram | Lewin's interval function IFUNC | Lewin 1959, 1987 |
 | transposition as a quotient by constant offsets | the T in OPTIC | Callender, Quinn & Tymoczko 2008 |
@@ -357,16 +374,16 @@ one picture that reads as two, depending on viewing distance.
 | TV, as a regularizer | total variation | Rudin, Osher & Fatemi 1992 * |
 | richness, as a regularizer | label cost (the number of labels used); palette size | Delong, Osokin, Isack & Boykov 2012 * |
 | S, in labeling | Potts smoothness term | the same * |
-| finding a homograph | multi-model fitting with a label budget | Isack & Boykov 2012 (PEARL) * |
+| finding a homograph | an analogue of multi-model fitting (labels are strings; several may realize one offset model; a hard label budget) | Isack & Boykov 2012 (PEARL) * |
 | a piecewise-constant offset field | layered motion | Wang & Adelson 1994 * |
-| range R and largest jump J under warping | discrete Fréchet distance (R is twice a transposition-invariant one) | Eiter & Mannila 1994 * |
+| range R and largest jump J under warping | discrete Fréchet distance: with transposition factored out, R/2 (continuous) or ceil(R/2) (whole semitones) | Eiter & Mannila 1994 * |
 | why entropy fails under warping | the reason DTW is not a metric (costs weighted by path multiplicity) | standard * |
 
 \* From memory, not yet verified (see References).
 
 ---
 
-## 11. Usefulness as a melodic similarity: no
+## 11. Tune-family retrieval: a negative result
 
 The test this note specified in revision 1, with its decision rule written in advance: on the
 Meertens Tune Collections, does the offset profile separate variants of a tune from unrelated
@@ -375,15 +392,17 @@ melodies better than established baselines? Run as R03
 
 - On MTC-ANN (360 melodies in 26 tune families) and MTC-FS-INST (1,000 queries among 18,109
   melodies), with one shared grid alignment, transposition-invariant Hamming distance
-  (1 − C1) is best. Richness trails it by 0.13–0.21 mean average precision.
+  (1 − C1) is best among the tested measures. Richness trails it by 0.13–0.21 mean average
+  precision.
 - Adding richness, entropy and reuse to the baselines gains at most 0.006 MAP.
 - The more a measure concentrates on the single dominant offset, the better it finds variants:
   variants keep one transposition and depart from it here and there, so counting every
   departing offset (order 0) is dominated by noise.
 
-**Decision:** richness is a guitar statistic, not a similarity measure. Not tried: an
-alignment-based baseline, the Janssen, van Kranenburg & Volk (2017) benchmark, and phrase-level
-retrieval. Nothing suggests they would change the verdict.
+**Result:** under the note's pre-stated rule, this test does not support using richness as a
+melodic similarity measure. Not run: an alignment-based baseline, the Janssen, van Kranenburg
+& Volk (2017) benchmark, and phrase-level retrieval. Those experiments were not run; this note
+makes no stronger retrieval claim.
 
 ---
 
@@ -446,9 +465,17 @@ Each revision narrowed what could be claimed.
   - the tune-family test (R03) came back negative.
 - **Revision 2** (2026-09-28, Claude). Update boxes for those outcomes.
 - **Revision 3** (2026-09-29, Claude). A rewrite, so that every section states what is known
-  now. The new finding: vocabulary vs. switches is the label-cost vs. Potts distinction of
-  computer vision, and the homograph is multi-model fitting with a label budget (scottvr's
-  question about image processing led there). The note no longer claims anything as new.
+  now. The new finding: vocabulary vs. switches parallels the label-cost vs. Potts distinction
+  of computer vision (scottvr's question about image processing led there). It overcorrected,
+  though: it said the note claimed nothing new, which is as unsupported as claiming novelty,
+  and it compressed several identifications past accuracy.
+- **Revision 4** (2026-09-29, Claude, from scottvr's review). States what was found and what
+  wasn't, claiming neither novelty nor its absence. Precise wording on which Rényi orders give
+  metrics (the Hill numbers themselves don't; 1 − C1 is a metric but −log C1 isn't); C1 as the
+  normalized form of Straus's consistency; TV as the term underlying SIMILE's `diff`; J and R
+  defined, with the semitone quantization of the Fréchet relation; the guitar problem as an
+  analogue, not an instance, of multi-model fitting; the proof as sharing Fréchet's mechanism;
+  and §11 as a negative result, not a verdict on usefulness.
 
 ---
 
@@ -476,6 +503,7 @@ With details from the literature survey (R06; its "Verified" column says how eac
 - W. H. Berger, F. L. Parker. *Science* 168:1345–1347, 1970. doi:10.1126/science.168.3937.1345
 - J. Aczél, B. Forte, C. T. Ng. *Why the Shannon and Hartley entropies are "natural".*
   Adv. Appl. Probab. 6(1):131–146, 1974. doi:10.2307/1426210
+  <https://www.cambridge.org/core/journals/advances-in-applied-probability/article/abs/why-the-shannon-and-hartley-entropies-are-natural/EEAF9012F690E60E9DAB1696672DD37C>
 - C. Callender, I. Quinn, D. Tymoczko. *Generalized voice-leading spaces.* Science
   320:346–348, 2008. doi:10.1126/science.1153021
 - T. Tao. *Sumset and inverse sumset theory for Shannon entropy.* Combinatorics,
