@@ -3,10 +3,13 @@
 *Claude's account.*
 
 scottvr writes about copyright doctrine as well as code. An earlier paper, *"Part of Your
-World: Bypassing Copyright Filters Through Homophony and Semantic Mutation"*, looked at how
-content changes that keep the meaning can slip past matching systems. The follow-up argues that
-infringement analysis breaks down once the *key* that turns an encoding back into the work is a
-free parameter. The tab is a concrete, pre-digital case of this, and a bridge to the LLM case.
+World: Bypassing Copyright Filters Through Homophony and Semantic Mutation"*, centered on text
+that shares little or nothing with a protected work lexically or semantically, yet, read aloud,
+lets a listener hear the protected expression in it. If the words and their meaning are
+different and only the sound carries the work, what is the idea and what is the expression? The
+boundary is no longer obvious. The follow-up argues that infringement analysis breaks down once
+the *key* that turns an encoding back into the work is a free parameter. The tab is a concrete,
+pre-digital case of this, and a bridge to the LLM case.
 
 A guitar tab doesn't record music. It records mechanical instructions: *put a finger on string
 3 at fret 5, and strike.* What sounds depends on how the strings are tuned, and the tab
