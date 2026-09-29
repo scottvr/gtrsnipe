@@ -115,6 +115,21 @@ notes are in git history.
     - This fits the weights audit's exchange-rate units: "I'd drop a doubled root rather
       than move 5 frets".
   - Report what was dropped, the way the homograph report discloses its liberties.
+- **`--name-chord SHAPE`: name a chord from a fret shape, with no input file** (scottvr,
+  2026-09-28; pairs with C01, which names chords over a tab).
+  - A shape in chord-chart order, low string to high: `--name-chord x,x,3,2,1,0` (x = muted),
+    composed with the tuning (default STANDARD; `--tuning`, `--tuning-pitches`, `--capo` and
+    `--num-strings` apply). So the same shape names a different chord in DADGAD or a baritone.
+  - Not note names: `D3` already means "the note D3" everywhere else in gtrsnipe.
+  - Mostly plumbing: `core.chords.identify(pitches, bass=…)` already names shapes correctly
+    (tried 2026-09-28: `x,3,2,0,1,0` → C, `x,x,3,2,1,0` → Fmaj7, `3,2,0,0,0,3` → G).
+  - Design notes (Claude):
+    - print the sounding notes and the name, including slash chords when the bass isn't the
+      root;
+    - error if the shape's length doesn't match the string count;
+    - allow the compact `x32010` form only when every fret is one digit;
+    - maybe `--name-chord` several times for a progression.
+  - The reverse ("show me shapes for Cmaj7 in this tuning") is C02 territory.
 - **Computer-vision analogues** (scottvr's question, 2026-09-28: is there relevance to
   CV and image processing, e.g. total variation in image interpolation?). Claude's reading,
   from memory: *check every citation* (these belong on the R13 checklist).
