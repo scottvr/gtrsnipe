@@ -115,8 +115,58 @@ notes are in git history.
     - This fits the weights audit's exchange-rate units: "I'd drop a doubled root rather
       than move 5 frets".
   - Report what was dropped, the way the homograph report discloses its liberties.
+- **Computer-vision analogues** (scottvr's question, 2026-09-28: is there relevance to
+  CV and image processing, e.g. total variation in image interpolation?). Claude's reading,
+  from memory: *check every citation* (these belong on the R13 checklist).
+  - **The offset statistics map onto image-regularization terms.** Read δ = b − a as a 1-D
+    signal: S is the L0 gradient norm (the count of jumps; Xu, Lu, Xu & Jia 2011, "L0
+    smoothing"), TV is the L1 gradient norm (the total variation of Rudin, Osher & Fatemi
+    1992), richness is the palette size (the number of distinct levels), entropy is the
+    histogram entropy. Being blind to transposition is being blind to a constant (DC) offset.
+    "Shannon TV" (Abergel & Moisan, JMIV 2017, if remembered right) is TV computed on the
+    band-limited interpolate; it doesn't apply to integer semitones, only perhaps to
+    continuous pitch contours from audio.
+  - **"Vocabulary vs. switches" has a name in CV.** Energy minimization with *label costs*
+    (Delong, Osokin, Isack & Boykov, IJCV 2012) pays once per label used (≈ richness) plus a
+    Potts term per label change (≈ S). Multi-model fitting (PEARL: Isack & Boykov, IJCV 2012)
+    assigns each point correspondence to one of a few models, with a label cost for each
+    model, classically fitting several *homographies*. The tab homograph is 1-D multi-model
+    fitting: correspondences (aᵢ, bᵢ), models = constant offsets (a string's retune), at most
+    N models, exact inliers. Layered motion (Wang & Adelson 1994) is the same idea for flow.
+    Consequence: weakens the §6 "vocabulary vs. switches" novelty further (a named analogue),
+    but gives citations and algorithms (α-expansion with label costs for the fewest-offsets
+    warping path, d_richness).
+  - **A practical use: robust fitting for the tab checker.** RANSAC or PEARL over offsets
+    would find the most likely tuning key for a tab with a few wrong notes and name the
+    outliers (the wrong notes), instead of stopping at the first bad string.
+  - **An analogy for the paper: hybrid images** (Oliva, Torralba & Schyns, SIGGRAPH 2006).
+    One picture reads as two, depending on viewing distance (a spatial-frequency filter). The
+    decoder is the key, as the tuning is for a tab.
 - **Code bugs found by the docs audit (H06, 2026-09-28)**, see `DOCS-AUDIT.md`. Fixed
-  already (v0.6.10): the six tunings `--tuning` rejected, and the inverted or off-by-one help
-  texts. Still open:
+  already (v0.6.10): the six tunings `--tuning` rejected; the inverted or off-by-one help
+  texts; and `--stem-track`, which crashed on every run since v0.3.0 (a NameError) and never
+  mapped guitar to the "other" stem for 4-stem models. Still open:
   - `--bass` overrides any `--tuning`, including `BASS_DROP_D`.
   - `player/clock.py` is dead code (nothing imports it).
+  - Viterbi tests the design doc promised but that don't exist: an exact-tie test, a test of
+    the second-order "landmine guard", and a `hard_enum_cap` test.
+  - `map_multi_string` returns early (no groups, no path) without resetting
+    `last_path_score`, so a reused mapper keeps the previous value. Harmless today: every
+    caller builds a new mapper.
+  - The player's help overlay omits `home`, `enter` and `p`.
+  - Errors exit 0: `converter.py` logs "An error occurred" but returns status 0, so scripts
+    can't tell a failed conversion from a good one.
+  - `gtrsnipe-research profile`, when phrases don't align, suggests `--homograph-subdivide`
+    (the message comes from the shared homograph code); its own flag is `--subdivide`.
+  - `gtrsnipe-chords` prints "Could not find a playable fingering…" warnings from its
+    register search even when the sheet comes out fine.
+  - `gtrsnipe-play` with a missing file shows a traceback instead of a clean error.
+  - The converter prints both "Successfully saved to X" and "Successfully saved X".
+  - `--tuning PIANO` always fails ("can only be used with MIDI output"), even with
+    `-o x.mid`: the check is unconditional (since at least v0.2.2).
+  - `--transpose` runs after the range filter and `--normalize-pitch`: notes that would fit
+    after transposing are dropped first, and transposed notes can fall out of range (the
+    v0.2.0 wiki's bass recipe, `--transpose -12` with BASS_DROP_D, hits this).
+  - `--mono-lowest-only`'s help ("force monophonic output") overstates: it affects ASCII tab
+    rendering only, and keeps the note on the lowest string.
+  - (`--play` on a `.tab` re-fingers it: that's backlog B05.)

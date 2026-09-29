@@ -181,10 +181,7 @@ cython_debug/
 # gtrsnipe golden-regression fixtures (may contain copyrighted MIDI) — local only
 tests/golden/cases/
 
-# Local VS Code "Markdown → HTML" exports of the docs (they embed file:// paths to a
-# local extension). Hand-made HTML pages meant for the repo can live elsewhere.
-docs/research/theory/*.html
-docs/research/literature/*.html
-docs/research/results/*.html
-docs/app/*.html
-docs/dev/*.html
+# Generated HTML (e.g. VS Code Markdown/math exports for checking layout or printing).
+# Ignored until a workflow for generated HTML is set up on purpose; to commit one
+# deliberately, use `git add -f` and say why in the commit message.
+*.html

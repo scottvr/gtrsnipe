@@ -10,8 +10,26 @@ the problems are framing, currency and provenance.
 (stronger than the evidence) · INCONSISTENT (disagrees with another doc) · MISSING (should
 say something it doesn't).
 
-**How to approve:** by ID, e.g. "all except SN-*, LI-9". Items marked *(Claude's own)* are in
-text Claude wrote on 2026-09-28 and will be fixed unless you object.
+Items marked *(Claude's own)* are in text Claude wrote on 2026-09-28.
+
+## Status: applied in v0.6.10 (2026-09-28)
+
+scottvr approved the whole list ("do the needful") and answered the decisions: Claude drafts
+the structure note's revision 2 and the survey's paper wording (he edits); cut the README's
+pasted help; fix the six tunings in code; he'll describe Gemini's role himself; ignore
+untracked HTML (now `*.html` in `.gitignore`). Every item is applied, except:
+- **VM-7** partly: the Viterbi tests the checklist expects (exact tie, landmine guard,
+  enumeration cap) don't exist. Parked.
+- **WK-26** partly: the live GitHub wiki is untouched (a separate repo; its Asturias page
+  still uses a removed flag).
+- **LI-4:** the StegTab post's URL is still a ✎ for scottvr; the academic variants are
+  unexamined.
+- **LI-5:** rows with only a DOI are marked "check level not recorded", not re-verified.
+
+Found while applying: `--stem-track` had crashed on every run since v0.3.0 (fixed in
+v0.6.10), and several smaller code bugs, now in the parking lot. R05 gained a third Bach
+fingering (the true v0.2 default, which has no as-written partner at all), and R04's
+playability counts were reproduced exactly by a new script.
 
 ## Decisions that are yours
 
