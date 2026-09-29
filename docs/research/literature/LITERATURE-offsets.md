@@ -9,11 +9,12 @@ every citation before it goes in the paper**, especially the rows not marked rea
 
 *Revised 2026-09-28:* the StegTab row was corrected (scottvr located the source; R13); the
 bottom line and the suggested wording were updated for R03 (richness is not a useful
-similarity), R05 and R07.
+similarity), R05 and R07. *Revised 2026-09-29:* a computer-vision section (§6).
 
 ## Bottom line
 
-- **The object is known. Using it as a measure looks new.** Mäkinen, Navarro & Ukkonen (2005,
+- **The object is known. Using it as a *music* measure looks new; in computer vision the count
+  is standard** (a label cost; see §6). Mäkinen, Navarro & Ukkonen (2005,
   §6) define the set of aligned transpositions T = {tᵢ = bᵢ − aᵢ} and note |T| = O(m). They use
   |T| only as a running-time bound, and take the *mode* of T ("the most voted transposition
   wins") to get transposition-invariant Hamming distance. Nothing found uses |T| (richness)
@@ -148,6 +149,24 @@ tuning, cross-tuning in fiddle and banjo traditions, puzzle canons.
   3. Set B = A + X and C = B + Y. Then δ_AC = X + Y determines the pair (X, Y), so
      d_α(A,C) = H_α(X, Y) > d_α(A,B) + d_α(B,C).
 
+## 6. Computer vision (added 2026-09-29; from memory, not yet verified)
+
+Found after the survey, from scottvr's question about image processing. The offset statistics
+are standard terms in image regularization and labeling:
+- **S** is the "L0 norm" of the gradient (Xu, Lu, Xu & Jia 2011, L0 smoothing); **TV** is total
+  variation (Rudin, Osher & Fatemi 1992); **richness** is a palette size, or a label count.
+- **Vocabulary vs. switches** is the split between a *label cost*, paid once for each label used
+  (Delong, Osokin, Isack & Boykov, IJCV 2012), and the *Potts* term, paid at every label change.
+- **Finding a homograph** is multi-model fitting with a label budget: PEARL (Isack & Boykov,
+  IJCV 2012) assigns point correspondences to a few geometric models, classically homographies.
+  Layered motion (Wang & Adelson 1994) is the same idea for optical flow.
+- **Decoder-relative sameness** has a visual analogue in hybrid images (Oliva, Torralba &
+  Schyns 2006): one picture that reads as two, depending on viewing distance.
+
+Consequence: the structure note's last possibly-new item (vocabulary vs. switches) is a known
+distinction, and the note's revision 3 claims nothing as new. Verify these citations before
+using them (R13).
+
 ## Suggested wording (for the paper)
 
 *Revised 2026-09-28 for R03, R05 and R07; the earlier version claimed the vocabulary as a
@@ -157,7 +176,8 @@ similarity measure, which R03 then failed to support.*
 > aligned strings but use only its mode (transposition-invariant Hamming distance);
 > transposition-aware alignment (Allali et al. 2007) and multi-track splitting (Lemström &
 > Mäkinen 2005) charge each *change* of transposition. On a fretted instrument, the *number*
-> of distinct offsets (a Hill number of order 0) has a physical reading: it is a lower bound
+> of distinct offsets (a Hill number of order 0; in computer-vision terms, a label count) has a
+> physical reading: it is a lower bound
 > on the strings two melodies need to share one tablature. Building on the per-string retuning
 > vectors of Allen & Goudeseune (2011) and De Souza's (2018, 2020) treatment of scordatura as
 > voice leading, we give an exact criterion for when one tablature denotes two given melodies

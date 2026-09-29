@@ -28,7 +28,7 @@ tested how far that argument goes. How the feature itself works is in
      own wiki tabs of two pieces)
 6. **How it happened:** [`story/`](story/README.md).
 
-## Where the claims stand (v0.6.9)
+## Where the claims stand (2026-09-29)
 
 | claim | status | evidence |
 |---|---|---|
@@ -41,8 +41,9 @@ tested how far that argument goes. How the feature itself works is in
 | Log-richness and offset entropy are pseudometrics modulo transposition (fixed alignment). | **Holds, but elementary.** Present them as applications of known bounds. | theory note §3–4; literature |
 | Other Rényi/Hill orders are not. | **Holds.** Explicit counterexamples; Aczél–Forte–Ng (1974). | `theory/triangle_check.py`; literature §5 |
 | Richness is a useful melodic similarity. | **Not supported.** On tune-family retrieval, transposition-invariant Hamming wins; adding richness, entropy and reuse to the baselines gains ≤ 0.006 MAP. (One grid alignment, whole folk melodies; R12 open.) | R03 |
-| With warping-path alignment, stutter-invariant subadditive statistics of δ stay pseudometrics; entropy and 1 − C₁ don't. | **Holds** (proof and numeric check). The composition step is the discrete Fréchet distance's. Whether the general condition is published is open. | PROOF-alignment; R13 |
-| Counting distinct offsets as a measure is unused in prior work. | **Holds as far as searched.** Mäkinen–Navarro–Ukkonen (2005) define the set but use only its mode. R03 suggests why: as a similarity it's weak. | literature §1; R03 |
+| With warping-path alignment, stutter-invariant subadditive statistics of δ stay pseudometrics; entropy and 1 − C₁ don't. | **Holds** (proof and numeric check), **but not new**: the proof is the discrete Fréchet distance's, and the general condition is best treated as folklore. | PROOF-alignment; theory note §7 |
+| Counting distinct offsets is unused as a *music* measure. | **Holds as far as searched, in music retrieval.** Mäkinen–Navarro–Ukkonen (2005) define the set but use only its mode; R03 suggests why (as a similarity it's weak). In computer vision the same count is the standard *label cost*. | literature §1, §6; R03 |
+| "Vocabulary vs. switches" is a new distinction. | **No.** It's label costs vs. the Potts smoothness term in computer vision, and finding a homograph is multi-model fitting with a label budget. (Citations from memory; to verify.) | theory note §6, §10 |
 | The tab homograph (one tab, two given unrelated melodies, and a solver) is new in the scholarship. | **Holds as far as searched.** Its ingredients are old (scordatura, Allen & Goudeseune 2011). StegTab (2012) is a letter cipher: not prior art for melodic homographs, though it shares the re-keying structure. Its later academic variants are unchecked. | literature §4 |
 
 ## Reproducing
