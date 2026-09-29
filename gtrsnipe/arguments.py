@@ -523,13 +523,15 @@ def setup_parser() -> ArgumentParser:
         type=str,
         default=None,
         choices=['guitar', 'bass', 'drums', 'vocals', 'piano', 'other'],
-        help="The instrument stem to isolate with Demucs. 'guitar' defaults to the 'other' stem."
+        help="The instrument stem to isolate with Demucs. 'guitar' is its own stem with the default "
+             "model (htdemucs_6s), and the 'other' stem with 4-stem models."
     )
     pipeline_group.add_argument(
         '--demucs-model',
         type=str,
         default='htdemucs_6s',
-        help="The demucs model to use for separation (e.g., htdemucs, htdemucs_fti, htdemucs_6s, mdx_extra)."
+        help="The demucs model to use for separation (e.g., htdemucs_6s, htdemucs, htdemucs_ft, mdx_extra). "
+             "Only htdemucs_6s has a guitar stem; with the others, --stem-track guitar uses the 'other' stem."
     )
     pipeline_group.add_argument(
         '--no-constrain-frequency',
