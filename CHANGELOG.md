@@ -103,13 +103,13 @@ R05 finishes the research items planned for step 2 of `docs/dev/BACKLOG.md`.
     output counts trivial hits (each string maps one pitch to one pitch), transpositions of
     the passage itself, and unrelated-sounding hits.
   - The best hits go through the solver's as-written check.
-- `docs/dev/RESULTS-R05-aswritten.md`, from Bach's Cello Suite No. 1 Prelude and six
+- `docs/research/results/RESULTS-R05-aswritten.md`, from Bach's Cello Suite No. 1 Prelude and six
   successive Asturias fingerings (`examples/aswritten/`):
   - As written is about 10,000× stricter than a free fit.
   - Which passages a tab can become depends on the fingering.
   - Past 16 notes, nothing unrelated-sounding fits either piece's real fingering.
 - `docs/wiki/`: a snapshot of the whole GitHub wiki, with Windows-safe file names.
-- `docs/dev/PROOF-alignment.md`:
+- `docs/research/theory/PROOF-alignment.md`:
   - the stutter-invariance principle: stutter-invariant, subadditive offset statistics stay
     pseudometrics under warping;
   - a subsection relating it to the Fréchet distance, DTW and elastic metrics (ERP, TWED,
@@ -129,7 +129,7 @@ Step 2 of `docs/dev/BACKLOG.md`, continued: R04, the corpus homograph scan.
   - It runs the full homograph solver (anchored and middle, string physics) on the best
     pairs and on a random sample per length, and writes verified shared tabs on request.
   - Options: `--cross-corpus`, `--named-melodies`.
-- `docs/dev/RESULTS-R04-scan.md` with charts (`docs/dev/r04_plot.py`, `docs/dev/figures/`):
+- `docs/research/results/RESULTS-R04-scan.md` with charts (`docs/research/results/r04_plot.py`, `docs/research/results/figures/`):
   - Folk song (Essen + Meertens): a third of same-rhythm 8-note phrase pairs from different
     tunes share a tab and sound unrelated; 8% at 12 notes, 3% at 16.
   - The solver places 93–100% of sampled pairs on a real guitar: A in STANDARD, B a retune
@@ -153,11 +153,11 @@ Step 2 of `docs/dev/BACKLOG.md`, continued: R03 and R07.
   - Scores are tie-aware MAP and AUC, with bootstrap intervals.
   - Logistic pair models, cross-validated by tune family, test whether the
     candidates add anything to the baselines.
-  - Result ([`docs/dev/RESULTS-R03-families.md`](docs/dev/RESULTS-R03-families.md)):
+  - Result ([`docs/research/results/RESULTS-R03-families.md`](docs/research/results/RESULTS-R03-families.md)):
     on MTC-ANN and MTC-FS-INST, transposition-invariant Hamming wins, and richness
     adds nothing (+0.002 to +0.006 MAP). It is a guitar statistic, not a similarity
     measure.
-- `docs/dev/PROOF-alignment.md` and `alignment_check.py` (R07): under optimized
+- `docs/research/theory/PROOF-alignment.md` and `alignment_check.py` (R07): under optimized
   (warping-path) alignment, log-richness, switch count and total variation stay
   pseudometrics; entropy and modal share don't (a 3-note counterexample).
   - `coupled_transposition_structure.md` gets pointers in §4.4 and §7.
@@ -181,9 +181,9 @@ The first research tools (step 2 of `docs/dev/BACKLOG.md`: R01, R02, R06).
     entropy, coverage C₁…C₆, transposition-invariant Hamming, switches, total
     variation and reuse. A and B can be corpus melodies or phrases
     (`essen:deut4659#p2`), files or inline melodies.
-- `docs/dev/LITERATURE-offsets.md`: the prior-art survey for the offset measures
+- `docs/research/literature/LITERATURE-offsets.md`: the prior-art survey for the offset measures
   and tab homographs.
-- `docs/dev/collision_plot_template.py`: a figure template for the corpus scan
+- `docs/research/results/collision_plot_template.py`: a figure template for the corpus scan
   (placeholder curves).
 
 ### Fixed
@@ -236,7 +236,7 @@ A correctness sweep (step 1 of `docs/dev/BACKLOG.md`).
 - **Tab homographs** (`--homograph A B [C …]`): one ordinary, fretted, playable
   tab that plays a different song in each tuning. Two aligned songs share a tab iff
   their note-for-note intervals split into ≤ N classes (one per string; see
-  [`docs/dev/DESIGN-homograph.md`](docs/dev/DESIGN-homograph.md)). The report walks
+  [`docs/app/DESIGN-homograph.md`](docs/app/DESIGN-homograph.md)). The report walks
   through each check in turn: alignment → **richness** (distinct intervals) → *free* /
   *anchored* (A keeps `--tuning`, an ordinary tab of A) / *middle* (both tunings
   retune one strung guitar) / *as written* (does A's own `.tab` fingering retune?).
@@ -254,7 +254,7 @@ A correctness sweep (step 1 of `docs/dev/BACKLOG.md`).
   restring suggestions. Homograph retunes are costed and flagged with it.
   `--scale-length`, `--string-gauges` configure the instrument.
 - Worked public-domain examples in `examples/homograph/`.
-- Dev note [`docs/dev/coupled_transposition_structure.md`](docs/dev/coupled_transposition_structure.md)
+- Dev note [`docs/research/theory/coupled_transposition_structure.md`](docs/research/theory/coupled_transposition_structure.md)
   (+ `triangle_check.py`): the offset-sequence analysis behind the homograph's
   *richness* (the Hill order-0 count of distinct note-for-note intervals). It covers
   which offset statistics are metrics modulo transposition, the explicit
@@ -277,7 +277,7 @@ A correctness sweep (step 1 of `docs/dev/BACKLOG.md`).
 
 ## [0.5.0] — 2026-09-25
 
-Unified-I/O refactor (design: [`docs/dev/DESIGN-unified-io.md`](docs/dev/DESIGN-unified-io.md)).
+Unified-I/O refactor (design: [`docs/app/DESIGN-unified-io.md`](docs/app/DESIGN-unified-io.md)).
 The player, chord charts, and converter are now one tool over a shared option
 surface and an event-driven transport. **Existing `gtrsnipe -i x -o y.{tab,mid,abc,vex}`
 invocations are unchanged (byte-identical output).**

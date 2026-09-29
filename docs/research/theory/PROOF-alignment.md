@@ -230,7 +230,7 @@ The two distinguishing choices:
   stretching) or d_richness (the fewest distinct transpositions, with free stretching) appear
   under other names. The closest known relatives are local-transposition alignment (Allali et
   al.) and Lemström & Mäkinen's minimum number of pieces, both from
-  [`LITERATURE-offsets.md`](LITERATURE-offsets.md) §1. Both charge a switch or piece every
+  [`LITERATURE-offsets.md`](../literature/LITERATURE-offsets.md) §1. Both charge a switch or piece every
   time the transposition changes, including a return to an earlier one.
 
 ### Citations to verify (none checked in this session)

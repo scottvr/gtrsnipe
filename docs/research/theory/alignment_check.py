@@ -19,7 +19,7 @@ d(A,C) > d(A,B) + d(B,C):
 
 It also prints the smallest violation found for each, as a certificate.
 
-Run:  python docs/dev/alignment_check.py [trials]
+Run:  python docs/research/theory/alignment_check.py [trials]
 """
 import math
 import random

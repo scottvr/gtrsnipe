@@ -5,7 +5,7 @@ logistic functions, not data. R04 (the corpus homograph scan, see BACKLOG.md) is
 meant to produce the real numbers; keep the styling and swap the curves for
 measured ones.
 
-Run:  python docs/dev/collision_plot_template.py [out.png]
+Run:  python docs/research/results/collision_plot_template.py [out.png]
       (shows the figure, or saves it at 300 dpi when given a path)
 """
 import sys

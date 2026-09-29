@@ -180,3 +180,11 @@ cython_debug/
 
 # gtrsnipe golden-regression fixtures (may contain copyrighted MIDI) — local only
 tests/golden/cases/
+
+# Local VS Code "Markdown → HTML" exports of the docs (they embed file:// paths to a
+# local extension). Hand-made HTML pages meant for the repo can live elsewhere.
+docs/research/theory/*.html
+docs/research/literature/*.html
+docs/research/results/*.html
+docs/app/*.html
+docs/dev/*.html

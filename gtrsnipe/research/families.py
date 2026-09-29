@@ -1,5 +1,5 @@
 """Tune-family retrieval: do the offset measures find variants of the same tune?
-(backlog R03; the experiment in docs/dev/coupled_transposition_structure.md s11)
+(backlog R03; the experiment in docs/research/theory/coupled_transposition_structure.md s11)
 
 Every measure sees the SAME note pairing, so they differ only in how they score
 the coupling. The pairing is measure-neutral: each melody is sampled at ``grid``

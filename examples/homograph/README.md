@@ -3,7 +3,7 @@
 Public-domain melodies (plain ABC in C, explicit durations) and the shared tabs
 `gtrsnipe --homograph` builds from them. Each `*.report.txt` is the full report,
 and each `*.tab` is the tab itself, with every song's tuning key in its header.
-Theory: [`docs/dev/DESIGN-homograph.md`](../../docs/dev/DESIGN-homograph.md).
+Theory: [`docs/app/DESIGN-homograph.md`](../../docs/app/DESIGN-homograph.md).
 
 Decode any tab in any key through the ordinary converter, e.g.
 

@@ -174,7 +174,7 @@ report prints each tab's discomfort and fret range), `--homograph-transpose`/`-a
 (number the strings and omit the default tuning, so the text favors no song),
 `--scale-length`, `--string-gauges`. Every liberty taken is disclosed in the report
 and the tab header. Theory, proofs, physics, and limits:
-[`docs/dev/DESIGN-homograph.md`](docs/dev/DESIGN-homograph.md). Worked examples:
+[`docs/app/DESIGN-homograph.md`](docs/app/DESIGN-homograph.md). Worked examples:
 [`examples/homograph/`](examples/homograph/).
 
 #### Checking a tab against a recording's MIDI
@@ -201,7 +201,7 @@ reads the Essen Folksong Collection, the Meertens Tune Collections, Nottingham,
 POP909 and Lakh into one monophonic format and caches each as a single file. It
 also prints the **offset profile** of two aligned melodies: richness, entropy,
 coverage, switches, total variation and reuse (see
-[`docs/dev/coupled_transposition_structure.md`](docs/dev/coupled_transposition_structure.md)).
+[`docs/research/theory/coupled_transposition_structure.md`](docs/research/theory/coupled_transposition_structure.md)).
 The corpora aren't included; point `--data` (or `GTRSNIPE_CORPUS_ROOT`) at a
 folder holding them.
 

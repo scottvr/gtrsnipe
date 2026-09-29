@@ -2,7 +2,7 @@
 
 Run on 2026-09-26/27 with `gtrsnipe-research aswritten` (gtrsnipe 0.6.5), against every cached
 corpus: Essen, MTC-FS-INST, Nottingham, POP909 and Lakh Clean. For Lakh that includes skyline
-melodies. The tabs are in [`examples/aswritten/`](../../examples/aswritten/).
+melodies. The tabs are in [`examples/aswritten/`](../../../examples/aswritten/).
 
 ## The question
 

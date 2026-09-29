@@ -13,7 +13,7 @@ For each phrase length (notes), among same-rhythm pairs from different works:
                         other song a retune of it, string physics on
   no restring           ... the same without swapping any string's gauge
 
-Run:  python docs/dev/r04_plot.py scan.json [more.json ...] [--out fig.png] [--min-sample 10]
+Run:  python docs/research/results/r04_plot.py scan.json [more.json ...] [--out fig.png] [--min-sample 10]
       (several files are merged by length -- e.g. one window-length scan each)
 """
 import json

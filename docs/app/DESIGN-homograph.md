@@ -159,7 +159,7 @@ placements (1,024) looking for one within it. That's slower, but opt-in.
 `gtrsnipe-research scan` takes `--max-discomfort` and `--max-fret` too.
 
 **What it showed.** On 50 random different-sounding eligible folk pairs from R04
-(`RESULTS-R04-scan.md`, "Playability"), the anchored solver found a tab for 49. But the
+([`RESULTS-R04-scan.md`](../research/results/RESULTS-R04-scan.md), "Playability"), the anchored solver found a tab for 49. But the
 median discomfort was about 100 points per note, with the top fret usually 24. With a limit,
 the anchored solver found this many:
 
