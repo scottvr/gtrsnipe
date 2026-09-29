@@ -1,17 +1,36 @@
 # Coupled Transposition Structure in Aligned Melodies
 
-## Working technical note, revision 1 (2026-09-26)
+## Working technical note, revision 2 (2026-09-28)
 
-**What changed from the original draft.** A triangle-inequality check
-(`docs/research/theory/triangle_check.py`) and a prior-art pass. The metric facts all
-survived, but they are elementary, and most of the statistics already have
-established names (§10). Three more of our statistics turned out to be metrics
-too (§4.3, §5.2). The metric property is proved here for Hill orders 0 and 1;
-explicit counterexamples rule out q = 1/2, 2 and infinity (§4.4), so there is no
-general Hill/Renyi family of metrics. Optimizing the alignment can break the triangle
-inequality (§7). "Rank" is renamed **richness** (§13). The one
-possibly-new idea narrowed to **vocabulary vs. switches** (§6), with a concrete
-test against existing baselines (§11).
+**Provenance.** The original draft was scottvr's, developed with ChatGPT from a remark of
+Claude's that log(richness) behaves like a distance; it isn't kept in the repo. Revision 1
+(2026-09-26) was Claude's: a triangle-inequality check (`triangle_check.py`) and a prior-art
+pass, then corrected by scottvr (richness is a *lower bound* on string demand; "richness ≤ s"
+is a budget, not an equivalence relation). Revision 2 (2026-09-28, Claude) adds the outcomes
+below as update boxes; the body of revision 1 is unchanged except where marked.
+
+**What happened since revision 1.**
+- **The literature survey (R06)** found names for nearly everything, and showed that no Rényi
+  order other than 0 and 1 gives a metric (§4.4, §10;
+  [`LITERATURE-offsets.md`](../literature/LITERATURE-offsets.md)).
+- **The alignment question (§7) is settled** (R07, [`PROOF-alignment.md`](PROOF-alignment.md)):
+  under optimized alignment, stutter-invariant subadditive statistics stay pseudometrics,
+  including S and TV, which revision 1 guessed would fail.
+- **The usefulness test (§11) came back negative** (R03,
+  [`RESULTS-R03-families.md`](../results/RESULTS-R03-families.md)): richness is a weak
+  tune-family similarity, and adding it to the baselines gains at most 0.006 MAP. By this
+  note's own decision rule, richness is a guitar statistic (a string budget), not a
+  similarity measure (§0, §6).
+- **Homographs in the wild** were measured separately: R04 (free fits in folk and pop) and R05
+  (real fingerings, as written).
+
+**What revision 1 changed from the original draft.** The metric facts all survived, but they
+are elementary, and most of the statistics already have established names (§10). Three more
+of our statistics turned out to be metrics too (§4.3, §5.2). The metric property is proved
+here for Hill orders 0 and 1; explicit counterexamples rule out q = 1/2, 2 and infinity
+(§4.4), so there is no general Hill/Renyi family of metrics. "Rank" is renamed **richness**
+(§13). The one possibly-new idea narrowed to **vocabulary vs. switches** (§6), with a
+concrete test against existing baselines (§11).
 
 ---
 
@@ -40,6 +59,13 @@ at least one independently retuned string class, while returning to an offset al
 in the vocabulary adds no new offset value. Fret range and simultaneity may still
 require duplicate strings. Whether the distinction has musical value is an empirical
 question (§11).
+
+> **Answered (R06, R03; 2026-09-26).** The literature survey found no prior use of the
+> offset count as a measure: Mäkinen, Navarro & Ukkonen (2005) define the offset set but use
+> only its mode. R03 then tested it on the Meertens tune families: no gain over TI-Hamming,
+> and reuse `u` carried no stable signal. So the distinction has a physical meaning (the
+> string budget) but, as tested, no value as a melodic similarity. The §6 hypothesis about
+> sequences and echoes remains untested.
 
 ---
 
@@ -230,7 +256,14 @@ reuse  u = (S + 1) - r >= 0        (how many runs return to an already-used clas
 
 ---
 
-## 6. The possibly-new piece: vocabulary vs. switches
+## 6. Vocabulary vs. switches
+
+> **Update (R06, R03).** The survey found no prior measure that counts the offset vocabulary
+> (LITERATURE §1). R03 tested it as a tune-family similarity and found no gain (§11). Not
+> tested: the hypothesis below about sequences, echoes and call-and-response. Also, that
+> Allali et al. charge a *return* to an earlier transposition is inferred from their
+> description, not confirmed (on the R13 checklist); for Lemström & Mäkinen's pieces it is
+> explicit.
 
 Existing local-transposition alignment (Allali, Ferraro, Hanna & Iliopoulos 2007)
 lets a match change transposition partway through and **charges each change**. It
@@ -264,9 +297,10 @@ novelty (§10).
 > **Update (R07, 2026-09-26):** settled in [`PROOF-alignment.md`](PROOF-alignment.md). Under
 > warping-path alignment, every offset statistic that ignores consecutive repeats and is
 > subadditive stays a pseudometric: log-richness, **S and TV** (the sketch below guessed S
-> and TV would not), the largest jump, and the offset range (a transposition-invariant
+> and TV would not), the largest jump, and the offset range (twice a transposition-invariant
 > discrete Fréchet distance). Shannon entropy and 1 − C₁ count occupancy and fail, with a
-> 3-note counterexample. The capped re-rhythm remains outside the result.
+> counterexample on melodies of 1, 2 and 2 notes. The capped re-rhythm remains outside the
+> result.
 
 Everything above assumes the alignment `a_i <-> b_i` is given. Once the alignment is
 *optimized* per pair, the triangle inequality is no longer automatic. Dynamic time
@@ -294,8 +328,9 @@ properties still hold.
 ## 8. What these measures ignore
 
 - **Offset size.** `0 6 0 6` (tritones) and `0 1 0 1` (semitones) have the same
-  richness, entropy, modal share and switch count. Only TV sees the size. Pair
-  these with a size-aware measure before claiming anything perceptual.
+  richness, entropy, modal share and switch count. Only TV sees the size (and, under
+  optimized alignment, R07's largest jump J and range R). Pair these with a size-aware
+  measure before claiming anything perceptual.
 - **Order, in Family I.** Richness, entropy and modal share cannot tell `5 5 7 7`
   from `5 7 5 7`. Family II can.
 - **Rhythm.** Durations enter only through the alignment.
@@ -343,32 +378,41 @@ melody" depends on which keys the decoder is allowed.
 | this note | established name | where |
 |---|---|---|
 | offset histogram | difference histogram used for transposition-invariant matching | Mäkinen, Navarro & Ukkonen 2005 |
-| 1 − C1 | transposition-invariant Hamming distance (normalized) | same; also "P2" in Ukkonen, Lemström & Mäkinen 2003 |
+| 1 − C1 | transposition-invariant Hamming distance (normalized) | same; the unaligned analogue is "P2" (the mode over all note pairs) in Ukkonen, Lemström & Mäkinen 2003 |
+| C1 | "consistency": the number of voices moving the same distance | Straus 2003, 2005 |
 | S | Hamming distance between interval sequences | interval encoding, e.g. Lemström & Ukkonen 2000 |
-| TV | L1 distance between interval sequences | same family |
+| TV | L1 distance between interval sequences | SIMILE's `diff` (Müllensiefen & Frieler 2004) |
 | richness, R_eff, 1/C1 | Hill numbers of order 0, 1, infinity (richness, exp-Shannon, reciprocal Berger-Parker) | Hill 1973; Jost 2006 |
 | unaligned all-pairs version of the histogram | Lewin's interval function IFUNC | Lewin 1987 |
 | transposition as quotient by constant offsets | the T in OPTIC | Callender, Quinn & Tymoczko 2008 |
-| subadditivity of log-support and entropy of sums | sumset bounds; entropy sumset theory | additive combinatorics; Tao 2010 |
+| subadditivity of log-support and entropy of sums | elementary: δ_AC is a function of the coupled pair, so H(δ_AC) ≤ H(pair) ≤ H(δ_AB) + H(δ_BC) | (not Tao's or Ruzsa's entropy sumset theory, which concerns *independent* summands; see LITERATURE §5) |
+| per-string retuning vector (the tuning key of a homograph) | the "retuning cipher" | Allen & Goudeseune 2011 |
 | switch-penalized local transposition | local transpositions in alignment | Allali, Ferraro, Hanna & Iliopoulos 2007 |
 | substitution-cipher sameness | variation of information | Meilă 2003/2007 |
 
-Also worth reading before any claim of novelty: δ- and γ-approximate matching
-(Cambouropoulos, Crochemore, Iliopoulos et al.); translation-vector pattern discovery
-(SIA/SIATEC, Meredith, Lemström & Wiggins 2002); voice-leading geometry (Tymoczko;
-Straus); the melodic-similarity measure comparisons of Müllensiefen & Frieler and of
-Janssen, van Kranenburg & Volk (2017).
+The literature survey (R06, [`LITERATURE-offsets.md`](../literature/LITERATURE-offsets.md))
+has since covered the neighbours revision 1 listed as worth reading: δ- and γ-approximate
+matching, SIA/SIATEC translation vectors, voice-leading geometry, and the melodic-similarity
+comparisons of Müllensiefen & Frieler and of Janssen, van Kranenburg & Volk (2017). None counts
+distinct offsets.
 
 ---
 
 ## 11. The experiment that decides usefulness
 
+> **Answered (R03, 2026-09-26).** Run on MTC-ANN and MTC-FS-INST with one shared grid
+> alignment: TI-Hamming (1 − C1) is best; richness trails it by 0.13–0.21 MAP; adding
+> richness, entropy and reuse to the baselines gains at most 0.006 MAP. **No gain**: by the
+> decision rule below, richness is a guitar statistic. Not run: the alignment-based baseline,
+> the Janssen et al. benchmark, and the phrase level ([`RESULTS-R03`](../results/RESULTS-R03-families.md),
+> "Limits"). The in-the-wild question at the end of this section was answered by R04 and R05.
+
 Question: **does the offset profile separate same-tune variants from unrelated
 melodies better than the established baselines?**
 
 - **Data.** The Meertens Tune Collections. The annotated subset MTC-ANN (tune-family
-  labels plus phrase annotations; verify its size) suits a first pass; MTC-FS-INST
-  (~18k melodies) suits scale.
+  labels plus phrase annotations; 360 melodies in 26 families) suits a first pass;
+  MTC-FS-INST (~18k melodies) suits scale.
 - **Baselines.** 1 − C1 (TI-Hamming), S (interval Hamming), and a standard
   alignment-based measure. Janssen, van Kranenburg & Volk (2017) is the benchmark
   to compare against on this corpus.
@@ -389,7 +433,7 @@ The homograph search in the wild (do playable low-richness pairs occur between
 
 ---
 
-## 12. Homograph corollaries (from the original §16–17, condensed)
+## 12. Homograph corollaries (condensed from the original draft)
 
 - **Prefilter.** `C_6 < 1` means no exact 6-string homograph at this alignment.
   `C_6 = 1` sends the pair on to the full fretboard/physics solver.
@@ -438,20 +482,34 @@ Verified 2026-09-26:
   46(2):118–134, 2017.
   <https://www.tandfonline.com/doi/full/10.1080/09298215.2017.1316292>
 
-From memory (check venue and details before citing):
+With details from the literature survey (R06; its "Verified" column says how each was checked,
+and [`LITERATURE-offsets.md`](../literature/LITERATURE-offsets.md) has more):
 
 - M. O. Hill. *Diversity and evenness: a unifying notation and its consequences.*
-  Ecology, 1973.
-- L. Jost. *Entropy and diversity.* Oikos, 2006.
-- C. Callender, I. Quinn, D. Tymoczko. *Generalized voice-leading spaces.* Science, 2008.
+  Ecology 54(2):427–432, 1973. doi:10.2307/1934352
+- L. Jost. *Entropy and diversity.* Oikos 113(2):363–375, 2006.
+  doi:10.1111/j.2006.0030-1299.14714.x
+- C. Callender, I. Quinn, D. Tymoczko. *Generalized voice-leading spaces.* Science
+  320:346–348, 2008. doi:10.1126/science.1153021
 - T. Tao. *Sumset and inverse sumset theory for Shannon entropy.* Combinatorics,
-  Probability and Computing, 2010.
+  Probability and Computing 19(4):603–639, 2010. doi:10.1017/S0963548309990642 (a
+  contrast only: it concerns independent summands)
+- D. Lewin. *Re: Intervallic relations between two collections of notes.* JMT
+  3(2):298–301, 1959 (doi:10.2307/842856); and *Generalized Musical Intervals and
+  Transformations*, 1987.
+- K. Lemström, E. Ukkonen. *Including interval encoding into edit distance based
+  music comparison and retrieval.* AISB 2000, pp. 53–60.
+- E. Ukkonen, K. Lemström, V. Mäkinen. *Geometric algorithms for transposition
+  invariant content-based music retrieval.* ISMIR 2003. doi:10.5281/zenodo.1417477
+- D. Meredith, K. Lemström, G. Wiggins. *Algorithms for discovering repeated
+  patterns in multidimensional representations of polyphonic music.* JNMR
+  31(4):321–345, 2002. doi:10.1076/jnmr.31.4.321.14162
+- D. Müllensiefen, K. Frieler. *Computing in Musicology* 13:147–176, 2004 (SIMILE).
+- J. N. Straus. *Music Theory Spectrum* 25(2):305–352, 2003.
+- A. Allen, C. Goudeseune. *Topological considerations for tuning and fingering stringed
+  instruments.* arXiv:1105.1383, 2011.
+
+Not yet verified anywhere (from memory; check before citing):
+
 - M. Meilă. *Comparing clusterings: an information based distance.* J. Multivariate
   Analysis, 2007 (COLT 2003).
-- D. Lewin. *Generalized Musical Intervals and Transformations.* 1987.
-- K. Lemström, E. Ukkonen. *Including interval encoding into edit distance based
-  music comparison and retrieval.* AISB 2000.
-- E. Ukkonen, K. Lemström, V. Mäkinen. *Geometric algorithms for transposition
-  invariant content-based music retrieval.* ISMIR 2003.
-- D. Meredith, K. Lemström, G. Wiggins. *Algorithms for discovering repeated
-  patterns in multidimensional representations of polyphonic music.* JNMR, 2002.

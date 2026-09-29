@@ -1,9 +1,9 @@
 """Figure template: how often do phrases in a corpus share a tab?
 
-Contributed by Gemini via scottvr. The curves are ILLUSTRATIVE -- two hand-picked
-logistic functions, not data. R04 (the corpus homograph scan, see BACKLOG.md) is
-meant to produce the real numbers; keep the styling and swap the curves for
-measured ones.
+Contributed by Gemini, via scottvr, after it reviewed PROOF-alignment (2026-09-26).
+The curves are ILLUSTRATIVE -- two hand-picked logistic functions, not data. R04
+(the corpus homograph scan) produced the real numbers: r04_plot.py keeps this
+styling and draws the measured curves (figures/r04-*.png).
 
 Run:  python docs/research/results/collision_plot_template.py [out.png]
       (shows the figure, or saves it at 300 dpi when given a path)

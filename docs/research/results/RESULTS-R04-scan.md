@@ -65,11 +65,12 @@ golden cases. This note keeps only references (corpus:id@notes).
 - **String tension barely filters, but comfort does.** At 7–20 notes the full solver places
   93–100% of the sampled pairs on a real guitar: an ordinary STANDARD tab of A, with B a
   retune of the same guitar.
-  - For a quarter to a half of them, no string needs a different gauge.
+  - For 23–60% of them, no string needs a different gauge.
   - But most of those tabs are awkward: big leaps, and usually fret 24. With a playability
     limit only a minority survive (see "Playability" below, added with F06 in v0.6.6).
   - Letting both songs retune one guitar ("middle") solves 100%.
-  - Rhythm plus the offset count is the binding constraint, not the strings.
+  - For whether a shared tab *exists*, rhythm plus the offset count is the binding
+    constraint, not the strings. For whether it's comfortable, the fingering binds too.
 - **Pop melodies look easy, but are mostly trivial.**
   - 45% of same-rhythm 16-note Lakh window pairs fit six strings. But pop melodies circle a few
     pitches, so most of those pairs have at most 6 distinct pitch pairs, and fitting was
@@ -86,8 +87,8 @@ golden cases. This note keeps only references (corpus:id@notes).
 ![folk](figures/r04-folk.png)
 
 Percentages are of same-rhythm pairs from different works; "partner" is the share of phrases
-with at least one unrelated-sounding eligible partner. A dash (—) means the solver was not
-sampled at that length.
+with at least one unrelated-sounding eligible partner. A dash (—) means fewer than 10 pairs
+were sampled for the solver at that length.
 
 | notes | pairs | eligible | trivial | unrelated-sounding | phrases with a partner | anchored solvable (no restring) | middle solvable (no restring) |
 |---|---|---|---|---|---|---|---|
@@ -147,12 +148,17 @@ With default weights that's mostly hand movement (3 points per fret shifted betw
 and high-fret penalties. A's own best tab typically scores −2 to −7 per note. On 50 random
 unrelated-sounding eligible folk pairs from the samples above:
 
-| | anchored tabs found | notes |
-|---|---|---|
-| no limit | 49/50 | median discomfort ≈ 100 points per note, top fret usually 24 |
-| ≤ 50 points per note (about a 17-fret leap per note) | 19/50 | median top fret 19 (measured in the shallower search) |
-| ≤ 20 | 4/50 | |
-| ≤ 5 | 0/50 | |
+| max discomfort (points per note) | anchored tabs found | median discomfort | median top fret |
+|---|---|---|---|
+| no limit | 49/50 | 119 | 24 |
+| 50 (about a 17-fret leap per note) | 19/50 | 42 | 17 |
+| 20 | 4/50 | 16.5 | 18.5 |
+| 5 | 0/50 | — | — |
+
+Reproduce with `python docs/research/results/r04_playability.py folk.json CACHE_DIR` (the
+`folk.json` of the scan above; `random.seed(3)`, 50 pairs, all lengths pooled). The counts
+were first measured on 2026-09-27 and reproduced exactly with this script on 2026-09-28. A
+larger sample of 120 pairs gave a median discomfort of about 100 with no limit.
 
 So the earlier "the solver places 93–100% on a real guitar" is true of *string tension*, not
 of comfort. A comfortable homograph (within a few points of A's own tab) was not found for any
@@ -176,7 +182,7 @@ mean that a *practical* demonstration needs hand-picked pairs and `--homograph-m
 - **"Sounds unrelated"** is two proxies (C₁ and contour). Pairs that pass can still share a key,
   a register or a style, as the two Dutch songs do.
 - **Playability.** The solver is correct but not tasteful: it happily reaches fret 24 on the low
-  strings. Ranking by playability is parked for later.
+  strings. See "Playability" above for how rare comfortable tabs are.
 - **Units.** Phrases are the corpus's own. Windows are fixed-length at a stride of 4, so a
   shared passage longer than the window is found in pieces.
 

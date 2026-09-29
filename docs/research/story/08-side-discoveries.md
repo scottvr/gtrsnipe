@@ -67,6 +67,12 @@ had been added to fix one transcription, just enough to override the knobs befor
 hand-tuning always eventually worked for a given song. But the Asturias wiki page needs a
 long command line to get a playable tab, while Mr Crowley largely works with the defaults.
 
+The docs audit (2026-09-28) added a twist. The Asturias walk-through was written for v0.2's
+greedy mapper. Under the Viterbi mapper, the awkward openings of steps 2–5 never appear, and
+the step-5 flags already give nearly the final tab. So part of that long command line was
+compensating for the greedy search, not the weights. How far that generalizes is parked as a
+question to measure.
+
 Discussing why produced a plan, parked for later:
 - **Read the weights as exchange rates.** Only their ratios matter, so fix one as "a fret of
   hand travel" and read the others against it. A string switch then costs 1.7 frets of

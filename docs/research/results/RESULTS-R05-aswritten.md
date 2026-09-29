@@ -2,11 +2,22 @@
 
 Run on 2026-09-26/27 with `gtrsnipe-research aswritten` (gtrsnipe 0.6.5), against every cached
 corpus: Essen, MTC-FS-INST, Nottingham, POP909 and Lakh Clean. For Lakh that includes skyline
-melodies. The tabs are in [`examples/aswritten/`](../../../examples/aswritten/).
+melodies. The tabs are gtrsnipe's own, from its wiki (none is a third-party tab); they're in
+[`examples/aswritten/`](../../../examples/aswritten/). Reproduce with:
+
+```bash
+R="--corpora essen mtc-fs nottingham pop909 lakh-clean"
+gtrsnipe-research --data DIR aswritten examples/aswritten/asturias-v*.tab \
+    examples/aswritten/bach-prelude-measure-*.tab $R --json small.json
+gtrsnipe-research --data DIR aswritten examples/aswritten/bach-prelude-full.tab $R --solve 15 --json bach-full.json
+# the 32-note tallies for the whole Prelude (every hit kept):
+gtrsnipe-research --data DIR aswritten examples/aswritten/bach-prelude-full.tab $R \
+    --lengths 32 --keep 1000 --solve 0 --json bach-full-32.json
+```
 
 ## The question
 
-R04 let the solver choose which notes share a string. A published tab has already chosen.
+R04 let the solver choose which notes share a string. A real tab has already chosen.
 **Can a tab's own fingering, exactly as written, be retuned into a different song?** It can
 only if every note the tab puts on one string moves by the same interval (per-string constancy),
 which is far stricter than R04's "richness ≤ 6".
@@ -43,33 +54,43 @@ At 8 notes, 52–76% of same-length candidates fit *some* tab (R04's criterion),
 
 ### Fingering decides the partners: Asturias, one melody, six tabs
 
-Non-trivial as-written hits per million candidates (counts in brackets):
+Non-trivial as-written hits (per million candidates in brackets):
 
 | version | strings | 8 notes | 12 | 16 | 24 |
 |---|---|---|---|---|---|
 | v1 (first autotranscription) | 5 | — (doubled unisons break every window) | — | — | — |
-| v2 | 3 | 37 | 0.04 (1) | 0 | 0 |
-| v3 | 2 | 70 | 0 | 0 | 0 |
-| v4 | 4 | 142 | 1.75 (40) | 0.14 (2) | 0 |
-| v5 | 4 | 71 | 3.0 (69) | 0 | 0 |
-| **v6 (the by-ear fingering)** | 3 | 92 | 6.5 (279) | 0.75 (23) | 0 |
+| v2 | 3 | 1,448 (37) | 1 (0.04) | 0 | 0 |
+| v3 | 2 | 2,714 (70) | 0 | 0 | 0 |
+| v4 | 4 | 5,526 (142) | 40 (1.75) | 2 (0.14) | 0 |
+| v5 | 4 | 2,772 (71) | 69 (3.0) | 0 | 0 |
+| **v6 (the by-ear fingering)** | 3 | 6,194 (92) | 279 (6.5) | 23 (0.75) | 0 |
 
 - The same melody's tabs differ several-fold in how many other passages they can become, and
   in which ones.
 - Unrelated-sounding hits exist only at 8 notes (v4: 1,919; v5: 591; v6: 1,512).
 - No version has any as-written partner at 24 notes.
 
-### A fingering can make the frets meaningless: one Bach measure, two fingerings
+### The fingering decides: one Bach measure, three fingerings
+
+The same 16 notes, fingered three ways, all from the wiki's Bach page:
 
 | fingering | strings | as-written hits at 8 notes (per million) | trivial | non-trivial |
 |---|---|---|---|---|
-| default mapper scoring | 3 | 1,292,404 (81,373: 8% of all candidates) | **all** | 0 |
-| tuned options (`--sweet-spot-low 0 --sweet-spot-high 4 --string-switch-penalty 0`: "exactly how I would have transcribed it manually") | 2 | 15,261 (961) | 0 | 15,261 |
+| v0.2's default (the wiki's first step: all on the A string) | 1 | **0**, beyond transpositions of the passage itself | — | 0 |
+| string-switch penalty removed (`--string-switch-penalty 0`, the wiki's second step) | 3 | 1,292,404 (81,373: 8% of all candidates) | **all** | 0 |
+| final options (`--sweet-spot-low 0 --sweet-spot-high 4 --string-switch-penalty 0`: "exactly how I would have transcribed it manually") | 2 | 15,261 (961) | 0 | 15,261 |
 
-In the default fingering each string carries one pitch. Any passage that repeats three pitches
-in the same pattern fits, so the tab constrains nothing but the pattern. The tuned fingering puts
-two pitches on one string, and the hit rate drops 85×. Even then every hit is another
-repetitive figure; none sounds unrelated.
+- **One string pins the music down completely.** Every note shares one offset, so only a
+  transposition of the passage fits: the tab says as much as the notes themselves.
+- **One pitch per string pins down almost nothing.** Any passage that repeats three pitches
+  in the same pattern fits, so the tab constrains nothing but the pattern.
+- **The final fingering sits in between.** Two pitches share a string, and the hit rate
+  drops 85× from the second fingering. Even then every hit is another repetitive figure;
+  none sounds unrelated.
+
+(An earlier version of this section called the second fingering "default mapper scoring".
+It is the wiki's second step, with the string-switch penalty removed. The first-step
+fingering was added on 2026-09-28; rerunning the other two reproduced their counts exactly.)
 
 ### The whole Prelude, as written
 
@@ -82,12 +103,14 @@ repetitive figure; none sounds unrelated.
 | 32 | 419 M | 40,278 | 39,799 | 479 (1.1) | 0 |
 
 - Arpeggiated figuration makes most matches trivial (97% at 8 notes).
-- Non-trivial alternatives persist to 32 notes: 479 hits in 26 works, including *Una Paloma
-  Blanca*, the Toccata and Fugue in D minor, the Brandenburg Concerto No. 2 finale and *Liberian
-  Girl*.
-- **Every one of them is itself mechanical figuration, and 475 of the 479 also follow Bach's
-  contour** (agreement > 0.6). Past 16 notes, the only passages this fingering can become are
-  other broken-chord figures moving the same way.
+- Non-trivial alternatives persist to 32 notes: 479 hits, from 26 works, including *Una
+  Paloma Blanca*, the Toccata and Fugue in D minor, the Brandenburg Concerto No. 2 finale and
+  *Liberian Girl*. Counted once per tab window and corpus melody, they are 53 distinct matches.
+- **At 32 notes, all 53 are themselves mechanical figuration, and 51 of the 53 also follow
+  Bach's contour** (agreement > 0.6). The only passages this fingering can become at that length
+  are other broken-chord figures, nearly all moving the same way. (An earlier version said "475
+  of the 479"; the per-hit contour values behind that count weren't saved, and the rerun keeps
+  one hit per window and melody.)
 - **Physics isn't the limit here either.** The solver confirmed every hit it checked: 15 for
   the Prelude, each needing one or two strings re-gauged, and 10 per Asturias version and Bach
   measure.

@@ -8,21 +8,22 @@ guitarist has to play the result.
 
 ## Real tabs, as written (R05)
 
-A published tab has already chosen its fingering. It can be retuned into another song only if
+A real tab has already chosen its fingering. It can be retuned into another song only if
 every note it puts on one string moves by the *same* interval. The test used the tabs from
-gtrsnipe's own wiki: the Bach Cello Suite No. 1 Prelude, and six successive transcriptions of
+gtrsnipe's own wiki, not third-party ones: the Bach Cello Suite No. 1 Prelude, and six successive transcriptions of
 Albéniz's *Asturias*. The first Asturias was an "unplayable abomination"; the sixth came from
 options tuned until the output matched how scottvr plays it.
 
 - **As written is about 10,000× stricter than a free fit.**
 - **Short passages are still ambiguous.** Hundreds of unrelated-sounding 8-note passages
   (1,512 for Asturias v6) fit a real fingering exactly.
-- **Long passages are not.** Past 16 notes, nothing unrelated-sounding fits either piece.
-  What still fits is look-alike figuration.
-- **The fingering decides, not the melody.** One Bach measure with gtrsnipe's default
-  settings gives every string a single pitch, so it "matches" 8% of every candidate passage,
-  and every match is trivial: the tab says only which string to pluck. The same measure with
-  scottvr's tuned options (two pitches on one string) matches 85× less.
+- **Long passages are not.** At 24 and 32 notes, nothing unrelated-sounding fits either
+  piece. What still fits is look-alike figuration.
+- **The fingering decides, not the melody alone.** One Bach measure, fingered with the
+  string-switch penalty removed (the wiki's second step), gives every string a single pitch.
+  So it "matches" 8% of every candidate passage, and every match is trivial: the tab says only
+  which string to pluck. The same measure with scottvr's final options (two pitches on one
+  string) matches 85× less.
 
 So the strong form of the claim, "any tab could be any song", holds for short passages, and
 for a tab stripped of its tuning. It doesn't hold for a long, fully specified tab.
@@ -49,7 +50,7 @@ On 50 sampled folk pairs:
 
 | max discomfort (points per note) | pairs with a tab |
 |---|---|
-| no limit | 49 (median about 100, usually reaching fret 24) |
+| no limit | 49 (median about 100–120, usually reaching fret 24) |
 | 50 (about a 17-fret leap per note) | 19 |
 | 20 | 4 |
 | 5 | 0 |

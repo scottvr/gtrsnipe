@@ -6,7 +6,8 @@ gtrsnipe versions from public-domain music. Each file has a `// Tuning:` header 
 | file | source | notes |
 |---|---|---|
 | `bach-prelude-full.tab` | Bach, Cello Suite No. 1, Prelude: the wiki's full transcription (42 systems) | 654 notes on 6 strings |
-| `bach-prelude-measure-default.tab` | one measure, default mapper scoring | every string holds a single pitch |
+| `bach-prelude-measure-v02default.tab` | one measure, as v0.2's default mapper fingered it (the wiki's first step) | all 16 notes on the A string |
+| `bach-prelude-measure-noswitch.tab` | the same measure with `--string-switch-penalty 0` (the wiki's second step; mislabelled "default" until 2026-09-28) | every string holds a single pitch |
 | `bach-prelude-measure-tuned.tab` | the same measure with `--sweet-spot-low 0 --sweet-spot-high 4 --string-switch-penalty 0`: gtrsnipe output that scottvr called "exactly how I would have transcribed it manually" | two pitches share a string |
 | `asturias-v1.tab` … `asturias-v6.tab` | Albéniz, *Asturias (Leyenda)*: the wiki's six successive transcriptions, from the first autotranscription (v1, with doubled unisons) to v6, the tuned option set whose output matches how scottvr plays it by ear | 29–45 notes |
 

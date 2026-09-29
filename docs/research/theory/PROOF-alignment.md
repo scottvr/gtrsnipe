@@ -20,8 +20,9 @@ reweights notes, as §7 feared, but reweighting only matters to statistics that 
 weights.
 
 Numeric check: [`alignment_check.py`](alignment_check.py) enumerates every path for short
-melodies. In 5,000 random triples it finds no violation for the stutter-invariant statistics,
-and many for entropy and 1 − C₁.
+melodies. Run with 5,000 random triples (`python alignment_check.py 5000`; the default is
+3,000), it finds no violation for the stutter-invariant statistics, 92 for entropy and 130 for
+1 − C₁. The smallest violation it finds is the counterexample below.
 
 ## Setup
 
@@ -231,7 +232,8 @@ The two distinguishing choices:
   under other names. The closest known relatives are local-transposition alignment (Allali et
   al.) and Lemström & Mäkinen's minimum number of pieces, both from
   [`LITERATURE-offsets.md`](../literature/LITERATURE-offsets.md) §1. Both charge a switch or piece every
-  time the transposition changes, including a return to an earlier one.
+  time the transposition changes. For Lemström & Mäkinen that includes a return to an earlier
+  one; for Allali et al. it is inferred, not confirmed (see the table below).
 
 ### Citations to verify (none checked in this session)
 
@@ -243,6 +245,8 @@ The two distinguishing choices:
 | any standard source that DTW violates the triangle inequality | DTW is not a metric |
 | L. Chen, R. Ng, "On the marriage of Lp-norms and edit distance," VLDB 2004, pp. 792–803 | ERP is a metric |
 | P.-F. Marteau, "Time warp edit distance with stiffness adjustment for time series matching," *IEEE TPAMI* 31(2):306–318, 2009 | TWED is a metric |
+| any standard source for the minimum-label path problem being NP-hard on general graphs (e.g. the "minimum label path" / "minimum color path" literature) | the complexity remark under Caveats |
+| J. Allali, P. Ferraro, P. Hanna, C. Iliopoulos, "Local transpositions in alignment of polyphonic musical sequences," SPIRE 2007 | that a return to an earlier transposition is charged again (inferred in the survey, not confirmed) |
 | A. Stefan, V. Athitsos, G. Das, "The Move-Split-Merge metric for time series," *IEEE TKDE* 25(6):1425–1438, 2013 | MSM is a metric |
 
 What to look for while verifying:
@@ -280,11 +284,18 @@ What to look for while verifying:
 
 ## Review
 
+Drafted by Claude on 2026-09-26 (R07), answering the §7 guess of revision 1 of the structure
+note, which was also Claude's.
+
 Reviewed 2026-09-26 by scottvr with ChatGPT. Incorporated from that review:
 - the separation of the lifted walk Q̃ from the path Q, and the explicit argument that
   deduplication is harmless;
 - the canonical zero-set wording and the quotient;
-- extracting the general principle.
+- extracting the general principle (stated as the theorem above);
+- the whole-semitone ⌈R/2⌉ refinement.
 
-The Fréchet connection and the extra members (J, R) were added in the revision. The
-whole-semitone ⌈R/2⌉ refinement also came from the review.
+In Claude's revision after that review: the Fréchet connection (the composition step is the
+discrete Fréchet distance's own triangle proof), and the extra members J and R.
+
+scottvr then took the revised proof to Gemini, which approved it and contributed a figure
+template ([`../results/collision_plot_template.py`](../results/collision_plot_template.py)).
