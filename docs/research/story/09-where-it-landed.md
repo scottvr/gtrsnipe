@@ -31,7 +31,7 @@ Each of these is roughly one chapter, or one results doc, with a demo:
 | Your tab says more than you think | real fingerings pin the music down | chapter 7, R05 |
 | My metric wasn't new, and that's fine | a casual claim, a draft of "novel" results, folklore, Fréchet | chapters 4 and 6 |
 | A free tab checker | "wrong-wrong" tabs, detected by the homograph machinery | chapter 8 |
-| Knobs, tuned by hand | a year of scoring weights added one transcription at a time, and how to learn them | chapter 8 |
+| Thirty knobs, tuned by hand | 22 mapper options today (closer to 30 at their peak), each added for one transcription, and how to learn them | chapter 8 |
 | Two LLMs and a guitarist | the collaboration itself | chapter 10 |
 
 ## Fodder: papers
