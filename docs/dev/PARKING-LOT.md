@@ -107,3 +107,13 @@ notes are in git history.
     - This fits the weights audit's exchange-rate units: "I'd drop a doubled root rather
       than move 5 frets".
   - Report what was dropped, the way the homograph report discloses its liberties.
+- **Code bugs found by the docs audit (H06, 2026-09-28)**, see `DOCS-AUDIT.md`:
+  - `--tuning` rejects six tunings that `--list-tunings` shows (DADGAD, DROP_B, D_STANDARD,
+    OPEN_D, OPEN_E, SEVEN_STRING_DROP_A): they're missing from `TUNING_CHOICES`.
+  - Inverted help text: `--no-constrain-frequency` and `--no-pre-quantize` describe the
+    opposite of what they do; `--min/--max-note-override` cite a flag that no longer exists;
+    `--tapping-run-threshold` is off by one.
+  - `--bass` overrides any `--tuning`, including `BASS_DROP_D`.
+  - Dead or stale: `player/clock.py` (nothing imports it); `sink.py` calls CursesSink "later
+    phase"; `config.py` says greedy is kept "for one release"; `research/cli.py`'s docstring
+    puts `--data` after the subcommand.
