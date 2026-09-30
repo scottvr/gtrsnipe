@@ -199,6 +199,10 @@ def add_chart_args(target) -> None:
     target.add_argument("--chord-tone-threshold", type=float, default=0.15,
                         help="Min fraction of a bar a note must sound to count as a "
                              "chord tone (default: 0.15).")
+    target.add_argument("--prefer-open-chords", action="store_true",
+                        help="Chord charts: draw each chord's open-position shape (x32010 "
+                             "for C in standard) where one exists in the first four frets, "
+                             "else a compact voicing. Works in any tuning and with a capo.")
     target.add_argument("--shape-names", action="store_true",
                         help="Name chords by the shape you finger, as in standard tuning "
                              "with no capo (a 'generalized capo'): in BARITONE_B a C shape "

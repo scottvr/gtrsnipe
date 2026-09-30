@@ -10,6 +10,28 @@ and Cargo apply to 0.x version ranges. Full SemVer applies from 1.0.0. The publi
 is the CLI flags and the file formats gtrsnipe reads and writes; report wording is
 not part of it.
 
+## [0.6.15] — 2026-09-30
+
+Step 3 continues: C02 from `docs/dev/BACKLOG.md`.
+
+### Added
+- **`--prefer-open-chords`: open-position shapes in chord charts (C02).**
+  - Each chord is drawn in its familiar first-position shape where one exists: C `x32010`,
+    G `320003`, D `xx0232`, F `xx3211`, B7 `x21202`, C/G `332010`, and so on.
+  - The shapes are found by search, not a lookup table, so they work in any tuning and with
+    a capo: with capo 2, a D is drawn as the C shape you finger.
+  - The constraints: every chord tone present (4-note chords may drop the fifth); the
+    chord's bass on the lowest string played; muted strings only at the low end; at most
+    four fretted strings within four frets.
+  - One fingerability rule: two notes on one fret may not straddle a higher fret unless a
+    barre could cover them. That rules out 102210 as an Fmaj7, but keeps C7 `x32310`.
+  - Chords with no open shape keep the compact voicing.
+- **Every chord diagram is captioned with its shape** (e.g. **C** `x32010`), which shows
+  muted strings.
+
+### Changed
+- An open-position diagram keeps the nut in view (G `320003` used to start at fret 2).
+
 ## [0.6.14] — 2026-09-30
 
 The R03 follow-ups (backlog R12, R15), which scottvr asked for before anything is published.

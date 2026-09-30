@@ -62,11 +62,99 @@ def _canonical_positions(chord: Chord, mapper: GuitarMapper,
     return best_partial                # no fully-playable register found
 
 
+OPEN_MAX_FRET = 4          # the first position: frets 1-4 above the nut (or capo)
+OPEN_MAX_FINGERS = 4
+OPEN_MAX_STRETCH = 3       # fretted notes within a 4-fret hand span
+
+
+def open_positions(chord: Chord, open_high_to_low: List[int], capo: int = 0
+                   ) -> Optional[List[FretPosition]]:
+    """The best open-position shape for ``chord`` (C02, ``--prefer-open-chords``), or
+    None if there's none in the first position.
+
+    Each string is muted, open (if its note is a chord tone) or fretted at 1-4 on a
+    chord tone; muted strings only at the low end, so the shape strums. The shape
+    must contain every chord tone (4-note chords may drop the fifth), have the
+    chord's bass on its lowest sounding string, need at most four fretted strings,
+    and stretch at most three frets. Doubled tones are welcome: that's what makes
+    x32010 a C. One more rule keeps shapes fingerable: two notes on the same fret
+    may straddle (by string) a note on a higher fret only if a barre could cover
+    them, i.e. no open string lies between (so C7 x32310 passes, but Fmaj7 102210,
+    with fret 1 on E and B around fret 2 and an open A, doesn't). Ranked by: most
+    strings sounding, fewest fretted strings, most open strings, lowest frets. ``open_high_to_low``: open pitches, index 0 = highest
+    string; frets count from the capo."""
+    from itertools import product
+    tones = {(chord.root + iv) % 12 for iv in chord.intervals}
+    fifth = (chord.root + 7) % 12
+    required = tones - ({fifth} if len(tones) >= 4 else set())
+    bass_pc = chord.bass if chord.bass is not None else chord.root % 12
+    opens = [p + capo for p in open_high_to_low]
+    n = len(opens)
+    options = []
+    for o in opens:
+        opts = [None]
+        opts += [f for f in range(0, OPEN_MAX_FRET + 1) if (o + f) % 12 in tones]
+        options.append(opts)
+    best, best_key = None, None
+    for combo in product(*options):
+        # string n-1 is the lowest: muted strings may only form a run from the bottom
+        played = [i for i in range(n) if combo[i] is not None]
+        if len(played) < 3:
+            continue
+        lowest = max(played)
+        if any(combo[i] is None for i in range(lowest)):
+            continue                      # an inner or top string muted: not a strum shape
+        if (opens[lowest] + combo[lowest]) % 12 != bass_pc:
+            continue
+        pcs = {(opens[i] + combo[i]) % 12 for i in played}
+        if not required <= pcs:
+            continue
+        fretted = [combo[i] for i in played if combo[i] > 0]
+        if len(fretted) > OPEN_MAX_FINGERS:
+            continue
+        if fretted and max(fretted) - min(fretted) > OPEN_MAX_STRETCH:
+            continue
+        opened = sum(1 for i in played if combo[i] == 0)
+        if not _fingerable(combo):
+            continue
+        key = (-len(played), len(fretted), -opened, max(fretted, default=0), sum(fretted))
+        if best_key is None or key < best_key:
+            best, best_key = combo, key
+    if best is None:
+        return None
+    return [FretPosition(i, f) for i, f in enumerate(best) if f is not None]
+
+
+def _fingerable(combo) -> bool:
+    """The straddle rule of ``open_positions`` (string index = position in combo)."""
+    by_fret: Dict[int, List[int]] = {}
+    for i, f in enumerate(combo):
+        if f is not None and f > 0:
+            by_fret.setdefault(f, []).append(i)
+    for f, strings in by_fret.items():
+        lo, hi = min(strings), max(strings)
+        between = range(lo + 1, hi)
+        if any(combo[k] is not None and combo[k] > f for k in between):
+            if any(combo[k] == 0 for k in between):
+                return False            # two fingers on fret f around higher frets
+    return True
+
+
+def shape_string(positions: List[FretPosition], n: int) -> str:
+    """'x32010'-style shape, low string first (for checks and captions)."""
+    frets = {p.string: p.fret for p in positions}
+    cells = [frets.get(i) for i in reversed(range(n))]
+    sep = "," if any(f is not None and f > 9 for f in cells) else ""
+    return sep.join("x" if f is None else str(f) for f in cells)
+
+
 def _chord_window(positions: List[FretPosition], size: int = DIAGRAM_WINDOW) -> Tuple[int, int]:
     """A compact fret window that contains the fretted notes of a chord."""
     fretted = [p.fret for p in positions if p.fret > 0]
     if not fretted:
         return (1, size)          # all open: show the nut region
+    if any(p.fret == 0 for p in positions) and max(fretted) <= size:
+        return (1, size)          # an open-position shape: keep the nut in view
     lo = max(1, min(fretted))
     hi = max(lo + size - 1, max(fretted))
     return (lo, hi)
@@ -102,10 +190,12 @@ def build_chord_sheet(
     measures_per_line: int = DEFAULT_MEASURES_PER_LINE,
     chord_tone_threshold: Optional[float] = None,
     shape_names: bool = False,
+    prefer_open_chords: bool = False,
 ) -> str:
     """Build the full Markdown chord sheet for a song. ``shape_names``: label each
     chord by the standard-tuning shape you finger (C03); the diagrams still show the
-    notes actually played, and a banner states the convention."""
+    notes actually played, and a banner states the convention. ``prefer_open_chords``:
+    draw each chord's open-position shape where one exists (C02; ``open_positions``)."""
     cfg = mapper_config or MapperConfig()
     kw = {} if chord_tone_threshold is None else {"chord_tone_threshold": chord_tone_threshold}
     spans = segment_by_measure(song, **kw)
@@ -131,9 +221,18 @@ def build_chord_sheet(
     if uniq:
         mapper = GuitarMapper(cfg)
         renderer = AsciiFretboardRenderer(cfg, orientation="vertical")
+        n_strings = len(mapper.open_string_pitches)
         parts += ["## Chords used", ""]
+        if prefer_open_chords:
+            parts += ["_Open-position shapes where one exists; the others are compact "
+                      "voicings._", ""]
         for label, span in uniq.items():
-            positions = _canonical_positions(span.chord, mapper)
+            positions = None
+            if prefer_open_chords:
+                positions = open_positions(span.chord, mapper.open_string_pitches,
+                                           cfg.capo or 0)
+            if not positions:
+                positions = _canonical_positions(span.chord, mapper)
             if not positions:
                 parts += [f"**{label}**", "",
                           f"_(no playable voicing in {cfg.tuning})_", ""]
@@ -141,6 +240,7 @@ def build_chord_sheet(
             window = _chord_window(positions)
             frame = Frame(time=span.start_beat, duration=0.0,
                           positions=tuple(positions), window=window)
-            parts += [f"**{label}**", "", "```", renderer.render(frame), "```", ""]
+            parts += [f"**{label}** `{shape_string(positions, n_strings)}`", "", "```",
+                      renderer.render(frame), "```", ""]
 
     return "\n".join(parts).rstrip() + "\n"

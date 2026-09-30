@@ -60,6 +60,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         measures_per_line=args.measures_per_line,
         chord_tone_threshold=args.chord_tone_threshold,
         shape_names=args.shape_names,
+        prefer_open_chords=args.prefer_open_chords,
     )
 
     if args.output:

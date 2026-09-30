@@ -119,6 +119,19 @@ notes are in git history.
   example). Flatwound strings weigh more per gauge than the nickel roundwounds the physics
   is calibrated to (`WOUND_FACTOR` 0.83 of solid steel). An `f` suffix needs a real factor,
   calibrated against a maker's published flatwound tensions, not a guessed constant.
+- **A tab difficulty measure** (scottvr, 2026-09-30). Tab sites sort by difficulty labels
+  that uploaders assign by opinion. Objective *complexity*, measured from the tab, could serve
+  as a proxy for difficulty, which is complexity relative to a player.
+  - Ingredients we already have: F06's discomfort and F03's per-note mapper score, hand
+    travel and big jumps (the naive-vs-gtrsnipe comparison), fret range. To add: notes per
+    second at tempo, stretches, chord changes per bar, barres, techniques, position shifts.
+  - Validation: expert-graded repertoire (graded exam syllabi such as Rockschool, Trinity,
+    ABRSM-style guitar grades) gives an ordering to test against (rank correlation), which is
+    better ground truth than uploaders' labels. Tab-site labels could be a second, noisier
+    check.
+  - A literature search comes first: automatic difficulty estimation exists at least for
+    piano, and some for guitar. Relates to the weights audit's "whole-tab difficulty
+    meta-score" and "difficulty before transcription" above.
 - **Optimizer profiles with different *objectives*, not just weights** (scottvr, 2026-09-30;
   e.g. "shred" vs "easy"). Profiles already change weights. What else could change:
   - **new features plus weights** (still today's objective): sweep-friendly shapes (one note
