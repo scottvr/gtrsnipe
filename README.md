@@ -92,7 +92,7 @@ starts a comment. Works with every command (`gtrsnipe`, `gtrsnipe-play`,
 `gtrsnipe-chords`) — a profile is just saved arguments. `--save-args NAME` writes
 your current (non-default) options to a profile for next time.
 
-## Custom tunings & the tuning solver
+## Custom tunings
 
 Beyond the named tunings, define your own with `--tuning-pitches` (low string to
 high), or nudge an existing one with `--drop-low-string`:
@@ -107,6 +107,15 @@ carry a `// Tuning:` header and **round-trip** — feed one back as input and it
 decodes in its own tuning; pass an explicit `--tuning`/`--tuning-pitches` to
 *re-read* the same fingering in a different tuning and hear what it becomes.
 (Tuning tuples and `--show-tuning` are listed low string → high.)
+
+Saving tunings in a .gtrsnipe profile is a way you can always have any tunings
+available to you by name without gtrsnipe having to ship them in the source code.
+e.g.:
+```bash
+echo "--tuning-pitches D2,G2,E3,F3,C4,D4" >~/.gtrsnipe/trainwreck
+gtrsnipe -i piece.mid -o piece.tab --profile trainwreck
+```
+(`gtrsnipe --tuning-pitches D2,G2,E3,F3,C4,D4 --save-args trainwreck` writes the same profile.)
 
 **Will my strings take it?** `--show-tuning` shows each string's tension as a retune of your
 guitar, and suggests a restring for any string outside safe tension:
@@ -131,9 +140,9 @@ Guitar: 10-46 set, 25.5" scale, strung for STANDARD
   count as wound, so a jazz set's plain .022 G is `22p`. For a re-entrant tuning such as
   Nashville, gauges are read exactly as written, low string first.
 
-The **inverse** is `--solve-tuning`: give it a melody and it finds a tuning under
-which an all-open-string tab plays it — the tab shows only open strings while the
-tune lives entirely in the tuning:
+Adding custom tunings led to a parlor trick which is sort of the inverse of supplying
+a custom tuning to gtrsnipe: give it a melody consisting of <= six distinct pitches, and
+gtrsnipe finds an open tuning that can play it. That is, your tab would be all open strings:
 
 ```bash
 gtrsnipe --solve-tuning "C4,C4,G4,G4,A4,A4,G4"                        # print tuning + tab
@@ -141,7 +150,10 @@ gtrsnipe --solve-tuning "C4,C4,G4,G4,A4,A4,G4" --play --audio fluidsynth --sound
 gtrsnipe --solve-tuning "C4,C4,G4,G4,A4,A4,G4" -o twinkle.tab -o twinkle.mid   # write it
 ```
 
-### Tab homographs: one tab, a different song per tuning
+This led to an entire research endeavor still underway and partially documented in this repo:
+<details>
+
+  <summary>[click to expand] Tab homographs: one tab, a different song per tuning</summary>
 
 `--homograph A B [C …]` goes further: it looks for a single **ordinary, fretted,
 playable** tab that plays song A in one tuning and song B in another. Here is a
@@ -239,6 +251,9 @@ gtrsnipe-research families mtc-ann                         # tune-family retriev
 gtrsnipe-research scan essen mtc-fs --solve 40 --tabs out/  # phrases of different songs that share a tab
 gtrsnipe-research aswritten examples/aswritten/*.tab       # can a tab's own fingering play another song?
 ```
+
+</details>
+
 
 ## Player / Visualizer
 
@@ -500,7 +515,7 @@ An abridged reference, grouped as in `gtrsnipe --help`. Run `gtrsnipe --help` fo
 
 **Tuning information**
 - `--list-tunings`: List all available tuning names and exit.
-- `--show-tuning [TUNING_NAME]`: Show a tuning's notes and each string's tension on your guitar, with restring suggestions, and exit. With no name, the tuning set by `--tuning-pitches`/`--drop-low-string` (see [Custom tunings](#custom-tunings--the-tuning-solver)).
+- `--show-tuning [TUNING_NAME]`: Show a tuning's notes and each string's tension on your guitar, with restring suggestions, and exit. With no name, the tuning set by `--tuning-pitches`/`--drop-low-string` (see [Custom tunings](#custom-tunings)).
 - `--name-chord SHAPE`: Name the chord a fret shape plays (e.g. `x,3,2,0,1,0`) in the current tuning, and exit. Repeatable (see [Naming a chord shape](#naming-a-chord-shape---name-chord)).
 
 **Player mode** (`--play`; interactive terminal): `--play`, `--view`, `--clock`, `--tempo`, `--grid`, `--window`, `--width`, `--fps`, `--orientation`, `--hand`, `--audio`, `--midi-port`, `--soundfont`, `--instrument`, `--no-clear`, `--legato`. See [Player / Visualizer](#player--visualizer).
