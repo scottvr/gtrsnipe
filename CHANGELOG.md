@@ -10,6 +10,35 @@ and Cargo apply to 0.x version ranges. Full SemVer applies from 1.0.0. The publi
 is the CLI flags and the file formats gtrsnipe reads and writes; report wording is
 not part of it.
 
+## [0.6.12] — 2026-09-30
+
+Step 3 continues: F04 from `docs/dev/BACKLOG.md`, with two gauge fixes scottvr asked about.
+
+### Added
+- **`--show-tuning` shows string tension (F04).**
+  - For each string: the note it's strung for and tuned to, its gauge, the tension, the
+    change from normal, the stress (for plain strings), and a status.
+  - Strings outside safe tension get a restring suggestion. When no steel string is safe at
+    a pitch, it says so: a plain string's breaking pitch depends on the scale, not the gauge.
+  - "Your guitar" is the usual set for `--tuning` (10-46 for STANDARD), or `--string-gauges`,
+    strung for an explicit `--tuning` or else for the tuning shown.
+  - With no name, `--show-tuning` shows the tuning set by `--tuning-pitches` or
+    `--drop-low-string`.
+- **Converting with a custom tuning warns** about any string it would overload or leave
+  floppy. A tab's own header tuning is taken as given, with no warning.
+- **`--solve-tuning` notes pitches past what a steel string can take** at the scale length
+  (e.g. A4 at 25.5"), whatever the gauge.
+
+### Fixed
+- **Gauges for a re-entrant tuning** (e.g. Nashville) are read exactly as written, low string
+  first. An ascending set used to be flipped as if written thin-to-thick, putting the thinnest
+  string on the low one.
+- **The `p` (plain) suffix of `--string-gauges` is now documented.** It worked, but only `w`
+  was mentioned: a jazz set's plain .022 is `22p`, since unsuffixed gauges above .020 count as
+  wound.
+- A custom gauge set is described by its thinnest and thickest gauges ("8-16 set"), not
+  "011-010".
+
 ## [0.6.11] — 2026-09-29
 
 Step 3 continues: C01 with C06 from `docs/dev/BACKLOG.md`.

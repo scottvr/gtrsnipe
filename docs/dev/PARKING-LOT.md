@@ -124,6 +124,10 @@ notes are in git history.
   - the retrieval experiments R03 didn't run: an alignment-based baseline, the Janssen, van
     Kranenburg & Volk (2017) benchmark, phrase-level retrieval;
   - R12 (richness under its own optimal warping) belongs with these.
+- **A flatwound suffix for `--string-gauges`** (from F04, 2026-09-30; scottvr's jazz-set
+  example). Flatwound strings weigh more per gauge than the nickel roundwounds the physics
+  is calibrated to (`WOUND_FACTOR` 0.83 of solid steel). An `f` suffix needs a real factor,
+  calibrated against a maker's published flatwound tensions, not a guessed constant.
 - **Computer-vision analogues** (scottvr's question, 2026-09-28: is there relevance to
   CV and image processing, e.g. total variation in image interpolation?). Claude's reading,
   from memory: *check every citation* (these belong on the R13 checklist).
