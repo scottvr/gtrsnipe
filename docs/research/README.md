@@ -23,12 +23,14 @@ tested how far that argument goes. How the feature itself works is in
    the stutter-invariance principle.
 5. **The experiments** in [`results/`](results/):
    - [R03](results/RESULTS-R03-families.md): does richness find tune families? *No.*
+   - [R03b](results/RESULTS-R03b-segments.md): phrases and motifs, alignment baselines, and the
+     offset measures under optimal warping: *a small gain at the phrase level.*
    - [R04](results/RESULTS-R04-scan.md): how often do real songs share a tab?
    - [R05](results/RESULTS-R05-aswritten.md): what about a real fingering, as written? (gtrsnipe's
      own wiki tabs of two pieces)
 6. **How it happened:** [`story/`](story/README.md).
 
-## Where the claims stand (2026-09-29)
+## Where the claims stand (2026-09-30)
 
 | claim | status | evidence |
 |---|---|---|
@@ -40,7 +42,8 @@ tested how far that argument goes. How the feature itself works is in
 | "Any tab could be any song." | **Only** for short passages, or for a tab stripped of its tuning. | R04 + R05 |
 | Log-richness and offset entropy are pseudometrics modulo transposition (fixed alignment). | **Holds, but elementary.** Present them as applications of known bounds. | theory note §3–4; literature |
 | Other Rényi/Hill orders are not. | **Holds.** Explicit counterexamples; Aczél–Forte–Ng (1974). | `theory/triangle_check.py`; literature §5 |
-| Richness is a useful melodic similarity. | **Not supported.** On tune-family retrieval, transposition-invariant Hamming wins; adding richness, entropy and reuse to the baselines gains ≤ 0.006 MAP. (One grid alignment, whole folk melodies; R12 open.) | R03 |
+| Richness is a useful melodic similarity. | **Not supported for whole melodies.** On tune-family retrieval, transposition-invariant Hamming wins; adding richness, entropy and reuse gains ≤ 0.006 MAP (one grid alignment). **At the phrase level, a small gain:** the offset measures under optimal warping add +0.009 to +0.010 MAP to strong baselines, for all three annotators; none for motifs or within songs. | R03, R03b |
+| Low richness with high reuse marks related passages (§6). | **Not supported in the tests run.** Low richness marks related phrases and motifs with or without reuse, and reuse adds nothing to the baselines. The direct test (sequences, echoes) needs annotations of those. | R03b |
 | With warping-path alignment, stutter-invariant subadditive statistics of δ stay pseudometrics; entropy and 1 − C₁ don't. | **Holds** (proof and numeric check). The proof uses the same coupling-composition mechanism as the Fréchet distance's. We did not find the general condition stated elsewhere; no priority is claimed. | PROOF-alignment; theory note §7 |
 | Counting distinct offsets is unused as a *music* measure. | **Holds as far as searched, in music retrieval.** Mäkinen–Navarro–Ukkonen (2005) define the set but use only its mode; R03 suggests why (as a similarity it's weak). In computer vision the same count is the standard *label cost*. | literature §1, §6; R03 |
 | "Vocabulary vs. switches" is a new distinction. | **No, as a distinction:** computer vision separates label costs from Potts smoothness terms. The guitar version (labels are strings, several may realize one offset, a hard budget) is a constrained analogue of multi-model fitting; we did not find that combination documented. (Citations from memory; to verify.) | theory note §6, §10 |
@@ -63,12 +66,12 @@ tested how far that argument goes. How the feature itself works is in
 - **R13:** the citation pass for the stutter-invariance principle and the Fréchet
   connection (scottvr, in progress). See PROOF-alignment, "Citations to verify".
 - The complexity of the fewest-distinct-offsets warping path (d_richness) on the alignment
-  grid.
-- **R10–R12:** re-rhythm in the scan, the full Lakh corpus, and richness under its own
-  optimal warping. See [`../dev/BACKLOG.md`](../dev/BACKLOG.md).
+  grid. (R03b computes it exactly up to 6 offsets, the guitar range.)
+- **R10–R11:** re-rhythm in the scan, and the full Lakh corpus. See
+  [`../dev/BACKLOG.md`](../dev/BACKLOG.md).
 - **Third-party tabs as written** (R05's natural next input), kept local for copyright
   reasons.
-- **Phrase-level tune-family retrieval** (R03 used whole melodies), and the structure note's
-  untested §6 hypothesis: that low richness with high reuse marks sequences, echoes or
-  call-and-response at a fixed interval.
+- **The structure note's §6 hypothesis, tested directly:** that low richness with high reuse
+  marks sequences, echoes or call-and-response at a fixed interval. R03b's indirect test
+  (phrase and motif identity) didn't support it; a direct test needs annotations of sequences.
 - **StegTab's later academic variants**, not yet examined.

@@ -65,8 +65,9 @@ A sketch, for scottvr to overrule:
 ## Still open
 
 - **R13:** the citation pass (scottvr, in progress).
-- **R10–R12:** re-rhythm in the scan, the full Lakh corpus, and richness under its own
-  optimal warping.
+- **R10–R11:** re-rhythm in the scan, and the full Lakh corpus. (R12, richness under its own
+  optimal warping, ran in R03b on 2026-09-30: at the phrase level the warped offset measures
+  add a small gain to strong baselines.)
 - **The comfort counts are lower bounds:** offer every compatible string to each interval
   class (parking lot).
 - **Third-party tabs as written:** the natural next input for R05, kept local for copyright

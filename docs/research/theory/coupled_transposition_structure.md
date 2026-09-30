@@ -267,10 +267,13 @@ Two different costs can be charged for a sequence of offsets:
   by that interval, and going back to it costs nothing. So `r` is the string-budget lower bound
   of §2, and `u` is free.
 
-**What was tested.** Whether a small vocabulary marks melodic variants: in the one retrieval
-test run, it didn't (§11). **What wasn't:** whether low richness with high reuse marks
-sequences, echoes or call-and-response at a fixed interval. That remains open. Rows 3 and 4
-of the table are also a warning: richness ignores how big the offsets are (§8).
+**What was tested.** Whether a small vocabulary marks melodic variants (§11): for whole melodies
+it didn't; for phrases, under optimal warping, it adds a little. Whether low richness with high
+reuse marks related passages was tested indirectly, on MTC-ANN's phrase and motif annotations
+([R03b](../results/RESULTS-R03b-segments.md)): low richness marks related segments with or
+without reuse, and reuse adds nothing. **Not tested directly:** sequences, echoes or
+call-and-response at a fixed interval, which need annotations of those. Rows 3 and 4 of the
+table are also a warning: richness ignores how big the offsets are (§8).
 
 ---
 
@@ -400,9 +403,20 @@ melodies better than established baselines? Run as R03
   departing offset (order 0) is dominated by noise.
 
 **Result:** under the note's pre-stated rule, this test does not support using richness as a
-melodic similarity measure. Not run: an alignment-based baseline, the Janssen, van Kranenburg
-& Volk (2017) benchmark, and phrase-level retrieval. Those experiments were not run; this note
-makes no stronger retrieval claim.
+melodic similarity measure for whole melodies.
+
+**The follow-ups** ([R03b](../results/RESULTS-R03b-segments.md), 2026-09-30) ran phrase- and
+motif-level retrieval on MTC-ANN's annotations, with alignment-based baselines (DTW on intervals,
+and on pitch after the modal transposition) and the offset measures under their own optimal
+warping (§7):
+- the best single measures still look at the dominant transposition (TI-Hamming, pitch DTW);
+- warping lifts switches, total variation and richness a long way (switches and TV from about
+  0.60 to 0.71–0.75 MAP for phrases), close to but not above them;
+- added to all five baselines, the warped measures gain +0.009 to +0.010 MAP at the phrase level
+  for every annotator (95% intervals +0.005 to +0.013), and nothing for motifs or within songs.
+
+A small, consistent effect in one setting: not evidence of general usefulness, and not nothing.
+The Janssen et al. benchmark itself (occurrences inside whole melodies) was not replicated.
 
 ---
 
@@ -469,6 +483,8 @@ Each revision narrowed what could be claimed.
   of computer vision (scottvr's question about image processing led there). It overcorrected,
   though: it said the note claimed nothing new, which is as unsupported as claiming novelty,
   and it compressed several identifications past accuracy.
+- **2026-09-30:** §6 and §11 updated with the R03b results (phrase and motif retrieval; the
+  offset measures under optimal warping).
 - **Revision 4** (2026-09-29, Claude, from scottvr's review). States what was found and what
   wasn't, claiming neither novelty nor its absence. Precise wording on which Rényi orders give
   metrics (the Hill numbers themselves don't; 1 − C1 is a metric but −log C1 isn't); C1 as the

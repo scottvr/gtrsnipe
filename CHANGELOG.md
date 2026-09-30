@@ -10,6 +10,29 @@ and Cargo apply to 0.x version ranges. Full SemVer applies from 1.0.0. The publi
 is the CLI flags and the file formats gtrsnipe reads and writes; report wording is
 not part of it.
 
+## [0.6.14] — 2026-09-30
+
+The R03 follow-ups (backlog R12, R15), which scottvr asked for before anything is published.
+
+### Added
+- **`gtrsnipe-research segments`: phrase- and motif-level retrieval on MTC-ANN's expert
+  annotations.**
+  - Phrases are labelled by three annotators and scored separately; there are 1,657 motif
+    occurrences. All annotations line up with gtrsnipe's kern reader.
+  - The measures: the R03 grid measures; DTW on intervals, and on pitch after the modal
+    transposition; and the offset measures minimized over warping paths (switches, total
+    variation, largest jump, range, and richness exact up to 6). All five warped measures
+    are confirmed against brute-force path enumeration.
+- **Results** ([`RESULTS-R03b-segments.md`](docs/research/results/RESULTS-R03b-segments.md)):
+  - The best single measures still look at the dominant transposition: TI-Hamming, and
+    pitch DTW.
+  - Warping lifts the offset measures a long way.
+  - Added to all five baselines, the warped offset measures gain **+0.009 to +0.010 MAP at
+    the phrase level for every annotator** (95% intervals +0.005 to +0.013), and nothing
+    for motifs or within songs.
+  - The structure note's §6 reuse hypothesis is not supported: low richness marks related
+    segments with or without reuse.
+
 ## [0.6.13] — 2026-09-30
 
 Step 3 continues: C03 from `docs/dev/BACKLOG.md`.

@@ -115,19 +115,25 @@ notes are in git history.
     - This fits the weights audit's exchange-rate units: "I'd drop a doubled root rather
       than move 5 frets".
   - Report what was dropped, the way the homograph report discloses its liberties.
-- **Before publishing the offset/structure material: finish what R03 left open** (scottvr,
-  2026-09-29). R03 was a negative result, not a verdict, and we have tooling nobody else seems
-  to have, so testing further is a contribution either way (with the code in the repo):
-  - the §6 hypothesis: does low richness with high reuse mark sequences, echoes or
-    call-and-response at a fixed interval? Needs labelled examples (e.g. motif/sequence
-    annotations, or synthetic sequences as a sanity check);
-  - the retrieval experiments R03 didn't run: an alignment-based baseline, the Janssen, van
-    Kranenburg & Volk (2017) benchmark, phrase-level retrieval;
-  - R12 (richness under its own optimal warping) belongs with these.
 - **A flatwound suffix for `--string-gauges`** (from F04, 2026-09-30; scottvr's jazz-set
   example). Flatwound strings weigh more per gauge than the nickel roundwounds the physics
   is calibrated to (`WOUND_FACTOR` 0.83 of solid steel). An `f` suffix needs a real factor,
   calibrated against a maker's published flatwound tensions, not a guessed constant.
+- **Optimizer profiles with different *objectives*, not just weights** (scottvr, 2026-09-30;
+  e.g. "shred" vs "easy"). Profiles already change weights. What else could change:
+  - **new features plus weights** (still today's objective): sweep-friendly shapes (one note
+    per adjacent string), tapping and legato runs, position changes, open strings;
+  - **a different aggregation, which no weighting can reproduce**: the mapper minimizes a
+    *sum* of step costs; "minimize the hardest moment" minimizes the *maximum* step cost. The
+    same Viterbi machinery does it with max in place of + (a bottleneck path, as for R07's
+    largest jump J), or lexicographically: the easiest worst moment first, then the least
+    total effort;
+  - **longer memory for run-level preferences** (three notes per string, sweep shapes), which
+    means a larger Viterbi state;
+  - **the vocabulary-vs-switches split, for hand positions**: a cost at every position change
+    (a Potts term) vs a cost per distinct position used over the song (a label cost, "stay in
+    two positions").
+  Pairs with the weights audit and the Viterbi-vs-greedy study above.
 - **Computer-vision analogues** (scottvr's question, 2026-09-28: is there relevance to
   CV and image processing, e.g. total variation in image interpolation?). Claude's reading,
   from memory: *check every citation* (these belong on the R13 checklist).
