@@ -92,7 +92,7 @@ starts a comment. Works with every command (`gtrsnipe`, `gtrsnipe-play`,
 `gtrsnipe-chords`) — a profile is just saved arguments. `--save-args NAME` writes
 your current (non-default) options to a profile for next time.
 
-## Custom tunings & the tuning solver
+## Custom tunings
 
 Beyond the named tunings, define your own with `--tuning-pitches` (low string to
 high), or nudge an existing one with `--drop-low-string`:
@@ -108,9 +108,17 @@ decodes in its own tuning; pass an explicit `--tuning`/`--tuning-pitches` to
 *re-read* the same fingering in a different tuning and hear what it becomes.
 (Tuning tuples and `--show-tuning` are listed low string → high.)
 
-The **inverse** is `--solve-tuning`: give it a melody and it finds a tuning under
-which an all-open-string tab plays it — the tab shows only open strings while the
-tune lives entirely in the tuning:
+Saving tunings in a .gtrsnipe profile is a way you can always have any tunings
+available to you by name without gtrsnipe having to ship them in the source code.
+e.g.:
+```bash
+echo "D2,G2,E3,F3,C4,D4" >~/.gtrsnipe/trainwreck
+gtrsnipe -i piece.mid -o piece.tab --profile trainwreck
+```
+
+Adding custom tunings lead to a parlor trick which is sort of the inverse of supplying
+a custom tuning to gtrsnipe: give it a melody consisting of <= six distinct pitches, and 
+gtrsnipe finds an open tuning that can play it. That is, your tab would be all open strings: 
 
 ```bash
 gtrsnipe --solve-tuning "C4,C4,G4,G4,A4,A4,G4"                        # print tuning + tab
@@ -118,7 +126,10 @@ gtrsnipe --solve-tuning "C4,C4,G4,G4,A4,A4,G4" --play --audio fluidsynth --sound
 gtrsnipe --solve-tuning "C4,C4,G4,G4,A4,A4,G4" -o twinkle.tab -o twinkle.mid   # write it
 ```
 
-### Tab homographs: one tab, a different song per tuning
+This lead to an entire reseaarch endeavor still underway and partiallly documented in this repo: 
+<details>
+
+  <summary>Tab homographs: one tab, a different song per tuning [click to expand]</summary>
 
 `--homograph A B [C …]` goes further: it looks for a single **ordinary, fretted,
 playable** tab that plays song A in one tuning and song B in another. Here is a
@@ -214,6 +225,9 @@ gtrsnipe-research families mtc-ann                         # tune-family retriev
 gtrsnipe-research scan essen mtc-fs --solve 40 --tabs out/  # phrases of different songs that share a tab
 gtrsnipe-research aswritten examples/aswritten/*.tab       # can a tab's own fingering play another song?
 ```
+
+</details>
+
 
 ## Player / Visualizer
 
