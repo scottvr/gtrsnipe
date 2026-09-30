@@ -112,7 +112,7 @@ Saving tunings in a .gtrsnipe profile is a way you can always have any tunings
 available to you by name without gtrsnipe having to ship them in the source code.
 e.g.:
 ```bash
-echo "D2,G2,E3,F3,C4,D4" >~/.gtrsnipe/trainwreck
+echo "--tuning-pitches D2,G2,E3,F3,C4,D4" >~/.gtrsnipe/trainwreck
 gtrsnipe -i piece.mid -o piece.tab --profile trainwreck
 ```
 
