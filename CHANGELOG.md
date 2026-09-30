@@ -10,6 +10,23 @@ and Cargo apply to 0.x version ranges. Full SemVer applies from 1.0.0. The publi
 is the CLI flags and the file formats gtrsnipe reads and writes; report wording is
 not part of it.
 
+## [0.6.13] — 2026-09-30
+
+Step 3 continues: C03 from `docs/dev/BACKLOG.md`.
+
+### Added
+- **`--shape-names`: chords named by the shape you finger (C03), a "generalized capo".**
+  - In a tuning that is standard shifted evenly on every string (E_FLAT, D_STANDARD,
+    C_SHARP_STANDARD, the baritones, the bass and 7-string equivalents, or an even custom
+    tuning), plus any capo, a chord is named as its fingering would be in standard tuning
+    with no capo: in BARITONE_B a C shape is named C though it sounds G.
+  - Drop and open tunings have no standard shape names, so their chords stay in concert
+    pitch.
+  - A banner always states the convention: at the top of a chord chart, as a `//` line in a
+    tab's header, and under `--name-chord` output.
+  - It applies to chord charts (their diagrams still show the notes actually played),
+    `--name-chords`, and `--name-chord SHAPE` (which adds a `shape:` column).
+
 ## [0.6.12] — 2026-09-30
 
 Step 3 continues: F04 from `docs/dev/BACKLOG.md`, with two gauge fixes scottvr asked about.

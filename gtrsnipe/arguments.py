@@ -199,6 +199,14 @@ def add_chart_args(target) -> None:
     target.add_argument("--chord-tone-threshold", type=float, default=0.15,
                         help="Min fraction of a bar a note must sound to count as a "
                              "chord tone (default: 0.15).")
+    target.add_argument("--shape-names", action="store_true",
+                        help="Name chords by the shape you finger, as in standard tuning "
+                             "with no capo (a 'generalized capo'): in BARITONE_B a C shape "
+                             "is named C though it sounds G. Only for tunings that are "
+                             "standard shifted evenly (E_FLAT, D_STANDARD, the baritones), "
+                             "plus any capo; others stay in concert pitch. A banner always "
+                             "says which. Applies to chord charts, --name-chords and "
+                             "--name-chord.")
 
 
 def parse_tuning_pitches(spec: str) -> tuple:

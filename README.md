@@ -4,7 +4,7 @@
 
 Convert to and from .mid, .abc, .vex, and .tab files. (and more.)
 
-## v0.6.12
+## v0.6.13
 Released 2026-09-30. See [CHANGELOG](https://github.com/scottvr/gtrsnipe/blob/main/CHANGELOG.md)
 
 # What?
@@ -375,6 +375,24 @@ plus the usual `--tuning`, `--num-strings`, `--capo`, and `--optimizer`. Mapper
 weights such as `--prefer-open` don't change the diagrams; open-position
 voicings are planned (C02 in [`docs/dev/BACKLOG.md`](docs/dev/BACKLOG.md)).
 
+### Shape names (`--shape-names`)
+
+On a baritone or a down-tuned guitar you think in the shapes of standard tuning: the fingering
+of a C chord is "a C shape", whatever it sounds like. `--shape-names` names chords that way, a
+"generalized capo", in chord charts, `--name-chords` and `--name-chord`:
+
+```bash
+gtrsnipe -i song.mid -o song.chords.md --tuning BARITONE_B --shape-names   # C shape, sounds G
+gtrsnipe --capo 2 --shape-names --name-chord 320003                          # G shape, sounds A
+```
+
+- It works for tunings that are standard shifted evenly on every string (E_FLAT, D_STANDARD,
+  C_SHARP_STANDARD, the baritones, the bass and 7-string equivalents, or a custom tuning that
+  shifts evenly), plus any capo.
+- A drop or open tuning has no standard shape names, so its chords stay in concert pitch.
+- A banner always says which convention is in use, and chart diagrams always show the notes
+  actually played.
+
 ### Chord names over a tab (`--name-chords`)
 
 Add `--name-chords` to ASCII tab output to write chord names above the staff:
@@ -397,7 +415,8 @@ E|-8------------------------------|-3----------|----------|
   at most one extra note. A melody bar or a doubtful chord gets no name rather than a wrong one.
 - Each bar is also named by halves, so a bar that changes chord midway gets both names (C
   then G, where naming the whole bar would read "G6"). Finer changes aren't named.
-- Names are concert pitch (with a capo or an unusual tuning, the sounding chord).
+- Names are concert pitch (with a capo or an unusual tuning, the sounding chord), unless you
+  ask for [shape names](#shape-names---shape-names).
 - The name line is ignored when the tab is read back in.
 
 ### Naming a chord shape (`--name-chord`)
@@ -520,7 +539,7 @@ An abridged reference, grouped as in `gtrsnipe --help`. Run `gtrsnipe --help` fo
 
 **Player mode** (`--play`; interactive terminal): `--play`, `--view`, `--clock`, `--tempo`, `--grid`, `--window`, `--width`, `--fps`, `--orientation`, `--hand`, `--audio`, `--midi-port`, `--soundfont`, `--instrument`, `--no-clear`, `--legato`. See [Player / Visualizer](#player--visualizer).
 
-**Chord chart output** (`-o SONG.chords.md`): `--measures-per-line` (default: 4), `--chord-tone-threshold` (default: 0.15). See [Chord charts](#chord-charts).
+**Chord chart output** (`-o SONG.chords.md`): `--measures-per-line` (default: 4), `--chord-tone-threshold` (default: 0.15), `--shape-names` (name chords by the standard-tuning shape; also for `--name-chords` and `--name-chord`). See [Chord charts](#chord-charts).
 
 **Profiles / config** (`.gtrsnipe`): `--profile NAME[,NAME]`, `--no-defaults`, `--config-dir CONFIG_DIR`, `--save-args NAME`. See [Config profiles](#config-profiles-gtrsnipe).
 

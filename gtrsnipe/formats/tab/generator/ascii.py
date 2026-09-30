@@ -16,7 +16,8 @@ class AsciiTabGenerator:
                  no_articulations: bool = False, 
                  single_string: Optional[int] = None, mapper_config: Optional[MapperConfig] = None,
                  premapped: bool = False, name_chords: bool = False,
-                 chord_tone_threshold: Optional[float] = None, **kwargs) -> str:
+                 chord_tone_threshold: Optional[float] = None, shape_names: bool = False,
+                 **kwargs) -> str:
         """
         Generates an ASCII tab string from a Song object.
         Args:
@@ -58,18 +59,24 @@ class AsciiTabGenerator:
         #    base_unit_in_beats = 0.25 # Default to a 16th note
         base_unit_in_beats = mapper_config.quantization_resolution
 
-        chord_labels = None
+        chord_labels, banner = None, None
         if name_chords:
-            from ....chords.segment import DEFAULT_CHORD_TONE_THRESHOLD, segment_by_measure
+            from ....chords.segment import DEFAULT_CHORD_TONE_THRESHOLD
             threshold = (DEFAULT_CHORD_TONE_THRESHOLD if chord_tone_threshold is None
                          else chord_tone_threshold)
-            chord_labels = AsciiTabGenerator._bar_chord_names(mapped_song, threshold)
+            naming = None
+            if shape_names:
+                from ....chords.shape_names import shape_naming_for_config
+                naming = shape_naming_for_config(mapper_config)
+                banner = naming.banner
+            chord_labels = AsciiTabGenerator._bar_chord_names(mapped_song, threshold, naming)
 
         return AsciiTabGenerator._format_score(score, command_line, max_line_width, base_unit_in_beats,
-                                               mapper_config, chord_labels=chord_labels)
+                                               mapper_config, chord_labels=chord_labels,
+                                               chord_banner=banner)
 
     @staticmethod
-    def _bar_chord_names(song: Song, threshold: float) -> Dict[int, List[tuple]]:
+    def _bar_chord_names(song: Song, threshold: float, naming=None) -> Dict[int, List[tuple]]:
         """Bar index -> [(beat in bar, chord name)] for ``--name-chords``.
 
         Each bar is named whole and by halves. Two different clear chords in the
@@ -80,7 +87,7 @@ class AsciiTabGenerator:
         from ....core.chords import is_clear
 
         def clear(parts):
-            return {s.index: s.chord.name
+            return {s.index: (naming.name(s.chord) if naming else s.chord.name)
                     for s in segment_by_measure(song, threshold, keep_downbeat_bass=True,
                                                 parts=parts)
                     if s.chord is not None and is_clear(s.chord, s.pitches)}
@@ -265,7 +272,8 @@ class AsciiTabGenerator:
 
     @staticmethod
     def _format_score(score: TabScore, command_line: str, max_line_width: int, base_unit_in_beats: float,
-                      config: MapperConfig, chord_labels: Optional[Dict[int, List[tuple]]] = None) -> str:
+                      config: MapperConfig, chord_labels: Optional[Dict[int, List[tuple]]] = None,
+                      chord_banner: Optional[str] = None) -> str:
         """Formats the complete score, breaking lines based on character width.
 
         ``chord_labels`` (measure index -> [(beat in measure, chord name)]) adds a
@@ -316,6 +324,9 @@ class AsciiTabGenerator:
             else:
                 suffix = {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
             header.append(f"// Capo: {n}{suffix} Fret")
+
+        if chord_banner:
+            header.append(f"// {chord_banner}")
 
         if command_line:
             # Clean up the command for display (optional, but nice)
