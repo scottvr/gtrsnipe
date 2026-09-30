@@ -121,6 +121,8 @@ large corpus is full of unrelated melodies that happen to share a small offset v
     the others, since stray offsets from misalignment hurt richness most.
   - The fair test of that is richness under its *own* optimal warping. That distance is a proven
     pseudometric ([`PROOF-alignment.md`](../theory/PROOF-alignment.md)), but it is a minimum-label path
-    problem, costly to compute at this scale. Not run.
-- **Whole melodies only.** Phrase-level retrieval (MTC-ANN has phrase annotations) is not run.
+    problem, costly to compute at this scale. Not run here; run at the phrase and motif level
+    in [R03b](RESULTS-R03b-segments.md).
+- **Whole melodies only.** Phrase- and motif-level retrieval, with alignment-based baselines,
+  is [R03b](RESULTS-R03b-segments.md).
 - **Folk song only.** Other repertoires could behave differently.

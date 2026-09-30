@@ -1,6 +1,6 @@
 # gtrsnipe backlog
 
-The single list of open work, as of **v0.6.13 (2026-09-30)**. It collates the old parking
+The single list of open work, as of **v0.6.14 (2026-09-30)**. It collates the old parking
 lot, the CHANGELOG's known limitations, the design docs, the v0.3.0-era audit and plans,
 GitHub issues, and findings from recent sessions.
 
@@ -58,8 +58,8 @@ stay open, low priority.
 ### Step 3: features, one at a time (next)
 
 B07 ✓ and F06 ✓ (v0.6.6), F03 ✓ (v0.6.7), P01 ✓ (v0.6.8), P03 ✓ (v0.6.9); a docs
-interlude (H05–H07, v0.6.10). C01 with C06 ✓ (v0.6.11), F04 ✓ (v0.6.12), C03 ✓ (v0.6.13). Next: the R03
-follow-ups (scottvr, 2026-09-30), then C02, …
+interlude (H05–H07, v0.6.10). C01 with C06 ✓ (v0.6.11), F04 ✓ (v0.6.12), C03 ✓ (v0.6.13), and the R03
+follow-ups (R12, R15; v0.6.14). Next: C02, …
 
 Then, as before (swap freely if something else is more fun): P01 true note durations in
 playback, P03 instrument defaults from the MIDI file, C01 chord names over the tab, F04
@@ -86,9 +86,10 @@ changes, P04 pager search, P05 other renderers.
 | R09 | GigaMIDI (see D5). | — | corpus plan |
 | R10 | **Scan with re-rhythm**: a rhythm slop ratio and `--homograph-subdivide` in `scan`/`aswritten`. Today only identical (or proportional) rhythms meet. | M | R04, parking lot |
 | R11 | **LMD-full**: build the cache (about 3 h) and scan it. Mostly unattended machine time; R04's curves already look saturated. | L (machine) | R04, parking lot |
-| R12 | **Richness under its own optimal warping** as the fair similarity test for R03: a minimum-label path per pair, exact for k ≤ 6. Unlikely to overturn R03. | M–L | R03 "Limits", parking lot |
+| R12 | ✓ v0.6.14 **Richness under its own optimal warping**: exact up to 6 offsets, with the other warped offset measures, in R03b (phrase and motif retrieval on MTC-ANN). | M–L | R03 "Limits", parking lot |
 | R13 | **Citation check** (*scottvr, in progress; StegTab identified 2026-09-28*). Narrowed 2026-09-29: verify the citations the copyright paper (and any later note) actually uses, including the computer-vision names in the structure note §10 and PROOF-alignment's "Citations to verify". The structure note (revision 4) makes no claim of a new mathematical result and says which combinations weren't found documented, so no further novelty search is planned. | S–M | R07, parking lot |
 | R14 | **Third-party tabs as written**: R05's natural next input (tabs from community sites, checked against a reference MIDI). Kept local for copyright reasons. Pairs with the tab checker (parking lot). | M | R05, docs audit |
+| R15 | ✓ v0.6.14 **The R03 follow-ups** (scottvr, 2026-09-29): phrase- and motif-level retrieval on MTC-ANN's annotations, alignment-based baselines (interval and pitch DTW), and the §6 reuse hypothesis. A small phrase-level gain from the warped offset measures; reuse not supported. [`RESULTS-R03b-segments.md`](../research/results/RESULTS-R03b-segments.md). | M | parking lot |
 
 ### Player and audio
 
