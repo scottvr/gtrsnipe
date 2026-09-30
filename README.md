@@ -4,8 +4,8 @@
 
 Convert to and from .mid, .abc, .vex, and .tab files. (and more.)
 
-## v0.6.11
-Released 2026-09-29. See [CHANGELOG](https://github.com/scottvr/gtrsnipe/blob/main/CHANGELOG.md)
+## v0.6.12
+Released 2026-09-30. See [CHANGELOG](https://github.com/scottvr/gtrsnipe/blob/main/CHANGELOG.md)
 
 # What?
 
@@ -107,6 +107,29 @@ carry a `// Tuning:` header and **round-trip** — feed one back as input and it
 decodes in its own tuning; pass an explicit `--tuning`/`--tuning-pitches` to
 *re-read* the same fingering in a different tuning and hear what it becomes.
 (Tuning tuples and `--show-tuning` are listed low string → high.)
+
+**Will my strings take it?** `--show-tuning` shows each string's tension as a retune of your
+guitar, and suggests a restring for any string outside safe tension:
+
+```
+$ gtrsnipe --tuning-pitches E2,A2,D3,G3,B3,G4 --show-tuning
+Guitar: 10-46 set, 25.5" scale, strung for STANDARD
+  string  strung for  tuned to  gauge    tension   vs normal  stress  status
+       6          E2        E2  .046w     17.9 lb        +0%          ok
+       ...
+       1          E4        G4  .010      23.0 lb       +41%     75%  tight (every steel string is at snap risk at G4 on a 25.5" scale)
+```
+
+- **Your guitar** is the usual set for `--tuning` (10-46 for STANDARD), or your own
+  `--string-gauges`. Those are strung for an explicit `--tuning`, else for the tuning shown.
+- **With a name** (`--show-tuning DROP_C`), it shows that tuning; with none, the one set by
+  `--tuning-pitches` or `--drop-low-string`.
+- **Converting with a custom tuning warns** about any string it would overload or leave
+  floppy, and `--solve-tuning` notes any pitch past what a steel string can take at your scale
+  length. A plain string's breaking pitch depends on the scale, not the gauge: about A4 at 25.5".
+- **Gauges:** `w` marks a wound string and `p` a plain one; unsuffixed gauges above .020
+  count as wound, so a jazz set's plain .022 G is `22p`. For a re-entrant tuning such as
+  Nashville, gauges are read exactly as written, low string first.
 
 The **inverse** is `--solve-tuning`: give it a melody and it finds a tuning under
 which an all-open-string tab plays it — the tab shows only open strings while the
@@ -458,7 +481,7 @@ An abridged reference, grouped as in `gtrsnipe --help`. Run `gtrsnipe --help` fo
 - `--max-fret MAX_FRET`: Maximum fret number on the virtual guitar neck (default: 24).
 - `--tuning-pitches LOW,..,HIGH`: Define a custom tuning by comma-separated note names, low string to high (e.g. `'A1,E2,A2,D3,F#3,B3'`). Overrides `--tuning`.
 - `--scale-length INCHES`: Scale length for string-tension physics (default: 25.5 guitar, 27 baritone, 34 bass).
-- `--string-gauges GAUGES`: String gauges for tension physics, low string first like `--tuning-pitches` (a thin-to-thick set such as `'10 13 17 26w 36w 46w'` is flipped for you; `w` = wound). Default: 10-46 for STANDARD (10-59 7-string, 13-62 BARITONE_B, 45-105 bass), else a balanced set designed for the tuning.
+- `--string-gauges GAUGES`: String gauges for tension physics, low string first like `--tuning-pitches` (a thin-to-thick set such as `'10 13 17 26w 36w 46w'` is flipped for you, except for a re-entrant tuning such as Nashville, which is read as written). `w` = wound, `p` = plain; unsuffixed gauges above .020 count as wound (a plain .022 is `22p`). Default: 10-46 for STANDARD (10-59 7-string, 13-62 BARITONE_B, 45-105 bass), else a balanced set designed for the tuning.
 - `--drop-low-string SEMITONES`: Lower the lowest string by N semitones (2 = drop-D style), on any tuning / string count.
 - `--bass`: Enable bass mode. Automatically uses bass tuning and a 4-string staff. It always selects BASS_STANDARD, overriding `--tuning`; for another bass tuning, pass `--tuning BASS_DROP_D` or `--tuning BASS_E_FLAT` without `--bass`.
 - `--velocity-cutoff [0-127]`: Ignore MIDI notes with a velocity lower than this value (default: 0).
@@ -477,7 +500,7 @@ An abridged reference, grouped as in `gtrsnipe --help`. Run `gtrsnipe --help` fo
 
 **Tuning information**
 - `--list-tunings`: List all available tuning names and exit.
-- `--show-tuning TUNING_NAME`: Show the notes for a specific tuning and exit.
+- `--show-tuning [TUNING_NAME]`: Show a tuning's notes and each string's tension on your guitar, with restring suggestions, and exit. With no name, the tuning set by `--tuning-pitches`/`--drop-low-string` (see [Custom tunings](#custom-tunings--the-tuning-solver)).
 - `--name-chord SHAPE`: Name the chord a fret shape plays (e.g. `x,3,2,0,1,0`) in the current tuning, and exit. Repeatable (see [Naming a chord shape](#naming-a-chord-shape---name-chord)).
 
 **Player mode** (`--play`; interactive terminal): `--play`, `--view`, `--clock`, `--tempo`, `--grid`, `--window`, `--width`, `--fps`, `--orientation`, `--hand`, `--audio`, `--midi-port`, `--soundfont`, `--instrument`, `--no-clear`, `--legato`. See [Player / Visualizer](#player--visualizer).

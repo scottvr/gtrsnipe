@@ -54,8 +54,10 @@ def add_tuning_args(target) -> None:
     target.add_argument(
         '--string-gauges', type=str, default=None, metavar='GAUGES',
         help="String gauges for tension physics, low string first like --tuning-pitches "
-             "(a thin->thick set such as '10 13 17 26w 36w 46w' is flipped for you; "
-             "'w' = wound). Default: 10-46 for STANDARD (10-59 7-string, 13-62 "
+             "(a thin->thick set such as '10 13 17 26w 36w 46w' is flipped for you, except "
+             "for a re-entrant tuning such as Nashville, which is read as written). Suffix "
+             "'w' = wound, 'p' = plain; unsuffixed gauges above .020 count as wound, so a "
+             "plain .022 is '22p'. Default: 10-46 for STANDARD (10-59 7-string, 13-62 "
              "BARITONE_B, 45-105 bass), else a balanced set designed for the tuning.")
     target.add_argument(
         '--drop-low-string', type=int, default=0, metavar='SEMITONES',
@@ -711,8 +713,14 @@ def setup_parser() -> ArgumentParser:
     info_group.add_argument(
         '--show-tuning',
         type=str,
+        nargs='?',
+        const='',
         metavar='TUNING_NAME',
-        help='Show the notes for a specific tuning and exit.'
+        help="Show a tuning's notes and each string's tension, as a retune of your guitar, "
+             "and exit. With no name, show the tuning set by --tuning-pitches or "
+             "--drop-low-string (else --tuning). Your guitar: --string-gauges (strung for "
+             "--tuning if given, else for the tuning shown), or the usual set for --tuning "
+             "(10-46 for STANDARD). Strings outside safe tension get a restring suggestion."
     )
     info_group.add_argument(
         '--name-chord',

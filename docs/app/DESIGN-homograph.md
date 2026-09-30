@@ -133,8 +133,11 @@ top string is D3 or below; 27″ for a `BARITONE_` tuning, or one whose lowest
 string is B1 or below (most 7- and 8-string tunings, such as SEVEN_STRING_DROP_A);
 else 25.5″. It is shortened (to 25.5″, then 24.75″) if the top string couldn't
 hold its own pitch.
-`--scale-length` and `--string-gauges` (low string first; a thin→thick set such as
-`10 13 17 26w 36w 46w` is flipped) override.
+`--scale-length` and `--string-gauges` override. Gauges are listed low string first; a
+thin→thick set such as `10 13 17 26w 36w 46w` is flipped, except for a re-entrant tuning
+(such as Nashville), which is read as written. `w` = wound, `p` = plain; unsuffixed gauges
+above .020 count as wound. The same physics drives `--show-tuning` and the tension warnings
+for custom tunings (F04).
 
 ### Modes and transposition
 

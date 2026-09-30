@@ -75,12 +75,21 @@ class Gauge:
         return s + ("w" if self.wound else "")
 
 
-def parse_gauges(spec: str) -> List[Gauge]:
+def is_reentrant(pitches_low_to_high: Sequence[int]) -> bool:
+    """True if some string sounds lower than the string below it (e.g. Nashville
+    tuning), so gauges needn't grow from the high string to the low one."""
+    p = list(pitches_low_to_high)
+    return any(b < a for a, b in zip(p, p[1:]))
+
+
+def parse_gauges(spec: str, reentrant: bool = False) -> List[Gauge]:
     """String gauges -> a list ordered LOW string -> high, like --tuning-pitches.
 
     Written thin->thick as sets usually are ('10 13 17 26w 36w 46w', '.010,...'),
-    they're flipped; thick->thin is already low->high; a mixed order (a
-    re-entrant set, e.g. Nashville) is taken as given, low string first.
+    they're flipped; thick->thin is already low->high; a mixed order is taken as
+    given, low string first. For a ``reentrant`` tuning (e.g. Nashville) nothing is
+    flipped: sorted notation means nothing there, so gauges are always read low
+    string first, even when they happen to ascend.
     Suffix w = wound, p = plain; unsuffixed gauges above .020 are wound."""
     out = []
     for tok in re.split(r"[,\s]+", spec.strip()):
@@ -97,7 +106,7 @@ def parse_gauges(spec: str) -> List[Gauge]:
     if not out:
         raise ValueError("no string gauges given")
     d = [g.inches for g in out]
-    if len(set(d)) > 1 and all(a <= b for a, b in zip(d, d[1:])):
+    if not reentrant and len(set(d)) > 1 and all(a <= b for a, b in zip(d, d[1:])):
         out.reverse()                   # thin -> thick: the usual set notation
     return out
 
@@ -193,7 +202,8 @@ class Instrument:
         return state
 
     def describe(self) -> str:
-        gs = "-".join(str(g).lstrip(".").rstrip("w") for g in (self.gauges[0], self.gauges[-1]))
+        inches = [g.inches for g in self.gauges]
+        gs = f"{round(min(inches) * 1000):g}-{round(max(inches) * 1000):g}"
         return f'{self.name or gs} set, {self.scale_in:g}" scale'
 
 
@@ -260,3 +270,48 @@ def default_instrument(tuning: str, nominal_high_to_low: Sequence[int],
         if all(inst.assess(s, p).ok for s, p in enumerate(nominal_high_to_low)):
             break                          # this scale can hold every string's own pitch
     return inst
+
+
+# -- showing a tuning on a strung guitar (F04) ---------------------------------------
+
+def retune_report(instrument: Instrument, target_high_to_low: Sequence[int],
+                  string_names: Optional[Sequence[str]] = None) -> Tuple[List[str], List[str]]:
+    """Each string of ``instrument`` retuned to ``target_high_to_low``: a table (low
+    string first) and a list of warnings for strings outside safe tension."""
+    from ..core.theory import pitch_to_note_name
+    n = len(target_high_to_low)
+    rows = ["  string  strung for  tuned to  gauge    tension   vs normal  stress  status"]
+    warnings = []
+    for s in reversed(range(n)):            # low string first, like tunings are written
+        pitch = target_high_to_low[s]
+        st = instrument.assess(s, pitch)
+        g = instrument.gauges[s]
+        stress = "" if st.stress is None else f"{100 * st.stress:4.0f}%"
+        change = f"{100 * (st.ratio - 1):+5.0f}%"
+        was, now = pitch_to_note_name(instrument.nominal[s]), pitch_to_note_name(pitch)
+        line = (f"  {s + 1:>6}  {was:>10}  {now:>8}  {str(g):<7} {st.tension:6.1f} lb  "
+                f"{change:>9}  {stress:>6}  {st.status}")
+        if st.suggestion is not None:
+            sg, st_t = st.suggestion
+            fix = f"restring with {sg} ({st_t:.1f} lb)"
+        elif not st.ok and plain_stress(pitch, instrument.scale_in) >= RISKY_AT:
+            # a plain string's breaking pitch doesn't depend on its gauge
+            fix = (f"every steel string is at snap risk at {now} on a "
+                   f"{instrument.scale_in:g}\" scale")
+        elif not st.ok:
+            fix = "no catalog gauge fits"
+        else:
+            fix = ""
+        if fix:
+            line += f" ({fix})"
+        rows.append(line)
+        if not st.ok:
+            what = {"slack": "too slack", "tight": "too tight, a snap risk",
+                    "breaks": "would break", "impossible": "can't reach this pitch at this scale"
+                    }.get(st.status, st.status)
+            fix = f"; {fix}" if fix else ""
+            warnings.append(f"string {s + 1} ({was} -> {now}, {g}): {what}, "
+                            f"{st.tension:.1f} lb{fix}")
+    rows.append("  (stress: % of breaking strength, plain strings only; wound strings are "
+                "judged by tension)")
+    return rows, warnings

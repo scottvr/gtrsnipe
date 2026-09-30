@@ -259,6 +259,89 @@ class MusicConverter:
             raise ValueError(f"Unsupported output format: {format}")
 
 
+def _your_guitar(args, target_names):
+    """The strung guitar a tuning is shown on, for --show-tuning and the tension
+    warnings: (Instrument, what it's strung for, a note, target pitches high->low).
+
+    The strings are strung for an explicit --tuning; else, when --string-gauges are
+    given, for the tuning shown itself; else for STANDARD (the usual 10-46 guitar,
+    or the 7-string / bass standard when the string count calls for it)."""
+    from .guitar.strings import default_instrument, is_reentrant, parse_gauges
+    n = len(target_names)
+    explicit = getattr(args, "tuning_explicit", False)
+    spec = getattr(args, "string_gauges", None)
+    note = ""
+    if spec and not explicit:
+        base, base_names = None, list(target_names)
+    else:
+        base = (args.tuning or "STANDARD").upper() if explicit else "STANDARD"
+        base_names = list(Tuning[base].value) if base in Tuning.__members__ else None
+        if (base_names is None or len(base_names) != n) and not explicit:
+            base = {6: "STANDARD", 7: "SEVEN_STRING_STANDARD", 4: "BASS_STANDARD"}.get(n)
+            base_names = list(Tuning[base].value) if base else None
+        if base_names is None or len(base_names) != n:
+            note = (f"no {n}-string guitar strung for {args.tuning} to compare against; "
+                    "showing a set designed for this tuning")
+            base, base_names = None, list(target_names)
+    base_pitches = [note_name_to_pitch(x) for x in base_names]
+    gauges = parse_gauges(spec, reentrant=is_reentrant(base_pitches)) if spec else None
+    inst = default_instrument(base or "CUSTOM", list(reversed(base_pitches)),
+                              scale_in=getattr(args, "scale_length", None),
+                              gauges_low_to_high=gauges)
+    target_hl = [note_name_to_pitch(x) for x in reversed(target_names)]
+    return inst, base or ",".join(base_names), note, target_hl
+
+
+def tension_warnings(args, target_names) -> list:
+    """Warnings for strings a tuning would put outside safe tension on your guitar."""
+    from .guitar.strings import retune_report
+    try:
+        inst, strung_for, _, target_hl = _your_guitar(args, target_names)
+    except (ValueError, KeyError):
+        return []
+    _, warnings = retune_report(inst, target_hl)
+    return [f"{w} (on a {inst.describe()} guitar strung for {strung_for})" for w in warnings]
+
+
+def run_show_tuning(args) -> int:
+    """--show-tuning [NAME]: a tuning's notes, and each string's tension on your guitar."""
+    from .arguments import resolve_custom_tuning
+    from .guitar.strings import retune_report
+    if args.show_tuning:
+        shown = args.show_tuning.upper()
+        if shown not in Tuning.__members__:
+            print(f"Error: Tuning '{args.show_tuning}' not found.")
+            print("Use --list-tunings to see all available options.")
+            return 1
+        names = list(Tuning[shown].value)
+    else:
+        custom = resolve_custom_tuning(args)
+        shown = "custom" if custom else (args.tuning or "STANDARD").upper()
+        if not custom and shown not in Tuning.__members__:
+            print(f"Error: '{shown}' has no strings to show.")
+            return 1
+        names = list(custom) if custom else list(Tuning[shown].value)
+    try:
+        inst, strung_for, note, target_hl = _your_guitar(args, names)
+    except ValueError as e:
+        print(f"Error: {e}")
+        return 1
+    print(f"Tuning: {shown}")
+    print(f"Notes:  {' '.join(names)} (low to high)")
+    print(f"Guitar: {inst.describe()}, strung for {strung_for}")
+    if note:
+        print(f"({note})")
+    rows, warnings = retune_report(inst, target_hl)
+    print()
+    print("\n".join(rows))
+    print()
+    if warnings:
+        print(f"{len(warnings)} of {len(names)} strings outside safe tension.")
+    else:
+        print("Every string within safe tension.")
+    return 0
+
+
 def run_solve_tuning(args) -> int:
     """--solve-tuning: melody -> tuning under which an all-open tab plays it."""
     from .guitar.tuning_solver import solve_open_string_tuning, format_open_string_tab
@@ -285,6 +368,19 @@ def run_solve_tuning(args) -> int:
     print(f"A {len(open_pitches)}-string guitar tuned thus plays this melody from an "
           f"all-open-string tab:\n")
     print(tab)
+    # F04: any string, of any gauge, tuned this high? (Plain steel's breaking pitch
+    # depends only on the scale length, so this holds whatever strings you use.)
+    from .guitar.strings import BREAK_AT, RISKY_AT, plain_stress
+    scale = getattr(args, "scale_length", None) or 25.5
+    risky = []
+    for p in sorted(set(open_pitches), reverse=True):
+        ps = plain_stress(p, scale)
+        if ps >= RISKY_AT:
+            risky.append(f"{pitch_to_note_name(p)} ({100 * ps:.0f}% of breaking strength: "
+                         f"{'past the breaking point' if ps >= BREAK_AT else 'a snap risk'})")
+    if risky:
+        print(f"\nString physics, {scale:g}\" scale: {'; '.join(risky)}. That holds for any "
+              "gauge; a shorter scale (e.g. --scale-length 24.75) lowers it.")
     print(f"\nHear it:  gtrsnipe --solve-tuning \"{args.solve_tuning}\" --play --audio fluidsynth --soundfont FONT.sf2")
 
     # Pre-mapped Song (open strings): pitch = the sounding target; string/fret fixed.
@@ -424,9 +520,10 @@ def run_homograph(args, command_line: str = "") -> int:
             if rhythm < 1:
                 raise ValueError("--homograph-rhythm takes strict, sequence, or a ratio >= 1 "
                                  "(e.g. 1.5)")
-        from .guitar.strings import default_instrument, parse_gauges
-        gauges = parse_gauges(args.string_gauges) if args.string_gauges else None
+        from .guitar.strings import default_instrument, is_reentrant, parse_gauges
         anchor_open = open_string_pitches_for(tuning, custom)
+        gauges = (parse_gauges(args.string_gauges, reentrant=is_reentrant(anchor_open[::-1]))
+                  if args.string_gauges else None)
         instrument = default_instrument(tuning, anchor_open, scale_in=args.scale_length,
                                         gauges_low_to_high=gauges)
     except ValueError as e:
@@ -534,18 +631,8 @@ def main():
             print(f"- {tuning.name.ljust(max_name_len)} : {notes}")
         exit(0)
 
-    if args.show_tuning:
-        tuning_name_to_show = args.show_tuning.upper()
-        try:
-            tuning_to_show = Tuning[tuning_name_to_show]
-            notes = ' '.join(tuning_to_show.value)
-            print(f"Tuning: {tuning_to_show.name}")
-            print(f"Notes:  {notes} (low to high)")
-        except KeyError:
-            print(f"Error: Tuning '{args.show_tuning}' not found.")
-            print("Use --list-tunings to see all available options.")
-            exit(1)
-        exit(0)    
+    if args.show_tuning is not None:
+        exit(run_show_tuning(args))    
     
     if args.name_chord:
         from .chords.shape import run_name_chord
@@ -590,6 +677,7 @@ def main():
         # named-tuning resolution and validation below.
         from .arguments import resolve_custom_tuning
         custom_names = resolve_custom_tuning(args)   # low->high note names, or None
+        user_custom = custom_names                    # asked for, not adopted from a tab
         # A .tab input with no tuning asked for (STANDARD is only the default)
         # adopts its own '// Tuning:' header for the WHOLE run -- decode, range
         # filter, mapping and any tab output -- as if --tuning-pitches named it.
@@ -604,6 +692,11 @@ def main():
         if is_custom:
             tuning_name = "CUSTOM"
             num_strings = len(custom_names)
+        if user_custom:
+            # F04: a tuning you set yourself that would overload (or floppily slacken)
+            # a string of your guitar. A tab's own header tuning is taken as given.
+            for w in tension_warnings(args, list(user_custom)):
+                logger.warning(f"Tension: {w}")
 
         is_piano_mode = (not is_custom) and tuning_name == 'PIANO'
         if is_piano_mode:
