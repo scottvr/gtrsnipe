@@ -80,6 +80,10 @@ def run_name_chord(args) -> int:
     opens = [note_name_to_pitch(n) for n in names]
     capo = args.capo or 0
     where = f"{label} ({','.join(names)})" + (f", capo {capo}" if capo else "")
+    naming = None
+    if getattr(args, "shape_names", False):
+        from .shape_names import shape_naming
+        naming = shape_naming(names, capo, label if label != "custom" else "this tuning")
     status = 0
     for shape in args.name_chord:
         try:
@@ -90,6 +94,9 @@ def run_name_chord(args) -> int:
             continue
         # spelled with the chord names' sharps, so "E" doesn't sit next to "Ab4"
         notes = " ".join(f"{PITCH_CLASS_NAMES[p % 12]}{p // 12 - 1}" for p in named.pitches)
-        print(f"{shape:<16} {named.label:<10} {notes}")
+        shape_col = f"  shape: {naming.name(named.chord)}" if naming and naming.active else ""
+        print(f"{shape:<16} {named.label:<10} {notes}{shape_col}")
     print(f"(tuning {where}; chord names are concert pitch)")
+    if naming:
+        print(f"({naming.banner})")
     return status

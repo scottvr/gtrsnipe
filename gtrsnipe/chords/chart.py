@@ -72,10 +72,10 @@ def _chord_window(positions: List[FretPosition], size: int = DIAGRAM_WINDOW) -> 
     return (lo, hi)
 
 
-def _progression_grid(spans: List[ChordSpan], per_line: int) -> str:
+def _progression_grid(spans: List[ChordSpan], per_line: int, label_of=None) -> str:
     """A monospace bar-by-bar grid of chord labels."""
     per_line = max(1, per_line)  # 0/negative would make range() raise
-    labels = [s.label for s in spans]
+    labels = [(label_of or (lambda s: s.label))(s) for s in spans]
     width = max((len(x) for x in labels), default=4)
     cell = lambda x: x.ljust(width)
     lines: List[str] = []
@@ -85,12 +85,13 @@ def _progression_grid(spans: List[ChordSpan], per_line: int) -> str:
     return "\n".join(lines)
 
 
-def _unique_chords(spans: List[ChordSpan]) -> Dict[str, ChordSpan]:
+def _unique_chords(spans: List[ChordSpan], label_of=None) -> Dict[str, ChordSpan]:
     """Unique chord labels in order of first appearance (skips N.C.)."""
     out: Dict[str, ChordSpan] = {}
     for s in spans:
-        if s.chord is not None and s.label not in out:
-            out[s.label] = s
+        label = (label_of or (lambda x: x.label))(s)
+        if s.chord is not None and label not in out:
+            out[label] = s
     return out
 
 
@@ -100,8 +101,11 @@ def build_chord_sheet(
     *,
     measures_per_line: int = DEFAULT_MEASURES_PER_LINE,
     chord_tone_threshold: Optional[float] = None,
+    shape_names: bool = False,
 ) -> str:
-    """Build the full Markdown chord sheet for a song."""
+    """Build the full Markdown chord sheet for a song. ``shape_names``: label each
+    chord by the standard-tuning shape you finger (C03); the diagrams still show the
+    notes actually played, and a banner states the convention."""
     cfg = mapper_config or MapperConfig()
     kw = {} if chord_tone_threshold is None else {"chord_tone_threshold": chord_tone_threshold}
     spans = segment_by_measure(song, **kw)
@@ -109,14 +113,21 @@ def build_chord_sheet(
     title = song.title or "Untitled"
     ts = song.time_signature
     parts: List[str] = [f"# {title}", "", f"*{ts}, {song.tempo:g} BPM*", ""]
+    label_of = None
+    if shape_names:
+        from .shape_names import shape_naming_for_config
+        naming = shape_naming_for_config(cfg)
+        label_of = lambda s: naming.name(s.chord)
+        parts += [f"> {naming.banner}", ""]
 
     if not spans:
         parts.append("_No notes to analyze._")
         return "\n".join(parts)
 
-    parts += ["## Progression", "", "```", _progression_grid(spans, measures_per_line), "```", ""]
+    parts += ["## Progression", "", "```", _progression_grid(spans, measures_per_line, label_of),
+              "```", ""]
 
-    uniq = _unique_chords(spans)
+    uniq = _unique_chords(spans, label_of)
     if uniq:
         mapper = GuitarMapper(cfg)
         renderer = AsciiFretboardRenderer(cfg, orientation="vertical")
