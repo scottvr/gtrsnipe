@@ -129,7 +129,7 @@ gtrsnipe --solve-tuning "C4,C4,G4,G4,A4,A4,G4" -o twinkle.tab -o twinkle.mid   #
 This lead to an entire reseaarch endeavor still underway and partiallly documented in this repo: 
 <details>
 
-  <summary>Tab homographs: one tab, a different song per tuning [click to expand]</summary>
+  <summary>[click to expand] Tab homographs: one tab, a different song per tuning</summary>
 
 `--homograph A B [C …]` goes further: it looks for a single **ordinary, fretted,
 playable** tab that plays song A in one tuning and song B in another. Here is a
