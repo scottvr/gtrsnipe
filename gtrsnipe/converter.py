@@ -1003,6 +1003,7 @@ def main():
                     measures_per_line=args.measures_per_line,
                     chord_tone_threshold=args.chord_tone_threshold,
                     shape_names=getattr(args, "shape_names", False),
+                    prefer_open_chords=getattr(args, "prefer_open_chords", False),
                 )
             else:
                 output_data = converter.convert(

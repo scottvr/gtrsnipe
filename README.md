@@ -4,7 +4,7 @@
 
 Convert to and from .mid, .abc, .vex, and .tab files. (and more.)
 
-## v0.6.14
+## v0.6.15
 Released 2026-09-30. See [CHANGELOG](https://github.com/scottvr/gtrsnipe/blob/main/CHANGELOG.md)
 
 # What?
@@ -367,14 +367,22 @@ The diagrams are **generated**, not copied from the song. Each is a compact
 root-position voicing: the chord tones within one octave, one note per string,
 no doublings, placed where the mapper can finger them in the song's tuning with
 the tightest fret span. So a C/E bar gets a root-position C diagram, and a triad
-uses three strings. This works in any tuning, but the shapes are not the
-canonical open chords.
+uses three strings. This works in any tuning. Each diagram is captioned with its shape
+(`x32010`: low string first, `x` = muted).
+
+**Open-position shapes** (`--prefer-open-chords`) draw the familiar first-position shape of
+each chord where one exists: C `x32010`, G `320003`, D `xx0232`, F `xx3211`, and so on. The
+shapes are found, not looked up: every chord tone present (a 4-note chord may drop its
+fifth), the chord's bass on the lowest string played, muted strings only at the bottom so it
+strums, at most four fingers within four frets. So it works in any tuning and with a capo
+(with capo 2, a D is drawn as the C shape you finger). Chords with no open shape get the
+compact voicing.
 
 Key options: `-o FILE`, `--measures-per-line N`, `--chord-tone-threshold F`
 (how long a note must sound in a bar to count as a chord tone), `--track N`,
-plus the usual `--tuning`, `--num-strings`, `--capo`, and `--optimizer`. Mapper
-weights such as `--prefer-open` don't change the diagrams; open-position
-voicings are planned (C02 in [`docs/dev/BACKLOG.md`](docs/dev/BACKLOG.md)).
+`--prefer-open-chords`, `--shape-names`, plus the usual `--tuning`, `--num-strings`,
+`--capo`, and `--optimizer`. Mapper weights such as `--prefer-open` don't change the
+diagrams; `--prefer-open-chords` does.
 
 ### Shape names (`--shape-names`)
 
@@ -540,7 +548,7 @@ An abridged reference, grouped as in `gtrsnipe --help`. Run `gtrsnipe --help` fo
 
 **Player mode** (`--play`; interactive terminal): `--play`, `--view`, `--clock`, `--tempo`, `--grid`, `--window`, `--width`, `--fps`, `--orientation`, `--hand`, `--audio`, `--midi-port`, `--soundfont`, `--instrument`, `--no-clear`, `--legato`. See [Player / Visualizer](#player--visualizer).
 
-**Chord chart output** (`-o SONG.chords.md`): `--measures-per-line` (default: 4), `--chord-tone-threshold` (default: 0.15), `--shape-names` (name chords by the standard-tuning shape; also for `--name-chords` and `--name-chord`). See [Chord charts](#chord-charts).
+**Chord chart output** (`-o SONG.chords.md`): `--measures-per-line` (default: 4), `--chord-tone-threshold` (default: 0.15), `--prefer-open-chords` (draw open-position shapes where one exists), `--shape-names` (name chords by the standard-tuning shape; also for `--name-chords` and `--name-chord`). See [Chord charts](#chord-charts).
 
 **Profiles / config** (`.gtrsnipe`): `--profile NAME[,NAME]`, `--no-defaults`, `--config-dir CONFIG_DIR`, `--save-args NAME`. See [Config profiles](#config-profiles-gtrsnipe).
 

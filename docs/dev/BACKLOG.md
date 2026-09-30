@@ -1,6 +1,6 @@
 # gtrsnipe backlog
 
-The single list of open work, as of **v0.6.14 (2026-09-30)**. It collates the old parking
+The single list of open work, as of **v0.6.15 (2026-09-30)**. It collates the old parking
 lot, the CHANGELOG's known limitations, the design docs, the v0.3.0-era audit and plans,
 GitHub issues, and findings from recent sessions.
 
@@ -59,7 +59,8 @@ stay open, low priority.
 
 B07 ✓ and F06 ✓ (v0.6.6), F03 ✓ (v0.6.7), P01 ✓ (v0.6.8), P03 ✓ (v0.6.9); a docs
 interlude (H05–H07, v0.6.10). C01 with C06 ✓ (v0.6.11), F04 ✓ (v0.6.12), C03 ✓ (v0.6.13), and the R03
-follow-ups (R12, R15; v0.6.14). Next: C02, …
+follow-ups (R12, R15; v0.6.14), C02 ✓ (v0.6.15). Next: C04/C05/F02 together
+(extended chords, key-aware spelling), …
 
 Then, as before (swap freely if something else is more fun): P01 true note durations in
 playback, P03 instrument defaults from the MIDI file, C01 chord names over the tab, F04
@@ -107,7 +108,7 @@ changes, P04 pager search, P05 other renderers.
 | ID | Item | Size | Source |
 |---|---|---|---|
 | C01 | ✓ v0.6.11 **`--name-chords`**: chord names above the tab staff, over each bar's first note, where the chord changes and at each line start; half-bar changes named; only plainly spelled chords. | M | player notes |
-| C02 | **`--prefer-open-chords`**: open-position voicings. Mapper weights alone don't change the diagrams (tested). The voicing generator must pick the register by open strings and low position, and add doublings so full shapes can form. | M–L | player notes |
+| C02 | ✓ v0.6.15 **`--prefer-open-chords`**: open-position chord shapes found by search (any tuning, capo), with a fingerability rule; every diagram captioned with its shape. | M–L | player notes |
 | C03 | ✓ v0.6.13 **Shape-relative chord names** (`--shape-names`): named as in standard tuning with no capo, for evenly shifted tunings plus any capo; drop/open tunings stay in concert pitch; a banner always says which. Charts, `--name-chords`, `--name-chord`. | M | player notes |
 | C04 | Extended chords (9ths, 11ths, 13ths). | M | CHANGELOG 0.4.0 |
 | C05 | Key-aware enharmonic spelling (sharps only today). Shares work with F02. | M | CHANGELOG 0.4.0 |
