@@ -1004,6 +1004,7 @@ def main():
                     chord_tone_threshold=args.chord_tone_threshold,
                     shape_names=getattr(args, "shape_names", False),
                     prefer_open_chords=getattr(args, "prefer_open_chords", False),
+                    voicing=getattr(args, "chart_voicing", "source"),
                 )
             else:
                 output_data = converter.convert(

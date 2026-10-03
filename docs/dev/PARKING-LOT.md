@@ -119,6 +119,29 @@ notes are in git history.
   example). Flatwound strings weigh more per gauge than the nickel roundwounds the physics
   is calibrated to (`WOUND_FACTOR` 0.83 of solid steel). An `f` suffix needs a real factor,
   calibrated against a maker's published flatwound tensions, not a guessed constant.
+- **Simplified "beginner's version" tabs** (scottvr, 2026-10-03). The constraints being built
+  for chords (open shapes, a hand profile, optional notes such as top-three voicings) could
+  constrain a whole tab, giving a version of a complex tab that isn't exact but is enough for
+  someone just learning to play.
+  - The same machinery: the mapper with the hand profile's limits; drop costs by musical
+    importance (the "optional notes" entry: keep the melody and the bass, drop doublings and
+    inner voices first); open shapes where chords occur.
+  - Fidelity stays the default, as with `--chart-voicing source`. A simplified tab must say so
+    in its header and list what it changed (notes dropped, octaves moved), the way the
+    homograph report discloses its liberties.
+  - Probably an easy feature once those pieces exist, but it likely depends on the
+    complexity/difficulty measure (below) to know *what* to simplify, and by how much: revisit
+    together with it and the hand profile.
+- **A hand profile: which fingers are available** (scottvr, 2026-10-03). Accessibility, not
+  style: a player missing a fingertip, or who avoids the ring finger for any reason, should get
+  chord shapes and fingerings their hand can make (e.g. `--fingers 1,2,4`, or a profile).
+  - Chord shapes: `open_positions` already counts fretted strings; with a profile it would
+    assign real fingers (index barre allowed or not) and reject shapes needing a missing one.
+  - Tabs: the mapper's span and movement costs assume four fingers; a profile would narrow
+    the playable span and penalize stretches the hand can't make.
+  - Natural companions: the "optional notes" entry (top-three voicings, shells, power
+    chords; scottvr's "funk" and, jokingly, "Iommi factor" modes) -- all chosen compromises,
+    each disclosed, never silent.
 - **Search for an easier tuning than the one assumed** (scottvr, 2026-10-02). Not only "is
   standard the easiest?" (probably usually), but the specific case of a piece traditionally in
   an alternate tuning, where some non-traditional tuning might score easier or less complex.
