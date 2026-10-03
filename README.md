@@ -13,7 +13,9 @@ gtrsnipe is a guitar transcription tool. Its primary function is to create playa
 
 It can also convert existing MIDI files into text-based notations or, in reverse, generate a playable MIDI file from a text-based tab.
 
-Beyond writing files, gtrsnipe can **play** a song: `gtrsnipe-play` animates it on an ASCII fretboard or a horizontally-scrolling "Guitar Hero"-style tab staff — optionally with sound (MIDI to a synth/DAW, or a SoundFont) — and `gtrsnipe-chords` breaks a song into a per-measure chord sheet with diagrams. Both reuse the same fretboard mapper, so they work with every supported input format and tuning. (See the sections below.) It can also find [**tab homographs**](#tab-homographs-one-tab-a-different-song-per-tuning): one ordinary tab that plays a different song in each of two tunings.
+Beyond writing files, gtrsnipe can **play** a song: `gtrsnipe-play` animates it on an ASCII fretboard or a horizontally-scrolling "Guitar Hero"-style tab staff — optionally with sound (MIDI to a synth/DAW, or a SoundFont) — and `gtrsnipe-chords` breaks a song into a per-measure chord sheet with diagrams. Both reuse the same fretboard mapper, so they work with every supported input format and tuning. (See the sections below.) It can also find [**tab homographs**](#tab-homographs-one-tab-a-different-song-per-tuning): one ordinary tab that plays a different song in each of two (or more) tunings.
+
+Smaller tools along the way: chord names written over a tab (`--name-chords`), the chord any fret shape plays (`--name-chord`), a ranking of tunings by how playable a song is in each (`--analyze`), and each string's tension in a tuning, so you know before you retune whether your strings will take it (`--show-tuning`).
 
 At its core, gtrsnipe uses an intelligent fretboard mapper that analyzes notes and chords to find comfortable and logical fingerings on the guitar neck. [This process is highly customizable](https://github.com/scottvr/gtrsnipe/wiki/1.-FretboardMapper-Algorithm-Configuration-and-Tunables), allowing you to fine-tune the output to match your personal playing style and preferences.
 
@@ -62,7 +64,7 @@ pip install -e '.[all]'          # everything above
 
 ## Usage 
 
-The installation process makes gtrsnipe available as a command within your activated virtual environment.
+The installation process makes gtrsnipe available as a command within your activated virtual environment, along with `gtrsnipe-play`, `gtrsnipe-chords` and `gtrsnipe-research` (described below).
 
 ## Config profiles (`.gtrsnipe`)
 
@@ -122,11 +124,20 @@ guitar, and suggests a restring for any string outside safe tension:
 
 ```
 $ gtrsnipe --tuning-pitches E2,A2,D3,G3,B3,G4 --show-tuning
+Tuning: custom
+Notes:  E2 A2 D3 G3 B3 G4 (low to high)
 Guitar: 10-46 set, 25.5" scale, strung for STANDARD
+
   string  strung for  tuned to  gauge    tension   vs normal  stress  status
        6          E2        E2  .046w     17.9 lb        +0%          ok
-       ...
+       5          A2        A2  .036w     19.5 lb        +0%          ok
+       4          D3        D3  .026w     18.1 lb        +0%          ok
+       3          G3        G3  .017      16.6 lb        +0%     19%  ok
+       2          B3        B3  .013      15.5 lb        +0%     30%  ok
        1          E4        G4  .010      23.0 lb       +41%     75%  tight (every steel string is at snap risk at G4 on a 25.5" scale)
+  (stress: % of breaking strength, plain strings only; wound strings are judged by tension)
+
+1 of 6 strings outside safe tension.
 ```
 
 - **Your guitar** is the usual set for `--tuning` (10-46 for STANDARD), or your own
@@ -140,6 +151,18 @@ Guitar: 10-46 set, 25.5" scale, strung for STANDARD
   count as wound, so a jazz set's plain .022 G is `22p`. For a re-entrant tuning such as
   Nashville, gauges are read exactly as written, low string first.
 
+**Which tuning suits this song?** `--analyze` fingers the song in every tuning whose range fits
+it, your own `--tuning-pitches` included, and ranks them by how playable the tab is:
+
+```bash
+gtrsnipe -i song.mid --analyze                                     # rank the tunings that fit
+gtrsnipe -i song.mid --analyze --tuning-pitches D2,G2,E3,F3,C4,D4   # with yours among them
+gtrsnipe -i song.mid --analyze --bass                              # bass tunings
+```
+
+The score is the mapper's, per note, with your current settings, so a profile changes the
+ranking. Each row also gives the frets used, hand travel per note and the share of open strings.
+
 Adding custom tunings led to a parlor trick which is sort of the inverse of supplying
 a custom tuning to gtrsnipe: give it a melody consisting of <= six distinct pitches, and
 gtrsnipe finds an open tuning that can play it. That is, your tab would be all open strings:
@@ -151,6 +174,7 @@ gtrsnipe --solve-tuning "C4,C4,G4,G4,A4,A4,G4" -o twinkle.tab -o twinkle.mid   #
 ```
 
 This led to an entire research endeavor still underway and partially documented in this repo:
+<a name="tab-homographs-one-tab-a-different-song-per-tuning"></a>
 <details>
 
   <summary>[click to expand] Tab homographs: one tab, a different song per tuning</summary>
@@ -164,15 +188,23 @@ gauges' safe range) and the very same tab plays *Twinkle, Twinkle*:
 $ gtrsnipe --homograph examples/homograph/oldmac.abc examples/homograph/twinkle.abc@1-12 --homograph-octaves
 ...
 // Tuning: E2,A2,D3,G3,B3,E4
+// Homograph: this one tab plays a different song in each tuning (low->high):
 //   Key A: E2,A2,D3,G3,B3,E4  = oldmac
 //   Key B: E2,A2,Bb2,Bb3,A3,C#4  = twinkle@1-12 (transposed -4)
+...
+e|----------|------|-0-0----|
+B|----------|------|-----3-3|
+G|-------5--|------|--------|
+D|-10-10---5|-7-7-5|--------|
+A|----------|------|--------|
+E|----------|------|--------|
 
-e|----------|------|-0-0----|      e|--------------------------------|
-B|----------|------|-----3-3|      B|-1------------------------------|
-G|-------5--|------|--------|      G|--------------------------------|
-D|-10-10---5|-7-7-5|--------|      D|--------------------------------|
-A|----------|------|--------|      A|--------------------------------|
-E|----------|------|--------|      E|--------------------------------|
+e|--------------------------------|
+B|-1------------------------------|
+G|--------------------------------|
+D|--------------------------------|
+A|--------------------------------|
+E|--------------------------------|
 ```
 
 (With `--homograph-octaves`, four of Twinkle's notes drop an octave; the report
@@ -331,8 +363,8 @@ track, 1-indexed, same as the converter), `--orientation {horizontal,vertical}`,
 `--hand {right,left}`, `--fps N` (animation smoothness),
 `--audio {none,midi,fluidsynth}` (`--midi-port`, `--soundfont`, `--instrument`
 NAME-or-0..127, which defaults to the MIDI file's own instrument; `--list-instruments`),
-plus the usual `--tuning`,
-`--num-strings`, `--max-fret`, `--capo`, and `--optimizer`.
+`--legato`, `--sustain {legato,string}` (see Note lengths below), plus the usual `--tuning`,
+`--tuning-pitches`, `--drop-low-string`, `--num-strings`, `--max-fret`, `--capo`, and `--optimizer`.
 
 **Note lengths.** Playback honors each note's own length: a held bass note rings under a
 moving melody, and a rest is silent. `--legato` brings back the old behavior, where every
@@ -385,7 +417,8 @@ Each diagram is captioned with its shape (`x32010`: low string first, `x` = mute
 
 Key options: `-o FILE`, `--measures-per-line N`, `--chord-tone-threshold F`
 (how long a note must sound in a bar to count as a chord tone), `--track N`,
-`--chart-voicing {source,compact,open}`, `--shape-names`, plus the usual `--tuning`,
+`--chart-voicing {source,compact,open}` (`--prefer-open-chords` = `open`), `--shape-names`,
+`--name-chord SHAPE`, plus the usual `--tuning`, `--tuning-pitches`, `--drop-low-string`,
 `--num-strings`, `--capo`, and `--optimizer`.
 
 ### Shape names (`--shape-names`)
@@ -441,6 +474,7 @@ string to the highest, `x` for a muted string:
 gtrsnipe --name-chord x,3,2,0,1,0 --name-chord x,x,3,2,1,0
 #   x,3,2,0,1,0      C          C3 E3 G3 C4 E4
 #   x,x,3,2,1,0      Fmaj7      F3 A3 C4 E4
+#   (tuning STANDARD (E2,A2,D3,G3,B3,E4); chord names are concert pitch)
 gtrsnipe --tuning BARITONE_B --name-chord x,3,2,0,1,0      # the C shape plays G
 gtrsnipe --capo 2 --name-chord x02220                      # compact form: B
 ```
@@ -513,7 +547,6 @@ An abridged reference, grouped as in `gtrsnipe --help`. Run `gtrsnipe --help` fo
 - `--max-strings MAX_STRINGS`: Max strings the tuning solver (and `--homograph-mode free`) may use (default: 12).
 - `--transpose TRANSPOSE`: Transpose the music up or down by N semitones (e.g., 2 for up, -3 for down).
 - `--no-articulations`: Transcribe with no legato, taps, hammer-ons, pull-offs, etc.
-- `--sustain {legato,string}`: Tab input: `legato` (default) holds each note until the next onset; `string` lets it ring until its own string is struck again, as a guitar does (at most one bar). Shapes playback and MIDI output alike.
 - `--staccato`: Do not extend note durations to the start of the next note, instead giving each note an 1/8 note duration. When converting from ASCII tab.
 - `--max-line-width MAX_LINE_WIDTH`: Max number of vertical columns per line of ASCII tab (default: 40).
 - `--name-chords`: ASCII tab output: chord names above the staff (see [Chord names over a tab](#chord-names-over-a-tab---name-chords)).
@@ -550,7 +583,7 @@ An abridged reference, grouped as in `gtrsnipe --help`. Run `gtrsnipe --help` fo
 - `--show-tuning [TUNING_NAME]`: Show a tuning's notes and each string's tension on your guitar, with restring suggestions, and exit. With no name, the tuning set by `--tuning-pitches`/`--drop-low-string` (see [Custom tunings](#custom-tunings)).
 - `--name-chord SHAPE`: Name the chord a fret shape plays (e.g. `x,3,2,0,1,0`) in the current tuning, and exit. Repeatable (see [Naming a chord shape](#naming-a-chord-shape---name-chord)).
 
-**Player mode** (`--play`; interactive terminal): `--play`, `--view`, `--clock`, `--tempo`, `--grid`, `--window`, `--width`, `--fps`, `--orientation`, `--hand`, `--audio`, `--midi-port`, `--soundfont`, `--instrument`, `--no-clear`, `--legato`. See [Player / Visualizer](#player--visualizer).
+**Player mode** (`--play`; interactive terminal): `--play`, `--view`, `--clock`, `--tempo`, `--grid`, `--window`, `--width`, `--fps`, `--orientation`, `--hand`, `--audio`, `--midi-port`, `--soundfont`, `--instrument`, `--no-clear`, `--legato`, and `--sustain {legato,string}`, which also applies to MIDI output from a tab: `legato` (default) holds each note until the next onset; `string` lets it ring until its own string is struck again, as a guitar does (at most one bar). See [Player / Visualizer](#player--visualizer).
 
 **Chord chart output** (`-o SONG.chords.md`): `--measures-per-line` (default: 4), `--chord-tone-threshold` (default: 0.15), `--chart-voicing {source,compact,open}` (what the diagrams show; default: the song's own fingering), `--prefer-open-chords` (= `--chart-voicing open`), `--shape-names` (name chords by the standard-tuning shape; also for `--name-chords` and `--name-chord`). See [Chord charts](#chord-charts).
 
