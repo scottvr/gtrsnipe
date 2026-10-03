@@ -119,6 +119,20 @@ notes are in git history.
   example). Flatwound strings weigh more per gauge than the nickel roundwounds the physics
   is calibrated to (`WOUND_FACTOR` 0.83 of solid steel). An `f` suffix needs a real factor,
   calibrated against a maker's published flatwound tensions, not a guessed constant.
+- **Search for an easier tuning than the one assumed** (scottvr, 2026-10-02). Not only "is
+  standard the easiest?" (probably usually), but the specific case of a piece traditionally in
+  an alternate tuning, where some non-traditional tuning might score easier or less complex.
+  - Most pieces exist: F03's `--analyze` already ranks the *named* tunings by the mapper's
+    score; F04's string physics says which tunings a strung guitar can take; the homograph
+    solver already searches per-string retunes.
+  - New: search the space of tunings, not just the list, e.g. each string within a few
+    semitones of the traditional or standard tuning, by local search on the mapper's score,
+    rejecting tunings that overload a string, and charging a little for each retuned string.
+  - Report the traditional tuning's score next to the best found, and say what was gained.
+  - Calibration: "easier" isn't "better". A piece's tuning also sets its drones, ringing open
+    strings and resonance (often the reason it's in that tuning), so the output is an option
+    for a player, not a correction. Pairs with the difficulty measure below and with the
+    optimizer-objectives entry.
 - **A tab difficulty measure** (scottvr, 2026-09-30). Tab sites sort by difficulty labels
   that uploaders assign by opinion. Objective *complexity*, measured from the tab, could serve
   as a proxy for difficulty, which is complexity relative to a player.
