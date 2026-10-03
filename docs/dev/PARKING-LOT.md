@@ -228,6 +228,10 @@ notes are in git history.
     can't tell a failed conversion from a good one.
   - `gtrsnipe-research profile`, when phrases don't align, suggests `--homograph-subdivide`
     (the message comes from the shared homograph code); its own flag is `--subdivide`.
+  - `--analyze` on a tab input ranks the tab's own `// Tuning:` header as an extra
+    "CUSTOM E2,A2,D3,G3,B3,E4" row even when it is a named tuning (STANDARD then appears
+    twice, and "18 of 18 tunings" counts it). A long CUSTOM name also breaks the column
+    alignment. Found in the README trueing pass, 2026-10-03.
   - `gtrsnipe-chords` prints "Could not find a playable fingering…" warnings from its
     register search even when the sheet comes out fine.
   - `gtrsnipe-play` with a missing file shows a traceback instead of a clean error.
