@@ -55,6 +55,34 @@ def test_chart_draws_open_shapes_with_captions():
     song = Song(tracks=[Track(events=events)], title="t")
     sheet = build_chord_sheet(song, MapperConfig(), prefer_open_chords=True)
     assert "**C** `x32010`" in sheet and "**G** `320003`" in sheet
-    assert "Open-position shapes" in sheet
-    plain = build_chord_sheet(song, MapperConfig())
-    assert "**C** `" in plain and "Open-position shapes" not in plain
+    assert "open-position shapes where one exists" in sheet
+    compact = build_chord_sheet(song, MapperConfig(), voicing="compact")
+    assert "**C** `" in compact and "compact voicings of each chord's name" in compact
+
+
+# -- C07: --chart-voicing source ----------------------------------------------------------
+
+def test_source_voicing_matches_the_tabs_own_fingering():
+    from gtrsnipe.formats.tab.generator.ascii import AsciiTabGenerator
+    from gtrsnipe.formats.tab.parser import AsciiTabParser
+    # a C chord voiced as the source plays it: C3 G3 C4 E4 (no low-string E)
+    events = [MusicalEvent(0, p, 4.0, 90) for p in (n("C3"), n("G3"), n("C4"), n("E4"))]
+    song = Song(tracks=[Track(events=events)], title="t")
+    sheet = build_chord_sheet(song, MapperConfig())            # source is the default
+    assert "as this song's tab fingers it" in sheet
+    caption = next(l for l in sheet.splitlines() if l.startswith("**C** "))
+    shape = caption.split("`")[1]
+    tab = AsciiTabGenerator.generate(song, "", max_line_width=200)
+    parsed = AsciiTabParser.parse(tab).tracks[0].events
+    tab_frets = {e.string: e.fret for e in parsed}             # 0 = highest string
+    expect = "".join(str(tab_frets[s]) if s in tab_frets else "x" for s in reversed(range(6)))
+    assert shape == expect and not caption.endswith(" *")
+
+
+def test_source_voicing_falls_back_and_says_so():
+    # an arpeggio whose chord tones need two frets on one string: no single hand shape
+    run_ = [n(x) for x in ("C3", "E3", "G3", "C4", "E4", "G4", "C5", "E5")]
+    events = [MusicalEvent(i * 0.5, p, 0.5, 90) for i, p in enumerate(run_)]
+    sheet = build_chord_sheet(Song(tracks=[Track(events=events)], title="t"), MapperConfig())
+    caption = next(l for l in sheet.splitlines() if l.startswith("**C** "))
+    assert caption.endswith(" *")             # a compact voicing, marked

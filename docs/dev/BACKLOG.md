@@ -1,6 +1,6 @@
 # gtrsnipe backlog
 
-The single list of open work, as of **v0.6.15 (2026-09-30)**. It collates the old parking
+The single list of open work, as of **v0.6.16 (2026-10-03)**. It collates the old parking
 lot, the CHANGELOG's known limitations, the design docs, the v0.3.0-era audit and plans,
 GitHub issues, and findings from recent sessions.
 
@@ -59,7 +59,7 @@ stay open, low priority.
 
 B07 ✓ and F06 ✓ (v0.6.6), F03 ✓ (v0.6.7), P01 ✓ (v0.6.8), P03 ✓ (v0.6.9); a docs
 interlude (H05–H07, v0.6.10). C01 with C06 ✓ (v0.6.11), F04 ✓ (v0.6.12), C03 ✓ (v0.6.13), and the R03
-follow-ups (R12, R15; v0.6.14), C02 ✓ (v0.6.15). Next: C04/C05/F02 together
+follow-ups (R12, R15; v0.6.14), C02 ✓ (v0.6.15), C07 ✓ (v0.6.16). Next: C04/C05/F02 together
 (extended chords, key-aware spelling), …
 
 Then, as before (swap freely if something else is more fun): P01 true note durations in
@@ -113,6 +113,7 @@ changes, P04 pager search, P05 other renderers.
 | C04 | Extended chords (9ths, 11ths, 13ths). | M | CHANGELOG 0.4.0 |
 | C05 | Key-aware enharmonic spelling (sharps only today). Shares work with F02. | M | CHANGELOG 0.4.0 |
 | C06 | ✓ v0.6.11 **`--name-chord SHAPE`**: name a fret shape (`x,x,3,2,1,0`) in any tuning, with no input file. | S | scottvr, parking lot |
+| C07 | ✓ v0.6.16 **Chart voicing modes** (scottvr, 2026-10-03): `--chart-voicing source` (default: the song's own fingering, where one hand shape holds it), `compact`, `open`; the header states the mode; charts name bars as `--name-chords` does. | M | scottvr |
 
 ### Formats and analysis
 

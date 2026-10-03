@@ -10,6 +10,30 @@ and Cargo apply to 0.x version ranges. Full SemVer applies from 1.0.0. The publi
 is the CLI flags and the file formats gtrsnipe reads and writes; report wording is
 not part of it.
 
+## [0.6.16] — 2026-10-03
+
+C07 (new, scottvr): what a chord chart's diagrams show is now a stated choice, and
+fidelity to the song is the default.
+
+### Added
+- **`--chart-voicing {source,compact,open}` (C07).**
+  - **`source` (the new default)** draws each chord as the song's own tab fingers it. That
+    means the bar's chord tones, if each string holds one fret and they make one hand shape:
+    at most four fingers, an index barre counting as one, within four frets, and
+    fingerable. Otherwise it's the bar's fullest simultaneous chord as fingered, and a chord
+    with no such bar gets a compact voicing marked `*`.
+  - **`compact`** is the previous default, a compact voicing of the chord's name.
+  - **`open`** is C02's open shapes; `--prefer-open-chords` is the same as
+    `--chart-voicing open`.
+  - The chart's header states the mode.
+
+### Changed
+- **Chord charts name bars as `--name-chords` does:** the lowest note at the start of a bar
+  always counts as a chord tone. An arpeggiated bar is named by its bass, so the Bach
+  Prelude's opening reads G, C/G instead of Bm/D.
+- **Chord charts now show the song's own voicings by default,** where one hand shape holds
+  them. Use `--chart-voicing compact` for the previous diagrams.
+
 ## [0.6.15] — 2026-09-30
 
 Step 3 continues: C02 from `docs/dev/BACKLOG.md`.

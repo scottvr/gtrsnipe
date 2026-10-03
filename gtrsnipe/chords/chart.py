@@ -140,6 +140,64 @@ def _fingerable(combo) -> bool:
     return True
 
 
+def fingers_needed(positions: List[FretPosition]) -> int:
+    """Fingers for a shape, crediting an index barre: the notes on the lowest fretted
+    fret count as one finger when no open string lies between them (a barre presses
+    every string it crosses)."""
+    fretted = [p for p in positions if p.fret > 0]
+    if not fretted:
+        return 0
+    low = min(p.fret for p in fretted)
+    at_low = sorted(p.string for p in fretted if p.fret == low)
+    between = {p.string: p.fret for p in positions}
+    barre = len(at_low) > 1 and not any(between.get(k) == 0
+                                        for k in range(at_low[0] + 1, at_low[-1]))
+    return len(fretted) - (len(at_low) - 1 if barre else 0)
+
+
+def _holdable(positions: List[FretPosition], n: int) -> bool:
+    """One hand shape: one fret per string, at most four fingers (an index barre
+    counts as one) within a four-fret span, and fingerable (the straddle rule)."""
+    strings = [p.string for p in positions]
+    if len(set(strings)) != len(strings) or len(positions) < 2:
+        return False
+    fretted = [p.fret for p in positions if p.fret > 0]
+    if fingers_needed(positions) > OPEN_MAX_FINGERS:
+        return False
+    if fretted and max(fretted) - min(fretted) > OPEN_MAX_STRETCH:
+        return False
+    combo = [None] * n
+    for p in positions:
+        combo[p.string] = p.fret
+    return _fingerable(combo)
+
+
+def source_positions(mapped, start: float, end: float, chord: Chord, n: int
+                     ) -> Optional[List[FretPosition]]:
+    """The chord as the song's own tab fingers it in the bar [start, end) (C07,
+    ``--chart-voicing source``): the bar's chord tones, if each string holds one fret
+    and they make one hand shape; else the bar's fullest simultaneous chord, as
+    fingered; else None. ``mapped``: the song's events after fretboard mapping."""
+    tones = {(chord.root + iv) % 12 for iv in chord.intervals}
+    evs = [e for e in mapped if start - 1e-9 <= e.time < end - 1e-9
+           and e.string is not None and e.fret is not None and e.pitch % 12 in tones]
+    frets: Dict[int, set] = {}
+    for e in evs:
+        frets.setdefault(e.string, set()).add(e.fret)
+    if evs and all(len(f) == 1 for f in frets.values()):
+        whole = [FretPosition(s_, next(iter(f))) for s_, f in sorted(frets.items())]
+        if _holdable(whole, n):
+            return whole
+    groups: Dict[float, List] = {}
+    for e in evs:
+        groups.setdefault(round(e.time, 6), []).append(e)
+    for t in sorted(groups, key=lambda t: (-len(groups[t]), t)):
+        g = [FretPosition(e.string, e.fret) for e in groups[t]]
+        if _holdable(g, n):
+            return sorted(g, key=lambda p: p.string)
+    return None
+
+
 def shape_string(positions: List[FretPosition], n: int) -> str:
     """'x32010'-style shape, low string first (for checks and captions)."""
     frets = {p.string: p.fret for p in positions}
@@ -191,14 +249,27 @@ def build_chord_sheet(
     chord_tone_threshold: Optional[float] = None,
     shape_names: bool = False,
     prefer_open_chords: bool = False,
+    voicing: str = "source",
 ) -> str:
     """Build the full Markdown chord sheet for a song. ``shape_names``: label each
     chord by the standard-tuning shape you finger (C03); the diagrams still show the
-    notes actually played, and a banner states the convention. ``prefer_open_chords``:
-    draw each chord's open-position shape where one exists (C02; ``open_positions``)."""
+    notes actually played, and a banner states the convention.
+
+    ``voicing`` (C07) says what each diagram shows, and the chart's header says so:
+    ``source`` (default): the chord as the song's own tab fingers it, in its first bar
+    where that makes one hand shape (``source_positions``), else a compact voicing,
+    marked *; ``compact``: a compact root-position voicing of the chord's name;
+    ``open``: its open-position shape where one exists (C02), else compact.
+    ``prefer_open_chords`` is the older spelling of ``voicing="open"``."""
+    if prefer_open_chords:
+        voicing = "open"
+    if voicing not in ("source", "compact", "open"):
+        raise ValueError(f"unknown chart voicing {voicing!r} (source, compact or open)")
     cfg = mapper_config or MapperConfig()
     kw = {} if chord_tone_threshold is None else {"chord_tone_threshold": chord_tone_threshold}
-    spans = segment_by_measure(song, **kw)
+    # keep_downbeat_bass: an arpeggio's bass, struck once a bar, still counts, so the
+    # chart names a bar as --name-chords does over the tab (C07)
+    spans = segment_by_measure(song, keep_downbeat_bass=True, **kw)
 
     title = song.title or "Untitled"
     ts = song.time_signature
@@ -223,12 +294,32 @@ def build_chord_sheet(
         renderer = AsciiFretboardRenderer(cfg, orientation="vertical")
         n_strings = len(mapper.open_string_pitches)
         parts += ["## Chords used", ""]
-        if prefer_open_chords:
-            parts += ["_Open-position shapes where one exists; the others are compact "
-                      "voicings._", ""]
+        parts += [{"source": "_Diagrams: each chord as this song's tab fingers it, in the first "
+                             "bar where that makes one hand shape. Marked *: no such bar, so a "
+                             "compact voicing of the name is shown._",
+                   "compact": "_Diagrams: compact voicings of each chord's name, not this "
+                              "song's own voicing._",
+                   "open": "_Diagrams: open-position shapes where one exists, else compact "
+                           "voicings; not this song's own voicing._"}[voicing], ""]
+        mapped = []
+        if voicing == "source":
+            import copy as _copy
+            for track in song.tracks:
+                evs = [_copy.copy(e) for e in track.events]
+                mapped += GuitarMapper(cfg).map_events_to_fretboard(evs, no_articulations=True)
+        bar_len = beats_per_measure(song.time_signature)
         for label, span in uniq.items():
-            positions = None
-            if prefer_open_chords:
+            positions, mark = None, ""
+            if voicing == "source":
+                for sp in spans:
+                    if sp.chord is not None and (label_of or (lambda x: x.label))(sp) == label:
+                        positions = source_positions(mapped, sp.start_beat, sp.start_beat + bar_len,
+                                                     sp.chord, n_strings)
+                        if positions:
+                            break
+                if not positions:
+                    mark = " *"
+            elif voicing == "open":
                 positions = open_positions(span.chord, mapper.open_string_pitches,
                                            cfg.capo or 0)
             if not positions:
@@ -240,7 +331,7 @@ def build_chord_sheet(
             window = _chord_window(positions)
             frame = Frame(time=span.start_beat, duration=0.0,
                           positions=tuple(positions), window=window)
-            parts += [f"**{label}** `{shape_string(positions, n_strings)}`", "", "```",
+            parts += [f"**{label}** `{shape_string(positions, n_strings)}`{mark}", "", "```",
                       renderer.render(frame), "```", ""]
 
     return "\n".join(parts).rstrip() + "\n"
