@@ -105,6 +105,18 @@ def test_save_args_writes_non_defaults_and_reloads(tmp_path):
     assert a.barre_bonus == 5.0 and a.dedupe is True
 
 
+def test_a_key_survives_save_args(tmp_path):
+    from gtrsnipe.core.keys import Key
+    d = str(tmp_path)
+    apply_profiles(parser(), ["--config-dir", d, "--key", "D dorian", "--save-args", "modal"])
+    assert "key = D dorian" in (tmp_path / "modal").read_text()
+    assert apply_profiles(parser(), ["--profile", "modal", "--config-dir", d]).key == Key("D", "dorian")
+    write(tmp_path, "flat", "key = Eb\n")
+    assert apply_profiles(parser(), ["--profile", "flat", "--config-dir", d]).key == Key("Eb")
+    apply_profiles(parser(), ["--config-dir", d, "--key", "auto", "--save-args", "est"])
+    assert apply_profiles(parser(), ["--profile", "est", "--config-dir", d]).key == "auto"
+
+
 def test_profile_by_explicit_path(tmp_path):
     f = tmp_path / "custom.cfg"
     f.write_text("capo = 7\n")

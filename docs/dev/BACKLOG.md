@@ -1,6 +1,6 @@
 # gtrsnipe backlog
 
-The single list of open work, as of **v0.6.17 (2026-10-04)**. It collates the old parking
+The single list of open work, as of **v0.6.18 (2026-10-04)**. It collates the old parking
 lot, the CHANGELOG's known limitations, the design docs, the v0.3.0-era audit and plans,
 GitHub issues, and findings from recent sessions.
 
@@ -59,8 +59,9 @@ stay open, low priority.
 
 B07 ✓ and F06 ✓ (v0.6.6), F03 ✓ (v0.6.7), P01 ✓ (v0.6.8), P03 ✓ (v0.6.9); a docs
 interlude (H05, H06; v0.6.10). C01 with C06 ✓ (v0.6.11), F04 ✓ (v0.6.12), C03 ✓ (v0.6.13), and the R03
-follow-ups (R12, R15; v0.6.14), C02 ✓ (v0.6.15), C07 ✓ (v0.6.16). Next: C04/C05/F02 together
-(extended chords, key-aware spelling), …
+follow-ups (R12, R15; v0.6.14), C02 ✓ (v0.6.15), C07 ✓ (v0.6.16), C04, C05 and F02 ✓ together
+(v0.6.18; v0.6.17 was the public roll-up of 0.6.10–0.6.16). Next: triage the parking lot, then
+F01 VexTab articulations, P02 tempo changes, P04 pager search, P05 other renderers, …
 
 Then, as before (swap freely if something else is more fun): P01 true note durations in
 playback, P03 instrument defaults from the MIDI file, C01 chord names over the tab, F04
@@ -110,8 +111,8 @@ changes, P04 pager search, P05 other renderers.
 | C01 | ✓ v0.6.11 **`--name-chords`**: chord names above the tab staff, over each bar's first note, where the chord changes and at each line start; half-bar changes named; only plainly spelled chords. | M | player notes |
 | C02 | ✓ v0.6.15 **`--prefer-open-chords`**: open-position chord shapes found by search (any tuning, capo), with a fingerability rule; every diagram captioned with its shape. | M–L | player notes |
 | C03 | ✓ v0.6.13 **Shape-relative chord names** (`--shape-names`): named as in standard tuning with no capo, for evenly shifted tunings plus any capo; drop/open tunings stay in concert pitch; a banner always says which. Charts, `--name-chords`, `--name-chord`. | M | player notes |
-| C04 | Extended chords (9ths, 11ths, 13ths). | M | CHANGELOG 0.4.0 |
-| C05 | Key-aware enharmonic spelling (sharps only today). Shares work with F02. | M | CHANGELOG 0.4.0 |
+| C04 | ✓ v0.6.18 **Extended chords**: 9, maj9, m9, 7b9, 7#9, 11, m11, 13, maj13, m13, 7sus4 (and add9, 6/9 for fret shapes). Named only when complete, with the root in the bass, so a melody note isn't taken for an extension. | M | CHANGELOG 0.4.0 |
+| C05 | ✓ v0.6.18 **Key-aware spelling**: a key on the song (`--key`, the file's own, else estimated and said so); chord names spelled for it (Ab in Eb, G# in E). | M | CHANGELOG 0.4.0 |
 | C06 | ✓ v0.6.11 **`--name-chord SHAPE`**: name a fret shape (`x,x,3,2,1,0`) in any tuning, with no input file. | S | scottvr, parking lot |
 | C07 | ✓ v0.6.16 **Chart voicing modes** (scottvr, 2026-10-03): `--chart-voicing source` (default: the song's own fingering, where one hand shape holds it), `compact`, `open`; the header states the mode; charts name bars as `--name-chords` does. | M | scottvr |
 
@@ -120,7 +121,7 @@ changes, P04 pager search, P05 other renderers.
 | ID | Item | Size | Source |
 |---|---|---|---|
 | F01 | VexTab output: emit hammer-on, pull-off and tap marks, and rests. | M | CHANGELOG 0.3.0 |
-| F02 | ABC output: a real key signature (`K:`) and flat spellings. This needs a key on the Song model. | M | CHANGELOG 0.3.0 |
+| F02 | ✓ v0.6.18 **ABC output with a real key signature** (`K:`), notes spelled in the key, and accidentals that read the same under every propagation rule. MIDI output carries the song's own key too. | M | CHANGELOG 0.3.0 |
 | F03 | ✓ v0.6.7 **Playability-based `--analyze`**: fingers the song in every fitting tuning and ranks them by the mapper's score per note, with frets, hand travel and open strings. (It showed the default weights don't prefer open strings to a barre: a weights-audit item.) | M | player notes |
 | F04 | ✓ v0.6.12 **Tension display outside homographs**: `--show-tuning` with gauges and tensions as a retune of your guitar; warnings for custom tunings; `--solve-tuning` notes pitches past steel. Also re-entrant gauge order and the documented `p` suffix. | S | parking lot |
 | F05 | **Pretty PDF tab output**: typeset tabs as a PDF worth printing (title and header, clean staff lines, measure bars, tuning key, maybe rhythm stems or notation). Intended eventually. The empty stub goes in step 1 so it isn't mistaken for a feature; this item is where PDF output comes back. | M–L | code stub; D6 |

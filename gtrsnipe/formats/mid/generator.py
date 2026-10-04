@@ -1,6 +1,8 @@
 from midiutil import MIDIFile as MidiUtilFile
+from midiutil.MidiFile import FLATS, MAJOR, MINOR, SHARPS
 import math
 import logging
+from ...core.keys import DOUBTED
 from ...core.types import Song
 
 logger = logging.getLogger(__name__)
@@ -43,6 +45,13 @@ class MidiGenerator:
         except (ValueError, ZeroDivisionError) as e:
             logger.warning(f"*** WARNING: Could not use time signature '{song.time_signature}' ({e}). Defaulting to 4/4. ***")
             midi_file.addTimeSignature(track, time, 4, 2, 24)
+
+        # The song's own key (from its source or --key), never an estimate. MIDI knows
+        # only major and minor, so a mode is written as its signature.
+        if song.key is not None and song.key_source != DOUBTED:
+            fifths = song.key.fifths
+            midi_file.addKeySignature(track, time, abs(fifths), SHARPS if fifths >= 0 else FLATS,
+                                      MINOR if song.key.minor else MAJOR)
 
         # Add notes for each track
         for i, track_data in enumerate(song.tracks):

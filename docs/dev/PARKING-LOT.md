@@ -184,6 +184,20 @@ notes are in git history.
     (a Potts term) vs a cost per distinct position used over the song (a label cost, "stay in
     two positions").
   Pairs with the weights audit and the Viterbi-vs-greedy study above.
+- **Keys: what v0.6.18 left out** (from C04/C05/F02, 2026-10-04).
+  - **Key changes.** A song has one key. A piece that modulates is spelled in its opening or
+    overall key throughout; MIDI key changes after the first are ignored. Following them
+    needs a key per section (windowed estimates, with a cost for changing key).
+  - **A `// Key:` line in tab headers**, so a tab carries its key through a round trip. Today
+    a tab has no key and its chord names are spelled from an estimate. (It would change every
+    tab's header, so it needs the golden cases checked.)
+  - The fallback MIDI reader (py-midi) doesn't read the key signature.
+  - **A stricter estimate when it matters.** The profile method is right about nine times in
+    ten. The usual errors are a fifth away or the relative key; the first and last bass notes
+    and the final chord would catch many of them.
+  - **Inversions of extended chords** (C9/E) aren't named: an extended name needs its root in
+    the bass. Chord-chart diagrams for extended chords come from a fixed four-note voicing.
+  - `--transpose` still runs after the range filter (see the code-bugs entry below).
 - **Code bugs found by the docs audit (H06, 2026-09-28).** Fixed
   already (v0.6.10): the six tunings `--tuning` rejected; the inverted or off-by-one help
   texts; and `--stem-track`, which crashed on every run since v0.3.0 (a NameError) and never
