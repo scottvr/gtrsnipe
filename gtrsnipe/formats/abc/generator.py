@@ -1,26 +1,42 @@
+from ...core.keys import ESTIMATED, Key, accidental, note_name, song_key
 from ...core.types import Song
 from .parser import AbcParser
 from fractions import Fraction
 from itertools import groupby
 
+_LETTER_PC = {"C": 0, "D": 2, "E": 4, "F": 5, "G": 7, "A": 9, "B": 11}
+_ACCIDENTAL = {-2: "__", -1: "_", 0: "=", 1: "^", 2: "^^"}
+
+
 class AbcGenerator:
     @staticmethod
-    def _midi_pitch_to_abc(pitch: int) -> str:
-        """Converts a MIDI pitch to an ABC note string."""
-        note_names = ['C', '^C', 'D', '^D', 'E', 'F', '^F', 'G', '^G', 'A', '^A', 'B']
-        octave = (pitch // 12) - 1
-        note_in_octave = pitch % 12
-        
-        note_name = note_names[note_in_octave]
-        
+    def _midi_pitch_to_abc(pitch: int, key: Key = Key("C"), signature=None, bar=None) -> str:
+        """A MIDI pitch as an ABC note, spelled in ``key`` (F02).
+
+        An accidental is written when the note differs from the key signature, and
+        again (or a natural) when an earlier note on the same letter in this bar was
+        written differently. ABC readers disagree on whether an accidental carries
+        through the bar; written this way the tune reads the same under every rule.
+        ``bar`` holds the bar's accidentals so far (letter -> accidental)."""
+        signature = key.signature() if signature is None else signature
+        bar = {} if bar is None else bar
+        pos = key.position_of(pitch % 12)
+        letter, acc = note_name(pos)[0], accidental(pos)
+        # the octave belongs to the letter: Cb4 is the pitch B3, B#3 the pitch C4
+        octave = (pitch - acc - _LETTER_PC[letter]) // 12 - 1
+        mark = ""
+        if acc != signature.get(letter, 0) or bar.get(letter, acc) != acc:
+            mark = _ACCIDENTAL[acc]
+            bar[letter] = acc
+
         if octave < 4:
-            return note_name + ',' * (4 - octave)
+            return mark + letter + ',' * (4 - octave)
         elif octave == 4:
-            return note_name
+            return mark + letter
         elif octave == 5:
-            return note_name.lower()
+            return mark + letter.lower()
         else:
-            return note_name.lower() + "'" * (octave - 5)
+            return mark + letter.lower() + "'" * (octave - 5)
 
     @staticmethod
     def _duration_to_abc(duration: float, default_length: float) -> str:
@@ -61,7 +77,13 @@ class AbcGenerator:
         abc_lines.append(f"M:{song.time_signature}")
         abc_lines.append(f"L:{default_note_length}")
         abc_lines.append(f"Q:1/4={int(song.tempo)}")
-        abc_lines.append("K:C")
+        # The key: the song's own, else an estimate from the notes (and say so).
+        key, how = song_key(song)
+        key = key or Key("C")
+        if how.startswith(ESTIMATED):
+            abc_lines.append("% key estimated from the notes (set it with --key)")
+        abc_lines.append(f"K:{key.abc}")
+        signature = key.signature()
 
         try:
             num, den = map(int, song.time_signature.split('/'))
@@ -81,6 +103,7 @@ class AbcGenerator:
             line = ""
             current_beat = 0.0
             beats_in_current_measure = 0.0 # Tracks beats to know when to place a bar line
+            bar = {}                       # accidentals written so far in this bar
 
             time_groups = groupby(sorted_events, key=lambda e: e.time)
 
@@ -98,6 +121,7 @@ class AbcGenerator:
                         # Check for bar line after adding a rest
                         if beats_in_current_measure >= beats_per_measure - 0.01:
                             line += "| "
+                            bar.clear()
                             beats_in_current_measure %= beats_per_measure
 
 
@@ -107,10 +131,11 @@ class AbcGenerator:
                 duration_str = AbcGenerator._duration_to_abc(quantized_duration, default_note_len_beats)
 
                 if len(notes_in_group) == 1:
-                    note_str = AbcGenerator._midi_pitch_to_abc(notes_in_group[0].pitch)
+                    note_str = AbcGenerator._midi_pitch_to_abc(notes_in_group[0].pitch, key, signature, bar)
                     line += f"{note_str}{duration_str} "
                 else:
-                    chord_notes_str = "".join([AbcGenerator._midi_pitch_to_abc(n.pitch) for n in notes_in_group])
+                    chord_notes_str = "".join([AbcGenerator._midi_pitch_to_abc(n.pitch, key, signature, bar)
+                                               for n in notes_in_group])
                     line += f"[{chord_notes_str}]{duration_str} "
                 
                 beats_in_current_measure += quantized_duration
@@ -118,6 +143,7 @@ class AbcGenerator:
 
                 if beats_in_current_measure >= beats_per_measure - 0.01: # Use a small tolerance
                     line += "| "
+                    bar.clear()
                     beats_in_current_measure %= beats_per_measure # Use modulo to carry over remainder
 
             # Line wrapping

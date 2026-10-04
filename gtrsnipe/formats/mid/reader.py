@@ -10,6 +10,7 @@ from typing import Union
 import mido
 from MIDI import MIDIFile, Events  
 
+from ...core.keys import DOUBTED, FROM_FILE, Key, parse_key
 from ...core.types import Song, TimeSignature, Track, MusicalEvent
 
 logger = logging.getLogger(__name__)
@@ -256,6 +257,26 @@ class MidiReader:
         return song
 
     @staticmethod
+    def _first_key(midi_file):
+        """The song's opening key: the earliest key-signature event in any track (a later
+        key change isn't modelled). None if there's none, or it can't be read."""
+        found = None                                   # (absolute tick, track, key name)
+        for t, track in enumerate(midi_file.tracks):
+            tick = 0
+            for msg in track:
+                tick += msg.time
+                if msg.is_meta and msg.type == "key_signature":
+                    if found is None or (tick, t) < found[:2]:
+                        found = (tick, t, msg.key)
+                    break
+        if found is None:
+            return None
+        try:
+            return parse_key(found[2])
+        except ValueError:
+            return None
+
+    @staticmethod
     def _parse_with_mido(
         smf: bytes, track_number_to_select: Optional[int]
     ) -> Song:
@@ -280,6 +301,11 @@ class MidiReader:
                     midi_tempo_usec = event.tempo
                 elif event.is_meta and event.type == "time_signature":
                     song.time_signature = f"{event.numerator}/{event.denominator}"
+            song.key = MidiReader._first_key(midi_file)
+            if song.key is not None:
+                # C major is what sequencers write by default: keep it only if the
+                # notes agree (core.keys.song_key)
+                song.key_source = DOUBTED if song.key == Key("C") else FROM_FILE
     
         tracks_to_process = midi_file.tracks
         if track_number_to_select is not None:

@@ -13,7 +13,8 @@ always shown, so a reader never mistakes one convention for the other.
 from dataclasses import dataclass, replace
 from typing import List, Optional
 
-from ..core.chords import PITCH_CLASS_NAMES, Chord
+from ..core.chords import Chord
+from ..core.keys import spell_free
 from ..core.theory import note_name_to_pitch
 from ..core.types import Tuning
 
@@ -35,9 +36,10 @@ class ShapeNaming:
 
 
 def transpose(chord: Chord, semitones: int) -> Chord:
-    """The same chord moved by ``semitones`` (root and bass)."""
+    """The same chord moved by ``semitones`` (root and bass), and its key with it."""
     bass = None if chord.bass is None else (chord.bass + semitones) % 12
-    return replace(chord, root=(chord.root + semitones) % 12, bass=bass)
+    key = chord.key.transposed(semitones) if chord.key is not None else None
+    return replace(chord, root=(chord.root + semitones) % 12, bass=bass, key=key)
 
 
 def shape_naming(tuning_names_low_to_high: List[str], capo: int = 0,
@@ -66,7 +68,7 @@ def shape_naming(tuning_names_low_to_high: List[str], capo: int = 0,
     return ShapeNaming(-k, True,
                        f"Shape names: chords are named by the shape you finger, as in {ref_text} "
                        f"with no capo. Everything sounds {steps} semitone{'s' if steps != 1 else ''} "
-                       f"{direction}: a C shape sounds {PITCH_CLASS_NAMES[k % 12]}.")
+                       f"{direction}: a C shape sounds {spell_free(k % 12)}.")
 
 
 def shape_naming_for_config(cfg) -> ShapeNaming:

@@ -192,6 +192,41 @@ def add_tab_input_args(target) -> None:
                              "and MIDI output alike.")
 
 
+def key_arg(text: str):
+    """argparse type for --key: a Key, or the string 'auto' (estimate from the notes)."""
+    from .core.keys import parse_key
+    if text.strip().lower() == "auto":
+        return "auto"
+    try:
+        key = parse_key(text)
+    except ValueError as e:
+        raise argparse.ArgumentTypeError(str(e))
+    if key is None:
+        raise argparse.ArgumentTypeError(f"can't read the key {text!r} (try Eb, F#m or 'D dorian')")
+    return key
+
+
+def add_key_arg(target) -> None:
+    """--key, shared by gtrsnipe and gtrsnipe-chords."""
+    target.add_argument("--key", type=key_arg, default=None, metavar="KEY",
+                        help="The song's key, e.g. Eb, F#m, 'D dorian'. It decides how chord "
+                             "names are spelled (Ab or G#) in chord charts, --name-chords and "
+                             "--name-chord, and the key signature and note spelling of ABC "
+                             "output. Default: the file's own key signature (MIDI, ABC), else "
+                             "estimated from the notes; 'auto' always estimates. Whatever "
+                             "writes a spelled name says where the key came from.")
+
+
+def apply_key(song, key) -> None:
+    """Set a song's key from --key: a Key, 'auto' (forget the file's, so it is
+    estimated), or None (leave the song as read)."""
+    from .core.keys import FROM_OPTION
+    if key == "auto":
+        song.key, song.key_source = None, ""
+    elif key is not None:
+        song.key, song.key_source = key, FROM_OPTION
+
+
 def add_chart_args(target) -> None:
     """Chord-chart options, shared by `gtrsnipe -o x.chords.md` and gtrsnipe-chords."""
     target.add_argument("--measures-per-line", type=int, default=4,
@@ -693,6 +728,7 @@ def setup_parser() -> ArgumentParser:
         default=40,
         help="Max number of vertical columns per line of ASCII tab. (default: 40)"
     )
+    add_key_arg(parser)
     parser.add_argument(
         "--name-chords",
         action='store_true',

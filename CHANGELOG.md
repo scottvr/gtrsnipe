@@ -10,6 +10,50 @@ and Cargo apply to 0.x version ranges. Full SemVer applies from 1.0.0. The publi
 is the CLI flags and the file formats gtrsnipe reads and writes; report wording is
 not part of it.
 
+## [0.6.18] — 2026-10-04
+
+Step 3 continues: C04, C05 and F02 from `docs/dev/BACKLOG.md`, done together because they share
+one thing: a song's key.
+
+### Added
+- **Extended chords (C04):** 9, maj9, m9, 7b9, 7#9, 11, m11, 13, maj13, m13 and 7sus4, in chord
+  charts, `--name-chords` and `--name-chord`.
+  - Three rules keep a melody note from being named as an extension. The chord must be
+    complete: its defining tones all sound (the fifth may be missing, and a 13th's 9th) and
+    nothing outside the chord does. Its root must be the bass (the same notes over another
+    bass keep the simpler name: C/D's notes over C are still C). And add9, madd9 and 6/9, which
+    have no seventh to define them, are named only for a fret shape (`--name-chord x32033` is
+    Cadd9); in a bar of music a C triad with a D over it stays C.
+  - Diagrams voice an extended chord as guitarists do, the extension on top (C9 as C E Bb D).
+- **A key on the song (C05, F02),** and `--key KEY` (`Eb`, `F#m`, `'D dorian'`, or `auto`).
+  - The key is `--key`, else the file's own (ABC's `K:`, a MIDI key signature), else an
+    estimate from the notes. Whatever spells a name says which: a chord chart's header, a
+    `//` line in a tab with `--name-chords`, a comment in ABC output.
+  - **Chord names are spelled for the key (C05):** Ab in Eb major, G# in E major; a slash
+    chord's bass as the chord spells it (E/G#). With no key (`--name-chord`), each chord is
+    spelled in its own simplest key (Bb, Eb, Ab, F#; C#m, G#m), and its notes to match.
+  - **ABC output has a real key signature (F02)** and spells notes in it. Accidentals are
+    written so the tune reads the same whether or not a reader carries them through the bar.
+  - MIDI output carries the key signature when the song has its own (never an estimate).
+  - **The estimate:** pitch-class profiles in all 24 keys, the signature by Temperley's
+    profile and major-or-minor by Krumhansl and Kessler's. Measured on songs with known keys,
+    it was right for 88% of 1,034 Nottingham folk tunes and 91% of 709 single-key POP909
+    songs; the key signature, which is all that spelling depends on, for 93% and 99%. (The
+    pairing was the best of a handful tried on those two sets.) One key per song.
+  - **A MIDI file's "C major" is kept only if the notes agree.** Sequencers write it by
+    default: all 112 POP909 files that declare a key say C major, and 10 are in it.
+
+### Changed
+- **Chord names that were always sharps may now be flats:** A# is Bb, D# is Eb, wherever the
+  key (or, with none, the chord's own) says so.
+- ABC output no longer always says `K:C`.
+
+### Fixed
+- **`--transpose` was ignored by chord charts and by `--play`.** It now applies once, to
+  every output and the player, and moves the key with the notes.
+- **ABC output could be misread.** A natural after a sharp in the same bar was written bare
+  (`^C C`), which standard readers play as two C sharps. Naturals are now written.
+
 ## [0.6.17] — 2026-10-04
 
 The first public release since 0.6.9. Versions 0.6.10 to 0.6.16 were development releases,

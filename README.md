@@ -4,7 +4,7 @@
 
 Convert to and from .mid, .abc, .vex, and .tab files. (and more.)
 
-## v0.6.17
+## v0.6.18
 Released 2026-10-04. See [CHANGELOG](https://github.com/scottvr/gtrsnipe/blob/main/CHANGELOG.md)
 
 # What?
@@ -398,6 +398,30 @@ chord templates, with the bass note disambiguating inversions and slash chords. 
 note at the start of a bar counts as a chord tone even when it's short, so an arpeggiated bar
 is named by its bass (as `--name-chords` names it over a tab).
 
+**Extended chords** are named too: 9, maj9, m9, 7b9, 7#9, 11, m11, 13, maj13, m13 and 7sus4.
+Three rules keep a melody note from being taken for an extension:
+
+- The chord must be complete: its defining tones all sound (the fifth may be missing, and a
+  13th's 9th), and nothing outside the chord does.
+- Its root must be the bass. The same notes over another bass keep the simpler name, or read
+  as a slash chord.
+- add9 and 6/9 have no seventh to define them, so they are named only for a fret shape
+  ([`--name-chord`](#naming-a-chord-shape---name-chord)), where every note is the chord. In a
+  bar of music, a C triad with a D over it stays C.
+
+**Names are spelled for the song's key.** The same chord is Ab in Eb major and G# in E major.
+The key is, in order: `--key` (`--key Eb`, `--key F#m`, `--key "D dorian"`), the file's own
+(ABC's `K:`, a MIDI key signature), else an estimate from the notes. The chart's header says
+which, and `--key auto` always estimates.
+
+- The estimate was right for 88% of 1,034 Nottingham folk tunes and 91% of 709 POP909 pop
+  songs. The key *signature*, which is all that spelling depends on, was right for 93% and 99%.
+  A song gets one key: a key change isn't followed.
+- A MIDI file's "C major" is kept only if the notes agree, since sequencers write it by default.
+  (All 112 POP909 files that declare a key say C major, and 10 are in it.)
+- A slash chord's bass is spelled as the chord spells it: E/G#, not E/Ab.
+- `--transpose` moves the key with the notes.
+
 What a diagram shows is a choice, `--chart-voicing`, and the chart's header always says which.
 Each diagram is captioned with its shape (`x32010`: low string first, `x` = muted).
 
@@ -418,7 +442,7 @@ Each diagram is captioned with its shape (`x32010`: low string first, `x` = mute
 Key options: `-o FILE`, `--measures-per-line N`, `--chord-tone-threshold F`
 (how long a note must sound in a bar to count as a chord tone), `--track N`,
 `--chart-voicing {source,compact,open}` (`--prefer-open-chords` = `open`), `--shape-names`,
-`--name-chord SHAPE`, plus the usual `--tuning`, `--tuning-pitches`, `--drop-low-string`,
+`--key KEY`, `--name-chord SHAPE`, plus the usual `--tuning`, `--tuning-pitches`, `--drop-low-string`,
 `--num-strings`, `--capo`, and `--optimizer`.
 
 ### Shape names (`--shape-names`)
@@ -463,6 +487,8 @@ E|-8------------------------------|-3----------|----------|
   then G, where naming the whole bar would read "G6"). Finer changes aren't named.
 - Names are concert pitch (with a capo or an unusual tuning, the sounding chord), unless you
   ask for [shape names](#shape-names---shape-names).
+- Names are spelled for the song's key, as in [chord charts](#chord-charts): `--key`, the
+  file's own, else an estimate. A `//` line in the tab's header says which.
 - The name line is ignored when the tab is read back in.
 
 ### Naming a chord shape (`--name-chord`)
@@ -477,10 +503,16 @@ gtrsnipe --name-chord x,3,2,0,1,0 --name-chord x,x,3,2,1,0
 #   (tuning STANDARD (E2,A2,D3,G3,B3,E4); chord names are concert pitch)
 gtrsnipe --tuning BARITONE_B --name-chord x,3,2,0,1,0      # the C shape plays G
 gtrsnipe --capo 2 --name-chord x02220                      # compact form: B
+gtrsnipe --name-chord x32033 --name-chord x3233x --name-chord 3x345x
+#   x32033           Cadd9      C3 E3 G3 D4 G4
+#   x3233x           C9         C3 E3 Bb3 D4
+#   3x345x           G13        G2 F3 B3 E4
+gtrsnipe --key E --name-chord x46664                       # C# (with no key: Db)
 ```
 
 The shape is read in `--tuning` (or `--tuning-pitches`), with `--capo` and `--num-strings`.
-The compact form (`x32010`) works when every fret is one digit.
+The compact form (`x32010`) works when every fret is one digit. With no `--key`, each chord is
+spelled in its own simplest key (Bb, Eb, Ab, F#; C#m, G#m), and its notes are spelled to match.
 
 ### Command-line help
 
@@ -545,7 +577,8 @@ An abridged reference, grouped as in `gtrsnipe --help`. Run `gtrsnipe --help` fo
 - `--analyze`: Rank the tunings whose range fits the song by how playable its tab is in each (the mapper's score per note with your settings, frets, hand travel, open strings), then exit. No `-o` needed; `--bass` ranks bass tunings.
 - `--solve-tuning NOTES`: Inverse solve: given a comma-separated target melody (note names with octave, e.g. `'C4,C4,G4,G4,A4,A4,G4'`), find a tuning under which an all-open-string tab plays it. Prints the tuning; add `--play` to hear it, or `-o FILE.tab/.mid` to write it. No `-i` needed.
 - `--max-strings MAX_STRINGS`: Max strings the tuning solver (and `--homograph-mode free`) may use (default: 12).
-- `--transpose TRANSPOSE`: Transpose the music up or down by N semitones (e.g., 2 for up, -3 for down).
+- `--transpose TRANSPOSE`: Transpose the music up or down by N semitones (e.g., 2 for up, -3 for down). Applies to every output and to `--play`; the key moves with the notes.
+- `--key KEY`: The song's key (`Eb`, `F#m`, `'D dorian'`). It spells chord names (Ab or G#) in chord charts, `--name-chords` and `--name-chord`, and sets the key signature and note spelling of ABC output. Default: the file's own key (ABC `K:`, a MIDI key signature), else an estimate from the notes; `auto` always estimates. See [Chord charts](#chord-charts).
 - `--no-articulations`: Transcribe with no legato, taps, hammer-ons, pull-offs, etc.
 - `--staccato`: Do not extend note durations to the start of the next note, instead giving each note an 1/8 note duration. When converting from ASCII tab.
 - `--max-line-width MAX_LINE_WIDTH`: Max number of vertical columns per line of ASCII tab (default: 40).
