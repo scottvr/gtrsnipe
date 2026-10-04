@@ -3,13 +3,18 @@
 `--homograph A B [C …]` finds a single tablature that plays song A in one tuning,
 song B in another (and C in a third…). It generalizes `--solve-tuning` (a melody
 behind an all-open tab) from "a tab that carries nothing" to "an ordinary,
-fretted, playable tab that carries two songs at once". It's the executable form of
+fretted, fingerable tab that carries two songs at once" (fingerable, not
+necessarily comfortable: see "Playability" in §3). It's the executable form of
 the (tab, tuning-key) reductio: a fixed text whose musical identity is decided
 entirely by an external key.
 
-Code: `gtrsnipe/guitar/homograph.py` (solver), `gtrsnipe/guitar/strings.py`
-(string physics). Tests: `tests/unit/test_homograph.py`, `tests/unit/test_strings.py`.
-Worked examples: `examples/homograph/`.
+- **Code:** `gtrsnipe/guitar/homograph.py` (solver), `gtrsnipe/guitar/strings.py`
+  (string physics), `gtrsnipe/research/` (the `gtrsnipe-research` corpus tools,
+  including `scan` and `aswritten`, §5).
+- **Tests:** `tests/unit/test_homograph.py`, `tests/unit/test_strings.py`,
+  `tests/unit/test_research*.py`.
+- **Worked examples:** [`examples/homograph/`](../../examples/homograph/).
+- **The research** (theory, literature, experiments): [`../research/README.md`](../research/README.md).
 
 ## 1. When can two songs share a tab? (the eligibility theorem)
 
@@ -53,7 +58,12 @@ class:
   sums of intervals A→B and B→C, so *r(A,C) ≤ r(A,B)·r(B,C)*; hence
   *ρ = log r* satisfies the triangle inequality, is symmetric, and is 0 iff the
   songs are transpositions. Read *log₂ r* as the bits per note the tab's string
-  choices must carry to tell the songs apart; the tunings carry the rest.
+  choices must carry to tell the songs apart; the tunings carry the rest. More in
+  the [structure note](../research/theory/coupled_transposition_structure.md) and
+  [PROOF-alignment](../research/theory/PROOF-alignment.md), which shows it stays a
+  pseudometric under optimized alignment. As a *similarity*, though, the one test run gave a
+  negative result: in [R03](../research/results/RESULTS-R03-families.md),
+  transposition-invariant Hamming was best among the tested measures.
 - **The tell.** A constructed homograph often plays one pitch on different strings
   for no ergonomic reason (Old MacDonald's three opening C4s land on D10, D10, G5
   because the third one must also be Twinkle's leap). That's a forensic signature
@@ -116,11 +126,18 @@ down never snaps) + 10 per string that needs a different gauge; impossible = ∞
 BASS_STANDARD 45-105 @34″). Any other tuning (drop, open, custom) gets a set
 designed for it at ~17 lb per string (~42 lb bass), so "normal tension" is
 physical. A 10-46 set in DROP_C would make the dropped C2 the low string's
-"normal", and then E2 would read as "too tight". Scale: bass (34″) only if the
-tuning is low *and* tops out by D3; baritone/extended range (7- and 8-string)
-27″; else 25.5″, shortened if the top string couldn't hold its own pitch.
-`--scale-length` and `--string-gauges` (low string first; a thin→thick set such as
-`10 13 17 26w 36w 46w` is flipped) override.
+"normal", and then E2 would read as "too tight". Scale: a conventional set keeps
+its own, so SEVEN_STRING_STANDARD's 10-59 set stays at 25.5″. A designed set gets
+34″ for a `BASS_` tuning, or one whose lowest string is G1 or below *and* whose
+top string is D3 or below; 27″ for a `BARITONE_` tuning, or one whose lowest
+string is B1 or below (most 7- and 8-string tunings, such as SEVEN_STRING_DROP_A);
+else 25.5″. It is shortened (to 25.5″, then 24.75″) if the top string couldn't
+hold its own pitch.
+`--scale-length` and `--string-gauges` override. Gauges are listed low string first; a
+thin→thick set such as `10 13 17 26w 36w 46w` is flipped, except for a re-entrant tuning
+(such as Nashville), which is read as written. `w` = wound, `p` = plain; unsuffixed gauges
+above .020 count as wound. The same physics drives `--show-tuning` and the tension warnings
+for custom tunings (F04).
 
 ### Modes and transposition
 
@@ -159,8 +176,8 @@ placements (1,024) looking for one within it. That's slower, but opt-in.
 `gtrsnipe-research scan` takes `--max-discomfort` and `--max-fret` too.
 
 **What it showed.** On 50 random different-sounding eligible folk pairs from R04
-(`RESULTS-R04-scan.md`, "Playability"), the anchored solver found a tab for 49. But the
-median discomfort was about 100 points per note, with the top fret usually 24. With a limit,
+([`RESULTS-R04-scan.md`](../research/results/RESULTS-R04-scan.md), "Playability"), the anchored solver found a tab for 49. But the
+median discomfort was about 100–120 points per note, with the top fret usually 24. With a limit,
 the anchored solver found this many:
 
 | max discomfort | fingering 256 placements | fingering 1,024 (the default with a limit) |
@@ -215,13 +232,34 @@ for chords (a pairing search could only ever *lower* the richness it reports).
 
 ## 5. Limits and next steps
 
-- Alignment + subdivision is pairwise (K = 2); K ≥ 3 songs need a 1:1 skeleton.
-- The anchored search enumerates ≤ 20,000 string assignments (it notes truncation;
-  never hit on 6 strings).
-- **Phase 3 — in the wild.** Two searches, both cheap because richness needs no tab:
-  (a) *pairs*: over a corpus of melodies (public-domain ABC/EsAC folk collections,
-  hymn tunes sharing a metre), slide every alignment offset and find the longest
-  window whose richness ≤ 6 — a sliding-window "≤ k distinct values" pass along each
-  diagonal; (b) *fixed tabs*: take real published tabs of A and test them
-  **as written** against candidate B's (per-string interval constancy is a linear
-  check). Copyrighted inputs stay local (the golden-gate pattern).
+**Done: the searches in the wild** (v0.6.4–v0.6.5, `gtrsnipe-research`).
+
+- **R04, `gtrsnipe-research scan`:** pairs of passages from different songs,
+  bucketed by rhythm (the phrases marked in the Essen and Meertens folk
+  collections; fixed-length windows of Lakh pop melodies), then sampled through the
+  solver. Among same-rhythm folk phrase pairs from different tunes, the share that
+  fits six strings and sounds unrelated is about a third at 8 notes, 8% at 12 and
+  3% at 16. String tension rarely rules a pair out; comfort does (§3,
+  "Playability"). See [`RESULTS-R04-scan.md`](../research/results/RESULTS-R04-scan.md).
+- **R05, `gtrsnipe-research aswritten`:** real fingerings as written, tested on
+  gtrsnipe's own wiki tabs (the six Asturias versions and Bach's Cello Suite No. 1
+  Prelude), not on third-party tabs. As written is about 10,000× stricter than a
+  free fit, and past 16 notes nothing unrelated-sounding fits either piece's
+  fingering. See [`RESULTS-R05-aswritten.md`](../research/results/RESULTS-R05-aswritten.md).
+
+**Open** (IDs in [`BACKLOG.md`](../dev/BACKLOG.md)):
+
+- Alignment + subdivision is pairwise (K = 2); K ≥ 3 songs need a 1:1 skeleton (R08).
+- Chord-voice pairing is greedy (§4, "Chords"); an exact pairing search could only
+  lower the richness (R08).
+- Middle mode gives a string an offset only if the whole interval class fits on it,
+  so a class too wide for one retuned string is split across strings only at
+  offset 0, through the anchored placements that middle includes (R08).
+- The anchored and middle searches enumerate ≤ 20,000 string assignments
+  (`ENUM_CAP`, R08). The report notes truncation; it was never hit on 6 strings.
+- A class may use only its assigned strings plus one spare (`EXTRA_STRINGS`, §3),
+  so discomfort is an upper bound. Offering every compatible string is in the
+  parking lot ([`PARKING-LOT.md`](../dev/PARKING-LOT.md)), not yet the backlog.
+- `scan` and `aswritten` compare only identical or proportional rhythms, with no
+  re-rhythming (R10).
+- Third-party tabs as written, kept local for copyright reasons (R14).

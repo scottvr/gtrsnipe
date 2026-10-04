@@ -16,4 +16,4 @@ Run the test:
 gtrsnipe-research aswritten examples/aswritten/*.tab --corpora essen mtc-fs nottingham pop909 lakh-clean
 ```
 
-Results: [`docs/dev/RESULTS-R05-aswritten.md`](../../docs/dev/RESULTS-R05-aswritten.md).
+Results: [`docs/research/results/RESULTS-R05-aswritten.md`](../../docs/research/results/RESULTS-R05-aswritten.md).

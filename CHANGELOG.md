@@ -10,6 +10,177 @@ and Cargo apply to 0.x version ranges. Full SemVer applies from 1.0.0. The publi
 is the CLI flags and the file formats gtrsnipe reads and writes; report wording is
 not part of it.
 
+## [0.6.17] — 2026-10-04
+
+The first public release since 0.6.9. Versions 0.6.10 to 0.6.16 were development releases,
+not published on their own. Their changes are listed under their own headings below, and all
+of them are in this release. The research write-ups in `docs/research/` are as published in
+0.6.9, apart from their new location; their revisions will be published together when the
+research is done.
+
+## [0.6.16] — 2026-10-03
+
+C07 (new, scottvr): what a chord chart's diagrams show is now a stated choice, and
+fidelity to the song is the default.
+
+### Added
+- **`--chart-voicing {source,compact,open}` (C07).**
+  - **`source` (the new default)** draws each chord as the song's own tab fingers it. That
+    means the bar's chord tones, if each string holds one fret and they make one hand shape:
+    at most four fingers, an index barre counting as one, within four frets, and
+    fingerable. Otherwise it's the bar's fullest simultaneous chord as fingered, and a chord
+    with no such bar gets a compact voicing marked `*`.
+  - **`compact`** is the previous default, a compact voicing of the chord's name.
+  - **`open`** is C02's open shapes; `--prefer-open-chords` is the same as
+    `--chart-voicing open`.
+  - The chart's header states the mode.
+
+### Changed
+- **Chord charts name bars as `--name-chords` does:** the lowest note at the start of a bar
+  always counts as a chord tone. An arpeggiated bar is named by its bass, so the Bach
+  Prelude's opening reads G, C/G instead of Bm/D.
+- **Chord charts now show the song's own voicings by default,** where one hand shape holds
+  them. Use `--chart-voicing compact` for the previous diagrams.
+
+## [0.6.15] — 2026-09-30
+
+Step 3 continues: C02 from `docs/dev/BACKLOG.md`.
+
+### Added
+- **`--prefer-open-chords`: open-position shapes in chord charts (C02).**
+  - Each chord is drawn in its familiar first-position shape where one exists: C `x32010`,
+    G `320003`, D `xx0232`, F `xx3211`, B7 `x21202`, C/G `332010`, and so on.
+  - The shapes are found by search, not a lookup table, so they work in any tuning and with
+    a capo: with capo 2, a D is drawn as the C shape you finger.
+  - The constraints: every chord tone present (4-note chords may drop the fifth); the
+    chord's bass on the lowest string played; muted strings only at the low end; at most
+    four fretted strings within four frets.
+  - One fingerability rule: two notes on one fret may not straddle a higher fret unless a
+    barre could cover them. That rules out 102210 as an Fmaj7, but keeps C7 `x32310`.
+  - Chords with no open shape keep the compact voicing.
+- **Every chord diagram is captioned with its shape** (e.g. **C** `x32010`), which shows
+  muted strings.
+
+### Changed
+- An open-position diagram keeps the nut in view (G `320003` used to start at fret 2).
+
+## [0.6.14] — 2026-09-30
+
+The R03 follow-ups (backlog R12, R15): a research subcommand.
+
+### Added
+- **`gtrsnipe-research segments`: phrase- and motif-level retrieval on MTC-ANN's expert
+  annotations.**
+  - Phrases are labelled by three annotators and scored separately; there are 1,657 motif
+    occurrences. All annotations line up with gtrsnipe's kern reader.
+  - The measures: the R03 grid measures; DTW on intervals, and on pitch after the modal
+    transposition; and the offset measures minimized over warping paths (switches, total
+    variation, largest jump, range, and richness exact up to 6). All five warped measures
+    are confirmed against brute-force path enumeration.
+
+## [0.6.13] — 2026-09-30
+
+Step 3 continues: C03 from `docs/dev/BACKLOG.md`.
+
+### Added
+- **`--shape-names`: chords named by the shape you finger (C03), a "generalized capo".**
+  - In a tuning that is standard shifted evenly on every string (E_FLAT, D_STANDARD,
+    C_SHARP_STANDARD, the baritones, the bass and 7-string equivalents, or an even custom
+    tuning), plus any capo, a chord is named as its fingering would be in standard tuning
+    with no capo: in BARITONE_B a C shape is named C though it sounds G.
+  - Drop and open tunings have no standard shape names, so their chords stay in concert
+    pitch.
+  - A banner always states the convention: at the top of a chord chart, as a `//` line in a
+    tab's header, and under `--name-chord` output.
+  - It applies to chord charts (their diagrams still show the notes actually played),
+    `--name-chords`, and `--name-chord SHAPE` (which adds a `shape:` column).
+
+## [0.6.12] — 2026-09-30
+
+Step 3 continues: F04 from `docs/dev/BACKLOG.md`, with two gauge fixes scottvr asked about.
+
+### Added
+- **`--show-tuning` shows string tension (F04).**
+  - For each string: the note it's strung for and tuned to, its gauge, the tension, the
+    change from normal, the stress (for plain strings), and a status.
+  - Strings outside safe tension get a restring suggestion. When no steel string is safe at
+    a pitch, it says so: a plain string's breaking pitch depends on the scale, not the gauge.
+  - "Your guitar" is the usual set for `--tuning` (10-46 for STANDARD), or `--string-gauges`,
+    strung for an explicit `--tuning` or else for the tuning shown.
+  - With no name, `--show-tuning` shows the tuning set by `--tuning-pitches` or
+    `--drop-low-string`.
+- **Converting with a custom tuning warns** about any string it would overload or leave
+  floppy. A tab's own header tuning is taken as given, with no warning.
+- **`--solve-tuning` notes pitches past what a steel string can take** at the scale length
+  (e.g. A4 at 25.5"), whatever the gauge.
+
+### Fixed
+- **Gauges for a re-entrant tuning** (e.g. Nashville) are read exactly as written, low string
+  first. An ascending set used to be flipped as if written thin-to-thick, putting the thinnest
+  string on the low one.
+- **The `p` (plain) suffix of `--string-gauges` is now documented.** It worked, but only `w`
+  was mentioned: a jazz set's plain .022 is `22p`, since unsuffixed gauges above .020 count as
+  wound.
+- A custom gauge set is described by its thinnest and thickest gauges ("8-16 set"), not
+  "011-010".
+
+## [0.6.11] — 2026-09-29
+
+Step 3 continues: C01 with C06 from `docs/dev/BACKLOG.md`.
+
+### Added
+- **`--name-chords`: chord names above an ASCII tab (C01).**
+  - A name sits over the first note of its bar. It's written where the chord changes and
+    again at the start of each line, and wraps with `--max-line-width`.
+  - Bars are named as in chord charts, with two refinements:
+    - the lowest note at the start of a bar always counts, so an arpeggio's bass isn't
+      lost among short notes (Bach's Prelude reads G, C/G);
+    - each bar is also named by halves, so a bar that changes chord midway gets both names.
+  - Only plainly spelled chords are named (`core.chords.is_clear`): every chord tone
+    except perhaps the fifth, at most one extra note, and exact power chords. A melody bar
+    or a doubtful chord gets no name rather than a wrong one.
+  - Names are concert pitch. The name line is ignored when the tab is read back in.
+- **`--name-chord SHAPE`: name a fret shape without an input file (C06, scottvr's idea).**
+  - The frets are listed from the lowest string, `x` for muted:
+    `gtrsnipe --name-chord x,x,3,2,1,0` prints Fmaj7 and its notes.
+  - The shape is read in `--tuning` or `--tuning-pitches`, with `--capo` and
+    `--num-strings`, so the same shape names the chord it plays on your guitar: the C
+    shape is G on a baritone.
+  - The option can be repeated, and the compact `x32010` form works when every fret is
+    one digit.
+
+### Changed
+- `chords.segment.segment_by_measure` gains `keep_downbeat_bass` and `parts` (both off by
+  default, so chord charts are unchanged).
+
+## [0.6.10] — 2026-09-28
+
+A docs interlude in step 3 (backlog H05 and H06), and the bugs it turned up.
+
+### Fixed
+- **`--stem-track` crashed on every run since v0.3.0.** A NameError in the Demucs wrapper
+  (`importlib` was never imported) stopped it before separation began. It also never mapped
+  "guitar" to the "other" stem for 4-stem models: the check was a substring test that the
+  4-stem `htdemucs` itself passed. Tests added, with Demucs stubbed.
+- **`--tuning` rejected six tunings that `--list-tunings` shows** (DADGAD, DROP_B,
+  D_STANDARD, OPEN_D, OPEN_E, SEVEN_STRING_DROP_A). The choices are now derived from the tuning
+  list, with a test.
+- **Help texts that said the opposite of what the flag does:** `--no-pre-quantize`,
+  `--no-constrain-frequency`, `--min/--max-note-override` (which cited a removed flag),
+  `--tapping-run-threshold` (off by one), and `--demucs-model` (a misspelled model name).
+
+### Documentation
+- **`docs/` reorganized** into `app/` (how gtrsnipe works), `research/` (theory, literature,
+  results) and `dev/` (process), with a map in `docs/README.md`.
+- **A state-of-the-docs audit** checked every doc against the code and each other, and its
+  fixes to the app docs are applied:
+  - the README's options list, examples and tuning list are corrected (several documented
+    flags and commands no longer existed);
+  - the wiki snapshot's reference page is rewritten, and its example pages note that they
+    show v0.2's greedy mapper;
+  - the design docs are current;
+  - the homograph examples' reports now include playability.
+
 ## [0.6.9] — 2026-09-27
 
 Step 3 continues: P03 from `docs/dev/BACKLOG.md`.
@@ -103,13 +274,13 @@ R05 finishes the research items planned for step 2 of `docs/dev/BACKLOG.md`.
     output counts trivial hits (each string maps one pitch to one pitch), transpositions of
     the passage itself, and unrelated-sounding hits.
   - The best hits go through the solver's as-written check.
-- `docs/dev/RESULTS-R05-aswritten.md`, from Bach's Cello Suite No. 1 Prelude and six
+- `docs/research/results/RESULTS-R05-aswritten.md`, from Bach's Cello Suite No. 1 Prelude and six
   successive Asturias fingerings (`examples/aswritten/`):
   - As written is about 10,000× stricter than a free fit.
   - Which passages a tab can become depends on the fingering.
   - Past 16 notes, nothing unrelated-sounding fits either piece's real fingering.
 - `docs/wiki/`: a snapshot of the whole GitHub wiki, with Windows-safe file names.
-- `docs/dev/PROOF-alignment.md`:
+- `docs/research/theory/PROOF-alignment.md`:
   - the stutter-invariance principle: stutter-invariant, subadditive offset statistics stay
     pseudometrics under warping;
   - a subsection relating it to the Fréchet distance, DTW and elastic metrics (ERP, TWED,
@@ -129,7 +300,7 @@ Step 2 of `docs/dev/BACKLOG.md`, continued: R04, the corpus homograph scan.
   - It runs the full homograph solver (anchored and middle, string physics) on the best
     pairs and on a random sample per length, and writes verified shared tabs on request.
   - Options: `--cross-corpus`, `--named-melodies`.
-- `docs/dev/RESULTS-R04-scan.md` with charts (`docs/dev/r04_plot.py`, `docs/dev/figures/`):
+- `docs/research/results/RESULTS-R04-scan.md` with charts (`docs/research/results/r04_plot.py`, `docs/research/results/figures/`):
   - Folk song (Essen + Meertens): a third of same-rhythm 8-note phrase pairs from different
     tunes share a tab and sound unrelated; 8% at 12 notes, 3% at 16.
   - The solver places 93–100% of sampled pairs on a real guitar: A in STANDARD, B a retune
@@ -153,11 +324,11 @@ Step 2 of `docs/dev/BACKLOG.md`, continued: R03 and R07.
   - Scores are tie-aware MAP and AUC, with bootstrap intervals.
   - Logistic pair models, cross-validated by tune family, test whether the
     candidates add anything to the baselines.
-  - Result ([`docs/dev/RESULTS-R03-families.md`](docs/dev/RESULTS-R03-families.md)):
+  - Result ([`docs/research/results/RESULTS-R03-families.md`](docs/research/results/RESULTS-R03-families.md)):
     on MTC-ANN and MTC-FS-INST, transposition-invariant Hamming wins, and richness
     adds nothing (+0.002 to +0.006 MAP). It is a guitar statistic, not a similarity
     measure.
-- `docs/dev/PROOF-alignment.md` and `alignment_check.py` (R07): under optimized
+- `docs/research/theory/PROOF-alignment.md` and `alignment_check.py` (R07): under optimized
   (warping-path) alignment, log-richness, switch count and total variation stay
   pseudometrics; entropy and modal share don't (a 3-note counterexample).
   - `coupled_transposition_structure.md` gets pointers in §4.4 and §7.
@@ -181,9 +352,9 @@ The first research tools (step 2 of `docs/dev/BACKLOG.md`: R01, R02, R06).
     entropy, coverage C₁…C₆, transposition-invariant Hamming, switches, total
     variation and reuse. A and B can be corpus melodies or phrases
     (`essen:deut4659#p2`), files or inline melodies.
-- `docs/dev/LITERATURE-offsets.md`: the prior-art survey for the offset measures
+- `docs/research/literature/LITERATURE-offsets.md`: the prior-art survey for the offset measures
   and tab homographs.
-- `docs/dev/collision_plot_template.py`: a figure template for the corpus scan
+- `docs/research/results/collision_plot_template.py`: a figure template for the corpus scan
   (placeholder curves).
 
 ### Fixed
@@ -236,7 +407,7 @@ A correctness sweep (step 1 of `docs/dev/BACKLOG.md`).
 - **Tab homographs** (`--homograph A B [C …]`): one ordinary, fretted, playable
   tab that plays a different song in each tuning. Two aligned songs share a tab iff
   their note-for-note intervals split into ≤ N classes (one per string; see
-  [`docs/dev/DESIGN-homograph.md`](docs/dev/DESIGN-homograph.md)). The report walks
+  [`docs/app/DESIGN-homograph.md`](docs/app/DESIGN-homograph.md)). The report walks
   through each check in turn: alignment → **richness** (distinct intervals) → *free* /
   *anchored* (A keeps `--tuning`, an ordinary tab of A) / *middle* (both tunings
   retune one strung guitar) / *as written* (does A's own `.tab` fingering retune?).
@@ -254,7 +425,7 @@ A correctness sweep (step 1 of `docs/dev/BACKLOG.md`).
   restring suggestions. Homograph retunes are costed and flagged with it.
   `--scale-length`, `--string-gauges` configure the instrument.
 - Worked public-domain examples in `examples/homograph/`.
-- Dev note [`docs/dev/coupled_transposition_structure.md`](docs/dev/coupled_transposition_structure.md)
+- Dev note [`docs/research/theory/coupled_transposition_structure.md`](docs/research/theory/coupled_transposition_structure.md)
   (+ `triangle_check.py`): the offset-sequence analysis behind the homograph's
   *richness* (the Hill order-0 count of distinct note-for-note intervals). It covers
   which offset statistics are metrics modulo transposition, the explicit
@@ -277,7 +448,7 @@ A correctness sweep (step 1 of `docs/dev/BACKLOG.md`).
 
 ## [0.5.0] — 2026-09-25
 
-Unified-I/O refactor (design: [`docs/dev/DESIGN-unified-io.md`](docs/dev/DESIGN-unified-io.md)).
+Unified-I/O refactor (design: [`docs/app/DESIGN-unified-io.md`](docs/app/DESIGN-unified-io.md)).
 The player, chord charts, and converter are now one tool over a shared option
 surface and an event-driven transport. **Existing `gtrsnipe -i x -o y.{tab,mid,abc,vex}`
 invocations are unchanged (byte-identical output).**

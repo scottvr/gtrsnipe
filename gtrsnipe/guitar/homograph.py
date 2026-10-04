@@ -52,7 +52,7 @@ other song ("ta" ~ "ti ti"): repeated same-pitch notes are smeared into one
 held note, otherwise the single note is re-struck -- song 0 is kept intact
 wherever possible. Every edit is disclosed in the report.
 
-See docs/dev/DESIGN-homograph.md.
+See docs/app/DESIGN-homograph.md.
 """
 from __future__ import annotations
 

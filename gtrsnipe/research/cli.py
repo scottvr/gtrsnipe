@@ -1,12 +1,13 @@
 """``gtrsnipe-research``: corpus caches and offset profiles.
 
     gtrsnipe-research corpus list
-    gtrsnipe-research corpus build essen [--data DIR]
+    gtrsnipe-research [--data DIR] corpus build essen
     gtrsnipe-research corpus info essen
     gtrsnipe-research corpus show essen:deut4659
-    gtrsnipe-research profile essen:deut4659#p1 essen:deut4659#p3
-    gtrsnipe-research profile a.mid:2@1-16 "C4 D4 E4 C4" --rhythm sequence
+    gtrsnipe-research profile essen:deut4659#p1 essen:deut4659#p3 --subdivide 2
+    gtrsnipe-research profile a.mid:2@1-4 "C4 D4 E4 C4" --rhythm sequence
     gtrsnipe-research families mtc-ann
+    gtrsnipe-research segments mtc-ann --level phrase --scope family
     gtrsnipe-research scan essen mtc-fs --solve 50 --tabs out/
     gtrsnipe-research aswritten song.tab --corpora essen mtc-fs lakh-clean
 
@@ -185,6 +186,32 @@ def cmd_families(a) -> int:
     return 0
 
 
+def cmd_segments(a) -> int:
+    import json
+    from . import segments as SG
+    head, mels = C.read_cache(_cache_path(a.name, a.data))
+    md = a.metadata or os.path.join(C.corpus_root(a.data), "mtc", "MTC-ANN-2.0.1", "metadata")
+    if a.level == "phrase":
+        segs, keys = SG.load_phrases(mels, md), ["ann1", "ann2", "ann3"]
+    else:
+        segs, keys = SG.load_motifs(mels, md), ["motif"]
+    if not segs:
+        raise ValueError(f"no {a.level} annotations found (metadata: {md})")
+    grid = a.grid or (16 if a.level == "phrase" else 8)
+    feats = SG.features(segs, scope=a.scope, grid=grid, workers=a.workers)
+    out = {"corpus": head["corpus"], "level": a.level, "scope": a.scope, "results": []}
+    for key in keys:
+        res = SG.run(segs, key, feats, scope=a.scope, grid=grid, bootstrap=a.bootstrap,
+                     seed=a.seed, models=not a.no_models)
+        out["results"].append(res)
+        print(SG.format_results(res, f"{head['corpus']} {a.level}s, labels {key}, {a.scope} scope"))
+        print()
+    if a.json:
+        with open(a.json, "w") as f:
+            json.dump(out, f, indent=1)
+    return 0
+
+
 def cmd_scan(a) -> int:
     import json
     from . import scan as S
@@ -346,6 +373,21 @@ def build_parser() -> argparse.ArgumentParser:
     fm.add_argument("--no-models", action="store_true", help="skip the logistic pair models")
     fm.add_argument("--json", help="also write the full results here")
     fm.set_defaults(func=cmd_families)
+
+    sg = sub.add_parser("segments", help="phrase- and motif-level retrieval on MTC-ANN's "
+                                         "annotations (the R03 follow-ups)")
+    sg.add_argument("name", nargs="?", default="mtc-ann", help="the MTC-ANN cache (default mtc-ann)")
+    sg.add_argument("--level", choices=["phrase", "motif"], default="phrase")
+    sg.add_argument("--scope", choices=["family", "song"], default="family",
+                    help="candidates: other songs of the tune family, or the same song")
+    sg.add_argument("--metadata", help="MTC-ANN metadata folder (default: under --data)")
+    sg.add_argument("--grid", type=int, help="grid points per segment (default 16 phrases, 8 motifs)")
+    sg.add_argument("--bootstrap", type=int, default=2000)
+    sg.add_argument("--seed", type=int, default=20260930)
+    sg.add_argument("--workers", type=int, default=1, help="processes for the pair features")
+    sg.add_argument("--no-models", action="store_true", help="skip the logistic pair models")
+    sg.add_argument("--json", help="also write the full results here")
+    sg.set_defaults(func=cmd_segments)
 
     sc = sub.add_parser("scan", help="find passages of different songs that could share one tab (R04)")
     sc.add_argument("names", nargs="+", help="corpora (or cache files) to scan together")

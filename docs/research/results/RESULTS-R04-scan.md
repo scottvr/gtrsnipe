@@ -8,7 +8,7 @@ tunings, on a real guitar?
 gtrsnipe-research --data DIR scan essen mtc-fs --solve 40 --physics-sample 30 --tabs TABS --json folk.json
 gtrsnipe-research --data DIR scan lakh-clean --named-melodies --unit window --window 16 \
     --min-keep-len 16 --solve 40 --physics-sample 30 --json lakh-16.json     # also 8, 12, 24, 32
-python docs/dev/r04_plot.py folk.json --out folk.png
+python docs/research/results/r04_plot.py folk.json --out folk.png
 ```
 
 The shared tabs the scan writes contain the corpora's music, so they stay local, like the
@@ -158,7 +158,7 @@ So the earlier "the solver places 93–100% on a real guitar" is true of *string
 of comfort. A comfortable homograph (within a few points of A's own tab) was not found for any
 sampled pair. These counts are lower bounds:
 - the solver fingers at most 1,024 placements per mode;
-- a class may use only its assigned strings plus one spare (see DESIGN-homograph
+- a class may use only its assigned strings plus one spare (see [DESIGN-homograph](../../app/DESIGN-homograph.md)
   "Playability").
 
 For the argument, this doesn't change existence: these are valid, fingerable tabs. It does

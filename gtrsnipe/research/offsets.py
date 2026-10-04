@@ -1,7 +1,7 @@
 """The offset profile of two aligned melodies (backlog R02).
 
 Align A and B note for note; the offset sequence is delta_i = b_i - a_i. Its
-statistics, from docs/dev/coupled_transposition_structure.md:
+statistics, from docs/research/theory/coupled_transposition_structure.md:
 
 richness r       distinct offsets (Hill order 0). log2 r is a metric mod
                  transposition, and r <= 6 is the offset-vocabulary condition

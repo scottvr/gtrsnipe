@@ -11,7 +11,7 @@ are provably fine; this script gives explicit counterexamples at other orders:
                         Shannon holds by just 0.002 bits (orders 0 and 1 are the edge).
   1 - C1 (transposition-invariant Hamming) holds in both, as it must.
 
-Run:  python docs/dev/triangle_check.py
+Run:  python docs/research/theory/triangle_check.py
 """
 from collections import Counter
 from math import log2

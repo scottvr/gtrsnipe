@@ -7,7 +7,7 @@ docs in this folder:
 
 - [`AUDIT-findings.md`](./AUDIT-findings.md) — full bug / dead-code inventory.
 - [`CPU-DECOUPLING.md`](./CPU-DECOUPLING.md) — making the tool installable & runnable torch-free.
-- [`DESIGN-viterbi-mapper.md`](./DESIGN-viterbi-mapper.md) — the "elegant" fretboard-mapper redesign.
+- [`DESIGN-viterbi-mapper.md`](../../app/DESIGN-viterbi-mapper.md) — the "elegant" fretboard-mapper redesign.
 - [`TEST-PLAN.md`](./TEST-PLAN.md) — regression suite, fixtures, and CI matrix.
 
 ---
@@ -30,7 +30,7 @@ Two problems motivated this work:
    family as an HMM decode (named for **Andrey Markov**, the Russian
    mathematician; Viterbi decoding is the shortest-path DP over that chain).
    It turns the exponential *sequence* search into a polynomial, globally
-   optimal one. See [`DESIGN-viterbi-mapper.md`](./DESIGN-viterbi-mapper.md).
+   optimal one. See [`DESIGN-viterbi-mapper.md`](../../app/DESIGN-viterbi-mapper.md).
 
 Along the way an audit (see [`AUDIT-findings.md`](./AUDIT-findings.md)) found
 that **`main` is currently broken for its primary use case** and shipped a
@@ -87,7 +87,7 @@ valid (distinct-string) fingerings per chord — bounded, so no lossy beam — a
 run first-order Viterbi by default, exact second-order (pair-state) only when
 `let_ring_bonus>0 AND diagonal_span_penalty`. Reuse `_score_fingering` verbatim.
 Add `--optimizer {viterbi,greedy}` (default `viterbi`). Full spec:
-[`DESIGN-viterbi-mapper.md`](./DESIGN-viterbi-mapper.md).
+[`DESIGN-viterbi-mapper.md`](../../app/DESIGN-viterbi-mapper.md).
 
 ### Epic C — Output-correctness bugs & dead-code  (`fix/output-correctness`)
 Fix the f-string/template bugs that emit literal placeholder text, the ABC

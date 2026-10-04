@@ -6,11 +6,12 @@ from pathlib import Path
 from typing import List, Optional
 
 from .core.config import MapperConfig
+from .core.types import Tuning
 
-# Single source of truth for tuning names, shared by every CLI/mode.
-TUNING_CHOICES = ['STANDARD', 'E_FLAT', 'DROP_D', 'OPEN_G', 'BASS_STANDARD', 'BASS_DROP_D',
-                  'BASS_E_FLAT', 'SEVEN_STRING_STANDARD', 'BARITONE_B', 'BARITONE_A',
-                  'BARITONE_C', 'C_SHARP_STANDARD', 'OPEN_C6', 'DROP_C', 'PIANO']
+# Single source of truth for tuning names, shared by every CLI/mode: every named
+# tuning (derived from the enum, so --tuning and --list-tunings can't drift apart
+# again; six tunings were once listed but rejected), plus PIANO for MIDI output.
+TUNING_CHOICES = [t.name for t in Tuning] + ['PIANO']
 
 QUANTIZATION_CHOICES = [0.0125, 0.025, 0.0625, 0.125, 0.25, 0.5, 1.0]
 
@@ -53,8 +54,10 @@ def add_tuning_args(target) -> None:
     target.add_argument(
         '--string-gauges', type=str, default=None, metavar='GAUGES',
         help="String gauges for tension physics, low string first like --tuning-pitches "
-             "(a thin->thick set such as '10 13 17 26w 36w 46w' is flipped for you; "
-             "'w' = wound). Default: 10-46 for STANDARD (10-59 7-string, 13-62 "
+             "(a thin->thick set such as '10 13 17 26w 36w 46w' is flipped for you, except "
+             "for a re-entrant tuning such as Nashville, which is read as written). Suffix "
+             "'w' = wound, 'p' = plain; unsuffixed gauges above .020 count as wound, so a "
+             "plain .022 is '22p'. Default: 10-46 for STANDARD (10-59 7-string, 13-62 "
              "BARITONE_B, 45-105 bass), else a balanced set designed for the tuning.")
     target.add_argument(
         '--drop-low-string', type=int, default=0, metavar='SEMITONES',
@@ -110,7 +113,8 @@ def add_mapper_args(target) -> None:
         help='Max time in beats between notes for a legato phrase (h/p) (default: 0.5).')
     target.add_argument(
         '--tapping-run-threshold', type=int, default=2,
-        help='Min number of notes in a run to be considered for tapping (default: 2).')
+        help='With --single-string: runs longer than this many notes are considered for '
+             'tapping (default: 2, i.e. runs of 3 or more).')
     target.add_argument(
         '--dedupe', action='store_true',
         help="Enable de-duplication of notes with the same pitch within a chord. "
@@ -195,6 +199,22 @@ def add_chart_args(target) -> None:
     target.add_argument("--chord-tone-threshold", type=float, default=0.15,
                         help="Min fraction of a bar a note must sound to count as a "
                              "chord tone (default: 0.15).")
+    target.add_argument("--chart-voicing", choices=["source", "compact", "open"],
+                        default="source",
+                        help="What chord-chart diagrams show: 'source' (default) the chord as "
+                             "the song's own tab fingers it; 'compact' a compact voicing of "
+                             "the chord's name; 'open' its open-position shape (x32010 for C) "
+                             "where one exists. The chart's header says which.")
+    target.add_argument("--prefer-open-chords", action="store_true",
+                        help="Same as --chart-voicing open.")
+    target.add_argument("--shape-names", action="store_true",
+                        help="Name chords by the shape you finger, as in standard tuning "
+                             "with no capo (a 'generalized capo'): in BARITONE_B a C shape "
+                             "is named C though it sounds G. Only for tunings that are "
+                             "standard shifted evenly (E_FLAT, D_STANDARD, the baritones), "
+                             "plus any capo; others stay in concert pitch. A banner always "
+                             "says which. Applies to chord charts, --name-chords and "
+                             "--name-chord.")
 
 
 def parse_tuning_pitches(spec: str) -> tuple:
@@ -505,13 +525,13 @@ def setup_parser() -> ArgumentParser:
         '--min-note-override',
         type=str,
         default=None,
-        help="Override the calculated lowest note for frequency constraining (e.g., 'E2'). Requires --constrain-frequency."
+        help="Override the calculated lowest note for frequency constraining (e.g., 'E2'). Ignored with --no-constrain-frequency."
     )
     instrument_group.add_argument(
         '--max-note-override',
         type=str,
         default=None,
-        help="Override the calculated highest note for frequency constraining (e.g., 'E4'). Requires --constrain-frequency."
+        help="Override the calculated highest note for frequency constraining (e.g., 'E4'). Ignored with --no-constrain-frequency."
     )
 
     pipeline_group = parser.add_argument_group('Audio-to-MIDI Pipeline Options')
@@ -521,19 +541,21 @@ def setup_parser() -> ArgumentParser:
         type=str,
         default=None,
         choices=['guitar', 'bass', 'drums', 'vocals', 'piano', 'other'],
-        help="The instrument stem to isolate with Demucs. 'guitar' defaults to the 'other' stem."
+        help="The instrument stem to isolate with Demucs. 'guitar' is its own stem with the default "
+             "model (htdemucs_6s), and the 'other' stem with 4-stem models."
     )
     pipeline_group.add_argument(
         '--demucs-model',
         type=str,
         default='htdemucs_6s',
-        help="The demucs model to use for separation (e.g., htdemucs, htdemucs_fti, htdemucs_6s, mdx_extra)."
+        help="The demucs model to use for separation (e.g., htdemucs_6s, htdemucs, htdemucs_ft, mdx_extra). "
+             "Only htdemucs_6s has a guitar stem; with the others, --stem-track guitar uses the 'other' stem."
     )
     pipeline_group.add_argument(
         '--no-constrain-frequency',
         default=False,
         action='store_true',
-        help="Constrain pitch detection to the frequency range of the selected tuning."
+        help="Audio input: don't constrain pitch detection to the tuning's range (constraining is on by default)."
     )
     pipeline_group.add_argument(
        '--low-pass-filter',
@@ -672,6 +694,13 @@ def setup_parser() -> ArgumentParser:
         help="Max number of vertical columns per line of ASCII tab. (default: 40)"
     )
     parser.add_argument(
+        "--name-chords",
+        action='store_true',
+        help="ASCII tab output: write chord names (concert pitch) above the staff, one per "
+             "bar, where the chord changes and at the start of each line. Bars are named "
+             "as in chord charts (see --chord-tone-threshold)."
+    )
+    parser.add_argument(
         "--single-string",
         type=int,
         default=None,
@@ -700,8 +729,23 @@ def setup_parser() -> ArgumentParser:
     info_group.add_argument(
         '--show-tuning',
         type=str,
+        nargs='?',
+        const='',
         metavar='TUNING_NAME',
-        help='Show the notes for a specific tuning and exit.'
+        help="Show a tuning's notes and each string's tension, as a retune of your guitar, "
+             "and exit. With no name, show the tuning set by --tuning-pitches or "
+             "--drop-low-string (else --tuning). Your guitar: --string-gauges (strung for "
+             "--tuning if given, else for the tuning shown), or the usual set for --tuning "
+             "(10-46 for STANDARD). Strings outside safe tension get a restring suggestion."
+    )
+    info_group.add_argument(
+        '--name-chord',
+        action='append',
+        metavar='SHAPE',
+        help="Name the chord a fret shape plays, and exit. SHAPE lists frets from the lowest "
+             "string to the highest, x for a muted string: e.g. x,3,2,0,1,0 (or x32010 when "
+             "every fret is one digit). Uses --tuning/--tuning-pitches, --capo and "
+             "--num-strings. Repeat for several shapes."
     )
 
     player_group = parser.add_argument_group('Player mode (--play; interactive terminal)')
@@ -723,7 +767,7 @@ def setup_parser() -> ArgumentParser:
         '--no-pre-quantize',
         default=False,
         action='store_true',
-        help='Force a pre-quantization pass, snapping all notes to the quantization grid before mapping.'
+        help='Skip the default pre-quantization pass (which snaps all notes to the quantization grid before mapping).'
     )
     mapper_group.add_argument(
         '--dynamic-quantize',

@@ -1,4 +1,3 @@
-$ gtrsnipe --homograph oldmac.abc twinkle.abc@1-12 --homograph-octaves -o oldmac-twinkle.tab
 Tab homograph check: 2 songs
   A  oldmac        (12 notes, 12 onsets)
   B  twinkle@1-12  (12 notes, 12 onsets)
@@ -17,8 +16,10 @@ Anchored   ELIGIBLE - an ordinary STANDARD tab of A, retuned, plays B (10-46 set
               5 A   .036w  A2   (unused)
               6 E   .046w  E2   (unused)
              B sounds -4 semitones from its input key (chosen to minimize retuning; --homograph-transpose keep holds it)
+             Playability: 4.42 mapper points per note below A's own best tab in this tuning; frets 0-10
 Middle     ELIGIBLE - every song a retune of one STANDARD-strung guitar (10-46 set, 25.5" scale); the tab is in tuning A:
              (every string within safe tension; --homograph-mode middle for its tab)
+             Playability: 4.00 mapper points per note below A's own best tab in this tuning; frets 0-10
 Verified   decoding the tab in each tuning reproduces every note of every song
 
 // Title: oldmac
@@ -45,6 +46,7 @@ D|--------------------------------|
 A|--------------------------------|
 E|--------------------------------|
 
+Wrote oldmac-twinkle.tab
 
 Same tab, one tuning per song:
   gtrsnipe -i oldmac-twinkle.tab --tuning-pitches E2,A2,D3,G3,B3,E4 -o a.mid     # A: oldmac

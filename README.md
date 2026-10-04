@@ -4,8 +4,8 @@
 
 Convert to and from .mid, .abc, .vex, and .tab files. (and more.)
 
-## v0.6.9
-Released 2026-09-27. See [CHANGELOG](https://github.com/scottvr/gtrsnipe/blob/main/CHANGELOG.md)
+## v0.6.17
+Released 2026-10-04. See [CHANGELOG](https://github.com/scottvr/gtrsnipe/blob/main/CHANGELOG.md)
 
 # What?
 
@@ -13,7 +13,9 @@ gtrsnipe is a guitar transcription tool. Its primary function is to create playa
 
 It can also convert existing MIDI files into text-based notations or, in reverse, generate a playable MIDI file from a text-based tab.
 
-Beyond writing files, gtrsnipe can **play** a song: `gtrsnipe-play` animates it on an ASCII fretboard or a horizontally-scrolling "Guitar Hero"-style tab staff — optionally with sound (MIDI to a synth/DAW, or a SoundFont) — and `gtrsnipe-chords` breaks a song into a per-measure chord sheet with diagrams. Both reuse the same fretboard mapper, so they work with every supported input format and tuning. (See the sections below.) It can also find [**tab homographs**](#tab-homographs-one-tab-a-different-song-per-tuning): one ordinary tab that plays a different song in each of two tunings.
+Beyond writing files, gtrsnipe can **play** a song: `gtrsnipe-play` animates it on an ASCII fretboard or a horizontally-scrolling "Guitar Hero"-style tab staff — optionally with sound (MIDI to a synth/DAW, or a SoundFont) — and `gtrsnipe-chords` breaks a song into a per-measure chord sheet with diagrams. Both reuse the same fretboard mapper, so they work with every supported input format and tuning. (See the sections below.) It can also find [**tab homographs**](#tab-homographs-one-tab-a-different-song-per-tuning): one ordinary tab that plays a different song in each of two (or more) tunings.
+
+Smaller tools along the way: chord names written over a tab (`--name-chords`), the chord any fret shape plays (`--name-chord`), a ranking of tunings by how playable a song is in each (`--analyze`), and each string's tension in a tuning, so you know before you retune whether your strings will take it (`--show-tuning`).
 
 At its core, gtrsnipe uses an intelligent fretboard mapper that analyzes notes and chords to find comfortable and logical fingerings on the guitar neck. [This process is highly customizable](https://github.com/scottvr/gtrsnipe/wiki/1.-FretboardMapper-Algorithm-Configuration-and-Tunables), allowing you to fine-tune the output to match your personal playing style and preferences.
 
@@ -62,7 +64,7 @@ pip install -e '.[all]'          # everything above
 
 ## Usage 
 
-The installation process makes gtrsnipe available as a command within your activated virtual environment.
+The installation process makes gtrsnipe available as a command within your activated virtual environment, along with `gtrsnipe-play`, `gtrsnipe-chords` and `gtrsnipe-research` (described below).
 
 ## Config profiles (`.gtrsnipe`)
 
@@ -115,10 +117,55 @@ e.g.:
 echo "--tuning-pitches D2,G2,E3,F3,C4,D4" >~/.gtrsnipe/trainwreck
 gtrsnipe -i piece.mid -o piece.tab --profile trainwreck
 ```
+(`gtrsnipe --tuning-pitches D2,G2,E3,F3,C4,D4 --save-args trainwreck` writes the same profile.)
 
-Adding custom tunings lead to a parlor trick which is sort of the inverse of supplying
-a custom tuning to gtrsnipe: give it a melody consisting of <= six distinct pitches, and 
-gtrsnipe finds an open tuning that can play it. That is, your tab would be all open strings: 
+**Will my strings take it?** `--show-tuning` shows each string's tension as a retune of your
+guitar, and suggests a restring for any string outside safe tension:
+
+```
+$ gtrsnipe --tuning-pitches E2,A2,D3,G3,B3,G4 --show-tuning
+Tuning: custom
+Notes:  E2 A2 D3 G3 B3 G4 (low to high)
+Guitar: 10-46 set, 25.5" scale, strung for STANDARD
+
+  string  strung for  tuned to  gauge    tension   vs normal  stress  status
+       6          E2        E2  .046w     17.9 lb        +0%          ok
+       5          A2        A2  .036w     19.5 lb        +0%          ok
+       4          D3        D3  .026w     18.1 lb        +0%          ok
+       3          G3        G3  .017      16.6 lb        +0%     19%  ok
+       2          B3        B3  .013      15.5 lb        +0%     30%  ok
+       1          E4        G4  .010      23.0 lb       +41%     75%  tight (every steel string is at snap risk at G4 on a 25.5" scale)
+  (stress: % of breaking strength, plain strings only; wound strings are judged by tension)
+
+1 of 6 strings outside safe tension.
+```
+
+- **Your guitar** is the usual set for `--tuning` (10-46 for STANDARD), or your own
+  `--string-gauges`. Those are strung for an explicit `--tuning`, else for the tuning shown.
+- **With a name** (`--show-tuning DROP_C`), it shows that tuning; with none, the one set by
+  `--tuning-pitches` or `--drop-low-string`.
+- **Converting with a custom tuning warns** about any string it would overload or leave
+  floppy, and `--solve-tuning` notes any pitch past what a steel string can take at your scale
+  length. A plain string's breaking pitch depends on the scale, not the gauge: about A4 at 25.5".
+- **Gauges:** `w` marks a wound string and `p` a plain one; unsuffixed gauges above .020
+  count as wound, so a jazz set's plain .022 G is `22p`. For a re-entrant tuning such as
+  Nashville, gauges are read exactly as written, low string first.
+
+**Which tuning suits this song?** `--analyze` fingers the song in every tuning whose range fits
+it, your own `--tuning-pitches` included, and ranks them by how playable the tab is:
+
+```bash
+gtrsnipe -i song.mid --analyze                                     # rank the tunings that fit
+gtrsnipe -i song.mid --analyze --tuning-pitches D2,G2,E3,F3,C4,D4   # with yours among them
+gtrsnipe -i song.mid --analyze --bass                              # bass tunings
+```
+
+The score is the mapper's, per note, with your current settings, so a profile changes the
+ranking. Each row also gives the frets used, hand travel per note and the share of open strings.
+
+Adding custom tunings led to a parlor trick which is sort of the inverse of supplying
+a custom tuning to gtrsnipe: give it a melody consisting of <= six distinct pitches, and
+gtrsnipe finds an open tuning that can play it. That is, your tab would be all open strings:
 
 ```bash
 gtrsnipe --solve-tuning "C4,C4,G4,G4,A4,A4,G4"                        # print tuning + tab
@@ -126,7 +173,8 @@ gtrsnipe --solve-tuning "C4,C4,G4,G4,A4,A4,G4" --play --audio fluidsynth --sound
 gtrsnipe --solve-tuning "C4,C4,G4,G4,A4,A4,G4" -o twinkle.tab -o twinkle.mid   # write it
 ```
 
-This lead to an entire reseaarch endeavor still underway and partiallly documented in this repo: 
+This led to an entire research endeavor still underway and partially documented in this repo:
+<a name="tab-homographs-one-tab-a-different-song-per-tuning"></a>
 <details>
 
   <summary>[click to expand] Tab homographs: one tab, a different song per tuning</summary>
@@ -140,15 +188,23 @@ gauges' safe range) and the very same tab plays *Twinkle, Twinkle*:
 $ gtrsnipe --homograph examples/homograph/oldmac.abc examples/homograph/twinkle.abc@1-12 --homograph-octaves
 ...
 // Tuning: E2,A2,D3,G3,B3,E4
+// Homograph: this one tab plays a different song in each tuning (low->high):
 //   Key A: E2,A2,D3,G3,B3,E4  = oldmac
 //   Key B: E2,A2,Bb2,Bb3,A3,C#4  = twinkle@1-12 (transposed -4)
+...
+e|----------|------|-0-0----|
+B|----------|------|-----3-3|
+G|-------5--|------|--------|
+D|-10-10---5|-7-7-5|--------|
+A|----------|------|--------|
+E|----------|------|--------|
 
-e|----------|------|-0-0----|      e|--------------------------------|
-B|----------|------|-----3-3|      B|-1------------------------------|
-G|-------5--|------|--------|      G|--------------------------------|
-D|-10-10---5|-7-7-5|--------|      D|--------------------------------|
-A|----------|------|--------|      A|--------------------------------|
-E|----------|------|--------|      E|--------------------------------|
+e|--------------------------------|
+B|-1------------------------------|
+G|--------------------------------|
+D|--------------------------------|
+A|--------------------------------|
+E|--------------------------------|
 ```
 
 (With `--homograph-octaves`, four of Twinkle's notes drop an octave; the report
@@ -185,7 +241,7 @@ report prints each tab's discomfort and fret range), `--homograph-transpose`/`-a
 (number the strings and omit the default tuning, so the text favors no song),
 `--scale-length`, `--string-gauges`. Every liberty taken is disclosed in the report
 and the tab header. Theory, proofs, physics, and limits:
-[`docs/dev/DESIGN-homograph.md`](docs/dev/DESIGN-homograph.md). Worked examples:
+[`docs/app/DESIGN-homograph.md`](docs/app/DESIGN-homograph.md). Worked examples:
 [`examples/homograph/`](examples/homograph/).
 
 #### Checking a tab against a recording's MIDI
@@ -212,18 +268,21 @@ reads the Essen Folksong Collection, the Meertens Tune Collections, Nottingham,
 POP909 and Lakh into one monophonic format and caches each as a single file. It
 also prints the **offset profile** of two aligned melodies: richness, entropy,
 coverage, switches, total variation and reuse (see
-[`docs/dev/coupled_transposition_structure.md`](docs/dev/coupled_transposition_structure.md)).
+[`docs/research/theory/coupled_transposition_structure.md`](docs/research/theory/coupled_transposition_structure.md)).
 The corpora aren't included; point `--data` (or `GTRSNIPE_CORPUS_ROOT`) at a
-folder holding them.
+folder holding them. `--data` goes before the subcommand. Caches are written to
+and read from that folder's `_cache/`, so the examples after the first assume
+`GTRSNIPE_CORPUS_ROOT` is set.
 
 ```bash
-gtrsnipe-research corpus build essen --data ~/corpora     # read essen/**/*.krn into a cache
+gtrsnipe-research --data ~/corpora corpus build essen     # read essen/**/*.krn into a cache
 gtrsnipe-research corpus show essen:deut4659               # one melody, phrase marks shown as |
-gtrsnipe-research profile essen:deut4659#p1 essen:deut4659#p3   # compare two phrases
-gtrsnipe-research profile a.mid:2@1-16 "C4 D4 E4 C4" --json     # files and inline melodies work too
+gtrsnipe-research profile essen:deut4659#p1 essen:deut4659#p3 --subdivide 2   # compare two phrases ('ta' ~ 'ti ti')
+gtrsnipe-research profile a.mid:2@1-4 "C4 D4 E4 C4" --json      # files and inline melodies work too
 gtrsnipe-research families mtc-ann                         # tune-family retrieval, measure by measure
 gtrsnipe-research scan essen mtc-fs --solve 40 --tabs out/  # phrases of different songs that share a tab
 gtrsnipe-research aswritten examples/aswritten/*.tab       # can a tab's own fingering play another song?
+gtrsnipe-research segments mtc-ann --level phrase          # phrase/motif retrieval on MTC-ANN's annotations (R03b)
 ```
 
 </details>
@@ -254,7 +313,7 @@ gtrsnipe-play song.mid
 # Steady eighth-note metronome at 90 BPM
 gtrsnipe-play song.mid --clock metronome --grid 0.5 --tempo 90
 
-# Step through it by hand (press any key to advance, q to quit)
+# Step through it by hand: starts paused; . steps, space plays/pauses, q quits
 gtrsnipe-play riff.tab --clock step
 ```
 
@@ -304,8 +363,8 @@ track, 1-indexed, same as the converter), `--orientation {horizontal,vertical}`,
 `--hand {right,left}`, `--fps N` (animation smoothness),
 `--audio {none,midi,fluidsynth}` (`--midi-port`, `--soundfont`, `--instrument`
 NAME-or-0..127, which defaults to the MIDI file's own instrument; `--list-instruments`),
-plus the usual `--tuning`,
-`--num-strings`, `--max-fret`, `--capo`, and `--optimizer`.
+`--legato`, `--sustain {legato,string}` (see Note lengths below), plus the usual `--tuning`,
+`--tuning-pitches`, `--drop-low-string`, `--num-strings`, `--max-fret`, `--capo`, and `--optimizer`.
 
 **Note lengths.** Playback honors each note's own length: a held bass note rings under a
 moving melody, and a rest is silent. `--legato` brings back the old behavior, where every
@@ -335,35 +394,98 @@ gtrsnipe-chords song.mid -o song.chords.md
 > the chart). `gtrsnipe-chords` remains as a convenience shortcut.
 
 Chord *names* (C, Am, E5, E7, C/E, …) are derived by matching pitch classes to
-chord templates, with the bass note disambiguating inversions and slash chords.
-The diagrams show the chord **as voiced in the input** (the actual octaves,
-mapped in your tuning) rather than canonical open shapes — faithful to the song,
-and the only correct choice for non-standard tunings.
+chord templates, with the bass note disambiguating inversions and slash chords. The lowest
+note at the start of a bar counts as a chord tone even when it's short, so an arpeggiated bar
+is named by its bass (as `--name-chords` names it over a tab).
+
+What a diagram shows is a choice, `--chart-voicing`, and the chart's header always says which.
+Each diagram is captioned with its shape (`x32010`: low string first, `x` = muted).
+
+- **`source`** (the default) draws each chord **as this song's tab fingers it**: the bar's
+  chord tones, if each string holds one fret and they make one hand shape (at most four
+  fingers, an index barre counting as one, within four frets); else the bar's fullest
+  simultaneous chord as fingered. A chord with no such bar gets a compact voicing, marked `*`.
+- **`compact`** draws a compact root-position voicing of the chord's *name*: the chord tones
+  within one octave, one note per string, placed where the mapper can finger them with the
+  tightest fret span. It isn't the song's voicing (a C/E bar gets a root-position C).
+- **`open`** (or `--prefer-open-chords`) draws the familiar first-position shape where one
+  exists: C `x32010`, G `320003`, D `xx0232`, F `xx3211`, and so on. The shapes are found, not
+  looked up: every chord tone present (a 4-note chord may drop its fifth), the chord's bass on
+  the lowest string played, muted strings only at the bottom so it strums, at most four
+  fingers within four frets. So it works in any tuning and with a capo (with capo 2, a D is
+  drawn as the C shape you finger). Chords with no open shape get the compact voicing.
 
 Key options: `-o FILE`, `--measures-per-line N`, `--chord-tone-threshold F`
 (how long a note must sound in a bar to count as a chord tone), `--track N`,
-plus the usual `--tuning`, `--num-strings`, `--capo`, `--optimizer`, and
-`--prefer-open` (bias diagram voicings toward open strings).
+`--chart-voicing {source,compact,open}` (`--prefer-open-chords` = `open`), `--shape-names`,
+`--name-chord SHAPE`, plus the usual `--tuning`, `--tuning-pitches`, `--drop-low-string`,
+`--num-strings`, `--capo`, and `--optimizer`.
+
+### Shape names (`--shape-names`)
+
+On a baritone or a down-tuned guitar you think in the shapes of standard tuning: the fingering
+of a C chord is "a C shape", whatever it sounds like. `--shape-names` names chords that way, a
+"generalized capo", in chord charts, `--name-chords` and `--name-chord`:
+
+```bash
+gtrsnipe -i song.mid -o song.chords.md --tuning BARITONE_B --shape-names   # C shape, sounds G
+gtrsnipe --capo 2 --shape-names --name-chord 320003                          # G shape, sounds A
+```
+
+- It works for tunings that are standard shifted evenly on every string (E_FLAT, D_STANDARD,
+  C_SHARP_STANDARD, the baritones, the bass and 7-string equivalents, or a custom tuning that
+  shifts evenly), plus any capo.
+- A drop or open tuning has no standard shape names, so its chords stay in concert pitch.
+- A banner always says which convention is in use, and chart diagrams always show the notes
+  actually played.
+
+### Chord names over a tab (`--name-chords`)
+
+Add `--name-chords` to ASCII tab output to write chord names above the staff:
+
+```
+   C                                G            Am
+e|--------------------------------|-----------3|----------|
+B|-5------------------------------|------------|---------5|
+G|-5------------------------------|---------4--|-----2h5--|
+D|-5------------------------------|-------5----|---2------|
+A|-7------------------------------|---2h5------|-0--------|
+E|-8------------------------------|-3----------|----------|
+```
+
+- Each bar is named as in a chord chart (`--chord-tone-threshold` applies). The lowest note
+  at the start of a bar also counts, so an arpeggio's bass isn't lost among short notes.
+- A name sits over its bar's first note. It's written where the chord changes, and again at
+  the start of each line, which wraps with the tab (`--max-line-width`).
+- Only plainly spelled chords are named: every chord tone present except perhaps the fifth,
+  at most one extra note. A melody bar or a doubtful chord gets no name rather than a wrong one.
+- Each bar is also named by halves, so a bar that changes chord midway gets both names (C
+  then G, where naming the whole bar would read "G6"). Finer changes aren't named.
+- Names are concert pitch (with a capo or an unusual tuning, the sounding chord), unless you
+  ask for [shape names](#shape-names---shape-names).
+- The name line is ignored when the tab is read back in.
+
+### Naming a chord shape (`--name-chord`)
+
+Name the chord a fret shape plays, without any input file. List the frets from the lowest
+string to the highest, `x` for a muted string:
+
+```bash
+gtrsnipe --name-chord x,3,2,0,1,0 --name-chord x,x,3,2,1,0
+#   x,3,2,0,1,0      C          C3 E3 G3 C4 E4
+#   x,x,3,2,1,0      Fmaj7      F3 A3 C4 E4
+#   (tuning STANDARD (E2,A2,D3,G3,B3,E4); chord names are concert pitch)
+gtrsnipe --tuning BARITONE_B --name-chord x,3,2,0,1,0      # the C shape plays G
+gtrsnipe --capo 2 --name-chord x02220                      # compact form: B
+```
+
+The shape is read in `--tuning` (or `--tuning-pitches`), with `--capo` and `--num-strings`.
+The compact form (`x32010`) works when every fret is one digit.
 
 ### Command-line help
 
-```
-usage: gtrsnipe [-h] [-i INPUT] -o OUTPUT [--capo CAPO]
-                [--tuning {STANDARD,E_FLAT,DROP_D,OPEN_G,BASS_STANDARD,BASS_DROP_D,BASS_E_FLAT,SEVEN_STRING_STANDARD,BARITONE_B,BARITONE_A,BARITONE_C,C_SHARP_STANDARD,OPEN_C6,DROP_C,PIANO}]
-                [--bass] [--num-strings {4,5,6,7}] [--max-fret MAX_FRET] [--mono-lowest-only] [--velocity-cutoff [0-127]] [--nr]
-                [--stem-track {guitar,bass,drums,vocals,piano,other}] [--demucs-model DEMUCS_MODEL] [--no-constrain-frequency]
-                [--min-note-override MIN_NOTE_OVERRIDE] [--max-note-override MAX_NOTE_OVERRIDE] [--low-pass-filter] [--pitch-engine {librosa}]
-                [--nudge NUDGE] [--first-note-is-downbeat] [-y] [--track TRACK] [--analyze]
-                [--transpose TRANSPOSE] [--no-articulations] [--staccato] [--max-line-width MAX_LINE_WIDTH] [--single-string {1,2,3,4,5,6}] [--normalize-pitch]
-                [--debug] [--list-tunings] [--show-tuning TUNING_NAME] [--optimizer {viterbi,greedy}] [--fret-span-penalty FRET_SPAN_PENALTY]
-                [--movement-penalty MOVEMENT_PENALTY] [--string-switch-penalty STRING_SWITCH_PENALTY] [--high-fret-penalty HIGH_FRET_PENALTY]
-                [--low-string-high-fret-multiplier LOW_STRING_HIGH_FRET_MULTIPLIER] [--unplayable-fret-span UNPLAYABLE_FRET_SPAN]
-                [--sweet-spot-bonus SWEET_SPOT_BONUS] [--sweet-spot-low SWEET_SPOT_LOW] [--sweet-spot-high SWEET_SPOT_HIGH] [--ignore-open]
-                [--legato-time-threshold LEGATO_TIME_THRESHOLD] [--tapping-run-threshold TAPPING_RUN_THRESHOLD] [--no-pre-quantize] [--dedupe]
-                [--quantization-resolution {0.0125,0.025,0.0625,0.125,0.25,0.5,1.0}] [--prefer-open] [--fretted-open-penalty FRETTED_OPEN_PENALTY]
-                [--barre-bonus BARRE_BONUS] [--barre-penalty BARRE_PENALTY] [--let-ring-bonus LET_RING_BONUS] [--diagonal-span-penalty]
-
-```
+Run `gtrsnipe --help` for the complete list of options. An abridged reference is in
+[Command-line options](#command-line-options) below.
 
 ### Fretboard optimizer (`--optimizer`)
 
@@ -377,8 +499,8 @@ shapes, let-ring, and more). Two strategies are available:
   exact same scoring function, so its result is provably at least as good as the
   greedy path. Tie-breaks are deterministic.
 - **`greedy`** — the legacy per-chord choice that never reconsiders earlier
-  notes. Kept for one release for reproducibility; use `--optimizer greedy` to
-  match pre-0.3.0 output.
+  notes. Kept for reproducing older fingerings. Since the 0.6.1 fixes its output
+  no longer matches pre-0.3.0 releases exactly.
 
 ```
 gtrsnipe -i input.mid -o out.tab                      # viterbi (default)
@@ -409,120 +531,103 @@ By default, the algorithm penalizes wide fret stretches (--fret-span-penalty). I
 gtrsnipe -i input.mid --fret-span-penalty -10 ...
 ```
 
-## Command-line Options in Detail
+## Command-line options
 
-**options:**
--   `-h, --help`            show this help message and exit
--  `-i INPUT, --input INPUT`
-                        Path to the input file (.mid, .mp3, .wav, etc.).
--  `-o OUTPUT, --output OUTPUT`
-                        Path to the output file (.tab, .mid, etc.).
--  `--nudge NUDGE`         An integer to shift the transcription's start time to the right. Each unit corresponds to roughly a 16th note.
--  `-y, --yes`             Automatically overwrite the output file if it already exists.
--  `--track TRACK`         The track number (1-based) to select from a multi-track MIDI file. If not set, all tracks are processed. For a multitrack midi, you will   
-                        want to select a single instrument track to transcribe.
--  `--analyze`             Finger the song in every tuning whose range fits (with your mapper settings) and rank the tunings by playability, then exit. Each row shows the mapper's score per note, how much harder it is than the best tuning, the frets used, the average hand travel, and the share of open strings. No `-o` needed; `--bass` ranks bass tunings.
--  `--transpose TRANSPOSE`
-                        Transpose the music up or down by N semitones (e.g., 2 for up, -3 for down).
--  `--no-articulations`    Transcribe with no legato, taps, hammer-ons, pull-offs, etc.
--  `--staccato`            Do not extend note durations to the start of the next note, instead giving each note an 1/8 note duration. When converting from ASCII      
-                        tab.
--  `--max-line-width MAX_LINE_WIDTH`
-                        Max number of vertical columns per line of ASCII tab. (default: 40)
--  `--single-string {1,2,3,4,5,6}`
-                        Force all notes onto a single string (1-6, high e to low E). Ideal for transcribing legato/tapping runs.
--  `--normalize-pitch`     Constrain notes to the playable range of the tuning specified by --tuning.
--  `--optimizer {viterbi,greedy}`
-                        Fretboard mapping strategy: 'viterbi' (global DP optimum, default) or 'greedy' (legacy per-step choice).
--  `--debug`               Enable detailed debug logging messages.
+An abridged reference, grouped as in `gtrsnipe --help`. Run `gtrsnipe --help` for the complete list.
 
+**General**
+- `-i INPUT, --input INPUT`: Path to the input file (.mid, .mp3, .wav, etc.).
+- `-o OUTPUT, --output OUTPUT`: Path(s) to the output file(s) (e.g., `-o out.mid -o out.tab -o song.chords.md`). Repeatable. Not required with `--play`, `--analyze`, `--solve-tuning` or `--homograph`. A `.chords`/`.chords.md` output writes a chord sheet.
+- `--nudge NUDGE`: An integer to shift the transcription's start time to the right. Each unit corresponds to roughly a 16th note.
+- `--first-note-is-downbeat`: Shift the entire timeline so that the first note of the song starts at beat 0.
+- `-y, --yes`: Automatically overwrite the output file if it already exists.
+- `--track TRACK`: The track number (1-based) to select from a multi-track MIDI file. If not set, all tracks are processed. For a multitrack MIDI, you will want to select a single instrument track to transcribe.
+- `--analyze`: Rank the tunings whose range fits the song by how playable its tab is in each (the mapper's score per note with your settings, frets, hand travel, open strings), then exit. No `-o` needed; `--bass` ranks bass tunings.
+- `--solve-tuning NOTES`: Inverse solve: given a comma-separated target melody (note names with octave, e.g. `'C4,C4,G4,G4,A4,A4,G4'`), find a tuning under which an all-open-string tab plays it. Prints the tuning; add `--play` to hear it, or `-o FILE.tab/.mid` to write it. No `-i` needed.
+- `--max-strings MAX_STRINGS`: Max strings the tuning solver (and `--homograph-mode free`) may use (default: 12).
+- `--transpose TRANSPOSE`: Transpose the music up or down by N semitones (e.g., 2 for up, -3 for down).
+- `--no-articulations`: Transcribe with no legato, taps, hammer-ons, pull-offs, etc.
+- `--staccato`: Do not extend note durations to the start of the next note, instead giving each note an 1/8 note duration. When converting from ASCII tab.
+- `--max-line-width MAX_LINE_WIDTH`: Max number of vertical columns per line of ASCII tab (default: 40).
+- `--name-chords`: ASCII tab output: chord names above the staff (see [Chord names over a tab](#chord-names-over-a-tab---name-chords)).
+- `--single-string {1,2,3,4,5,6}`: Force all notes onto a single string (1-6, high e to low E). Ideal for transcribing legato/tapping runs.
+- `--normalize-pitch`: Shift notes (+12 or -12) until they fit within the specified tuning and max fret range. Used when the input has many out-of-range notes that would otherwise be dropped.
+- `--debug`: Enable detailed debug logging messages.
 
-**Audio-to-MIDI Pipeline Options:** _(require `pip install 'gtrsnipe[audio]'`; `--stem-track` also needs `[separation]`)_
--  `--nr`                  (Experimental. Enables noise/reverb reduction on the audio stem.)
--  `--stem-track {guitar,bass,drums,vocals,piano,other}`
-                        The instrument stem to isolate with Demucs. 'guitar' defaults to the 'other' stem.
--  `--demucs-model DEMUCS_MODEL`
-                        The demucs model to use for separation (e.g., htdemucs, htdemucs_fti, htdemucs_6s, mdx_extra).
--  `--constrain-frequency`
-                        Constrain pitch detection to the frequency range of the selected tuning.
--  `--low-pass-filter`     Apply a low-pass filter to the audio stem based on the instrument's max frequency.
--  `--pitch-engine {librosa}`
-                        Pitch detection engine. Currently librosa (pYIN) only; the experimental basic-pitch engine was removed in v0.3.0.
+**Instrument options**
+- `--capo CAPO`: Specify a capo position. All fret numbers will be relative to the capo.
+- `--tuning NAME`: Specify the guitar tuning, or `PIANO` for full-range MIDI passthrough (default: STANDARD). NAME is any tuning in [the list below](#current-supported-instrument-tunings).
+- `--num-strings {4,5,6,7}`: Force the number of strings on the tab staff (4, 5, 6, or 7). Defaults to 4 for bass and 6 for guitar.
+- `--max-fret MAX_FRET`: Maximum fret number on the virtual guitar neck (default: 24).
+- `--tuning-pitches LOW,..,HIGH`: Define a custom tuning by comma-separated note names, low string to high (e.g. `'A1,E2,A2,D3,F#3,B3'`). Overrides `--tuning`.
+- `--scale-length INCHES`: Scale length for string-tension physics (default: 25.5 guitar, 27 baritone, 34 bass).
+- `--string-gauges GAUGES`: String gauges for tension physics, low string first like `--tuning-pitches` (a thin-to-thick set such as `'10 13 17 26w 36w 46w'` is flipped for you, except for a re-entrant tuning such as Nashville, which is read as written). `w` = wound, `p` = plain; unsuffixed gauges above .020 count as wound (a plain .022 is `22p`). Default: 10-46 for STANDARD (10-59 7-string, 13-62 BARITONE_B, 45-105 bass), else a balanced set designed for the tuning.
+- `--drop-low-string SEMITONES`: Lower the lowest string by N semitones (2 = drop-D style), on any tuning / string count.
+- `--bass`: Enable bass mode. Automatically uses bass tuning and a 4-string staff. It always selects BASS_STANDARD, overriding `--tuning`; for another bass tuning, pass `--tuning BASS_DROP_D` or `--tuning BASS_E_FLAT` without `--bass`.
+- `--velocity-cutoff [0-127]`: Ignore MIDI notes with a velocity lower than this value (default: 0).
+- `--min-note-override MIN_NOTE_OVERRIDE`: Override the calculated lowest note for frequency constraining (e.g., `'E2'`). Ignored with `--no-constrain-frequency`.
+- `--max-note-override MAX_NOTE_OVERRIDE`: Override the calculated highest note for frequency constraining (e.g., `'E4'`). Ignored with `--no-constrain-frequency`.
 
-**Tuning Information:**
--  `--list-tunings`        List all available tuning names and exit.
--  `--show-tuning TUNING_NAME`
-                        Show the notes for a specific tuning and exit.
+**Audio-to-MIDI pipeline options** _(require `pip install 'gtrsnipe[audio]'`; `--stem-track` also needs `[separation]`)_
+- `--nr`: Enables noise/reverb reduction on the audio stem.
+- `--stem-track {guitar,bass,drums,vocals,piano,other}`: The instrument stem to isolate with Demucs. The default model, htdemucs_6s, has a `guitar` stem.
+- `--demucs-model DEMUCS_MODEL`: The demucs model to use for separation (default: htdemucs_6s). See [Demucs model selection](#demucs-model-for-stem-separation).
+- `--no-constrain-frequency`: Audio input: don't constrain pitch detection to the tuning's range (constraining is on by default).
+- `--low-pass-filter`: Apply a low-pass filter to the audio stem based on the instrument's max frequency.
+- `--pitch-engine {librosa}`: The pitch detection engine to use. Currently `librosa` (pYIN) only; the experimental basic-pitch engine was removed in v0.3.0.
 
-**Mapper Tuning/Configuration (Advanced):**
--  `--fret-span-penalty FRET_SPAN_PENALTY`
-                        Penalty for wide fret stretches (default: 100.0).
--  `--movement-penalty MOVEMENT_PENALTY`
-                        Penalty for hand movement between chords (default: 3.0).
--  `--string-switch-penalty STRING_SWITCH_PENALTY`
-                        Penalty for switching strings (default: 5.0).
--  `--high-fret-penalty HIGH_FRET_PENALTY`
-                        Penalty for playing high on the neck (default: 5).
--  `--low-string-high-fret-multiplier LOW_STRING_HIGH_FRET_MULTIPLIER`
-                        Multiplier penalty for playing high on the neck on low strings (default: 10).
--  `--unplayable-fret-span UNPLAYABLE_FRET_SPAN`
-                        Fret span considered unplayable (default: 4).
--  `--sweet-spot-bonus SWEET_SPOT_BONUS`
-                        Bonus for playing in the ideal lower fret range.
--  `--sweet-spot-low SWEET_SPOT_LOW`
-                        Lowest fret of the "sweet spot" (default 0 - open)
--  `--sweet-spot-high SWEET_SPOT_HIGH`
-                        Highest fret of the "sweet spot" (default 12)
--  `--ignore-open`         Don't consider open when calculating shape score.
--  `--legato-time-threshold LEGATO_TIME_THRESHOLD`
-                        Max time in beats between notes for a legato phrase (h/p) (default: 0.5).
--  `--tapping-run-threshold TAPPING_RUN_THRESHOLD`
-                        Min number of notes in a run to be considered for tapping (default: 2).
--  `--pre-quantize`        Force a pre-quantization pass, snapping all notes to the quantization grid before mapping.
--  `--dedupe`              Enable de-duplication of notes with the same pitch within a chord. Useful for cleaning up MIDI from non-guitar sources.
--  `--quantization-resolution {0.0125,0.0625,0.125,0.25,0.5,1.0}`
-                        Quantization resolution. Used by the mapper to determine simultaneous sounding of notes (chords) and by the ascii tab generator mainly     
-                        for spacing purposes.
--  `--prefer-open`         Prefer open strings over their fretted equivalents (e.g., open B over G-string fret 4).
--  `--fretted-open-penalty FRETTED_OPEN_PENALTY`
-                        The penalty score applied to fretted notes that could be open strings (default: 20.0).
--  `--barre-bonus BARRE_BONUS`
-                        Bonus awarded to fingerings that use a barre/single finger (default: 0.0).
--  `--barre-penalty BARRE_PENALTY`
-                        Penalty applied to fingerings that use a barre/single finger (default: 0.0).
--  `--let-ring-bonus LET_RING_BONUS`
-                        Bonus awarded for fingerings that allow previous notes to ring out (default: 0.0).
--  `--diagonal-span-penalty`
-                        Penalize fingerings with an unplayable fret span between consecutive notes.
+**Tab homographs:** `--homograph SONG [SONG ...]` and the `--homograph-*` options. See [Tab homographs](#tab-homographs-one-tab-a-different-song-per-tuning).
 
-**Instrument Options**
--   `--capo CAPO`           Specify a capo position. All fret numbers will be relative to the capo.
--   `--tuning {STANDARD,E_FLAT,DROP_D,OPEN_G,BASS_STANDARD,BASS_DROP_D,BASS_E_FLAT,SEVEN_STRING_STANDARD,BARITONE_B,BARITONE_A,BARITONE_C,C_SHARP,OPEN_C6,DROP_C,PIANO}`
-                        Specify the guitar tuning or "PIANO" for full-range midi passthrough. (default: STANDARD).
--   `--bass`                Enable bass mode. Automatically uses bass tuning and a 4-string staff.
--   `--num-strings {4,5,6,7}`
-                        Force the number of strings on the tab staff (4, 5, 6, or 7). Defaults to 4 for bass and 6 for guitar.
--   `--max-fret MAX_FRET`   Maximum fret number on the virtual guitar neck (default: 24).
--   `--mono-lowest-only`    Force monophonic output by keeping only the lowest note in any chord.
--   `--min-note-override MIN_NOTE_OVERRIDE`
-                        Override the calculated lowest note for frequency constraining (e.g., 'E2'). Requires --constrain-frequency.
--   `--max-note-override MAX_NOTE_OVERRIDE`
-                        Override the calculated highest note for frequency constraining (e.g., 'E4'). Requires --constrain-frequency.
+**Tuning information**
+- `--list-tunings`: List all available tuning names and exit.
+- `--show-tuning [TUNING_NAME]`: Show a tuning's notes and each string's tension on your guitar, with restring suggestions, and exit. With no name, the tuning set by `--tuning-pitches`/`--drop-low-string` (see [Custom tunings](#custom-tunings)).
+- `--name-chord SHAPE`: Name the chord a fret shape plays (e.g. `x,3,2,0,1,0`) in the current tuning, and exit. Repeatable (see [Naming a chord shape](#naming-a-chord-shape---name-chord)).
 
+**Player mode** (`--play`; interactive terminal): `--play`, `--view`, `--clock`, `--tempo`, `--grid`, `--window`, `--width`, `--fps`, `--orientation`, `--hand`, `--audio`, `--midi-port`, `--soundfont`, `--instrument`, `--no-clear`, `--legato`, and `--sustain {legato,string}`, which also applies to MIDI output from a tab: `legato` (default) holds each note until the next onset; `string` lets it ring until its own string is struck again, as a guitar does (at most one bar). See [Player / Visualizer](#player--visualizer).
+
+**Chord chart output** (`-o SONG.chords.md`): `--measures-per-line` (default: 4), `--chord-tone-threshold` (default: 0.15), `--chart-voicing {source,compact,open}` (what the diagrams show; default: the song's own fingering), `--prefer-open-chords` (= `--chart-voicing open`), `--shape-names` (name chords by the standard-tuning shape; also for `--name-chords` and `--name-chord`). See [Chord charts](#chord-charts).
+
+**Profiles / config** (`.gtrsnipe`): `--profile NAME[,NAME]`, `--no-defaults`, `--config-dir CONFIG_DIR`, `--save-args NAME`. See [Config profiles](#config-profiles-gtrsnipe).
+
+**Mapper tuning/configuration (advanced)**
+- `--optimizer {viterbi,greedy}`: Fretboard mapping strategy: `viterbi` (global DP optimum, default) or `greedy` (legacy per-step choice).
+- `--mono-lowest-only`: Force monophonic output by keeping only the lowest note in any chord.
+- `--fret-span-penalty FRET_SPAN_PENALTY`: Penalty for wide fret stretches (default: 100.0).
+- `--movement-penalty MOVEMENT_PENALTY`: Penalty for hand movement between chords (default: 3.0).
+- `--string-switch-penalty STRING_SWITCH_PENALTY`: Penalty for switching strings (default: 5.0).
+- `--high-fret-penalty HIGH_FRET_PENALTY`: Penalty for playing high on the neck (default: 5).
+- `--low-string-high-fret-multiplier LOW_STRING_HIGH_FRET_MULTIPLIER`: Multiplier penalty for playing high on the neck on low strings (default: 10).
+- `--unplayable-fret-span UNPLAYABLE_FRET_SPAN`: Fret span considered unplayable (default: 4).
+- `--sweet-spot-bonus SWEET_SPOT_BONUS`: Bonus for playing in the ideal lower fret range (default: 0.5).
+- `--sweet-spot-low SWEET_SPOT_LOW`: Lowest fret of the "sweet spot" (default: 0, open).
+- `--sweet-spot-high SWEET_SPOT_HIGH`: Highest fret of the "sweet spot" (default: 12).
+- `--ignore-open`: Don't consider open when calculating shape score.
+- `--legato-time-threshold LEGATO_TIME_THRESHOLD`: Max time in beats between notes for a legato phrase (h/p) (default: 0.5).
+- `--tapping-run-threshold TAPPING_RUN_THRESHOLD`: With `--single-string`: runs longer than this many notes are considered for tapping (default: 2, i.e. runs of 3 or more).
+- `--dedupe`: Enable de-duplication of notes with the same pitch within a chord. Useful for cleaning up MIDI from non-guitar sources.
+- `--quantization-resolution {0.0125,0.025,0.0625,0.125,0.25,0.5,1.0}`: Quantization resolution (default: 0.125). Used by the mapper to determine simultaneous sounding of notes (chords) and by the ASCII tab generator mainly for spacing purposes.
+- `--prefer-open`: Prefer open strings over their fretted equivalents (e.g., open B over G-string fret 4).
+- `--fretted-open-penalty FRETTED_OPEN_PENALTY`: The penalty score applied to fretted notes that could be open strings (default: 20.0).
+- `--barre-bonus BARRE_BONUS`: Bonus awarded to fingerings that use a barre/single finger (default: 0.0).
+- `--barre-penalty BARRE_PENALTY`: Penalty applied to fingerings that use a barre/single finger (default: 0.0).
+- `--let-ring-bonus LET_RING_BONUS`: Bonus awarded for fingerings that allow previous notes to ring out (default: 0.0).
+- `--diagonal-span-penalty`: Penalize fingerings with an unplayable fret span between consecutive notes.
+- `--no-pre-quantize`: Skip the default pre-quantization pass (which snaps all notes to the quantization grid before mapping).
+- `--dynamic-quantize`: Quantize notes to a dynamic beat grid detected from the audio.
 
 ## Usage Examples
 
 **Full audio-to-tab transcription**
 
-Run the complete pipeline on a mixed audio file to generate a tab tuned to Drop D.
+Run the complete pipeline on a mixed audio file to generate a bass tab in drop D. (`--bass` would force BASS_STANDARD, so the bass tuning is named without it.)
 
-[`gtrsnipe -i x:\S.O.D.mp3 -o march_of_the_S.O.D.tab --bass --stem --stem-name bass --tuning DROP_D  -y`](https://github.com/scottvr/gtrsnipe/wiki/v0.2.0)
+[`gtrsnipe -i x:\S.O.D.mp3 -o march_of_the_S.O.D.tab --stem-track bass --tuning BASS_DROP_D -y`](https://github.com/scottvr/gtrsnipe/wiki/v0.2.0)
 
 **Audio-to-MIDI only**
 
 Extract the guitar part from a song and save it as a MIDI file, stopping the pipeline there.
 
-`gtrsnipe -i "another_song.wav" -o "guitar_part.mid" --stem`
+`gtrsnipe -i "another_song.wav" -o "guitar_part.mid" --stem-track guitar`
 
 **Transcribing from Clean Audio**
 
@@ -540,33 +645,37 @@ If you already have a clean, isolated guitar track, you can skip the demucs and 
 
 ## Advanced Usage: Mapper Tuning
 
-The real power of gtrsnipe comes from its customizability. You can fine-tune the fretboard mapping algorithm and the audio separation models to get the perfect transcription. [Detailed documentation with troubleshooting examples are being created in the wiki.](https://github.com/scottvr/gtrsnipe/wik/FretboardMapper-Algorithm-Configuration-and-Tunables)
+The real power of gtrsnipe comes from its customizability. You can fine-tune the fretboard mapping algorithm and the audio separation models to get the perfect transcription. [Detailed documentation with troubleshooting examples are being created in the wiki.](https://github.com/scottvr/gtrsnipe/wiki/1.-FretboardMapper-Algorithm-Configuration-and-Tunables)
 
 
 ### Current Supported Instrument Tunings
 
+`--tuning` accepts every name below, plus `PIANO` (full-range MIDI passthrough).
+Strings are listed low to high.
+
 ```
-$ gtrsnipe  --list-tunings                                                   
+$ gtrsnipe --list-tunings
 Available Tunings:
-- STANDARD              : E4 B3 G3 D3 A2 E2
-- E_FLAT                : Eb4 Bb3 Gb3 Db3 Ab2 Eb2
-- DROP_D                : E4 B3 G3 D3 A2 D2
-- D_STANDARD            : D4 A3 F3 C3 G2 D2
-- DROP_C                : D4 A3 F3 C3 G2 C2
-- DROP_B                : C#4 F#3 B2 E2 B1
-- OPEN_G                : D4 B3 G3 D3 G2 D2
-- OPEN_E                : E4 B3 G#3 E3 B2 E2
-- DADGAD                : D4 A3 G3 D3 A2 D2
-- OPEN_D                : D4 A3 F#3 D3 A2 D2
-- OPEN_C6               : E4 C4 G3 C3 A2 C2
-- BASS_STANDARD         : G2 D2 A1 E1
-- BASS_DROP_D           : G2 D2 A1 D1
-- BASS_E_FLAT           : Gb2 Db2 Ab1 Eb1
-- SEVEN_STRING_STANDARD : E4 B3 G3 D3 A2 E2 B1
-- SEVEN_STRING_DROP_A   : E4 B3 G3 D3 A2 E2 A1
-- BARITONE_B            : B3 F#3 D3 A2 E2 B1
-- BARITONE_A            : A3 E3 C3 G2 D2 A1
-- BARITONE_C            : C4 G3 Eb3 Bb2 F2 C2
+- STANDARD              : E2 A2 D3 G3 B3 E4
+- E_FLAT                : Eb2 Ab2 Db3 Gb3 Bb3 Eb4
+- DROP_D                : D2 A2 D3 G3 B3 E4
+- D_STANDARD            : D2 G2 C3 F3 A3 D4
+- DROP_C                : C2 G2 C3 F3 A3 D4
+- OPEN_G                : D2 G2 D3 G3 B3 D4
+- OPEN_E                : E2 B2 E3 G#3 B3 E4
+- DADGAD                : D2 A2 D3 G3 A3 D4
+- OPEN_D                : D2 A2 D3 F#3 A3 D4
+- OPEN_C6               : C2 A2 C3 G3 C4 E4
+- C_SHARP_STANDARD      : C#2 F#2 B2 E3 G#3 C#4
+- DROP_B                : B1 F#2 B2 E3 G#3 C#4
+- BASS_STANDARD         : E1 A1 D2 G2
+- BASS_DROP_D           : D1 A1 D2 G2
+- BASS_E_FLAT           : Eb1 Ab1 Db2 Gb2
+- SEVEN_STRING_STANDARD : B1 E2 A2 D3 G3 B3 E4
+- SEVEN_STRING_DROP_A   : A1 E2 A2 D3 G3 B3 E4
+- BARITONE_B            : B1 E2 A2 D3 F#3 B3
+- BARITONE_A            : A1 D2 G2 C3 E3 A3
+- BARITONE_C            : C2 F2 Bb2 Eb3 G3 C4
 ```
 
 ### Demucs Model for stem separation
@@ -575,9 +684,9 @@ Available Tunings:
 
 Demucs is a state-of-the-art music source separation model. Several models are available, each with specific characteristics. Choosing the right one can significantly improve the quality of the isolated audio stem.
 
-- **htdemucs**: The default Hybrid Transformer Demucs model. A great all-rounder.
+- **htdemucs**: The standard 4-stem Hybrid Transformer Demucs model. A great all-rounder. (Guitar goes to its "other" stem.)
 - **htdemucs_ft**: A version of htdemucs fine-tuned on extra data. May offer better quality at the cost of speed.
-- **htdemucs_6s**: A 6-source version that can additionally attempt to separate piano and guitar, though quality may vary.
+- **htdemucs_6s**: gtrsnipe's default. A 6-source version that can additionally attempt to separate piano and guitar, though quality may vary.
 - **hdemucs_mmi**: The v3 Hybrid Demucs model, retrained on more data.
 - **mdx / mdx_extra**: Models known for high performance, trained on the MusDB HQ dataset.
 - **mdx_q / mdx_extra_q**: Quantized (smaller, faster) versions of the mdx models, which may have slightly reduced quality.

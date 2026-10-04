@@ -1,6 +1,6 @@
 # R03: does the offset profile find tune families?
 
-The experiment in §11 of [`coupled_transposition_structure.md`](coupled_transposition_structure.md),
+The experiment in §11 of [`coupled_transposition_structure.md`](../theory/coupled_transposition_structure.md),
 run 2026-09-26 with `gtrsnipe-research families` (gtrsnipe 0.6.3). Reproduce with:
 
 ```bash
@@ -113,7 +113,7 @@ that happen to share a small offset vocabulary.
   - A good note-level alignment would raise every measure, and could favor richness more than
     the others, since stray offsets from misalignment hurt richness most.
   - The fair test of that is richness under its *own* optimal warping. That distance is a proven
-    pseudometric ([`PROOF-alignment.md`](PROOF-alignment.md)), but it is a minimum-label path
+    pseudometric ([`PROOF-alignment.md`](../theory/PROOF-alignment.md)), but it is a minimum-label path
     problem, costly to compute at this scale. Not run.
 - **Whole melodies only.** Phrase-level retrieval (MTC-ANN has phrase annotations) is not run.
 - **Folk song only.** Other repertoires could behave differently.
