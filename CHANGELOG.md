@@ -10,6 +10,14 @@ and Cargo apply to 0.x version ranges. Full SemVer applies from 1.0.0. The publi
 is the CLI flags and the file formats gtrsnipe reads and writes; report wording is
 not part of it.
 
+## [0.6.17] — 2026-10-04
+
+The first public release since 0.6.9. Versions 0.6.10 to 0.6.16 were development releases,
+not published on their own. Their changes are listed under their own headings below, and all
+of them are in this release. The research write-ups in `docs/research/` are as published in
+0.6.9, apart from their new location; their revisions will be published together when the
+research is done.
+
 ## [0.6.16] — 2026-10-03
 
 C07 (new, scottvr): what a chord chart's diagrams show is now a stated choice, and

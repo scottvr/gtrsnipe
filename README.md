@@ -4,8 +4,8 @@
 
 Convert to and from .mid, .abc, .vex, and .tab files. (and more.)
 
-## v0.6.16
-Released 2026-10-03. See [CHANGELOG](https://github.com/scottvr/gtrsnipe/blob/main/CHANGELOG.md)
+## v0.6.17
+Released 2026-10-04. See [CHANGELOG](https://github.com/scottvr/gtrsnipe/blob/main/CHANGELOG.md)
 
 # What?
 

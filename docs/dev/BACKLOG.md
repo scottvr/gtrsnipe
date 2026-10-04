@@ -1,6 +1,6 @@
 # gtrsnipe backlog
 
-The single list of open work, as of **v0.6.16 (2026-10-03)**. It collates the old parking
+The single list of open work, as of **v0.6.17 (2026-10-04)**. It collates the old parking
 lot, the CHANGELOG's known limitations, the design docs, the v0.3.0-era audit and plans,
 GitHub issues, and findings from recent sessions.
 
