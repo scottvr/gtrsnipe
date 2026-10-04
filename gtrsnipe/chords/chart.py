@@ -9,6 +9,7 @@ from typing import Dict, List, Optional, Tuple
 
 from ..core.chords import Chord
 from ..core.config import MapperConfig
+from ..core.keys import song_key
 from ..core.types import FretPosition, MusicalEvent
 from ..core.types import Song
 from ..guitar.mapper import GuitarMapper
@@ -47,7 +48,7 @@ def _canonical_positions(chord: Chord, mapper: GuitarMapper,
     complete: List[tuple] = []
     best_partial: List[FretPosition] = []
     for octave in range(octaves):
-        pitches = [root0 + 12 * octave + iv for iv in chord.intervals]
+        pitches = [root0 + 12 * octave + iv for iv in chord.voicing]
         positions = _voice_positions(mapper, pitches)
         if len(positions) == len(pitches):
             frets = [p.fret for p in positions]
@@ -74,7 +75,8 @@ def open_positions(chord: Chord, open_high_to_low: List[int], capo: int = 0
 
     Each string is muted, open (if its note is a chord tone) or fretted at 1-4 on a
     chord tone; muted strings only at the low end, so the shape strums. The shape
-    must contain every chord tone (4-note chords may drop the fifth), have the
+    must contain every chord tone (4-note chords may drop the fifth, extended chords
+    their optional tones), have the
     chord's bass on its lowest sounding string, need at most four fretted strings,
     and stretch at most three frets. Doubled tones are welcome: that's what makes
     x32010 a C. One more rule keeps shapes fingerable: two notes on the same fret
@@ -85,8 +87,7 @@ def open_positions(chord: Chord, open_high_to_low: List[int], capo: int = 0
     string; frets count from the capo."""
     from itertools import product
     tones = {(chord.root + iv) % 12 for iv in chord.intervals}
-    fifth = (chord.root + 7) % 12
-    required = tones - ({fifth} if len(tones) >= 4 else set())
+    required = tones - {(chord.root + iv) % 12 for iv in chord.optional}
     bass_pc = chord.bass if chord.bass is not None else chord.root % 12
     opens = [p + capo for p in open_high_to_low]
     n = len(opens)
@@ -269,11 +270,14 @@ def build_chord_sheet(
     kw = {} if chord_tone_threshold is None else {"chord_tone_threshold": chord_tone_threshold}
     # keep_downbeat_bass: an arpeggio's bass, struck once a bar, still counts, so the
     # chart names a bar as --name-chords does over the tab (C07)
-    spans = segment_by_measure(song, keep_downbeat_bass=True, **kw)
+    # chord names are spelled in the song's key: its own, else estimated (and said so)
+    key, key_how = song_key(song)
+    spans = segment_by_measure(song, keep_downbeat_bass=True, key=key, **kw)
 
     title = song.title or "Untitled"
     ts = song.time_signature
-    parts: List[str] = [f"# {title}", "", f"*{ts}, {song.tempo:g} BPM*", ""]
+    key_text = f", {key.name} ({key_how})" if key else ""
+    parts: List[str] = [f"# {title}", "", f"*{ts}, {song.tempo:g} BPM{key_text}*", ""]
     label_of = None
     if shape_names:
         from .shape_names import shape_naming_for_config

@@ -23,6 +23,7 @@ lowers an octave. Time is in beats (quarter notes).
 import re
 from typing import Dict, List, Optional, Tuple
 
+from ...core.keys import FROM_FILE, parse_abc_key
 from ...core.types import MusicalEvent, Song, Track
 
 _LETTER_PC = {"C": 0, "D": 2, "E": 4, "F": 5, "G": 7, "A": 9, "B": 11}
@@ -154,6 +155,8 @@ class AbcParser:
                 st.field(name, value, song)
                 if name == "K" and not in_body:
                     in_body = True
+                    song.key = parse_abc_key(value)
+                    song.key_source = FROM_FILE if song.key else ""
                 continue
             if in_body:
                 st.music(line, track)

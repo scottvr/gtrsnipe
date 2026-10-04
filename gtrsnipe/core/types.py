@@ -2,6 +2,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional, Tuple, List
 
+from .keys import Key
+
 @dataclass
 class TimeSignature:
     numerator: int = 4
@@ -90,3 +92,8 @@ class Song:
     time_signature: str = "4/4"
     title: str = "Untitled"
     tempo_events: List[TempoEvent] = field(default_factory=list)
+    # The song's key, if known: read from the file (a MIDI key-signature event, ABC's
+    # K:) or set by --key. key_source says which (see core.keys.song_key, which falls
+    # back to an estimate from the notes).
+    key: Optional[Key] = None
+    key_source: str = ""

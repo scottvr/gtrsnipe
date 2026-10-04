@@ -9,7 +9,8 @@ charts and ``--name-chords``.
 from dataclasses import dataclass
 from typing import List, Optional, Sequence
 
-from ..core.chords import PITCH_CLASS_NAMES, Chord, identify
+from ..core.chords import Chord, identify
+from ..core.keys import spell_free
 from ..core.theory import note_name_to_pitch
 
 
@@ -54,13 +55,29 @@ def parse_shape(shape: str, num_strings: int) -> List[Optional[int]]:
     return frets
 
 
-def name_shape(shape: str, open_pitches: Sequence[int], capo: int = 0) -> NamedShape:
+def name_shape(shape: str, open_pitches: Sequence[int], capo: int = 0, key=None) -> NamedShape:
     """Name ``shape`` on strings tuned to ``open_pitches`` (MIDI, low to high); a
-    capo raises every string, and frets count from it."""
+    capo raises every string, and frets count from it. ``key`` spells the name; with
+    none, the chord's root takes the spelling of its own simplest key."""
     frets = parse_shape(shape, len(open_pitches))
     pitches = [o + capo + f for o, f in zip(open_pitches, frets) if f is not None]
-    chord = identify(pitches, bass=min(pitches))
+    chord = identify(pitches, bass=min(pitches), key=key, shape=True)
     return NamedShape(shape, frets, pitches, chord)
+
+
+def spell_pitches(named: NamedShape, key=None) -> str:
+    """A shape's notes, spelled as its chord spells them (the third of E is G#, of Ab
+    is C), so the notes agree with the name beside them."""
+    def spell(p):
+        if named.chord is not None:
+            return named.chord.spell(p % 12)
+        return key.spell(p % 12) if key is not None else spell_free(p % 12)
+    out = []
+    for p in named.pitches:
+        name = spell(p)
+        # the octave belongs to the letter: Cb4 is the pitch B3
+        out.append(f"{name}{(p - note_name_to_pitch(name + '4') + 60) // 12 - 1}")
+    return " ".join(out)
 
 
 def run_name_chord(args) -> int:
@@ -84,19 +101,21 @@ def run_name_chord(args) -> int:
     if getattr(args, "shape_names", False):
         from .shape_names import shape_naming
         naming = shape_naming(names, capo, label if label != "custom" else "this tuning")
+    key = getattr(args, "key", None)
+    key = None if key == "auto" else key
     status = 0
     for shape in args.name_chord:
         try:
-            named = name_shape(shape, opens, capo)
+            named = name_shape(shape, opens, capo, key)
         except ValueError as e:
             print(f"Error: {e}")
             status = 1
             continue
-        # spelled with the chord names' sharps, so "E" doesn't sit next to "Ab4"
-        notes = " ".join(f"{PITCH_CLASS_NAMES[p % 12]}{p // 12 - 1}" for p in named.pitches)
+        notes = spell_pitches(named, key)
         shape_col = f"  shape: {naming.name(named.chord)}" if naming and naming.active else ""
         print(f"{shape:<16} {named.label:<10} {notes}{shape_col}")
-    print(f"(tuning {where}; chord names are concert pitch)")
+    spelled = f", spelled in {key.name}" if key is not None else ""
+    print(f"(tuning {where}; chord names are concert pitch{spelled})")
     if naming:
         print(f"({naming.banner})")
     return status

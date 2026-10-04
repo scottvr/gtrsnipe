@@ -18,9 +18,9 @@ G_MAJOR = identify([n(x) for x in ("G2", "B2", "D3", "G3")], bass=n("G2"))
     ("STANDARD", 0, 6, "G"),          # standard, no capo: shape = concert
     ("STANDARD", 2, 6, "F"),          # a capo: the classic capo reading
     ("BARITONE_B", 0, 6, "C"),        # -5: a sounding G is a C shape
-    ("E_FLAT", 0, 6, "G#"),
+    ("E_FLAT", 0, 6, "Ab"),           # no key given: a root is spelled in its own key
     ("BARITONE_A", 0, 6, "D"),
-    ("BASS_E_FLAT", 0, 4, "G#"),      # compared with BASS_STANDARD
+    ("BASS_E_FLAT", 0, 4, "Ab"),      # compared with BASS_STANDARD
 ])
 def test_uniform_tunings_name_shapes(tuning, capo, strings, shape):
     naming = shape_naming_for_config(MapperConfig(tuning=tuning, capo=capo, num_strings=strings))
@@ -37,7 +37,7 @@ def test_drop_and_open_tunings_fall_back_to_concert_pitch_and_say_so(tuning, str
 
 def test_a_custom_tuning_that_is_a_uniform_shift_counts():
     naming = shape_naming(["C#2", "F#2", "B2", "E3", "G#3", "C#4"], 0, "this tuning")
-    assert naming.active and naming.name(G_MAJOR) == "A#"            # sounds 3 lower
+    assert naming.active and naming.name(G_MAJOR) == "Bb"            # sounds 3 lower
     assert not shape_naming(["D2", "A2", "D3"], 0).active             # no 3-string standard
 
 

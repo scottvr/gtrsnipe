@@ -1,10 +1,11 @@
 from .formats import abc, mid, tab, vex
 from .formats.mid.generator import MidiUtilFile
 from .core.theory import note_name_to_pitch, pitch_to_note_name, midi_to_hz
+from .core.keys import DOUBTED, FROM_FILE
 from .core.types import Song, Tuning, Track
 from .core.config import MapperConfig
 from .utils.io import save_text_file, save_midi_file
-from .arguments import setup_parser, build_mapper_config, apply_profiles, open_string_pitches_for
+from .arguments import setup_parser, build_mapper_config, apply_profiles, apply_key, open_string_pitches_for
 from .utils.logger import setup_logger
 from .audio.dynamic_tempo import analyze_dynamic_tempo
 from argparse import ArgumentParser
@@ -177,6 +178,22 @@ def dynamic_quantize_song(intermediate_midi_path: str, processed_audio_path: str
     logger.info(f"--- Dynamic quantization complete. Initial tempo set to {song.tempo:.2f} BPM. ---")
     return song
 
+def transpose_song(song: Song, semitones: int) -> None:
+    """Move every note by ``semitones`` (clamped to MIDI's range), and the song's key
+    with them."""
+    if not semitones or not song.tracks:
+        return
+    logger.info(f"--- Transposing all events by {semitones} semitones ---")
+    for track in song.tracks:
+        for event in track.events:
+            event.pitch = max(0, min(127, event.pitch + semitones))
+    if song.key is not None and song.key_source == DOUBTED:
+        song.key, song.key_source = None, ""          # a likely default: estimate afresh
+    elif song.key is not None:
+        song.key = song.key.transposed(semitones)
+        song.key_source = f"{song.key_source or FROM_FILE}, transposed"
+
+
 class MusicConverter:
     def convert(self, song: Song, from_format: str, to_format: str, 
                 command_line: str,
@@ -202,12 +219,7 @@ class MusicConverter:
                     mapper_config.tuning = 'E_FLAT'
         
 
-        if transpose != 0 and song.tracks:
-            logger.info(f"--- Transposing all events by {transpose} semitones ---")
-            for track in song.tracks:
-                for event in track.events:
-                    event.pitch += transpose
-                    event.pitch = max(0, min(127, event.pitch)) # Clamp to valid MIDI range
+        transpose_song(song, transpose)
 
         if nudge > 0 and song.tracks:
             nudge_unit_in_beats = 0.25
@@ -847,6 +859,7 @@ def main():
                                     open_string_pitches=open_string_pitches_for(tuning_name, custom_names),
                                     sustain=args.sustain)
         
+        apply_key(song, args.key)
         debug_song_state(song, 5, "After Parsing") 
         
         if not song:
@@ -962,6 +975,9 @@ def main():
             elif pitch_shifted > 0:
                 logger.info(f"--- Shifted {pitch_shifted} notes by octaves to fit ---")
 
+        # --transpose, once, for the player and every output (chord charts included)
+        transpose_song(song, args.transpose)
+
         # --- Player mode: visualize instead of writing files (reuses the full
         # preamble above, so --play inherits audio input, normalize, etc.). ---
         if args.play:
@@ -1013,7 +1029,6 @@ def main():
                     from_format=format_to_parse,
                     to_format=to_format,
                     nudge=args.nudge,
-                    transpose=args.transpose,
                     max_line_width=args.max_line_width,
                     no_articulations=args.no_articulations,
                     single_string=args.single_string,

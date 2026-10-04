@@ -49,6 +49,7 @@ def segment_by_measure(
     chord_tone_threshold: float = DEFAULT_CHORD_TONE_THRESHOLD,
     keep_downbeat_bass: bool = False,
     parts: int = 1,
+    key=None,
 ) -> List[ChordSpan]:
     """Return one :class:`ChordSpan` per measure spanned by the song.
 
@@ -59,7 +60,9 @@ def segment_by_measure(
     ``--name-chords``; chord charts keep the plain duration rule.)
 
     ``parts``: split each measure into this many equal windows (2 = half bars) and
-    name each; ``ChordSpan.index`` then counts windows, not measures."""
+    name each; ``ChordSpan.index`` then counts windows, not measures.
+
+    ``key``: the :class:`~gtrsnipe.core.keys.Key` chord names are spelled in."""
     events = sorted(
         (e for track in song.tracks for e in track.events),
         key=lambda e: e.time,
@@ -86,7 +89,7 @@ def segment_by_measure(
         hi = lo + window
         in_measure = [e for e in events if _touches_measure(e, lo, hi)]
         spans.append(_span_for_measure(m, lo, hi, in_measure, chord_tone_threshold,
-                                       keep_downbeat_bass))
+                                       keep_downbeat_bass, key))
     return spans
 
 
@@ -103,7 +106,7 @@ def _touches_measure(event, lo: float, hi: float) -> bool:
 
 
 def _span_for_measure(index, start, end, events, threshold,
-                      keep_downbeat_bass: bool = False) -> ChordSpan:
+                      keep_downbeat_bass: bool = False, key=None) -> ChordSpan:
     if not events:
         return ChordSpan(index=index, start_beat=start, chord=None, pitches=())
 
@@ -139,6 +142,6 @@ def _span_for_measure(index, start, end, events, threshold,
     # Bass is the lowest *kept* chord tone, not the lowest raw event: a dropped
     # passing tone must not become a spurious slash-chord bass.
     bass = voicing[0] if voicing else None
-    chord = identify(voicing, bass=bass)
+    chord = identify(voicing, bass=bass, key=key)
     return ChordSpan(index=index, start_beat=start, chord=chord,
                      pitches=tuple(voicing))

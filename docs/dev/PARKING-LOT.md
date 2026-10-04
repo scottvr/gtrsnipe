@@ -212,6 +212,35 @@ notes are in git history.
   - **An analogy for the paper: hybrid images** (Oliva, Torralba & Schyns, SIGGRAPH 2006).
     One picture reads as two, depending on viewing distance (a spatial-frequency filter). The
     decoder is the key, as the tuning is for a tab.
+- **Key changes: how many keys vs how many changes** (scottvr's question, 2026-10-04: do the
+  offset measures have a role in key-finding, e.g. the correlation vs Euclidean gap?). Claude's
+  reading; nothing here was searched in the literature.
+  - *Not directly.* The offset measures need two note sequences aligned note for note;
+    key-finding compares one unordered pitch-class histogram with a template. And the
+    correlation/Euclidean gap is a normalization choice (correlation is Euclidean distance
+    after centring and scaling each vector). Measured for v0.6.18 on Nottingham and POP909, it
+    moved accuracy by at most two points, in no consistent direction.
+  - *The real link is the transposition.* Key-finding searches the twelve transpositions for
+    the best fit, the same object as the dominant offset behind TI-Hamming.
+  - *Where the vocabulary-vs-switches distinction would apply:* a piece that modulates.
+    Labelling each window with a key is a segmentation; a cost per key change is the switches
+    term (S, a Potts term), and a cost per distinct key used is the richness term (a label
+    cost). Whether existing key-tracking models use the second is unchecked.
+  - Scripts and cached histograms: `/Volumes/LaCie/data/midi/_tmp/keyest/`.
+- **Keys: what v0.6.18 left out** (from C04/C05/F02, 2026-10-04).
+  - **Key changes.** A song has one key. A piece that modulates is spelled in its opening or
+    overall key throughout; MIDI key changes after the first are ignored. Following them
+    needs a key per section (windowed estimates, with a cost for changing key).
+  - **A `// Key:` line in tab headers**, so a tab carries its key through a round trip. Today
+    a tab has no key and its chord names are spelled from an estimate. (It would change every
+    tab's header, so it needs the golden cases checked.)
+  - The fallback MIDI reader (py-midi) doesn't read the key signature.
+  - **A stricter estimate when it matters.** The profile method is right about nine times in
+    ten. The usual errors are a fifth away or the relative key; the first and last bass notes
+    and the final chord would catch many of them.
+  - **Inversions of extended chords** (C9/E) aren't named: an extended name needs its root in
+    the bass. Chord-chart diagrams for extended chords come from a fixed four-note voicing.
+  - `--transpose` still runs after the range filter (see the code-bugs entry below).
 - **Code bugs found by the docs audit (H06, 2026-09-28)**, see `DOCS-AUDIT.md`. Fixed
   already (v0.6.10): the six tunings `--tuning` rejected; the inverted or off-by-one help
   texts; and `--stem-track`, which crashed on every run since v0.3.0 (a NameError) and never

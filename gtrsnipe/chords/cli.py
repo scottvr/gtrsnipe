@@ -11,6 +11,8 @@ from typing import Optional, Sequence
 
 from ..arguments import (
     add_chart_args,
+    add_key_arg,
+    apply_key,
     add_mapper_args,
     add_profile_args,
     add_tuning_args,
@@ -34,7 +36,9 @@ def _build_arg_parser() -> argparse.ArgumentParser:
                    help="For MIDI input: 1-indexed track to analyze (default: all).")
     add_tuning_args(p.add_argument_group("Instrument"))
     add_mapper_args(p.add_argument_group("Mapper (advanced)"))
-    add_chart_args(p.add_argument_group("Chord chart"))
+    chart = p.add_argument_group("Chord chart")
+    add_chart_args(chart)
+    add_key_arg(chart)
     add_profile_args(p)
     return p
 
@@ -54,6 +58,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         args.input, fmt, args.track,
         open_string_pitches=open_string_pitches_for(cfg.tuning, cfg.custom_tuning))
     song.title = song.title if song.title and song.title != "Untitled" else Path(args.input).stem
+    apply_key(song, args.key)
 
     sheet = build_chord_sheet(
         song, cfg,
