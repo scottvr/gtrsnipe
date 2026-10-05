@@ -212,6 +212,14 @@ notes are in git history.
   - **An analogy for the paper: hybrid images** (Oliva, Torralba & Schyns, SIGGRAPH 2006).
     One picture reads as two, depending on viewing distance (a spatial-frequency filter). The
     decoder is the key, as the tuning is for a tab.
+- **Compose a piece for two tunings** (scottvr, 2026-10-05). Write a piece on purpose so
+  that one tab plays it in one tuning and a different piece in another: a homograph by
+  design, where every example so far pairs two existing tunes. Composing lets the offsets be
+  chosen first (which strings carry which interval) and the comfort be designed in, instead of
+  searched for.
+- **Compose a polyphonic piece for two tunings** (scottvr, 2026-10-05). The same, with more
+  than one voice at a time. The theorem already allows chords (one note per string at a time),
+  and every example so far is a single melody line.
 - **Key changes: how many keys vs how many changes** (scottvr's question, 2026-10-04: do the
   offset measures have a role in key-finding, e.g. the correlation vs Euclidean gap?). Claude's
   reading; nothing here was searched in the literature.
