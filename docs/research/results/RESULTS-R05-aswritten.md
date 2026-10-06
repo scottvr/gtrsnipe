@@ -136,6 +136,11 @@ fingering was added on 2026-09-28; rerunning the other two reproduced their coun
   output of option sets scottvr tuned until the result matched how he plays it. None was
   collected from a third-party tab site. Third-party tabs are the natural next input.
 - Timing is taken as steady notes. That is true of these two pieces, not of tabs in general.
+- **Checked after v0.6.19's tab-reading fix (2026-10-05).** That release changed how a tab's
+  onset times are read where it has two-digit frets, which moved the decoded onsets of
+  Asturias v1, v2 and v5 (not the Bach tabs or v3, v4, v6). Re-running this test on those
+  three gave the same output line for line: the test uses the notes' order, strings and
+  pitches, and only asks that the *corpus* passage be evenly spaced. The numbers above stand.
 - Single notes only. Chord onsets break windows, which is why v1 has none.
 - "Unrelated-sounding" is the R04 proxies (C₁, contour, mechanical), not a listening test.
 - The corpora contain neither piece (Lakh has other Bach, not this suite), so no hit is
