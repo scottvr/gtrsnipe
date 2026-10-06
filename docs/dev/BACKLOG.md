@@ -1,6 +1,6 @@
 # gtrsnipe backlog
 
-The single list of open work, as of **v0.6.18 (2026-10-04)**. It collates the old parking
+The single list of open work, as of **v0.6.18 (2026-10-05)**. It collates the old parking
 lot, the CHANGELOG's known limitations, the design docs, the v0.3.0-era audit and plans,
 GitHub issues, and findings from recent sessions.
 
@@ -55,19 +55,30 @@ stay open, low priority.
 - R10–R12, the scan and similarity follow-ups;
 - R13, the literature search for the stutter-invariance principle.
 
-### Step 3: features, one at a time (next)
+### Step 3: features, one at a time ✓ (v0.6.6–v0.6.18)
 
 B07 ✓ and F06 ✓ (v0.6.6), F03 ✓ (v0.6.7), P01 ✓ (v0.6.8), P03 ✓ (v0.6.9); a docs
 interlude (H05, H06; v0.6.10). C01 with C06 ✓ (v0.6.11), F04 ✓ (v0.6.12), C03 ✓ (v0.6.13), and the R03
 follow-ups (R12, R15; v0.6.14), C02 ✓ (v0.6.15), C07 ✓ (v0.6.16), C04, C05 and F02 ✓ together
-(v0.6.18; v0.6.17 was the public roll-up of 0.6.10–0.6.16). Next: triage the parking lot, then
-F01 VexTab articulations, P02 tempo changes, P04 pager search, P05 other renderers, …
+(v0.6.18; v0.6.17 was the public roll-up of 0.6.10–0.6.16). Still open from this step's list:
+F01 VexTab articulations, P02 tempo changes, P04 pager search, P05 other renderers.
 
-Then, as before (swap freely if something else is more fun): P01 true note durations in
-playback, P03 instrument defaults from the MIDI file, C01 chord names over the tab, F04
-tension display, C03 shape-relative chord names, C02 open-position chord voicings, then
-C04/C05/F02 together (they share key-aware spelling), F01 VexTab articulations, P02 tempo
-changes, P04 pager search, P05 other renderers.
+**Triage at the end of this step (2026-10-05).** From the parking lot into the backlog: the
+open code bugs (B08–B22, H08), the playability group (M01–M07), the tab checker's follow-ups
+(F07) and homograph comfort (R16). Their design notes are in
+[`NOTES-playability.md`](NOTES-playability.md). Kept parked: more strings for homographs,
+`--min-note-length`, the flatwound suffix, optimizer objectives, learned weights, and what the
+keys work left out.
+
+### Step 4: a bug sweep, then playability (next)
+
+1. **The bug sweep** (B08–B22, H08): the open code bugs and the tab-reading wobble, in one
+   release.
+2. **The measuring stick** (M01–M03): the weights audit, Viterbi vs greedy across a corpus,
+   and a first tab difficulty measure. The later playability items depend on it.
+3. Then choose: **chosen compromises** (M05 optional notes, M06 a hand profile, then M07
+   beginner's-version tabs), or M04, the search for an easier tuning.
+4. Whenever the homograph side has time: F07 and R16 (with R14).
 
 ---
 
@@ -79,6 +90,21 @@ changes, P04 pager search, P05 other renderers.
 |---|---|---|---|
 | B05 | `-i x.tab --play` re-optimizes the tab's fingering instead of playing it as written. It needs a way (e.g. `--as-written`) to keep the tab's own strings and frets. | S–M | session notes |
 | B07 | ✓ v0.6.6 **`MidiReader` drops MIDI track names** (mido path). Fixed; tab titles for named tracks now read "Title (Melody)". | S | R01, parking lot |
+| B08 | A failed conversion exits with status 0 (the error is only logged), so a script can't tell it from a good one. | S | docs audit |
+| B09 | `--bass` overrides any `--tuning`, including `BASS_DROP_D`. | S | docs audit |
+| B10 | `--tuning PIANO` always fails ("can only be used with MIDI output"), even with `-o x.mid`. | S | docs audit |
+| B11 | `--transpose` runs after the range filter and `--normalize-pitch`: notes that would fit once transposed are dropped first. | S | docs audit |
+| B12 | `--analyze` on a tab ranks the tab's own header tuning as an extra CUSTOM row; a long name breaks the columns. | S | README pass |
+| B13 | `gtrsnipe-chords` prints "Could not find a playable fingering" warnings from its register search when the sheet is fine. | S | docs audit |
+| B14 | `gtrsnipe-play` on a missing file shows a traceback. | S | docs audit |
+| B15 | The converter prints both "Successfully saved to X" and "Successfully saved X". | S | docs audit |
+| B16 | `gtrsnipe-research profile` suggests `--homograph-subdivide`; its own flag is `--subdivide`. | S | docs audit |
+| B17 | `--mono-lowest-only`'s help overstates what it does (it affects ASCII tab rendering only). | S | docs audit |
+| B18 | The player's help overlay omits `home`, `enter` and `p`. | S | docs audit |
+| B19 | `map_multi_string` returns early (no groups) without resetting `last_path_score`. | S | docs audit |
+| B20 | `player/clock.py` is dead code. | S | docs audit |
+| B21 | **Tab reading: onsets wobble at barlines and two-digit frets.** The wiki's steady-sixteenth tabs decode with gaps of 0.375–0.625 beats. | S–M | R05 |
+| B22 | The fallback MIDI reader (py-midi) doesn't read the key signature. | S | v0.6.18 |
 
 ### Research: homograph phase 3 and the offset profile
 
@@ -92,6 +118,7 @@ changes, P04 pager search, P05 other renderers.
 | R13 | **Literature search for the stutter-invariance principle** (*scottvr, in progress*): the checklist in `PROOF-alignment.md`, "Citations to verify". Needed before any novelty claim about the general statement. | S–M | R07, parking lot |
 | R14 | **Third-party tabs as written**: R05's natural next input (tabs from community sites, checked against a reference MIDI). Kept local for copyright reasons. Pairs with the tab checker (parking lot). | M | R05, docs audit |
 | R15 | ✓ v0.6.14 **The R03 follow-ups** (scottvr, 2026-09-29): phrase- and motif-level retrieval on MTC-ANN's annotations, alignment-based baselines (interval and pitch DTW), and the §6 reuse hypothesis. | M | parking lot |
+| R16 | **Homograph comfort: offer every compatible string to each interval class.** Today a class may use only its assigned strings plus one spare, so the measured discomfort is an upper bound (a plain transposition still costs 0.57 points per note). Also: under a comfort limit, middle mode is no longer a superset of anchored. | M | F06, parking lot |
 
 ### Player and audio
 
@@ -116,6 +143,20 @@ changes, P04 pager search, P05 other renderers.
 | C06 | ✓ v0.6.11 **`--name-chord SHAPE`**: name a fret shape (`x,x,3,2,1,0`) in any tuning, with no input file. | S | scottvr, parking lot |
 | C07 | ✓ v0.6.16 **Chart voicing modes** (scottvr, 2026-10-03): `--chart-voicing source` (default: the song's own fingering, where one hand shape holds it), `compact`, `open`; the header states the mode; charts name bars as `--name-chords` does. | M | scottvr |
 
+### Mapper and playability
+
+Design notes: [`NOTES-playability.md`](NOTES-playability.md).
+
+| ID | Item | Size | Source |
+|---|---|---|---|
+| M01 | **Weights audit**: each score term's feature and unit; the defaults as exchange rates (one fret of hand travel = 1); which weights are structural and which are taste; priorities disguised as big numbers; `barre_bonus`/`barre_penalty` as one knob; open strings scoring no better than fretted notes. | M | scottvr, parking lot |
+| M02 | **Viterbi vs greedy across a corpus**: does the Viterbi mapper's improvement generalize? Score per note, hand travel and big jumps on a corpus sample, not one piece. | M | scottvr, docs audit |
+| M03 | **A tab difficulty measure**: objective complexity from the tab (travel, stretches, speed at tempo, chord changes, barres, position shifts), after a literature search, validated against graded repertoire. | M–L | scottvr |
+| M04 | **Search for an easier tuning** than the traditional one: local search on the mapper's score over nearby tunings, string physics as a constraint, the traditional tuning's score reported beside the best found. | M | scottvr |
+| M05 | **Optional notes**: let the user change what gets tabbed (`--max-chord-notes`, top-three and shell voicings; then a drop cost per note by musical importance), with what was dropped reported. | M–L | scottvr |
+| M06 | **A hand profile**: which fingers are available (accessibility), for chord shapes and for the mapper's span and movement costs. | M | scottvr |
+| M07 | **Beginner's-version tabs**: a simplified, disclosed version of a complex tab, from M05 and M06 plus the difficulty measure. | M | scottvr |
+
 ### Formats and analysis
 
 | ID | Item | Size | Source |
@@ -126,6 +167,7 @@ changes, P04 pager search, P05 other renderers.
 | F04 | ✓ v0.6.12 **Tension display outside homographs**: `--show-tuning` with gauges and tensions as a retune of your guitar; warnings for custom tunings; `--solve-tuning` notes pitches past steel. Also re-entrant gauge order and the documented `p` suffix. | S | parking lot |
 | F05 | **Pretty PDF tab output**: typeset tabs as a PDF worth printing (title and header, clean staff lines, measure bars, tuning key, maybe rhythm stems or notation). Intended eventually. The empty stub goes in step 1 so it isn't mistaken for a feature; this item is where PDF output comes back. | M–L | code stub; D6 |
 | F06 | ✓ v0.6.6 **Playability of homograph tabs**: discomfort per note vs A's own best tab, `--homograph-max-discomfort`, `scan --max-discomfort/--max-fret`. Comfort filters hard: 19/50 sampled folk pairs within 50 points per note, 0 within 5. | S + M | R04, parking lot |
+| F07 | **Tab checker follow-ups**: a `--check-tab REF` that lists every conflicting note and bar (not just the first bad string); partial alignment for tabs with a few missing or extra notes; batch mode over many tabs of one song. | M | parking lot |
 
 ### Tests and housekeeping
 
@@ -135,3 +177,4 @@ changes, P04 pager search, P05 other renderers.
 | H03 | Wiki: document v0.6.0 (homographs, string physics, `.tab` header behavior). | S–M | release |
 | H05 | ✓ v0.6.10 **Docs reorg** (interlude in step 3): `docs/app/` (how gtrsnipe works), `docs/research/` (theory, literature, results), `docs/dev/` (process); a map in `docs/README.md`. | S | scottvr, 2026-09-28 |
 | H06 | ✓ v0.6.10 **State-of-the-docs audit**: every doc marked current, stale or wrong, with the fixes needed; agree the list, then apply it. | M | scottvr, 2026-09-28 |
+| H08 | The Viterbi tests the design doc promised but that don't exist: an exact tie, the second-order "landmine guard", and `hard_enum_cap`. | S | docs audit |
