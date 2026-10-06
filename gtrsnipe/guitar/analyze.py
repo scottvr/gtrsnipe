@@ -97,17 +97,18 @@ def format_ranking(scores: Sequence[TuningScore]) -> str:
         return "No tuning fits the song's range."
     best = next((s.per_note for s in scores if s.per_note is not None and s.placed == s.notes),
                 None)
+    width = max(22, *(len(s.name) for s in scores))        # a custom tuning's name is long
     lines = ["Tunings ranked by playability (the mapper's score per note with your current",
              "settings; higher is easier; 'vs best' = points per note harder than the easiest;",
              "ties go to less hand travel, then more open strings):",
-             "  rank  tuning                  strings  score/note  vs best   frets   "
+             f"  rank  {'tuning':{width}}  strings  score/note  vs best   frets   "
              "travel/note  open"]
     for k, s in enumerate(scores, 1):
         pn = "      -" if s.per_note is None else f"{s.per_note:7.2f}"
         vs = ("      -" if s.per_note is None or best is None else
               "   best" if abs(s.per_note - best) < 5e-3 else f"{best - s.per_note:+7.2f}")
         note = "" if s.placed == s.notes else f"   ({s.notes - s.placed} notes not placed)"
-        lines.append(f"  {k:4d}  {s.name:22}  {s.strings:7d}  {pn:>10}  {vs:>7}   "
+        lines.append(f"  {k:4d}  {s.name:{width}}  {s.strings:7d}  {pn:>10}  {vs:>7}   "
                      f"{s.lo_fret:2d}-{s.hi_fret:<2d}   {s.travel:11.2f}  {100 * s.open_share:3.0f}%"
                      f"{note}")
     return "\n".join(lines)

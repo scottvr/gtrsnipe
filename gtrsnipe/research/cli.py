@@ -160,6 +160,7 @@ def cmd_profile(a) -> int:
     rhythm = a.rhythm if a.rhythm in ("strict", "sequence") else float(a.rhythm)
     prof, why = profile_songs(sa, sb, rhythm=rhythm, subdivide=a.subdivide)
     if prof is None:
+        why = why.replace("--homograph-subdivide", "--subdivide").replace("--homograph-rhythm", "--rhythm")
         print(f"{la} and {lb} don't align: {why}", file=sys.stderr)
         return 1
     if a.json:

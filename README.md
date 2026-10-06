@@ -4,8 +4,8 @@
 
 Convert to and from .mid, .abc, .vex, and .tab files. (and more.)
 
-## v0.6.18
-Released 2026-10-04. See [CHANGELOG](https://github.com/scottvr/gtrsnipe/blob/main/CHANGELOG.md)
+## v0.6.19
+Released 2026-10-05. See [CHANGELOG](https://github.com/scottvr/gtrsnipe/blob/main/CHANGELOG.md)
 
 # What?
 
@@ -577,7 +577,7 @@ An abridged reference, grouped as in `gtrsnipe --help`. Run `gtrsnipe --help` fo
 - `--analyze`: Rank the tunings whose range fits the song by how playable its tab is in each (the mapper's score per note with your settings, frets, hand travel, open strings), then exit. No `-o` needed; `--bass` ranks bass tunings.
 - `--solve-tuning NOTES`: Inverse solve: given a comma-separated target melody (note names with octave, e.g. `'C4,C4,G4,G4,A4,A4,G4'`), find a tuning under which an all-open-string tab plays it. Prints the tuning; add `--play` to hear it, or `-o FILE.tab/.mid` to write it. No `-i` needed.
 - `--max-strings MAX_STRINGS`: Max strings the tuning solver (and `--homograph-mode free`) may use (default: 12).
-- `--transpose TRANSPOSE`: Transpose the music up or down by N semitones (e.g., 2 for up, -3 for down). Applies to every output and to `--play`; the key moves with the notes.
+- `--transpose TRANSPOSE`: Transpose the music up or down by N semitones (e.g., 2 for up, -3 for down). Applied first, before the range filter and `--analyze`, so it reaches every output and `--play`; the key moves with the notes.
 - `--key KEY`: The song's key (`Eb`, `F#m`, `'D dorian'`). It spells chord names (Ab or G#) in chord charts, `--name-chords` and `--name-chord`, and sets the key signature and note spelling of ABC output. Default: the file's own key (ABC `K:`, a MIDI key signature), else an estimate from the notes; `auto` always estimates. See [Chord charts](#chord-charts).
 - `--no-articulations`: Transcribe with no legato, taps, hammer-ons, pull-offs, etc.
 - `--staccato`: Do not extend note durations to the start of the next note, instead giving each note an 1/8 note duration. When converting from ASCII tab.
@@ -589,14 +589,14 @@ An abridged reference, grouped as in `gtrsnipe --help`. Run `gtrsnipe --help` fo
 
 **Instrument options**
 - `--capo CAPO`: Specify a capo position. All fret numbers will be relative to the capo.
-- `--tuning NAME`: Specify the guitar tuning, or `PIANO` for full-range MIDI passthrough (default: STANDARD). NAME is any tuning in [the list below](#current-supported-instrument-tunings).
+- `--tuning NAME`: Specify the guitar tuning, or `PIANO` for full-range MIDI passthrough: every note kept, MIDI output only (default: STANDARD). NAME is any tuning in [the list below](#current-supported-instrument-tunings).
 - `--num-strings {4,5,6,7}`: Force the number of strings on the tab staff (4, 5, 6, or 7). Defaults to 4 for bass and 6 for guitar.
 - `--max-fret MAX_FRET`: Maximum fret number on the virtual guitar neck (default: 24).
 - `--tuning-pitches LOW,..,HIGH`: Define a custom tuning by comma-separated note names, low string to high (e.g. `'A1,E2,A2,D3,F#3,B3'`). Overrides `--tuning`.
 - `--scale-length INCHES`: Scale length for string-tension physics (default: 25.5 guitar, 27 baritone, 34 bass).
 - `--string-gauges GAUGES`: String gauges for tension physics, low string first like `--tuning-pitches` (a thin-to-thick set such as `'10 13 17 26w 36w 46w'` is flipped for you, except for a re-entrant tuning such as Nashville, which is read as written). `w` = wound, `p` = plain; unsuffixed gauges above .020 count as wound (a plain .022 is `22p`). Default: 10-46 for STANDARD (10-59 7-string, 13-62 BARITONE_B, 45-105 bass), else a balanced set designed for the tuning.
 - `--drop-low-string SEMITONES`: Lower the lowest string by N semitones (2 = drop-D style), on any tuning / string count.
-- `--bass`: Enable bass mode. Automatically uses bass tuning and a 4-string staff. It always selects BASS_STANDARD, overriding `--tuning`; for another bass tuning, pass `--tuning BASS_DROP_D` or `--tuning BASS_E_FLAT` without `--bass`.
+- `--bass`: Bass mode: a 4-string staff in the bass version of `--tuning` (BASS_STANDARD by default; with `--tuning DROP_D` or `E_FLAT`, BASS_DROP_D or BASS_E_FLAT; a `BASS_` tuning is used as it is). A tuning with no bass version is an error.
 - `--velocity-cutoff [0-127]`: Ignore MIDI notes with a velocity lower than this value (default: 0).
 - `--min-note-override MIN_NOTE_OVERRIDE`: Override the calculated lowest note for frequency constraining (e.g., `'E2'`). Ignored with `--no-constrain-frequency`.
 - `--max-note-override MAX_NOTE_OVERRIDE`: Override the calculated highest note for frequency constraining (e.g., `'E4'`). Ignored with `--no-constrain-frequency`.
@@ -624,7 +624,7 @@ An abridged reference, grouped as in `gtrsnipe --help`. Run `gtrsnipe --help` fo
 
 **Mapper tuning/configuration (advanced)**
 - `--optimizer {viterbi,greedy}`: Fretboard mapping strategy: `viterbi` (global DP optimum, default) or `greedy` (legacy per-step choice).
-- `--mono-lowest-only`: Force monophonic output by keeping only the lowest note in any chord.
+- `--mono-lowest-only`: ASCII tab output only: where notes sound together, write just the one on the lowest string. Other outputs and playback keep every note.
 - `--fret-span-penalty FRET_SPAN_PENALTY`: Penalty for wide fret stretches (default: 100.0).
 - `--movement-penalty MOVEMENT_PENALTY`: Penalty for hand movement between chords (default: 3.0).
 - `--string-switch-penalty STRING_SWITCH_PENALTY`: Penalty for switching strings (default: 5.0).
@@ -652,7 +652,7 @@ An abridged reference, grouped as in `gtrsnipe --help`. Run `gtrsnipe --help` fo
 
 **Full audio-to-tab transcription**
 
-Run the complete pipeline on a mixed audio file to generate a bass tab in drop D. (`--bass` would force BASS_STANDARD, so the bass tuning is named without it.)
+Run the complete pipeline on a mixed audio file to generate a bass tab in drop D. (`--bass --tuning DROP_D` selects the same tuning.)
 
 [`gtrsnipe -i x:\S.O.D.mp3 -o march_of_the_S.O.D.tab --stem-track bass --tuning BASS_DROP_D -y`](https://github.com/scottvr/gtrsnipe/wiki/v0.2.0)
 

@@ -169,3 +169,100 @@ def test_viterbi_handles_chords_matches_bruteforce():
 
 def test_empty_input_returns_empty():
     assert make_mapper().map_events_to_fretboard([], no_articulations=True) == []
+
+
+# -- H08: the tests the design doc promised --------------------------------------------
+
+FLAT = dict(fret_span_penalty=0.0, movement_penalty=0.0, string_switch_penalty=0.0,
+            high_fret_penalty=0.0, sweet_spot_bonus=0.0, fretted_open_penalty=0.0)
+
+
+def test_an_exact_tie_goes_to_the_lexicographically_smallest_path():
+    """With every weight at zero all paths score the same, so the tie-break alone
+    decides: the smallest candidate (highest string, then lowest fret) at every
+    stage (DESIGN-viterbi-mapper §5)."""
+    mapper = make_mapper(**FLAT)
+    notes = [ev(0.0, 64), ev(0.5, 67), ev(1.0, 69), ev(1.5, 64)]
+    groups = _groups(mapper, notes)
+    cands = [mapper.generate_candidates(g) for g in groups]
+    assert all(len(c) > 1 for c in cands)                       # there is a choice at every stage
+    scores = {mapper._score_fingering(f, p, None) for f in cands[1] for p in cands[0]}
+    assert scores == {0.0}                                       # and it is a real tie
+    mapped = mapper.map_multi_string(groups)
+    assert [(e.string, e.fret) for e in mapped] == [min(GuitarMapper._cand_key(f) for f in c)[0]
+                                                     for c in cands]
+    assert mapper.last_path_score == 0.0
+
+
+def _ungated_reads(source):
+    """Lines where a scorer's source reads prev_prev_fingering outside an `if` on
+    let_ring_bonus nested in one on diagonal_span_penalty (being in such an `if`'s own
+    test counts, being in its `else` doesn't)."""
+    import ast
+    import textwrap
+    fn = ast.parse(textwrap.dedent(source)).body[0]
+    parent = {child: node for node in ast.walk(fn) for child in ast.iter_child_nodes(node)}
+    bad = []
+    for node in ast.walk(fn):
+        if not (isinstance(node, ast.Name) and node.id == "prev_prev_fingering"):
+            continue
+        gates, child = "", node
+        while child in parent:
+            up = parent[child]
+            if isinstance(up, ast.If) and child not in up.orelse:
+                gates += ast.dump(up.test)
+            child = up
+        if not ("let_ring_bonus" in gates and "diagonal_span_penalty" in gates):
+            bad.append(node.lineno)
+    return bad
+
+
+def test_the_scorer_reads_no_history_deeper_than_two_steps():
+    """The landmine guard (DESIGN-viterbi-mapper §2.3). The DP's states carry at most
+    the fingering two steps back, and only when let-ring and the diagonal span check
+    are both on. If the scorer learns to look further back, or reads t-2 anywhere
+    else, the search stops being exact: update `second_order` in map_multi_string
+    and this test together."""
+    import inspect
+    source = inspect.getsource(GuitarMapper._score_fingering)
+    params = list(inspect.signature(GuitarMapper._score_fingering).parameters)
+    assert params == ["self", "fingering", "prev_fingering", "prev_prev_fingering"]
+    assert "prev_prev_fingering:" in source                     # it is still read somewhere
+    assert _ungated_reads(source) == []
+    # the DP turns its pair-states on under exactly that gate
+    dp = inspect.getsource(GuitarMapper.map_multi_string)
+    assert "second_order = bool(self.config.diagonal_span_penalty and self.config.let_ring_bonus > 0)" in dp
+    # the check itself catches a read outside the gate, or in a gate's else branch
+    leak = "def f(self, fingering, prev_fingering, prev_prev_fingering):\n" \
+           "    if prev_prev_fingering:\n        return 1\n    return 0\n"
+    assert _ungated_reads(leak) == [2]
+    half = "def f(self, fingering, prev_fingering, prev_prev_fingering):\n" \
+           "    if self.config.diagonal_span_penalty:\n" \
+           "        if self.config.let_ring_bonus > 0:\n            pass\n" \
+           "        else:\n            return len(prev_prev_fingering)\n"
+    assert _ungated_reads(half) == [6]
+
+
+def test_hard_enum_cap_limits_candidates_and_says_so(caplog):
+    """The safety valve: past the cap, enumeration stops, a warning says the group
+    may be non-optimal, and the mapper still returns a fingering."""
+    chord = [ev(0.0, p) for p in (52, 55, 59, 64)]               # E3 G3 B3 E4
+    full = make_mapper().generate_candidates(chord)
+    assert len(full) > 3
+    capped = make_mapper(hard_enum_cap=3)
+    with caplog.at_level("WARNING", logger="gtrsnipe.guitar.mapper"):
+        some = capped.generate_candidates(chord)
+    assert len(some) == 3 and set(some) <= set(full)
+    assert some == sorted(some, key=GuitarMapper._cand_key)
+    assert "hard_enum_cap (3) hit" in caplog.text
+    mapped = capped.map_multi_string([chord])
+    assert len(mapped) == 4 and len({e.string for e in mapped}) == 4
+
+
+def test_a_reused_mapper_forgets_the_last_score():
+    mapper = make_mapper()
+    mapper.map_multi_string([[ev(0.0, 64)]])
+    assert mapper.last_path_score is not None
+    assert mapper.map_multi_string([]) == [] and mapper.last_path_score is None
+    mapper.map_multi_string([[ev(0.0, 64)]])
+    assert mapper.map_multi_string([[ev(0.0, 5)]]) == [] and mapper.last_path_score is None   # unplayable

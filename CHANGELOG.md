@@ -10,6 +10,54 @@ and Cargo apply to 0.x version ranges. Full SemVer applies from 1.0.0. The publi
 is the CLI flags and the file formats gtrsnipe reads and writes; report wording is
 not part of it.
 
+## [0.6.19] — 2026-10-05
+
+Step 4 begins with a bug sweep (backlog B08–B22, H08): the open code bugs from the docs audit
+and later passes, and how tabs are read back.
+
+### Fixed
+- **A failed conversion now exits with status 1.** It used to log "An error occurred" and
+  exit 0, so a script couldn't tell a failure from a success. Producing no output for a
+  requested file is also an error now.
+- **`--transpose` is applied first,** before the range filter, `--normalize-pitch` and
+  `--analyze`. Notes that fit once transposed are no longer dropped beforehand.
+- **`--bass` no longer overrides `--tuning`.** It selects the bass version of the tuning:
+  BASS_STANDARD by default, BASS_DROP_D for `--tuning DROP_D`, and a `BASS_` tuning as it is.
+  A tuning with no bass version is an error.
+- **`--tuning PIANO` works again.** It failed on every run, even with MIDI output. It passes
+  every note through to a `.mid` file; other outputs are refused, as intended.
+- **A tab gtrsnipe wrote reads back with even timing.** A two-digit fret pushed the notes
+  after it one column to the right, and the reader took that column for time: steady
+  sixteenths came back as 0.25, 0.375, 0.25 beats. This applies to tabs with gtrsnipe's
+  `// Tuning` header, old and new; tabs from elsewhere are read by their columns, as before.
+  (Of the example tabs in `examples/aswritten/`, Asturias v1, v2 and v5 now decode with
+  steadier onsets; the R05 counts published for those three were computed before this fix.)
+- **`--analyze` on a tab** no longer ranks the tab's own tuning as an extra "CUSTOM" row when
+  it is a named tuning, and a long custom name no longer breaks the columns.
+- **`gtrsnipe-chords`** no longer warns "Could not find a playable fingering" about voicings
+  its own diagram search tried and rejected.
+- **`gtrsnipe-play` and `gtrsnipe-chords`** report an unreadable file in one line instead of
+  a traceback.
+- **The fallback MIDI reader** (used when the main one can't read a file) no longer loses a
+  track over a flat key signature, no longer scans its first track before parsing it, and
+  never parses a track twice. It is still the weaker reader; replacing it is parked.
+- One "Successfully saved" message per output, not two.
+- `gtrsnipe-research profile` names its own flags (`--subdivide`, `--rhythm`) in its hints.
+- `--mono-lowest-only`'s help says what it does: ASCII tab output only.
+- The player's help overlay lists every key it answers to (`enter`, `p`, `home`).
+- A reused mapper no longer reports the previous song's score after an empty run.
+
+### Changed
+- **Exit status:** scripts that relied on gtrsnipe exiting 0 after an error will now see 1.
+
+### Removed
+- `gtrsnipe/player/clock.py`, dead since the transport replaced it in v0.5.0.
+
+### Tests
+- The three Viterbi tests the design doc promised: an exact tie (the smallest fingering wins
+  at every stage), a guard that fails if the scorer reads history it shouldn't, and the
+  enumeration cap.
+
 ## [0.6.18] — 2026-10-04
 
 Step 3 continues: C04, C05 and F02 from `docs/dev/BACKLOG.md`, done together because they share

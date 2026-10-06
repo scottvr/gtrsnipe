@@ -352,6 +352,7 @@ class GuitarMapper:
         the true f_{t-2}. See DESIGN-viterbi-mapper.md.
         """
         NONE = -1  # sentinel index for "no fingering" (absent prev / prev_prev)
+        self.last_path_score = None    # until this call finds a path (the early returns below)
 
         kept: List[List[MusicalEvent]] = []
         cand: List[List[Fingering]] = []
