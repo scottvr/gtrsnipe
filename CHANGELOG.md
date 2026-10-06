@@ -31,7 +31,8 @@ and later passes, and how tabs are read back.
   sixteenths came back as 0.25, 0.375, 0.25 beats. This applies to tabs with gtrsnipe's
   `// Tuning` header, old and new; tabs from elsewhere are read by their columns, as before.
   (Of the example tabs in `examples/aswritten/`, Asturias v1, v2 and v5 now decode with
-  steadier onsets; the R05 counts published for those three were computed before this fix.)
+  steadier onsets. Re-running the R05 as-written test on those three gave the published
+  counts exactly: it compares the notes' order, strings and pitches, not their onset times.)
 - **`--analyze` on a tab** no longer ranks the tab's own tuning as an extra "CUSTOM" row when
   it is a named tuning, and a long custom name no longer breaks the columns.
 - **`gtrsnipe-chords`** no longer warns "Could not find a playable fingering" about voicings
