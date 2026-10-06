@@ -10,10 +10,21 @@ from typing import Union
 import mido
 from MIDI import MIDIFile, Events  
 
-from ...core.keys import DOUBTED, FROM_FILE, Key, parse_key
+from ...core.keys import DOUBTED, FROM_FILE, Key, note_name, parse_key
 from ...core.types import Song, TimeSignature, Track, MusicalEvent
 
 logger = logging.getLogger(__name__)
+
+# py-midi reads a key signature's count of flats as an unsigned byte (0xFD for three
+# flats) and fails on it, which loses the whole track. Give it the signed count.
+_py_midi_key = Events.meta.MetaEventKinds.key
+
+
+def _signed_key(self, n):
+    return _py_midi_key(self, n - 256 if n > 127 else n)
+
+
+Events.meta.MetaEventKinds.key = _signed_key
 
 # Shortest note the reader keeps, in beats. It was 0.25 (a sixteenth), which
 # stretched every shorter note -- including audio-transcription blips -- into a
@@ -122,7 +133,33 @@ class MidiReader:
         if not midi_file.tracks:
             return song
 
-        # Initial metadata scan from the first track
+        parsed = set()
+
+        def parse_track(i, track_data):
+            """Parse a track once (a second parse would double its events); py-midi
+            reports failures on stderr, so that is what decides."""
+            if i in parsed:
+                return
+            parsed.add(i)
+            error_buffer = io.StringIO()
+            with redirect_stderr(error_buffer):
+                try:
+                    track_data.parse()
+                except Exception:
+                    pass  # We check the stderr buffer to know if it really failed
+            error_output = error_buffer.getvalue()
+            if error_output:
+                logger.error(
+                    f"The 'py-midi' library produced an error while parsing Track {i + 1}:\n"
+                    f"--- Library Stderr ---\n"
+                    f"{error_output.strip()}\n"
+                    f"----------------------"
+                )
+                raise RuntimeError(f"Primary parser failed on Track {i + 1} due to stderr output.")
+
+        # Tempo, meter and key from the first track (parsed first: its events are
+        # empty until then)
+        parse_track(0, midi_file.tracks[0])
         for event in midi_file.tracks[0].events:
             if isinstance(event, Events.MetaEvent):
                 if event.message == Events.meta.MetaEventKinds.Set_Tempo:
@@ -132,6 +169,10 @@ class MidiReader:
                     den = event.attributes["denominator"]
                     song.time_signature = f"{num}/{den}"
                     time_sig_obj = TimeSignature(int(num), int(den))
+                elif event.message == Events.meta.MetaEventKinds.Key_Signature and song.key is None:
+                    song.key = MidiReader._key_from_bytes(bytes(event.data))
+                    if song.key is not None:
+                        song.key_source = DOUBTED if song.key == Key("C") else FROM_FILE
 
         tracks_to_process = midi_file.tracks
         track_indices = range(len(midi_file.tracks))
@@ -148,24 +189,8 @@ class MidiReader:
             ticks_per_beat = 480
 
         for i, track_data in zip(track_indices, tracks_to_process):
-            error_buffer = io.StringIO()
-            with redirect_stderr(error_buffer):
-                try:
-                    track_data.parse()
-                except Exception:
-                    pass  # We check the stderr buffer to know if it really failed
+            parse_track(i, track_data)
 
-            error_output = error_buffer.getvalue()
-            if error_output:
-                # FIX: Log the captured error directly for high visibility.
-                logger.error(
-                    f"The 'py-midi' library produced an error while parsing Track {i + 1}:\n"
-                    f"--- Library Stderr ---\n"
-                    f"{error_output.strip()}\n"
-                    f"----------------------"
-                )
-                raise RuntimeError(f"Primary parser failed on Track {i + 1} due to stderr output.")
-            
             # Process notes from the track if parsing succeeded
             track = Track()
             active_notes: Dict[int, List[Dict]] = {}
@@ -255,6 +280,17 @@ class MidiReader:
                 )
 
         return song
+
+    @staticmethod
+    def _key_from_bytes(data: bytes):
+        """A key-signature event's two bytes (sharps or flats as a signed count, then
+        0 major / 1 minor) as a Key; None if they make no sense."""
+        if len(data) < 2 or data[1] not in (0, 1):
+            return None
+        fifths = data[0] - 256 if data[0] > 127 else data[0]
+        if not -7 <= fifths <= 7:
+            return None
+        return Key(note_name(fifths + 3), "minor") if data[1] else Key(note_name(fifths))
 
     @staticmethod
     def _first_key(midi_file):

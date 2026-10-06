@@ -45,11 +45,11 @@ TEMPO_STEP = 1.12  # multiplicative tempo nudge per keypress
 HELP_TEXT = """\
 gtrsnipe player — keys
 
-  space    pause / resume
+  space    pause / resume   (also enter, p)
   . / ,    step forward / back   (while paused)
   <- / ->  seek back / forward one bar
   [ / ]    tempo down / up
-  g / end  jump to start / end
+  g / end  jump to start / end   (also home)
   h / ?    this help
   q        quit
 

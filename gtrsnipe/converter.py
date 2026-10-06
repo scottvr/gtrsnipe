@@ -714,40 +714,25 @@ def main():
             for w in tension_warnings(args, list(user_custom)):
                 logger.warning(f"Tension: {w}")
 
+        # PIANO: full-range passthrough to MIDI. No strings, so no range filter, no
+        # mapper, and nothing that needs a fretboard.
         is_piano_mode = (not is_custom) and tuning_name == 'PIANO'
-        if is_piano_mode:
+        if is_piano_mode and (args.play or args.analyze or not args.output or any(
+                Path(o).suffix.lower() not in ('.mid', '.midi') for o in args.output)):
             parser.error("--tuning PIANO can only be used with MIDI output (e.g., a .mid file).")
 
-        if not is_custom:
-            if num_strings is not None and tuning_name == 'STANDARD':
-                if num_strings == 7:
-                    tuning_name = 'SEVEN_STRING_STANDARD'
-                elif num_strings == 4:
-                    tuning_name = 'BASS_STANDARD'
-            # Handle the --bass shortcut.
-            elif args.bass:
-                tuning_name = 'BASS_STANDARD'
+        if not is_custom and not is_piano_mode:
+            # the named tuning with the CLI's shortcuts applied (--bass, --num-strings)
+            from .arguments import resolve_named_tuning
+            try:
+                tuning_name, num_strings = resolve_named_tuning(tuning_name, num_strings, args.bass)
+            except ValueError as e:
+                parser.error(str(e))
+            if args.bass:
                 args.tuning = tuning_name
 
-            if num_strings is None:
-                try:
-                    num_strings = len(Tuning[tuning_name].value)
-                except KeyError:
-                    num_strings = 6
-
-            try:
-                actual_tuning_strings = len(Tuning[tuning_name].value)
-                if num_strings != actual_tuning_strings:
-                    parser.error(
-                        f"Mismatch between --num-strings ({num_strings}) and tuning '{tuning_name}' "
-                        f"(which has {actual_tuning_strings} strings). Please specify a compatible tuning."
-                    )
-            except KeyError:
-                # This will catch invalid tuning names passed with --tuning
-                parser.error(f"Tuning '{tuning_name}' not found. Use --list-tunings to see available options.")
-
  
-        if not args.no_constrain_frequency:
+        if not args.no_constrain_frequency and not is_piano_mode:
             logger.info("--- Calculating frequency range based on selected tuning ---")
             try:
                 tuning_notes = custom_names if is_custom else Tuning[tuning_name].value
@@ -861,6 +846,10 @@ def main():
         
         apply_key(song, args.key)
         debug_song_state(song, 5, "After Parsing") 
+        # --transpose, once, before anything looks at the notes: the range filter,
+        # --analyze, the player and every output (chord charts included)
+        if song:
+            transpose_song(song, args.transpose)
         
         if not song:
             logger.error(f"Failed to parse {format_to_parse} file or file is empty.")
@@ -922,7 +911,9 @@ def main():
                 from .guitar.analyze import format_ranking, rank_tunings
                 pool = [(t.name, t.value) for t in Tuning
                         if t.name.startswith("BASS_") == bool(args.bass)]
-                if is_custom:
+                custom_pitches = [note_name_to_pitch(n) for n in custom_names] if is_custom else None
+                if is_custom and not any([note_name_to_pitch(n) for n in names] == custom_pitches
+                                         for _, names in pool):
                     pool.insert(0, ("CUSTOM " + ",".join(custom_names), tuple(custom_names)))
                 candidates = []
                 for name, names in pool:
@@ -974,9 +965,6 @@ def main():
                 logger.info(f"--- Dropped {notes_discarded} out-of-range notes (Playable range: {pitch_to_note_name(min_range)} - {pitch_to_note_name(max_range)}) ---")
             elif pitch_shifted > 0:
                 logger.info(f"--- Shifted {pitch_shifted} notes by octaves to fit ---")
-
-        # --transpose, once, for the player and every output (chord charts included)
-        transpose_song(song, args.transpose)
 
         # --- Player mode: visualize instead of writing files (reuses the full
         # preamble above, so --play inherits audio input, normalize, etc.). ---
@@ -1045,17 +1033,16 @@ def main():
 
             logger.info(f"Saving '{args.input}' ({format_to_parse}) to '{output_path_str}' ({to_format})...")
 
-            if to_format == 'mid':
-                if isinstance(output_data, MidiUtilFile):
-                    save_midi_file(output_data, str(output_path))
+            if to_format == 'mid' and isinstance(output_data, MidiUtilFile):
+                save_midi_file(output_data, str(output_path))
+            elif to_format != 'mid' and isinstance(output_data, str):
+                save_text_file(output_data, str(output_path))
             else:
-                if isinstance(output_data, str):                
-                    save_text_file(output_data, str(output_path))
-
-            logger.info(f"Successfully saved {output_path_str}")
+                raise ValueError(f"no {to_format} output was produced for '{output_path_str}'")
 
     except Exception as e:
         logger.error(f"An error occurred: {e}", exc_info=args.debug)
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

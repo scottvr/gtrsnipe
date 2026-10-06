@@ -60,6 +60,23 @@ stayed parked.
     and the final chord would catch many of them.
   - **Inversions of extended chords** (C9/E) aren't named: an extended name needs its root in
     the bass. Chord-chart diagrams for extended chords come from a fixed four-note voicing.
+- **Replace the fallback MIDI reader** (from the v0.6.19 bug sweep, 2026-10-05; scottvr: "I
+  never was thrilled that I had to have a fallback path"). When mido can't read a file,
+  gtrsnipe falls back to py-midi, which is worse than no key signature:
+  - on a file mido wrote, it garbled a track's leading events: it lost the key signature and
+    the first note, and offset every later time by a fraction of a beat;
+  - parsing a track twice doubles its events, and a flat key signature used to lose the
+    track (both worked around in v0.6.19).
+  - mido with `clip=True` already reads most of the files that needed a fallback. What's left
+    could be a small, tolerant Standard MIDI File reader of our own (the format is simple:
+    chunks, variable-length times, running status), tested against the files in the wild
+    that mido rejects. First step: collect those files and see what actually fails.
+- **Tabs that keep time** (from the bug sweep, 2026-10-05). A tab's columns are spaced by
+  each bar's own smallest note value, so a bar of quarter notes and a bar of sixteenths look
+  alike and read back alike: a tab round-trips its pitches, strings and the rhythm *within*
+  a bar, but not the bars' lengths. A song-wide column unit (optional, since it makes wide
+  tabs) or a rhythm line would let a tab carry its rhythm. It changes how tabs look, so it is
+  a decision, not a fix.
 - **Learned weights and a profile finder** (from the scoring-weights notes, 2026-09-27; kept
   parked at the 2026-10-05 triage). A structured perceptron trained on human-fingered tabs, or
   sampling settings and letting a player rank the distinct tabs. Both wait for the weights

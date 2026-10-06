@@ -5,6 +5,7 @@ with the real fretboard mapper (so the diagrams match the song's tuning), and
 lays it out as: a monospace bar-by-bar progression grid, followed by a "Chords
 used" legend of ASCII chord diagrams (the vertical renderer, reused verbatim).
 """
+import logging
 from typing import Dict, List, Optional, Tuple
 
 from ..core.chords import Chord
@@ -25,7 +26,14 @@ def _voice_positions(mapper: GuitarMapper, pitches) -> List[FretPosition]:
     """Map a set of pitches to fret positions (dead-ends dropped)."""
     events = [MusicalEvent(time=0.0, pitch=p, duration=1.0, velocity=100)
               for p in pitches]
-    mapped = mapper.map_events_to_fretboard(events, no_articulations=True)
+    # a register that can't be fingered is an expected miss here, not a warning
+    log = logging.getLogger("gtrsnipe.guitar.mapper")
+    level = log.level
+    log.setLevel(logging.ERROR)
+    try:
+        mapped = mapper.map_events_to_fretboard(events, no_articulations=True)
+    finally:
+        log.setLevel(level)
     return [FretPosition(e.string, e.fret)
             for e in mapped if e.string is not None and e.fret is not None]
 

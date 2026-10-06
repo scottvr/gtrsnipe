@@ -289,7 +289,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         num_strings=resolve_num_strings(args.tuning, args.num_strings),
     )
     # Parse first, so the audio can default to the file's own instrument (P03).
-    song = parse_and_map(args.input, cfg, track=args.track, sustain=args.sustain)
+    try:
+        song = parse_and_map(args.input, cfg, track=args.track, sustain=args.sustain)
+    except (OSError, ValueError) as e:
+        sys.stderr.write(f"gtrsnipe-play: can't read {args.input}: {getattr(e, 'strerror', None) or e}\n")
+        return 1
     try:
         audio = audio_from_args(args, song)
     except (RuntimeError, ValueError) as e:

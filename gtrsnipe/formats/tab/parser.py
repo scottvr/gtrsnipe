@@ -122,13 +122,28 @@ class AsciiTabParser:
 
         TIME_PER_CHAR_IN_BEATS = quantization_resolution
 
+        # A tab gtrsnipe wrote (it has a '// Tuning' header) starts each note a set
+        # number of dashes after the END of the note before it, so a two-digit fret
+        # pushes everything after it one column right. That column isn't time: without
+        # it, steady sixteenths read back as 0.25, 0.375, 0.25 beats. Other tabs follow
+        # no known rule, so their columns are read as they stand.
+        late = {}                                  # start column -> columns to take off
+        if re.search(r"^\s*//\s*Tuning\b", tab_string, re.MULTILINE):
+            widest = {}
+            for ev in temp_events:
+                widest[ev.char_idx] = max(widest.get(ev.char_idx, 1), len(str(ev.fret)))
+            shift = 0
+            for col in sorted(widest):
+                late[col] = shift
+                shift += widest[col] - 1
+
         if not temp_events:
             logger.warning("No notes found in tab string.")
         else:
             # We don't need to group by index anymore; we can process each note directly.
             for temp_event in temp_events:
-                # The note's time is its character index multiplied by the time per character.
-                note_time = temp_event.char_idx * TIME_PER_CHAR_IN_BEATS
+                # The note's time is its (corrected) column multiplied by the time per character.
+                note_time = (temp_event.char_idx - late.get(temp_event.char_idx, 0)) * TIME_PER_CHAR_IN_BEATS
 
                 pitch = AsciiTabParser._tab_pos_to_midi(temp_event.string_idx, temp_event.fret, num_strings, open_string_pitches)
                 

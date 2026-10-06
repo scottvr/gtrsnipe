@@ -54,9 +54,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         num_strings=resolve_num_strings(args.tuning, args.num_strings),
     )
     fmt = Path(args.input).suffix.lstrip(".").lower()
-    song = MusicConverter()._parse(
-        args.input, fmt, args.track,
-        open_string_pitches=open_string_pitches_for(cfg.tuning, cfg.custom_tuning))
+    try:
+        song = MusicConverter()._parse(
+            args.input, fmt, args.track,
+            open_string_pitches=open_string_pitches_for(cfg.tuning, cfg.custom_tuning))
+    except (OSError, ValueError) as e:
+        sys.stderr.write(f"gtrsnipe-chords: can't read {args.input}: {getattr(e, 'strerror', None) or e}\n")
+        return 1
     song.title = song.title if song.title and song.title != "Untitled" else Path(args.input).stem
     apply_key(song, args.key)
 

@@ -1,6 +1,6 @@
 # gtrsnipe backlog
 
-The single list of open work, as of **v0.6.18 (2026-10-05)**. It collates the old parking
+The single list of open work, as of **v0.6.19 (2026-10-05)**. It collates the old parking
 lot, the CHANGELOG's known limitations, the design docs, the v0.3.0-era audit and plans,
 GitHub issues, and findings from recent sessions.
 
@@ -72,8 +72,8 @@ keys work left out.
 
 ### Step 4: a bug sweep, then playability (next)
 
-1. **The bug sweep** (B08–B22, H08): the open code bugs and the tab-reading wobble, in one
-   release.
+1. **The bug sweep** ✓ (v0.6.19): B08–B21 and H08; B22 in part (the fallback MIDI reader
+   itself is parked for replacement).
 2. **The measuring stick** (M01–M03): the weights audit, Viterbi vs greedy across a corpus,
    and a first tab difficulty measure. The later playability items depend on it.
 3. Then choose: **chosen compromises** (M05 optional notes, M06 a hand profile, then M07
@@ -90,21 +90,21 @@ keys work left out.
 |---|---|---|---|
 | B05 | `-i x.tab --play` re-optimizes the tab's fingering instead of playing it as written. It needs a way (e.g. `--as-written`) to keep the tab's own strings and frets. | S–M | session notes |
 | B07 | ✓ v0.6.6 **`MidiReader` drops MIDI track names** (mido path). Fixed; tab titles for named tracks now read "Title (Melody)". | S | R01, parking lot |
-| B08 | A failed conversion exits with status 0 (the error is only logged), so a script can't tell it from a good one. | S | docs audit |
-| B09 | `--bass` overrides any `--tuning`, including `BASS_DROP_D`. | S | docs audit |
-| B10 | `--tuning PIANO` always fails ("can only be used with MIDI output"), even with `-o x.mid`. | S | docs audit |
-| B11 | `--transpose` runs after the range filter and `--normalize-pitch`: notes that would fit once transposed are dropped first. | S | docs audit |
-| B12 | `--analyze` on a tab ranks the tab's own header tuning as an extra CUSTOM row; a long name breaks the columns. | S | README pass |
-| B13 | `gtrsnipe-chords` prints "Could not find a playable fingering" warnings from its register search when the sheet is fine. | S | docs audit |
-| B14 | `gtrsnipe-play` on a missing file shows a traceback. | S | docs audit |
-| B15 | The converter prints both "Successfully saved to X" and "Successfully saved X". | S | docs audit |
-| B16 | `gtrsnipe-research profile` suggests `--homograph-subdivide`; its own flag is `--subdivide`. | S | docs audit |
-| B17 | `--mono-lowest-only`'s help overstates what it does (it affects ASCII tab rendering only). | S | docs audit |
-| B18 | The player's help overlay omits `home`, `enter` and `p`. | S | docs audit |
-| B19 | `map_multi_string` returns early (no groups) without resetting `last_path_score`. | S | docs audit |
-| B20 | `player/clock.py` is dead code. | S | docs audit |
-| B21 | **Tab reading: onsets wobble at barlines and two-digit frets.** The wiki's steady-sixteenth tabs decode with gaps of 0.375–0.625 beats. | S–M | R05 |
-| B22 | The fallback MIDI reader (py-midi) doesn't read the key signature. | S | v0.6.18 |
+| B08 | ✓ v0.6.19 A failed conversion now exits with status 1 (it used to log the error and exit 0). | S | docs audit |
+| B09 | ✓ v0.6.19 `--bass` selects the bass version of `--tuning` (BASS_DROP_D for DROP_D; a BASS_ tuning stays); a tuning with none is an error. | S | docs audit |
+| B10 | ✓ v0.6.19 `--tuning PIANO` works again for MIDI output (every note passed through); other outputs are refused as before. | S | docs audit |
+| B11 | ✓ v0.6.19 `--transpose` is applied first, before the range filter, `--normalize-pitch` and `--analyze`. | S | docs audit |
+| B12 | ✓ v0.6.19 `--analyze` no longer ranks a tab's own named tuning twice; a long custom name keeps the columns. | S | README pass |
+| B13 | ✓ v0.6.19 `gtrsnipe-chords` no longer warns about voicings its own diagram search tried and rejected. | S | docs audit |
+| B14 | ✓ v0.6.19 `gtrsnipe-play` and `gtrsnipe-chords` report an unreadable file in one line. | S | docs audit |
+| B15 | ✓ v0.6.19 One "Successfully saved" message per output; producing no output is an error. | S | docs audit |
+| B16 | ✓ v0.6.19 `gtrsnipe-research profile` names its own flags (`--subdivide`, `--rhythm`) in its hints. | S | docs audit |
+| B17 | ✓ v0.6.19 `--mono-lowest-only`'s help says what it does (ASCII tab output only). | S | docs audit |
+| B18 | ✓ v0.6.19 The player's help overlay lists `enter`, `p` and `home`. | S | docs audit |
+| B19 | ✓ v0.6.19 `map_multi_string` resets `last_path_score` on every call. | S | docs audit |
+| B20 | ✓ v0.6.19 `player/clock.py` removed (dead since the transport replaced it). | S | docs audit |
+| B21 | ✓ v0.6.19 **Tab reading: a tab gtrsnipe wrote reads back with even timing.** A two-digit fret pushed later notes a column right, which was read as time (steady sixteenths came back as 0.25, 0.375, 0.25). Tabs from elsewhere are read by their columns, as before. Barlines never counted. A tab's bars still don't carry their own lengths: parked as "tabs that keep time". | S–M | R05 |
+| B22 | Partly, v0.6.19: the fallback MIDI reader no longer loses a track over a flat key signature, parses each track once, and reads its first track before scanning it. But py-midi garbles a track's leading events, so key, tempo and meter still aren't reliable there. Parked: replace the fallback reader. | S | v0.6.18 |
 
 ### Research: homograph phase 3 and the offset profile
 
@@ -177,4 +177,4 @@ Design notes: [`NOTES-playability.md`](NOTES-playability.md).
 | H03 | Wiki: document v0.6.0 (homographs, string physics, `.tab` header behavior). | S–M | release |
 | H05 | ✓ v0.6.10 **Docs reorg** (interlude in step 3): `docs/app/` (how gtrsnipe works), `docs/research/` (theory, literature, results), `docs/dev/` (process); a map in `docs/README.md`. | S | scottvr, 2026-09-28 |
 | H06 | ✓ v0.6.10 **State-of-the-docs audit**: every doc marked current, stale or wrong, with the fixes needed; agree the list, then apply it. | M | scottvr, 2026-09-28 |
-| H08 | The Viterbi tests the design doc promised but that don't exist: an exact tie, the second-order "landmine guard", and `hard_enum_cap`. | S | docs audit |
+| H08 | ✓ v0.6.19 The Viterbi tests the design doc promised: an exact tie, the history-depth ("landmine") guard, and `hard_enum_cap`. | S | docs audit |
