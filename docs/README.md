@@ -29,6 +29,8 @@ Start at [`research/README.md`](research/README.md).
 - [`BACKLOG.md`](dev/BACKLOG.md): the single list of open work, and The Dull Protocol for
   working through it.
 - [`PARKING-LOT.md`](dev/PARKING-LOT.md): new ideas waiting for triage.
+- [`NOTES-playability.md`](dev/NOTES-playability.md): design notes for the backlog's
+  playability items (M01–M07), carried over from the parking lot.
 - [`archive/`](dev/archive/): the v0.3.0-era plans and audit, frozen.
 
 The images in this folder (`gtrsnipe-*.png`) are logo assets.

@@ -108,8 +108,9 @@ needs_second_order = config.diagonal_span_penalty and config.let_ring_bonus > 0
 > reference, and a comment at the `prev_prev` site pointing back to
 > `needs_second_order`. Otherwise a future scorer edit silently breaks exactness.
 >
-> *Status: the comment is in place (`LANDMINE GUARD` in `_score_fingering`); the
-> assertion or test is not (§7, item 5).*
+> *Status: done. The comment is in place (`LANDMINE GUARD` in `_score_fingering`), and
+> `test_the_scorer_reads_no_history_deeper_than_two_steps` fails if the scorer reads t-2
+> outside its gate or gains a deeper parameter (v0.6.19).*
 
 ## 3. Reference algorithm (pair-state, collapsing to first-order)
 
@@ -268,8 +269,9 @@ Greedy's tie-break silently depends on Python set/hash iteration order of
 strict `>` in every argmax, so **among equal-scoring paths the lexicographically
 smallest (lowest string indices, then frets) wins** — a pure function of the
 input. This differs from greedy **only on exact ties**. Document it; cover it
-with a real-tie unit test. (Not written yet: `test_viterbi_is_deterministic`
-checks only that two runs agree; see §7, item 2.)
+with a real-tie unit test (`test_an_exact_tie_goes_to_the_lexicographically_smallest_path`,
+v0.6.19: with every weight at zero all paths tie, and the smallest candidate wins at every
+stage).
 
 ## 6. Backward compatibility & rollout
 
@@ -289,26 +291,27 @@ checks only that two runs agree; see §7, item 2.)
 
 ## 7. Corrections carried over from adversarial review (do not skip)
 
-Status as of v0.6.9, against the code and `tests/mapper/test_viterbi.py`:
+Status as of v0.6.19, against the code and `tests/mapper/test_viterbi.py`:
 
 1. **Traceback**: store the current-fingering index (`st[1]`) at each stage
    during the backward walk; do not recompute. Unit-test on a hand-built ≥3-stage
    trellis with a tie.
-   *Partly done.* The traceback stores `st[1]`, and the brute-force tests on
-   four-stage lines would catch a wrong one, but no test has a tie.
+   *Done.* The traceback stores `st[1]`; the brute-force tests on four-stage lines
+   check it, and the exact-tie test (v0.6.19) checks it on a four-stage trellis of ties.
 2. **Determinism**: sort candidates by `cand_key`; strict `>`; test with a
    constructed exact tie. Ensure `deduplicate_pitches` ordering is deterministic too.
-   *Partly done.* Candidates are sorted by `_cand_key`, every argmax is strict,
-   and `_preprocess_group` keeps input order. The tests check the sort order and
-   that two runs agree; there is no constructed exact tie.
+   *Done.* Candidates are sorted by `_cand_key`, every argmax is strict, and
+   `_preprocess_group` keeps input order. The tests check the sort order, that two runs
+   agree, and a constructed exact tie (v0.6.19).
 3. **Preserve** single-string mode, `_infer_techniques_from_positions`, and
    index-aligned write-back after `_preprocess_group`.
    *Done* (`map_events_to_fretboard`).
 4. **No emission-only beam** (§2.1). If `hard_enum_cap` ever fires, log it and
    treat that group's result as non-guaranteed.
-   *Done* (`generate_candidates` logs a warning); the cap itself is untested.
+   *Done* (`generate_candidates` logs a warning; tested in v0.6.19 by
+   `test_hard_enum_cap_limits_candidates_and_says_so`).
 5. **Landmine guard** for the scorer's history depth (§2.3).
-   *Partly done:* the comment, not the test.
+   *Done:* the comment and the test (v0.6.19).
 6. **Equivalence test**: on a `let_ring + diagonal_span` input, assert the
    pair-state (`O(K³)`) and first-order-collapse paths agree where the collapse
    claims exactness; assert Viterbi's `J` ≥ greedy's `J` on a corpus.

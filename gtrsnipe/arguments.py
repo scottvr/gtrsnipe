@@ -77,7 +77,8 @@ def add_mapper_args(target) -> None:
              "or 'greedy' (legacy per-step choice).")
     target.add_argument(
         '--mono-lowest-only', action='store_true',
-        help="Force monophonic output by keeping only the lowest note in any chord.")
+        help="ASCII tab output only: where notes sound together, write just the one on the "
+             "lowest string. Other outputs and playback keep every note.")
     target.add_argument(
         '--fret-span-penalty', type=float, default=100.0,
         help='Penalty for wide fret stretches (default: 100.0).')
@@ -303,18 +304,25 @@ def open_string_pitches_for(tuning: str, custom=None) -> list:
 
 def resolve_named_tuning(tuning: str, num_strings, bass: bool) -> tuple:
     """(tuning name, string count) for a named tuning with the CLI shortcuts the
-    converter applies: STANDARD + --num-strings 7 / 4 -> SEVEN_STRING_STANDARD /
-    BASS_STANDARD, and --bass. Raises ValueError for an unknown tuning or a
-    --num-strings that doesn't match it."""
+    converter applies: --bass (the bass version of the tuning: STANDARD ->
+    BASS_STANDARD, DROP_D -> BASS_DROP_D; a BASS_ tuning stays as it is), and
+    STANDARD + --num-strings 7 / 4 -> SEVEN_STRING_STANDARD / BASS_STANDARD. Raises
+    ValueError for an unknown tuning, a tuning with no bass version, or a
+    --num-strings that doesn't match."""
     from .core.types import Tuning
     name = (tuning or "STANDARD").upper()
-    if num_strings is not None and name == "STANDARD":
+    if bass:
+        if not name.startswith("BASS_"):
+            if "BASS_" + name not in Tuning.__members__:
+                basses = ", ".join(t for t in Tuning.__members__ if t.startswith("BASS_"))
+                raise ValueError(f"--bass: there's no bass version of {name} "
+                                 f"(the bass tunings are {basses}).")
+            name = "BASS_" + name
+    elif num_strings is not None and name == "STANDARD":
         if num_strings == 7:
             name = "SEVEN_STRING_STANDARD"
         elif num_strings == 4:
             name = "BASS_STANDARD"
-    elif bass:
-        name = "BASS_STANDARD"
     if name not in Tuning.__members__:
         raise ValueError(f"Tuning '{name}' not found. Use --list-tunings to see available options.")
     actual = len(Tuning[name].value)
