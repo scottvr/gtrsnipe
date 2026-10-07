@@ -122,6 +122,8 @@ stayed parked.
     a dot for dotted notes) also turn up on tab sites; they look like a notation program's
     text export, which is unverified. So what would be new is a consistent, documented,
     machine-readable version, not the idea.
+  - scottvr's pick of the four (2026-10-07) is the dash-count layout, with letters as an
+    option. Draft spec for him to mark up: [`DRAFT-tab-rhythm.md`](DRAFT-tab-rhythm.md).
   - Scripts: `/Volumes/LaCie/data/midi/_tmp/tabtime/`.
 - **What a tab states that still isn't kept** (from v0.7.0). Its `// Title:` (the converter
   names every output after the input file); bends, slides, vibrato and other marks.

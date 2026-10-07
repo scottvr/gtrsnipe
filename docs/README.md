@@ -31,6 +31,8 @@ Start at [`research/README.md`](research/README.md).
 - [`PARKING-LOT.md`](dev/PARKING-LOT.md): new ideas waiting for triage.
 - [`NOTES-playability.md`](dev/NOTES-playability.md): design notes for the backlog's
   playability items (M01–M07), carried over from the parking lot.
+- [`DRAFT-tab-rhythm.md`](dev/DRAFT-tab-rhythm.md): a draft, not built: writing note lengths
+  into a tab as a count of dashes.
 - [`archive/`](dev/archive/): the v0.3.0-era plans and audit, frozen.
 
 The images in this folder (`gtrsnipe-*.png`) are logo assets.
