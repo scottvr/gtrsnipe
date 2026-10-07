@@ -32,14 +32,15 @@ Verified   decoding the tab in each tuning reproduces every note of every song
 //   Key B: B1,E2,D3,A3,B3,E4  = twinkle@1-7 (transposed -7)
 //   Key C: F#2,A2,Bb2,G3,B3,E4  = mary@1-7 (transposed -4)
 
+// Rhythm: dash-count, base 1/4   (q=1 q.=2 H=3 H.=4 W=5)
 // Transcribed with: gtrsnipe --homograph oldmac.abc@1-7 twinkle.abc@1-7 mary.abc@1-7 --homograph-mode middle -o nursery-trio.tab -y
 
-e|-----------|------|
-F|-----------|-----1|
-E|----------3|-5-5--|
-D|-------10--|------|
-B|----13-----|------|
-F|-18--------|------|
+e|------------|---------|
+F|------------|-----1---|
+E|----------3-|-5-5-----|
+D|-------10---|---------|
+B|----13------|---------|
+F|-18---------|---------|
 
 Wrote nursery-trio.tab
 

@@ -178,6 +178,13 @@ def dynamic_quantize_song(intermediate_midi_path: str, processed_audio_path: str
     logger.info(f"--- Dynamic quantization complete. Initial tempo set to {song.tempo:.2f} BPM. ---")
     return song
 
+def tab_options_from(args) -> dict:
+    """The ASCII tab layout options (F08) as keyword arguments for the tab generator."""
+    return {"rhythm": getattr(args, "tab_rhythm", None), "base": getattr(args, "tab_base", None),
+            "odd_bars": getattr(args, "tab_odd_bars", "columns"),
+            "letters": getattr(args, "tab_letters", False)}
+
+
 def transpose_song(song: Song, semitones: int, notes: bool = True) -> None:
     """Move every note by ``semitones`` (clamped to MIDI's range), and the song's key
     with them. ``notes=False``: the notes were already moved (a tab slid along its
@@ -199,14 +206,15 @@ class MusicConverter:
     def convert(self, song: Song, from_format: str, to_format: str, 
                 command_line: str,
                 nudge: int, 
-                max_line_width: int = 40,
+                max_line_width: int = 80,
                 transpose: int = 0,
                 no_articulations: bool = False,
                 single_string: Optional[int] = None,
                 mapper_config: Optional[MapperConfig] = None,
                 name_chords: bool = False,
                 chord_tone_threshold: Optional[float] = None,
-                shape_names: bool = False) -> object | str:
+                shape_names: bool = False,
+                tab_options: Optional[dict] = None) -> object | str:
         """
         Converts a Song object from one format to another.
         Assumes the Song has already been parsed and filtered.
@@ -232,7 +240,7 @@ class MusicConverter:
 
         output_data = self._generate(song, to_format, command_line=command_line, no_articulations=no_articulations, single_string=single_string, max_line_width=max_line_width, mapper_config=mapper_config,
                                      name_chords=name_chords, chord_tone_threshold=chord_tone_threshold,
-                                     shape_names=shape_names)
+                                     shape_names=shape_names, tab_options=tab_options)
 
         return output_data
 
@@ -261,7 +269,7 @@ class MusicConverter:
     def _generate(self, song: Song, format: str, command_line: str, no_articulations: bool = False, max_line_width = 80,
                   single_string: Optional[int] = None, staccato: bool = False, mapper_config: Optional[MapperConfig] = None,
                   name_chords: bool = False, chord_tone_threshold: Optional[float] = None,
-                  shape_names: bool = False) -> object | str:
+                  shape_names: bool = False, tab_options: Optional[dict] = None) -> object | str:
         if format == 'mid':
             return mid.MidiGenerator.generate(song)
         elif format == 'abc':
@@ -271,7 +279,7 @@ class MusicConverter:
         elif format == 'tab':
             return tab.AsciiTabGenerator.generate(song, command_line=command_line, no_articulations=no_articulations, single_string=single_string, max_line_width=max_line_width, mapper_config=mapper_config,
                                                   name_chords=name_chords, chord_tone_threshold=chord_tone_threshold,
-                                                  shape_names=shape_names)
+                                                  shape_names=shape_names, **(tab_options or {}))
         else:
             raise ValueError(f"Unsupported output format: {format}")
 
@@ -596,7 +604,8 @@ def run_homograph(args, command_line: str = "") -> int:
     text = hg.render_tab(report, sol, neutral=args.homograph_neutral,
                          max_line_width=max(args.max_line_width, 60),
                          command_line=command_line, base_config=cfg,
-                         tempo=songs[0].tempo, time_signature=songs[0].time_signature)
+                         tempo=songs[0].tempo, time_signature=songs[0].time_signature,
+                         tab_options=tab_options_from(args))
     problems = hg.verify_text(report, sol, text)
     if problems:          # never hand out a tab whose text doesn't decode to the songs
         logger.error("internal error (please report): the rendered tab does not decode "
@@ -1079,6 +1088,7 @@ def main():
                     name_chords=args.name_chords,
                     chord_tone_threshold=getattr(args, "chord_tone_threshold", None),
                     shape_names=getattr(args, "shape_names", False),
+                    tab_options=tab_options_from(args),
                 )
 
             if output_path.exists() and not args.yes:

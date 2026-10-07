@@ -102,3 +102,6 @@ class Song:
     as_written: bool = False
     # Set when a source tab's fingering was NOT kept: why ("--refinger", ...).
     refingered: str = ""
+    # True when the song came from a tab that only hinted at its rhythm (no dash-count
+    # legend, no note-length letters): a tab written from it stays 'loose' by default.
+    rhythm_approximate: bool = False

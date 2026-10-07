@@ -10,6 +10,70 @@ and Cargo apply to 0.x version ranges. Full SemVer applies from 1.0.0. The publi
 is the CLI flags and the file formats gtrsnipe reads and writes; report wording is
 not part of it.
 
+## [0.8.0] — 2026-10-07
+
+Tabs that keep time (backlog F08). A minor version, because it changes how every tab gtrsnipe
+writes looks by default.
+
+A tab's spacing has always hinted at rhythm without stating it. Now **the number of dashes
+after a note names its length**, so a tab gtrsnipe writes can be read back, or converted to
+MIDI or ABC, with exactly the rhythm that was written. It is an idea from gtrsnipe's first
+months (July 2025), finished: the design, the history and the measurements are in
+[`docs/app/DESIGN-tab-rhythm.md`](docs/app/DESIGN-tab-rhythm.md).
+
+### Changed
+- **The default tab layout is `dashes`.** One dash after a note is the *base* note (the
+  longest note value no longer than the tune's shortest step); each doubling adds two
+  dashes; a dot adds one. Dashes are counted from the end of the fret number, so a two-digit
+  fret makes a bar wider and never changes what it says. A header line gives the table:
+
+  ```
+  // Rhythm: dash-count, base 1/8   (e=1 e.=2 q=3 q.=4 H=5 H.=6 W=7)
+
+  B|-5---5---6---8---|-8---6---5---3---|-1---1---3---5---|-5----3-3-----|
+  ```
+  - A bar holding a length the table lacks (five sixteenths, a triplet) is written with
+    columns as time, and the legend names it (`bars 7, 12 in columns`).
+  - On 300 Nottingham tunes written out and read back, every bar of every tune came back
+    with exactly its rhythm. In the old layout a third of the bars did, and no whole tune.
+    The cost is width: 1.46 times the old layout over the set; 2.1% of bars were written in
+    columns.
+- **`--max-line-width` defaults to 80** (it was 40).
+- **A `.tab` input is read by what it states:** note-length letters first, then the dash
+  count, then columns as time, each checked against the bar's length. A bar that doesn't add
+  up to a measure (a hand edit) is read by its spacing as before, and a log line says which
+  bars. A tab with no `// Rhythm:` line reads as it did in 0.7.0.
+- A tab made from a tab that didn't state its rhythm is written `loose` (see below), with no
+  legend, unless a layout is named: the output doesn't claim lengths the source never gave.
+
+### Added
+- **`--tab-rhythm {dashes,columns,loose}`.** All three layouts stay, each as an option.
+  - `columns`: each bar is cut into equal time slots, and a note's column across the bar is
+    its time. Exact, readable without a legend, and sometimes wide.
+  - `loose`: the layout up to 0.7.0. Compact; its spacing only hints.
+- **`--tab-base {auto,1/1,1/2,1/4,1/8,1/16,1/32}`:** the note one dash stands for. A fixed
+  base gives every tab the same table (1.76 times the old width at `1/16`).
+- **`--tab-odd-bars {columns,nearest,error}`:** what to do with a bar the table can't hold.
+  `nearest` writes the closest lengths and the legend names the bar as approximate; `error`
+  stops and lists the bars.
+- **`--tab-letters`:** a line of note lengths over each row, on top of any layout: `W H q e s
+  t` (whole note to 32nd; capitals for the long ones), a dot adds half, `+` ties two (`q+s`).
+  A letter with nothing under it is a rest. Read back in either case, and read first, so
+  letters make even the `loose` layout exact. A bar with a length the letters can't state
+  exactly (a triplet's note) gets none.
+- **A pickup is read:** a first bar whose stated lengths come to less than a measure ends at
+  its bar line.
+- The options reach every tab gtrsnipe writes, `--homograph` tabs included. The example tabs
+  in `examples/homograph/` are regenerated in the new layout (the same frets and tunings).
+
+### Known limits
+- An onset has one length, so two voices with different rhythms can't both be stated.
+- A reader that takes columns as time gets the order and the bars right from a `dashes` tab,
+  and the lengths squeezed. `--tab-rhythm columns` is the layout anyone can take at face
+  value.
+- Triplets reach the tab only with `--no-pre-quantize`: the default 32nd-note grid moves
+  them first, as it always has (backlog B23).
+
 ## [0.7.0] — 2026-10-07
 
 A tab is kept as written (backlog B05). A minor version, because it changes what happens by
