@@ -18,6 +18,7 @@ from ..arguments import (
     add_player_args,
     add_profile_args,
     add_tab_input_args,
+    adopt_tab_header,
     add_tuning_args,
     apply_profiles,
     build_mapper_config,
@@ -26,6 +27,7 @@ from ..arguments import (
 )
 from ..core.config import MapperConfig
 from ..core.types import Song
+from ..guitar.fingering import positioned
 from ..guitar.mapper import GuitarMapper
 from .audio import AudioSink, NullSink, make_audio_sink
 from .frame import Frame
@@ -78,8 +80,10 @@ class _Driver:
 
 def parse_and_map(input_path: str, mapper_config: MapperConfig, *,
                   track: Optional[int] = None,
-                  no_articulations: bool = True, sustain: str = "legato") -> Song:
-    """Parse an input file and map every track onto the fretboard."""
+                  no_articulations: bool = True, sustain: str = "legato",
+                  refinger: bool = False) -> Song:
+    """Parse an input file and give every note a string and fret: a tab's own, as
+    written, unless ``refinger``; the mapper's for everything else."""
     # Imported here to avoid a converter<->player import cycle at package load.
     from ..converter import MusicConverter
 
@@ -89,13 +93,10 @@ def parse_and_map(input_path: str, mapper_config: MapperConfig, *,
         quantization_resolution=mapper_config.quantization_resolution,
         open_string_pitches=open_string_pitches_for(
             mapper_config.tuning, getattr(mapper_config, "custom_tuning", None)),
-        sustain=sustain,
+        sustain=sustain, capo=getattr(mapper_config, "capo", 0) or 0,
     )
-    mapper = GuitarMapper(mapper_config)
-    for trk in song.tracks:
-        trk.events = mapper.map_events_to_fretboard(
-            trk.events, no_articulations=no_articulations)
-    return song
+    song.as_written = fmt == "tab" and not refinger
+    return map_song(song, mapper_config, no_articulations=no_articulations)
 
 
 def build_timeline(song: Song, mapper_config: MapperConfig,
@@ -124,12 +125,12 @@ def _beats_per_measure(time_signature: str) -> float:
 
 def map_song(song: Song, mapper_config: MapperConfig, *,
              no_articulations: bool = True) -> Song:
-    """Map every track's events onto the fretboard in place (for an already-parsed
-    Song, e.g. one the converter has preprocessed)."""
+    """Give every track's events a string and fret, in place (for an already-parsed
+    Song, e.g. one the converter has preprocessed): a tab's own when the song is kept
+    as written, else the mapper's."""
     mapper = GuitarMapper(mapper_config)
     for trk in song.tracks:
-        trk.events = mapper.map_events_to_fretboard(
-            trk.events, no_articulations=no_articulations)
+        trk.events = positioned(song, trk.events, mapper, no_articulations=no_articulations)
     return song
 
 
@@ -284,13 +285,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if not args.input:
         parser.error("an input file is required (or use --list-instruments)")
 
+    adopt_tab_header(args, args.input)          # a tab's own tuning and capo, unless you set them
     cfg = build_mapper_config(
         args, tuning=args.tuning,
         num_strings=resolve_num_strings(args.tuning, args.num_strings),
     )
     # Parse first, so the audio can default to the file's own instrument (P03).
     try:
-        song = parse_and_map(args.input, cfg, track=args.track, sustain=args.sustain)
+        song = parse_and_map(args.input, cfg, track=args.track, sustain=args.sustain,
+                         refinger=bool(getattr(args, "refinger", False)))
     except (OSError, ValueError) as e:
         sys.stderr.write(f"gtrsnipe-play: can't read {args.input}: {getattr(e, 'strerror', None) or e}\n")
         return 1

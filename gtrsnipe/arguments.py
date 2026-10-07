@@ -26,14 +26,24 @@ class _ExplicitTuning(argparse.Action):
         namespace.tuning_explicit = True
 
 
+class _ExplicitCapo(argparse.Action):
+    """Store --capo and record that it was given (``capo_explicit``), so an explicit
+    --capo 0 can override a .tab's own '// Capo' line while the default defers to it."""
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        setattr(namespace, self.dest, values)
+        namespace.capo_explicit = True
+
+
 def add_tuning_args(target) -> None:
     """Fretboard geometry shared by every mode (all feed MapperConfig).
 
     ``target`` is a parser or an argument group, so the caller controls grouping.
     """
     target.add_argument(
-        '--capo', type=int, default=0,
-        help="Specify a capo position. All fret numbers will be relative to the capo.")
+        '--capo', type=int, default=0, action=_ExplicitCapo,
+        help="Specify a capo position. All fret numbers will be relative to the capo. "
+             "(A .tab input's own '// Capo' line is used when this isn't given.)")
     target.add_argument(
         '--tuning', type=str, default='STANDARD', choices=TUNING_CHOICES, action=_ExplicitTuning,
         help='Specify the guitar tuning or "PIANO" for full-range midi passthrough. (default: STANDARD).')
@@ -183,9 +193,50 @@ def add_player_args(target) -> None:
                              "note lengths and rests (the pre-0.6.8 playback).")
 
 
+def add_refinger_arg(target) -> None:
+    """--refinger / --no-refinger: whose fingering a tab input keeps."""
+    target.add_argument("--refinger", action=argparse.BooleanOptionalAction, default=None,
+                        help="Tab input: whose fingering to show. By default a tab keeps its own "
+                             "strings, frets and h/p/t marks, as written, and is re-fingered only "
+                             "if an option changes its notes (--transpose) or says how to finger "
+                             "it (--single-string). --refinger: always let the mapper choose "
+                             "(then the tab is read in its own tuning and capo, and --tuning / "
+                             "--capo say what to finger it for). --no-refinger: never move a "
+                             "note to another string; --transpose then slides each note along "
+                             "its string, or stops if one can't.")
+
+
+def adopt_tab_header(args, input_path) -> None:
+    """A .tab input states its own tuning and capo ('// Tuning:', '// Capo:'). With
+    none asked for, they are adopted for the whole run -- decoding, range filter,
+    mapping, every output -- as if --tuning-pitches and --capo named them. An explicit
+    option wins (see ``_ExplicitTuning``, ``_ExplicitCapo``)."""
+    if not input_path or not str(input_path).lower().endswith(".tab"):
+        return
+    try:
+        with open(input_path) as f:
+            text = f.read()
+    except OSError:
+        return
+    from .core.theory import pitch_to_note_name
+    from .formats.tab.parser import AsciiTabParser
+    if (resolve_custom_tuning(args) is None and not getattr(args, "bass", False)
+            and getattr(args, "num_strings", None) is None
+            and (getattr(args, "tuning", None) or "STANDARD").upper() == "STANDARD"
+            and not getattr(args, "tuning_explicit", False)):
+        pitches = AsciiTabParser.header_tuning(text)
+        if pitches:
+            args.tuning_pitches = ",".join(pitch_to_note_name(p) for p in reversed(pitches))
+    if not getattr(args, "capo_explicit", False):
+        capo = AsciiTabParser.header_capo(text)
+        if capo:
+            args.capo = capo
+
+
 def add_tab_input_args(target) -> None:
     """How notes read from an ASCII tab last (a tab says when to strike, not when to
     stop). Shared by `gtrsnipe` and gtrsnipe-play."""
+    add_refinger_arg(target)
     target.add_argument("--sustain", choices=["legato", "string"], default="legato",
                         help="Tab input: 'legato' (default) holds each note until the next "
                              "onset; 'string' lets it ring until its own string is struck "

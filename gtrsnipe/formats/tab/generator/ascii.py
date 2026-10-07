@@ -2,6 +2,7 @@ from typing import Dict, List, Optional
 from ....core.types import FretPosition, Song, Technique, Track, Tuning
 from ....core.config import MapperConfig
 from ....guitar.mapper import GuitarMapper
+from ....guitar.fingering import positioned
 from ..tab_types import TabScore, TabMeasure, TabNote
 from itertools import groupby
 import logging
@@ -42,8 +43,9 @@ class AsciiTabGenerator:
                 mapped_events = mapper._infer_techniques_from_positions(
                     sorted(track.events, key=lambda e: e.time), no_articulations)
             else:
-                mapped_events = mapper.map_events_to_fretboard(track.events, no_articulations=no_articulations,
-                                                               single_string=single_string)
+                # the source tab's own fingering when it is kept as written, else the mapper's
+                mapped_events = positioned(song, track.events, mapper, no_articulations=no_articulations,
+                                           single_string=single_string)
             total_mapped_notes += len(mapped_events)
             new_track = Track(events=mapped_events, instrument_name=track.instrument_name)
             mapped_song.tracks.append(new_track)
@@ -60,6 +62,8 @@ class AsciiTabGenerator:
         base_unit_in_beats = mapper_config.quantization_resolution
 
         chord_labels, banner = None, []
+        if getattr(song, "refingered", ""):
+            banner.append(f"Fingering: gtrsnipe's, not the source tab's own ({song.refingered}).")
         if name_chords:
             from ....chords.segment import DEFAULT_CHORD_TONE_THRESHOLD
             from ....core.keys import song_key

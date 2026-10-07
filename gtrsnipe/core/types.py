@@ -97,3 +97,8 @@ class Song:
     # back to an estimate from the notes).
     key: Optional[Key] = None
     key_source: str = ""
+    # True when the events carry a source tab's own strings, frets and technique
+    # marks, to be kept as written (guitar.fingering.positioned) and not re-fingered.
+    as_written: bool = False
+    # Set when a source tab's fingering was NOT kept: why ("--refinger", ...).
+    refingered: str = ""

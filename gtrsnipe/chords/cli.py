@@ -12,6 +12,8 @@ from typing import Optional, Sequence
 from ..arguments import (
     add_chart_args,
     add_key_arg,
+    add_refinger_arg,
+    adopt_tab_header,
     apply_key,
     add_mapper_args,
     add_profile_args,
@@ -39,6 +41,7 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     chart = p.add_argument_group("Chord chart")
     add_chart_args(chart)
     add_key_arg(chart)
+    add_refinger_arg(chart)
     add_profile_args(p)
     return p
 
@@ -49,6 +52,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     # Imported here to avoid a converter<->chords import cycle at package load.
     from ..converter import MusicConverter
 
+    adopt_tab_header(args, args.input)          # a tab's own tuning and capo, unless you set them
     cfg = build_mapper_config(
         args, tuning=args.tuning,
         num_strings=resolve_num_strings(args.tuning, args.num_strings),
@@ -57,12 +61,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     try:
         song = MusicConverter()._parse(
             args.input, fmt, args.track,
-            open_string_pitches=open_string_pitches_for(cfg.tuning, cfg.custom_tuning))
+            open_string_pitches=open_string_pitches_for(cfg.tuning, cfg.custom_tuning),
+            capo=cfg.capo or 0)
     except (OSError, ValueError) as e:
         sys.stderr.write(f"gtrsnipe-chords: can't read {args.input}: {getattr(e, 'strerror', None) or e}\n")
         return 1
     song.title = song.title if song.title and song.title != "Untitled" else Path(args.input).stem
     apply_key(song, args.key)
+    song.as_written = fmt == "tab" and not args.refinger     # a tab's own shapes in the diagrams
 
     sheet = build_chord_sheet(
         song, cfg,
