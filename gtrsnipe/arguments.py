@@ -784,8 +784,36 @@ def setup_parser() -> ArgumentParser:
     parser.add_argument(
         "--max-line-width",
         type=int,
-        default=40,
-        help="Max number of vertical columns per line of ASCII tab. (default: 40)"
+        default=80,
+        help="Max number of vertical columns per line of ASCII tab (default: 80). Bars are never "
+             "split: a row holds as many whole bars as fit, and a wider bar gets a row to itself."
+    )
+    parser.add_argument(
+        "--tab-rhythm", choices=["dashes", "columns", "loose"], default=None,
+        help="ASCII tab output: how a bar's columns carry time. 'dashes' (default): the dashes "
+             "after a note name its length (one for the base note, two more per doubling, one "
+             "more for a dot); exact and compact, with a '// Rhythm:' legend line. 'columns': "
+             "a note's column across its bar is its time; exact with no legend, sometimes wide. "
+             "'loose': spacing only hints at the rhythm (the layout up to v0.7.0). A tab read "
+             "from a tab that didn't state its rhythm stays 'loose' unless you choose."
+    )
+    parser.add_argument(
+        "--tab-base", choices=["auto", "1/1", "1/2", "1/4", "1/8", "1/16", "1/32"], default="auto",
+        help="--tab-rhythm dashes: the note that one dash stands for (default: auto, the longest "
+             "note value no longer than the tune's shortest step). A fixed base means one table "
+             "for every tab, at the cost of width."
+    )
+    parser.add_argument(
+        "--tab-odd-bars", choices=["columns", "nearest", "error"], default="columns",
+        help="--tab-rhythm dashes: what to do with a bar holding a length the table lacks (five "
+             "base notes, a triplet among even notes). 'columns' (default): write that bar with "
+             "columns as time and name it in the legend; 'nearest': use the nearest lengths and "
+             "name the bar as approximate; 'error': stop and list such bars."
+    )
+    parser.add_argument(
+        "--tab-letters", action="store_true",
+        help="ASCII tab output: a line of note lengths over each row (W H q e s t; a dot adds "
+             "half), on top of any --tab-rhythm. Read back when the tab is used as input."
     )
     add_key_arg(parser)
     parser.add_argument(

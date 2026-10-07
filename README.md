@@ -4,7 +4,7 @@
 
 Convert to and from .mid, .abc, .vex, and .tab files. (and more.)
 
-## v0.7.0
+## v0.8.0
 Released 2026-10-07. See [CHANGELOG](https://github.com/scottvr/gtrsnipe/blob/main/CHANGELOG.md)
 
 # What?
@@ -193,19 +193,12 @@ $ gtrsnipe --homograph examples/homograph/oldmac.abc examples/homograph/twinkle.
 //   Key A: E2,A2,D3,G3,B3,E4  = oldmac
 //   Key B: E2,A2,Bb2,Bb3,A3,C#4  = twinkle@1-12 (transposed -4)
 ...
-e|----------|------|-0-0----|
-B|----------|------|-----3-3|
-G|-------5--|------|--------|
-D|-10-10---5|-7-7-5|--------|
-A|----------|------|--------|
-E|----------|------|--------|
-
-e|--------------------------------|
-B|-1------------------------------|
-G|--------------------------------|
-D|--------------------------------|
-A|--------------------------------|
-E|--------------------------------|
+e|-----------|---------|-0-0-----|-------|
+B|-----------|---------|-----3-3-|-1-----|
+G|-------5---|---------|---------|-------|
+D|-10-10---5-|-7-7-5---|---------|-------|
+A|-----------|---------|---------|-------|
+E|-----------|---------|---------|-------|
 ```
 
 (With `--homograph-octaves`, four of Twinkle's notes drop an octave; the report
@@ -289,6 +282,50 @@ gtrsnipe-research segments mtc-ann --level phrase          # phrase/motif retrie
 </details>
 
 
+## Tab output: the dashes say how long
+
+In a tab gtrsnipe writes, **the number of dashes after a note is its length**: one dash for
+the *base* note (the tune's shortest note value), two more each time the length doubles, one
+more for a dot. A header line gives the table:
+
+```
+// Rhythm: dash-count, base 1/8   (e=1 e.=2 q=3 q.=4 H=5 H.=6 W=7)
+
+B|-5---5---6---8---|-8---6---5---3---|-1---1---3---5---|-5----3-3-----|
+```
+
+That is *Ode to Joy*: quarter notes (three dashes each), then in the last bar a dotted
+quarter (four), an eighth (one) and a half (five). To the eye it reads as hand-written tabs
+do, longer notes get more room. To gtrsnipe it is exact: the tab read back, or converted to
+MIDI or ABC, has the rhythm that was written.
+
+- **`--tab-rhythm {dashes,columns,loose}`** picks the layout.
+  - `dashes` (the default): as above.
+  - `columns`: every bar is cut into equal time slots, so a note's column across its bar is
+    its time. Also exact, needs no legend to read, and is sometimes wide.
+  - `loose`: the layout up to v0.7.0. Compact, and its spacing only hints at the rhythm.
+- **`--tab-base 1/16`** fixes the note one dash stands for (default: chosen per tune), so
+  every tab uses the same table, at some cost in width.
+- **A bar holding a length the table lacks** (five sixteenths, a triplet) is written in
+  `columns`, and the legend names it (`bars 7, 12 in columns`).
+  `--tab-odd-bars {columns,nearest,error}` chooses otherwise.
+- **`--tab-letters`** adds a line of note lengths over the staff, on top of any layout:
+  `W H q e s t` for a whole note down to a 32nd, a dot adds half, `+` ties two. A letter
+  with nothing under it is a rest.
+
+  ```
+     q.   e H
+  B|-5----3-3-----|
+  ```
+- **Rows** hold whole bars, as many as fit `--max-line-width` (default 80).
+- **A tab made from a tab that didn't state its rhythm stays `loose`**, unless you name a
+  layout: gtrsnipe doesn't claim lengths its source never gave.
+
+On 300 folk tunes written out and read back, every bar came back with exactly its rhythm in
+`dashes` and in `columns`, against a third of the bars in `loose`. `dashes` is 1.46 times as
+wide as `loose` over the whole set. The rules, the reasons and the measurements:
+[`docs/app/DESIGN-tab-rhythm.md`](docs/app/DESIGN-tab-rhythm.md).
+
 ## Tab input: kept as written
 
 A tab states where each note is played, and gtrsnipe keeps that. Play a `.tab`, convert it
@@ -317,18 +354,21 @@ gtrsnipe -i riff.tab -o dropd.tab --tuning DROP_D --refinger  # the same notes, 
   header's tempo, time signature, tuning and capo. The tab's own `// Tuning:` and `// Capo:`
   lines are used unless you give `--tuning` or `--capo`. Bends, slides and other marks aren't
   read.
-- **Rhythm is approximate.** Each bar is one measure, and a note's time is its column across
-  the bar, which is how people read tabs. A tab's columns don't state durations. Of 300 folk
-  tunes written out as tabs and read back, every note stayed in its bar, and a third of the
-  bars came back with exactly their rhythm (steady passages do; bars mixing note values
-  don't).
+- **Rhythm is exact when the tab states it:** a `// Rhythm:` line or note-length letters, as
+  gtrsnipe writes them (see [Tab output](#tab-output-the-dashes-say-how-long)). A bar that
+  doesn't add up to a measure, after a hand edit say, is read like any other tab.
+- **Otherwise rhythm is approximate.** Each bar is one measure, and a note's time is its
+  column across the bar, which is how people read tabs. A tab's columns don't state
+  durations. Of 300 folk tunes written out in the `loose` layout and read back, every note
+  stayed in its bar, and a third of the bars came back with exactly their rhythm (steady
+  passages do; bars mixing note values don't).
 
 ## Player / Visualizer
 
 `gtrsnipe-play` renders a song as a live ASCII fretboard instead of writing a
 file. It reuses the same parsers and the Viterbi fretboard mapper, so it accepts
 every supported input format — with the same rhythm caveats (precise timing from
-MIDI, approximate from ASCII tab). A `.tab` is shown with its own fingering, as written
+MIDI, approximate from an ASCII tab that doesn't state its rhythm). A `.tab` is shown with its own fingering, as written
 (`--refinger` shows the mapper's instead). A 5-fret window auto-follows the playing up
 and down the neck; open strings are shown at the nut.
 
@@ -506,13 +546,13 @@ gtrsnipe --capo 2 --shape-names --name-chord 320003                          # G
 Add `--name-chords` to ASCII tab output to write chord names above the staff:
 
 ```
-   C                                G            Am
-e|--------------------------------|-----------3|----------|
-B|-5------------------------------|------------|---------5|
-G|-5------------------------------|---------4--|-----2h5--|
-D|-5------------------------------|-------5----|---2------|
-A|-7------------------------------|---2h5------|-0--------|
-E|-8------------------------------|-3----------|----------|
+   C        G             Am
+e|--------|-----------3-|-------------|
+B|-5------|-------------|---------5---|
+G|-5------|---------4---|-----2h5-----|
+D|-5------|-------5-----|---2---------|
+A|-7------|---2h5-------|-0-----------|
+E|-8------|-3-----------|-------------|
 ```
 
 - Each bar is named as in a chord chart (`--chord-tone-threshold` applies). The lowest note
@@ -621,7 +661,11 @@ An abridged reference, grouped as in `gtrsnipe --help`. Run `gtrsnipe --help` fo
 - `--refinger`, `--no-refinger`: Tab input: whose fingering to show. By default a tab keeps its own, as written, unless an option changes its notes. `--refinger` always uses the mapper; `--no-refinger` never moves a note to another string. See [Tab input](#tab-input-kept-as-written).
 - `--sustain {legato,string}`: Tab input: `legato` (default) holds each note until the next onset; `string` lets it ring until its own string is struck again, as a guitar does (at most one bar). Shapes playback and MIDI output alike.
 - `--staccato`: Do not extend note durations to the start of the next note, instead giving each note an 1/8 note duration. When converting from ASCII tab.
-- `--max-line-width MAX_LINE_WIDTH`: Max number of vertical columns per line of ASCII tab (default: 40).
+- `--max-line-width MAX_LINE_WIDTH`: Max number of vertical columns per line of ASCII tab (default: 80). Bars are never split: a row holds as many whole bars as fit, and a wider bar gets a row to itself.
+- `--tab-rhythm {dashes,columns,loose}`: ASCII tab output: how a bar's columns carry time. `dashes` (default): the dashes after a note name its length, with a `// Rhythm:` legend line; exact and compact. `columns`: a note's column across its bar is its time; exact with no legend, sometimes wide. `loose`: spacing only hints at the rhythm (the layout up to v0.7.0). A tab made from a tab that didn't state its rhythm stays `loose` unless you choose. See [Tab output](#tab-output-the-dashes-say-how-long).
+- `--tab-base {auto,1/1,1/2,1/4,1/8,1/16,1/32}`: With `--tab-rhythm dashes`: the note that one dash stands for (default: `auto`, the longest note value no longer than the tune's shortest step).
+- `--tab-odd-bars {columns,nearest,error}`: With `--tab-rhythm dashes`: what to do with a bar holding a length the table lacks. `columns` (default): write that bar with columns as time and name it in the legend; `nearest`: use the nearest lengths and name the bar as approximate; `error`: stop and list such bars.
+- `--tab-letters`: ASCII tab output: a line of note lengths over each row (`W H q e s t`; a dot adds half), on top of any `--tab-rhythm`. Read back when the tab is used as input.
 - `--name-chords`: ASCII tab output: chord names above the staff (see [Chord names over a tab](#chord-names-over-a-tab---name-chords)).
 - `--single-string {1,2,3,4,5,6}`: Force all notes onto a single string (1-6, high e to low E). Ideal for transcribing legato/tapping runs.
 - `--normalize-pitch`: Shift notes (+12 or -12) until they fit within the specified tuning and max fret range. Used when the input has many out-of-range notes that would otherwise be dropped.

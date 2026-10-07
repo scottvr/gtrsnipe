@@ -82,7 +82,8 @@ def test_names_change_only_and_repeat_per_line():
     wide = AsciiTabGenerator.generate(progression(), "", max_line_width=400, name_chords=True)
     assert [l.split() for l in name_lines(wide)] == [["C", "G", "Am", "F"]]
     # a bar per line: every line starts with its chord, so Am appears again
-    narrow = AsciiTabGenerator.generate(progression(), "", max_line_width=60, name_chords=True)
+    # (a row narrower than any bar: each bar gets a row to itself, in any layout)
+    narrow = AsciiTabGenerator.generate(progression(), "", max_line_width=1, name_chords=True)
     assert [w for l in name_lines(narrow) for w in l.split()] == ["C", "G", "Am", "Am", "F"]
 
 

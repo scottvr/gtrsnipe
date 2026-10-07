@@ -18,6 +18,7 @@ A map of everything under `docs/`, by who it's for.
 | [`DESIGN-viterbi-mapper.md`](app/DESIGN-viterbi-mapper.md) | The fretboard mapper as dynamic programming over a trellis (v0.3.0), replacing the greedy per-chord choice (still available with `--optimizer greedy`). |
 | [`DESIGN-unified-io.md`](app/DESIGN-unified-io.md) | Renderer × sink × schedule: one pipeline for files and the interactive player; the event-driven transport (v0.5.0), note lengths (v0.6.8). |
 | [`DESIGN-homograph.md`](app/DESIGN-homograph.md) | `--homograph`: the eligibility theorem, the solver's modes, string physics, playability, alignment and re-rhythm. |
+| [`DESIGN-tab-rhythm.md`](app/DESIGN-tab-rhythm.md) | Rhythm in a tab (v0.8.0): the dash-count layout, where the number of dashes after a note names its length; the `columns` and `loose` layouts, note-length letters, and what the reader trusts. With the history of the idea. |
 
 ## The research: [`research/`](research/)
 
@@ -31,8 +32,6 @@ Start at [`research/README.md`](research/README.md).
 - [`PARKING-LOT.md`](dev/PARKING-LOT.md): new ideas waiting for triage.
 - [`NOTES-playability.md`](dev/NOTES-playability.md): design notes for the backlog's
   playability items (M01–M07), carried over from the parking lot.
-- [`SPEC-tab-rhythm.md`](dev/SPEC-tab-rhythm.md): agreed, not built yet: writing note lengths
-  into a tab as a count of dashes (backlog F08).
 - [`archive/`](dev/archive/): the v0.3.0-era plans and audit, frozen.
 
 The images in this folder (`gtrsnipe-*.png`) are logo assets.
