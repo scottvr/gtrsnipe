@@ -125,6 +125,21 @@ stayed parked.
   - Related: `--homograph-neutral` already numbers the strings and omits the default tuning.
     A tab with no tuning line is the bare text the homograph argument is about, and any
     "de facto standard" would have to say which lines are part of the notation.
+  - scottvr, later the same day: the conflation wasn't only a slip. Sometimes the wish is
+    to leave out *everything* written as a `//` comment, whatever it says, so the plain
+    form (`--omit-comments` with no list) should mean exactly that.
+- **Is the command-line stamp still needed? Ship style profiles instead** (scottvr,
+  2026-10-07). Every generated tab carries `// Transcribed with: <the command line>`. It was
+  there so a result could be reproduced, back when a good tab took a long line of options;
+  profiles now do that job.
+  - Test how much it still matters, especially since the Viterbi mapper: how often does a
+    good tab need options at all, and do the cases fall into a few styles? This is the same
+    question as M02 (Viterbi vs greedy across a corpus) and the "style profiles" idea in the
+    scoring-weights notes ([`NOTES-playability.md`](NOTES-playability.md)).
+  - If a small set of stylistic profiles covers it: ship them, lead the documentation with
+    them, and rework the examples to use them in place of long command lines.
+  - Then the stamp could go, or shrink to the profile's name. (Today it also writes the
+    user's full file paths into the tab.) It is one of the lines `--omit-comments` covers.
 - **Standard notation, in and out** (scottvr, 2026-10-07). Engrave proper scores (staff, clef,
   time signature) with an existing tool, and, more interesting and probably more feasible,
   *read* scores so they can be written to the formats gtrsnipe already has. Notes (Claude):
