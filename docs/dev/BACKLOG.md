@@ -80,6 +80,7 @@ keys work left out.
 3. Then choose: **chosen compromises** (M05 optional notes, M06 a hand profile, then M07
    beginner's-version tabs), or M04, the search for an easier tuning.
 4. Whenever the homograph side has time: F07 and R16 (with R14).
+5. F08, the dash-count tab layout: agreed 2026-10-07; when to build it is open.
 
 ---
 
@@ -169,6 +170,7 @@ Design notes: [`NOTES-playability.md`](NOTES-playability.md).
 | F05 | **Pretty PDF tab output**: typeset tabs as a PDF worth printing (title and header, clean staff lines, measure bars, tuning key, maybe rhythm stems or notation). Intended eventually. The empty stub goes in step 1 so it isn't mistaken for a feature; this item is where PDF output comes back. | M–L | code stub; D6 |
 | F06 | ✓ v0.6.6 **Playability of homograph tabs**: discomfort per note vs A's own best tab, `--homograph-max-discomfort`, `scan --max-discomfort/--max-fret`. Comfort filters hard: 19/50 sampled folk pairs within 50 points per note, 0 within 5. | S + M | R04, parking lot |
 | F07 | **Tab checker follow-ups**: a `--check-tab REF` that lists every conflicting note and bar (not just the first bad string); partial alignment for tabs with a few missing or extra notes; batch mode over many tabs of one song. | M | parking lot |
+| F08 | **Tab rhythm: the dash-count layout.** The dashes after a note name its length (one for the base note, two more per doubling, one more for a dot), with a `// Rhythm:` legend line; `--tab-rhythm dashes\|columns\|loose`, `--tab-base`, `--tab-odd-bars`, `--tab-letters`; default row width 80. Spec: [`SPEC-tab-rhythm.md`](SPEC-tab-rhythm.md). A minor version. | M–L | scottvr, parking lot |
 
 ### Tests and housekeeping
 

@@ -17,6 +17,10 @@ H08), the playability group (M01–M07), the tab checker (F07) and homograph com
 Their design notes moved to [`NOTES-playability.md`](NOTES-playability.md). What follows
 stayed parked.
 
+2026-10-07: "tabs that keep time" left the lot for the backlog as F08, after a discussion and
+four sample layouts. The agreed design, its history and the measurements are in
+[`SPEC-tab-rhythm.md`](SPEC-tab-rhythm.md).
+
 ## Ideas
 
 - **More strings for homographs** (scottvr, 2026-09-27).
@@ -71,60 +75,6 @@ stayed parked.
     could be a small, tolerant Standard MIDI File reader of our own (the format is simple:
     chunks, variable-length times, running status), tested against the files in the wild
     that mido rejects. First step: collect those files and see what actually fails.
-- **Tabs that keep time** (from the bug sweep, 2026-10-05; measured for v0.7.0; scottvr wants
-  to discuss it before anything changes). A tab's columns are spaced by each bar's own
-  smallest note value, and a note's digits take a column that isn't time. Since v0.7.0 the
-  reader takes each bar as one measure, so bars keep their place and length; within a bar the
-  rhythm is only as good as the spacing.
-  - Measured on 300 Nottingham tunes written as tabs and read back: 33% of bars come back with
-    exactly their rhythm; 47% mix note values and don't; 17% are steady but their empty tail
-    isn't padded in proportion. No whole tune reads back exactly.
-  - One option: write bars with columns proportional to time (a fixed-width slot per smallest
-    step). Every grid rhythm would then read back exactly, by any reader that takes columns
-    as time. Cost on those tunes: total width x1.14 (51% of bars wider, 37% narrower; the
-    widest bar 81 columns against 43 today).
-  - Others: a rhythm line over the staff; a cap on a bar's width; or leaving tabs as loose
-    as hand-written ones are. scottvr's history with this: early experiments at encoding
-    timing in the dashes, hoping for something good enough to become a convention, without
-    "giant rows of empty lines".
-  - **What the history holds** (looked up 2026-10-07 at scottvr's suggestion). Three layouts
-    were committed, and each later one dropped something the earlier one had:
-    1. December 2024 (`fd583c0`, `src/gtrsnipe/core/tab.py`): strictly proportional, 12
-       characters per beat, with a line of beat numbers over the staff as a ruler. Exact, and
-       48 columns for every 4/4 bar.
-    2. July 2025 (`46ccf63` to `8979623`, `_get_quantized_spacing`): a step function with the
-       shape of a logarithm. A note one unit long got 2 dashes, two units 3, four units 4,
-       longer 5, and the parser carried the inverse (`_spacing_to_beats`). So it was a code:
-       the *number* of dashes named a note length. Its limits were the table (four classes, no
-       dotted values, "longer" read back as six units) and a mismatch between the two sides
-       (dashes were added after the END of a note but measured from its START, so a two-digit
-       fret broke the inverse). No formula-based logarithm was ever committed.
-    3. August 2025 (`7d132e9`): one dash per smallest note value in the bar, today's layout.
-       The parser stopped inverting the generator at that point.
-  - **The dash-count idea, completed, measured on the same tunes.** With a full table (each
-    doubling adds two dashes, a dot adds one: sixteenth 1, eighth 3, quarter 5, half 7, whole
-    9), 98% of bars are exactly decodable and no bar is wider than 34 columns, but the total
-    is x1.63 (most gaps in these tunes are eighths, at 3 dashes each). With the base unit
-    chosen per tune: still 98%, total x1.32, widest 53. It bounds the worst case that
-    proportional bars can't, at a higher average cost, and it needs a legend: a reader that
-    takes columns as time would misread it. It is also how engraved music is spaced
-    (longer notes get more room, but less than in proportion), which is the argument that
-    the idea was sound and the implementation was what fell short.
-  - **A fourth option, and what convention already says** (2026-10-07). A line of note-length
-    letters over the staff, with a compact staff under it: exact, and the narrowest of the
-    four on both sample excerpts (`layouts.txt` in the scripts folder). It is not a new idea.
-    Howard Wright's 1995 guide to tab notation, the newsgroup-era reference, says spacing
-    shows "which notes are the long ones, and which are the short and fast ones" but "will
-    not tell you exactly how long", and describes writing letters "above the corresponding
-    note" (q for a quarter note, e for an eighth), adding that there is "no particular
-    'standard' way" and it is "essential to explain the system you use"
-    (<https://www.classtab.org/tabbing.htm>). Tabs carrying a "Duration Legend" (W H Q E S T X,
-    a dot for dotted notes) also turn up on tab sites; they look like a notation program's
-    text export, which is unverified. So what would be new is a consistent, documented,
-    machine-readable version, not the idea.
-  - scottvr's pick of the four (2026-10-07) is the dash-count layout, with letters as an
-    option. Draft spec for him to mark up: [`DRAFT-tab-rhythm.md`](DRAFT-tab-rhythm.md).
-  - Scripts: `/Volumes/LaCie/data/midi/_tmp/tabtime/`.
 - **What a tab states that still isn't kept** (from v0.7.0). Its `// Title:` (the converter
   names every output after the input file); bends, slides, vibrato and other marks.
 - **`--omit-comments`: leave header lines out of a tab** (scottvr, 2026-10-07; maybe with a
