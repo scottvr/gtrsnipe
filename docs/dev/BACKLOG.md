@@ -1,6 +1,6 @@
 # gtrsnipe backlog
 
-The single list of open work, as of **v0.6.19 (2026-10-05)**. It collates the old parking
+The single list of open work, as of **v0.7.0 (2026-10-07)**. It collates the old parking
 lot, the CHANGELOG's known limitations, the design docs, the v0.3.0-era audit and plans,
 GitHub issues, and findings from recent sessions.
 
@@ -74,6 +74,7 @@ keys work left out.
 
 1. **The bug sweep** ✓ (v0.6.19): B08–B21 and H08; B22 in part (the fallback MIDI reader
    itself is parked for replacement).
+   Then B05 ✓ (v0.7.0): a tab is kept as written, and its bars are read as measures.
 2. **The measuring stick** (M01–M03): the weights audit, Viterbi vs greedy across a corpus,
    and a first tab difficulty measure. The later playability items depend on it.
 3. Then choose: **chosen compromises** (M05 optional notes, M06 a hand profile, then M07
@@ -88,7 +89,7 @@ keys work left out.
 
 | ID | Item | Size | Source |
 |---|---|---|---|
-| B05 | `-i x.tab --play` re-optimizes the tab's fingering instead of playing it as written. It needs a way (e.g. `--as-written`) to keep the tab's own strings and frets. | S–M | session notes |
+| B05 | ✓ v0.7.0 **A tab is kept as written**: its own strings, frets and marks, bar for bar, in the player, tab output and chart diagrams; `--refinger` / `--no-refinger`; re-fingered only when an option changes the notes, and said so. The reader now honours bar lines, the capo line and the time signature. | S–M | session notes |
 | B07 | ✓ v0.6.6 **`MidiReader` drops MIDI track names** (mido path). Fixed; tab titles for named tracks now read "Title (Melody)". | S | R01, parking lot |
 | B08 | ✓ v0.6.19 A failed conversion now exits with status 1 (it used to log the error and exit 0). | S | docs audit |
 | B09 | ✓ v0.6.19 `--bass` selects the bass version of `--tuning` (BASS_DROP_D for DROP_D; a BASS_ tuning stays); a tuning with none is an error. | S | docs audit |

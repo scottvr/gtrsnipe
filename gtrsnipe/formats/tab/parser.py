@@ -41,8 +41,18 @@ class AsciiTabParser:
 
     @staticmethod
     def parse(tab_string: str, staccato: bool = False, quantization_resolution: float = 0.125,
-              open_string_pitches: Optional[List[int]] = None, sustain: str = "legato") -> Song:
-        """``sustain`` (ignored with ``staccato``): how long a note lasts, since a tab
+              open_string_pitches: Optional[List[int]] = None, sustain: str = "legato",
+              capo: Optional[int] = None) -> Song:
+        """Read what the tab states: each note's string, fret and technique mark (h, p,
+        t), its bar, and the header's tempo, time signature, tuning and capo.
+
+        Timing: **each bar is one measure**, and a note sits in it in proportion to its
+        column. A tab's columns say little about rhythm, but its bar lines say exactly
+        where the measures are.
+
+        ``open_string_pitches`` / ``capo``: how to read the frets; by default the tab's
+        own ``// Tuning`` and ``// Capo`` lines (frets count from the capo).
+        ``sustain`` (ignored with ``staccato``): how long a note lasts, since a tab
         only says when to strike. 'legato' (default): until the next onset.
         'string': until the same string is struck again -- how a guitar actually
         rings (arpeggios and pedal notes keep sounding) -- capped at one bar."""
@@ -53,6 +63,13 @@ class AsciiTabParser:
         tempo_match = re.search(r"Tempo:\s*([\d\.]+)", tab_string, re.IGNORECASE)
         if tempo_match:
             song.tempo = float(tempo_match.group(1))
+        beats_per_bar = 4.0
+        time_match = re.search(r"//\s*Time:\s*(\d+)\s*/\s*(\d+)", tab_string, re.IGNORECASE)
+        if time_match and int(time_match.group(1)) and int(time_match.group(2)):
+            song.time_signature = f"{int(time_match.group(1))}/{int(time_match.group(2))}"
+            beats_per_bar = int(time_match.group(1)) * 4.0 / int(time_match.group(2))
+        if capo is None:
+            capo = AsciiTabParser.header_capo(tab_string) or 0
 
         # Read the embedded tuning header so a generated tab round-trips in its own
         # tuning (unless the caller supplied one explicitly, which wins).
@@ -91,83 +108,76 @@ class AsciiTabParser:
 
         logger.debug(f"Dynamically detected {num_strings} strings per block.")
 
-        # 3. Use the dynamic num_strings value to parse correctly.
-        full_strings = [""] * num_strings
-        num_page_lines = len(tab_lines) // num_strings
-        for i in range(num_page_lines):
-            for j in range(num_strings):
-                line_index = i * num_strings + j
-                # Safety check in case of malformed tabs with incomplete last pages
-                if line_index < len(tab_lines):
-                    line_content_raw = tab_lines[line_index].strip().split('|', 1)
-                    if len(line_content_raw) > 1:
-                        tab_part = line_content_raw[1].replace('|', '')
-                        full_strings[j] += tab_part
-
-        # --- Pass 1: A more robust method to find all note events ---
-        temp_events: List[_TabEvent] = []
-        for string_idx, line in enumerate(full_strings):
-            for match in re.finditer(r'(\d+)', line):
-                fret = int(match.group(1))
-                char_idx = match.start()
-                tech = None
-                if char_idx > 0 and line[char_idx - 1].isalpha():
-                    tech_char = line[char_idx-1]
-                    if tech_char == 'h': tech = "hammer-on"
-                    elif tech_char == 'p': tech = "pull-off"
-                temp_events.append(_TabEvent(char_idx, string_idx, fret, tech))
-        
-
-        logger.debug(f"Found {len(temp_events)} raw note events in the tab string.")
-
-        TIME_PER_CHAR_IN_BEATS = quantization_resolution
+        # 3. Split the tab into bars: whatever sits between bar lines, system by system.
+        bars: List[List[str]] = []
+        for i in range(0, len(tab_lines), num_strings):
+            rows = [ln.strip().split('|', 1)[1] for ln in tab_lines[i:i + num_strings]]
+            rows += [""] * (num_strings - len(rows))              # an incomplete last system
+            cells = [row.split('|') for row in rows]
+            for k in range(max(len(c) for c in cells)):
+                segs = [c[k] if k < len(c) else "" for c in cells]
+                width = max(len(x) for x in segs)
+                if width == 0:
+                    continue                                      # '||', or the text after the last bar line
+                bars.append([x.ljust(width, '-') for x in segs])
 
         # A tab gtrsnipe wrote (it has a '// Tuning' header) starts each note a set
         # number of dashes after the END of the note before it, so a two-digit fret
-        # pushes everything after it one column right. That column isn't time: without
-        # it, steady sixteenths read back as 0.25, 0.375, 0.25 beats. Other tabs follow
-        # no known rule, so their columns are read as they stand.
-        late = {}                                  # start column -> columns to take off
-        if re.search(r"^\s*//\s*Tuning\b", tab_string, re.MULTILINE):
-            widest = {}
-            for ev in temp_events:
-                widest[ev.char_idx] = max(widest.get(ev.char_idx, 1), len(str(ev.fret)))
-            shift = 0
-            for col in sorted(widest):
-                late[col] = shift
-                shift += widest[col] - 1
+        # pushes everything after it one column right. That column isn't time. Other
+        # tabs follow no known rule, so their columns are read as they stand.
+        own_layout = bool(re.search(r"^\s*//\s*Tuning\b", tab_string, re.MULTILINE))
+        marks = {'h': "hammer-on", 'p': "pull-off", 't': "tap"}
 
-        if not temp_events:
+        for bar_index, segs in enumerate(bars):
+            found: List[_TabEvent] = []
+            for string_idx, seg in enumerate(segs):
+                for match in re.finditer(r'(\d+)', seg):
+                    col = match.start()
+                    tech = marks.get(seg[col - 1]) if col > 0 else None
+                    found.append(_TabEvent(col, string_idx, int(match.group(1)), tech))
+            if not found:
+                continue
+            width = len(segs[0])
+            late = {}                                  # start column -> columns to take off
+            if own_layout:
+                widest = {}
+                for ev in found:
+                    widest[ev.char_idx] = max(widest.get(ev.char_idx, 1), len(str(ev.fret)))
+                shift = 0
+                for col in sorted(widest):
+                    late[col] = shift
+                    shift += widest[col] - 1
+                width -= shift
+            starts = sorted({ev.char_idx - late.get(ev.char_idx, 0) for ev in found})
+            # A note's time is its column over the bar's width. The bar's first dash is
+            # padding. The bar line usually cuts the last note's slot one column short
+            # ("-5-7-8-5|" is four equal slots), so the whole width is the measure;
+            # unless a tab from elsewhere has evenly spaced notes whose slots end
+            # exactly at the bar line ("-5-7-8-5-|"), where the padding is extra.
+            lead = 1 if starts[0] >= 1 else 0
+            span = width
+            step = min((b - a for a, b in zip(starts, starts[1:])), default=0)
+            if not own_layout and step and (width - lead) % step == 0:
+                span = width - lead
+            span = max(span, 1)
+            for ev in found:
+                col = ev.char_idx - late.get(ev.char_idx, 0)
+                note_time = (bar_index + (col - lead) / span) * beats_per_bar
+                pitch = AsciiTabParser._tab_pos_to_midi(ev.string_idx, ev.fret, num_strings,
+                                                        open_string_pitches) + capo
+                track.events.append(MusicalEvent(
+                    time=note_time, pitch=pitch,
+                    duration=quantization_resolution,        # the legato pass adjusts this
+                    velocity=90, string=ev.string_idx, fret=ev.fret, technique=ev.technique))
+
+        if not track.events:
             logger.warning("No notes found in tab string.")
         else:
-            # We don't need to group by index anymore; we can process each note directly.
-            for temp_event in temp_events:
-                # The note's time is its (corrected) column multiplied by the time per character.
-                note_time = (temp_event.char_idx - late.get(temp_event.char_idx, 0)) * TIME_PER_CHAR_IN_BEATS
-
-                pitch = AsciiTabParser._tab_pos_to_midi(temp_event.string_idx, temp_event.fret, num_strings, open_string_pitches)
-                
-                # A reasonable default duration is one time step.
-                # The legato pass will adjust this later.
-                duration = TIME_PER_CHAR_IN_BEATS
-
-                event = MusicalEvent(
-                    time=note_time,
-                    pitch=pitch,
-                    duration=duration,
-                    velocity=90,
-                    string=temp_event.string_idx,
-                    fret=temp_event.fret,
-                    technique=temp_event.technique
-                )
-                track.events.append(event)
-        
-            # Recalculate the final beat for logging purposes if needed
-            last_event_time = max(e.time for e in track.events) if track.events else 0.0
-            logger.debug(f"Finished parsing. Total notes: {len(track.events)}. Final beat count: {last_event_time:.2f}")
+            logger.debug(f"Finished parsing. Total notes: {len(track.events)}. "
+                         f"Bars: {len(bars)}.")
 
         # --- Pass 3: If staccato is enabled, modify the events now in the track ---
-        if not staccato and len(track.events) > 1:
+        if not staccato and track.events:
             logger.debug("Applying legato processing.")
             sorted_events = sorted(track.events, key=lambda e: e.time)
             events_grouped_by_time = [list(g) for t, g in groupby(sorted_events, key=lambda e: e.time)]
@@ -186,6 +196,11 @@ class AsciiTabParser:
 
                     for event in current_group:
                         event.duration = duration
+            # the last notes ring to the end of their bar (they have no next onset)
+            last = events_grouped_by_time[-1]
+            bar_end = (int(last[0].time // beats_per_bar) + 1) * beats_per_bar
+            for event in last:
+                event.duration = max(bar_end - event.time, event.duration)
         elif staccato:
             logger.debug("Staccato flag set, skipping legato processing.")
 
@@ -196,6 +211,12 @@ class AsciiTabParser:
         song.tracks.append(track)
         logger.debug("Finished creating Song object.")
         return song
+
+    @staticmethod
+    def header_capo(tab_string: str) -> Optional[int]:
+        """The capo fret from a tab's '// Capo: 2nd Fret' line, or None."""
+        m = re.search(r"//\s*Capo:\s*(\d+)", tab_string, re.IGNORECASE)
+        return int(m.group(1)) if m else None
 
     @staticmethod
     def header_tuning(tab_string: str) -> Optional[List[int]]:

@@ -71,12 +71,25 @@ stayed parked.
     could be a small, tolerant Standard MIDI File reader of our own (the format is simple:
     chunks, variable-length times, running status), tested against the files in the wild
     that mido rejects. First step: collect those files and see what actually fails.
-- **Tabs that keep time** (from the bug sweep, 2026-10-05). A tab's columns are spaced by
-  each bar's own smallest note value, so a bar of quarter notes and a bar of sixteenths look
-  alike and read back alike: a tab round-trips its pitches, strings and the rhythm *within*
-  a bar, but not the bars' lengths. A song-wide column unit (optional, since it makes wide
-  tabs) or a rhythm line would let a tab carry its rhythm. It changes how tabs look, so it is
-  a decision, not a fix.
+- **Tabs that keep time** (from the bug sweep, 2026-10-05; measured for v0.7.0; scottvr wants
+  to discuss it before anything changes). A tab's columns are spaced by each bar's own
+  smallest note value, and a note's digits take a column that isn't time. Since v0.7.0 the
+  reader takes each bar as one measure, so bars keep their place and length; within a bar the
+  rhythm is only as good as the spacing.
+  - Measured on 300 Nottingham tunes written as tabs and read back: 33% of bars come back with
+    exactly their rhythm; 47% mix note values and don't; 17% are steady but their empty tail
+    isn't padded in proportion. No whole tune reads back exactly.
+  - One option: write bars with columns proportional to time (a fixed-width slot per smallest
+    step). Every grid rhythm would then read back exactly, by any reader that takes columns
+    as time. Cost on those tunes: total width x1.14 (51% of bars wider, 37% narrower; the
+    widest bar 81 columns against 43 today).
+  - Others: a rhythm line over the staff; a cap on a bar's width; or leaving tabs as loose
+    as hand-written ones are. scottvr's history with this: early experiments at encoding
+    timing in the dashes, hoping for something good enough to become a convention, without
+    "giant rows of empty lines".
+  - Scripts: `/Volumes/LaCie/data/midi/_tmp/tabtime/`.
+- **What a tab states that still isn't kept** (from v0.7.0). Its `// Title:` (the converter
+  names every output after the input file); bends, slides, vibrato and other marks.
 - **Learned weights and a profile finder** (from the scoring-weights notes, 2026-09-27; kept
   parked at the 2026-10-05 triage). A structured perceptron trained on human-fingered tabs, or
   sampling settings and letting a player rank the distinct tabs. Both wait for the weights

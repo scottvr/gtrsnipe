@@ -210,13 +210,18 @@ def test_a_chord_with_a_two_digit_fret_stays_one_chord():
 
 
 def test_a_tab_from_elsewhere_is_read_by_its_columns():
-    # no '// Tuning' header: fixed-width slots stay as they are
-    foreign = "e|-5--12-7--|\nB|----------|\nG|----------|\nD|----------|\nA|----------|\nE|----------|\n"
-    times = onsets(AsciiTabParser.parse(foreign).tracks[0].events)
-    assert [round(b - a, 4) for a, b in zip(times, times[1:])] == [0.375, 0.375]
-    ours = "// Tuning: E2,A2,D3,G3,B3,E4\n\n" + foreign.replace("-5--12-7--", "-5-12-7---")
-    times = onsets(AsciiTabParser.parse(ours).tracks[0].events)
-    assert [round(b - a, 4) for a, b in zip(times, times[1:])] == [0.25, 0.25]
+    def gaps(text):
+        times = onsets(AsciiTabParser.parse(text).tracks[0].events)
+        return [round(b - a, 3) for a, b in zip(times, times[1:])]
+    rest = "\nB|----------|\nG|----------|\nD|----------|\nA|----------|\nE|----------|\n"
+    header = "// Tuning: E2,A2,D3,G3,B3,E4\n\n"
+    # no '// Tuning' header: fixed-width slots are even as they stand
+    assert len(set(gaps("e|-5--12-7--|" + rest))) == 1
+    # gtrsnipe's own layout puts the 7 one dash after the END of the 12
+    assert len(set(gaps(header + "e|-5-12-7---|" + rest))) == 1
+    # so each rule misreads the other's layout: the header is what tells them apart
+    assert len(set(gaps("e|-5-12-7---|" + rest))) == 2
+    assert len(set(gaps(header + "e|-5--12-7--|" + rest))) == 2
 
 
 # -- B22 ---------------------------------------------------------------------------------
