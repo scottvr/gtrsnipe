@@ -4,8 +4,11 @@ from ....core.config import MapperConfig
 from ....guitar.mapper import GuitarMapper
 from ....guitar.fingering import positioned
 from ..tab_types import TabScore, TabMeasure, TabNote
+from ..rhythm import (LAYOUTS, LETTERS_LINE, MAX_SLOTS, ODD_BARS, base_name, dashes_for, exact,
+                      legend, letter_for, nearest_dashes, parse_base, pick_base)
 from itertools import groupby
 import logging
+import math
 import sys
 from pathlib import Path
 
@@ -13,11 +16,13 @@ logger = logging.getLogger(__name__)
 
 class AsciiTabGenerator:
     @staticmethod
-    def generate(song: Song, command_line: str, max_line_width: int = 40, default_note_length: str = "1/16", 
+    def generate(song: Song, command_line: str, max_line_width: int = 80, default_note_length: str = "1/16", 
                  no_articulations: bool = False, 
                  single_string: Optional[int] = None, mapper_config: Optional[MapperConfig] = None,
                  premapped: bool = False, name_chords: bool = False,
                  chord_tone_threshold: Optional[float] = None, shape_names: bool = False,
+                 rhythm: Optional[str] = None, base: Optional[str] = None,
+                 odd_bars: str = "columns", letters: bool = False,
                  **kwargs) -> str:
         """
         Generates an ASCII tab string from a Song object.
@@ -30,7 +35,25 @@ class AsciiTabGenerator:
             name_chords: write chord names (concert pitch) above each staff, one per
                 measure, where the harmony changes and at the start of each line.
                 Measures are named as in the chord charts (``chords.segment``).
+            rhythm: how a bar's columns carry time (F08, formats/tab/rhythm.py):
+                'dashes' (the dashes after a note name its length), 'columns' (a
+                note's column across the bar is its time) or 'loose' (spacing only
+                hints). None: 'dashes', unless the song came from a tab that didn't
+                state its rhythm (``song.rhythm_approximate``), which stays 'loose':
+                the output shouldn't state lengths its source didn't.
+            base: the dash-count base note ('1/16'); None = the tune's shortest note.
+            odd_bars: a bar with a length the dash-count table lacks is written in
+                'columns' (and named in the legend), with the 'nearest' lengths, or is
+                an 'error'.
+            letters: a line of note lengths (W H q e s t) over each row.
         """
+        if rhythm is None:
+            rhythm = "loose" if getattr(song, "rhythm_approximate", False) else "dashes"
+        if rhythm not in LAYOUTS:
+            raise ValueError(f"unknown tab rhythm {rhythm!r} ({', '.join(LAYOUTS)})")
+        if odd_bars not in ODD_BARS:
+            raise ValueError(f"unknown --tab-odd-bars {odd_bars!r} ({', '.join(ODD_BARS)})")
+        base_beats = parse_base(base) if base and base != "auto" else None
         if mapper_config is None:
             mapper_config = MapperConfig()
 
@@ -82,7 +105,8 @@ class AsciiTabGenerator:
 
         return AsciiTabGenerator._format_score(score, command_line, max_line_width, base_unit_in_beats,
                                                mapper_config, chord_labels=chord_labels,
-                                               chord_banner=banner)
+                                               chord_banner=banner, rhythm=rhythm, base=base_beats,
+                                               odd_bars=odd_bars, letters=letters)
 
     @staticmethod
     def _bar_chord_names(song: Song, threshold: float, naming=None, key=None) -> Dict[int, List[tuple]]:
@@ -169,9 +193,11 @@ class AsciiTabGenerator:
 
     @staticmethod
     def _format_single_measure(measure: TabMeasure, base_unit_in_beats: float, config: MapperConfig, measure_index: int,
-                               columns: Optional[list] = None) -> List[str]:
-        """Formats a single measure using dynamic rhythmic spacing. ``columns``, if
-        given, collects (beat in measure, column of the fret digits) per onset."""
+                               columns: Optional[list] = None, letters: Optional[list] = None) -> List[str]:
+        """Formats a single measure using dynamic rhythmic spacing (the 'loose' layout).
+        ``columns``, if given, collects (beat in measure, column of the fret digits)
+        per onset. ``letters``, if given, collects (column, note-length letters), and
+        the notes are spread just enough for the letters not to touch."""
         measure_lines = ["-"] * config.num_strings
         if not measure.notes:
             # Handle empty measures
@@ -217,7 +243,13 @@ class AsciiTabGenerator:
     
         # --- 2. Build the Measure String ---
         last_event_time = 0.0
-        for event in events:
+        bar_beats = (measure.time_signature[0] / measure.time_signature[1]) * 4
+        letter_end = 0                    # first column free for the next letter
+        if letters is not None and events and events[0]['time'] > 1e-9:
+            rest = letter_for(events[0]['time'])
+            letters.append((0, rest))     # a letter with nothing under it: a rest
+            letter_end = len(rest or "") + 1
+        for k, event in enumerate(events):
             time = event['time']
             notes_in_chord = event['notes']
     
@@ -247,6 +279,12 @@ class AsciiTabGenerator:
                     if room < len(sym):
                         start_pos += len(sym) - room
 
+            if letters is not None:
+                start_pos = max(start_pos, letter_end)
+                until = events[k + 1]['time'] if k + 1 < len(events) else bar_beats
+                text = letter_for(until - time)
+                letters.append((start_pos, text))
+                letter_end = start_pos + len(text or "") + 1
             if columns is not None:
                 columns.append((time, start_pos))
             for note in notes_in_chord:
@@ -272,6 +310,8 @@ class AsciiTabGenerator:
         
         # Use the greater of the rendered content or the expected total length
         final_len = max(final_max_len, total_measure_units)
+        if letters is not None:
+            final_len = max(final_len, letter_end - 1)   # the last letter ends inside its bar
     
         for j in range(config.num_strings):
             padding = final_len - len(measure_lines[j])
@@ -279,10 +319,114 @@ class AsciiTabGenerator:
         
         return measure_lines
 
+    _SYMBOL = {"hammer-on": "h", "pull-off": "p", "tap": "t"}
+
+    @staticmethod
+    def _onsets(measure: TabMeasure, config: MapperConfig) -> List[tuple]:
+        """A measure's notes grouped by onset: [(offset in beats, exact; [notes])]."""
+        groups: Dict = {}
+        for note in measure.notes:
+            if 0 <= note.position.string < config.num_strings:
+                groups.setdefault(exact(note.beat_in_measure), []).append(note)
+        out = []
+        for offset in sorted(groups):
+            notes = groups[offset]
+            if config.mono_lowest_only and len(notes) > 1:
+                notes = [min(notes, key=lambda n: (-n.position.string, -n.position.fret))]
+            out.append((offset, notes))
+        return out
+
+    @staticmethod
+    def _place(lines: List[str], notes: List[TabNote], start: int, width: int) -> None:
+        """Write one onset's fret numbers at column ``start`` (all lines are ``start``
+        long), ``width`` columns wide; a technique letter takes the column before."""
+        on_string = {n.position.string: n for n in notes}
+        for s in range(len(lines)):
+            note = on_string.get(s)
+            if note is None:
+                lines[s] += "-" * width
+                continue
+            symbol = AsciiTabGenerator._SYMBOL.get(note.technique.value, "") if note.technique else ""
+            if symbol and start > 0:
+                lines[s] = lines[s][:start - 1] + symbol
+            lines[s] += str(note.position.fret).ljust(width, "-")
+
+    @staticmethod
+    def _bar_dashes(onsets: List[tuple], bar, n_strings: int, base, nearest: bool = False):
+        """A bar in the dash-count layout: (lines, [(offset, column)], [(column, letters)]),
+        or None if a length isn't in the table (``nearest``: use the closest that is)."""
+        def count(length):
+            dashes = dashes_for(length, base)
+            return nearest_dashes(length, base) if dashes is None and nearest else dashes
+        lead = onsets[0][0]
+        lead_dashes = count(lead) if lead > 0 else 0
+        if lead_dashes is None:
+            return None
+        lines = ["-" * (1 + lead_dashes)] * n_strings        # the padding dash, then any rest
+        columns, letters = [], ([(0, letter_for(lead))] if lead > 0 else [])
+        ends = [offset for offset, _ in onsets[1:]] + [bar]
+        for (offset, notes), until in zip(onsets, ends):
+            dashes = count(until - offset)
+            if dashes is None:
+                return None
+            start = len(lines[0])
+            lines = list(lines)
+            AsciiTabGenerator._place(lines, notes, start, max(len(str(n.position.fret)) for n in notes))
+            columns.append((float(offset), start))
+            letters.append((start, letter_for(until - offset)))
+            lines = [line + "-" * dashes for line in lines]
+        return lines, columns, letters
+
+    @staticmethod
+    def _bar_columns(onsets: List[tuple], bar, n_strings: int, room_for_letters: bool = False):
+        """A bar with columns as time: equal slots, one per the bar's shortest step, a
+        note at the start of its slot, the last slot cut one column short by the bar
+        line. None if the bar is on no grid worth drawing (``MAX_SLOTS``)."""
+        values = [offset for offset, _ in onsets] + [bar]
+        denominator = 1
+        for v in values:
+            denominator = denominator * v.denominator // math.gcd(denominator, v.denominator)
+        step = 0
+        for v in values:
+            step = math.gcd(step, int(v * denominator))
+        slots = int(bar * denominator) // step
+        if slots > MAX_SLOTS:
+            return None
+        ends = values[1:]
+        texts = [letter_for(until - offset) for (offset, _), until in zip(onsets, ends)]
+        rest = letter_for(onsets[0][0]) if onsets[0][0] > 0 else ""
+        at = [int(v * denominator) // step for v in values]          # each onset's slot; the bar's end
+        slot = max([2] + [len(str(n.position.fret)) + 1 for _, notes in onsets for n in notes])
+        if room_for_letters and None not in texts + [rest]:
+            # a length's letters and a space must fit before the next onset
+            spans = list(zip(texts, (b - a for a, b in zip(at, at[1:])))) + ([(rest, at[0])] if rest else [])
+            slot = max([slot] + [-(-(len(text) + 1) // slots_long) for text, slots_long in spans])
+        width = slots * slot
+        lines = ["-" * width] * n_strings
+        columns, letters = [], ([(1, rest)] if rest else [])
+        for (offset, notes), text, k in zip(onsets, texts, at):
+            start = 1 + k * slot
+            head = [line[:start] for line in lines]
+            AsciiTabGenerator._place(head, notes, start, max(len(str(n.position.fret)) for n in notes))
+            lines = [h + line[len(h):] for h, line in zip(head, lines)]
+            columns.append((float(offset), start))
+            letters.append((start, text))
+        return lines, columns, letters
+
+    @staticmethod
+    def _letter_line(entries: List[tuple]) -> str:
+        """(column, letters) -> one line, each at its column. The layouts leave room, so
+        letters never touch; a reader pairs a letter with the note it sits over."""
+        line = ""
+        for col, text in sorted(entries):
+            line = line.ljust(col)[:col] + text
+        return line
+
     @staticmethod
     def _format_score(score: TabScore, command_line: str, max_line_width: int, base_unit_in_beats: float,
                       config: MapperConfig, chord_labels: Optional[Dict[int, List[tuple]]] = None,
-                      chord_banner: Optional[List[str]] = None) -> str:
+                      chord_banner: Optional[List[str]] = None, rhythm: str = "loose", base=None,
+                      odd_bars: str = "columns", letters: bool = False) -> str:
         """Formats the complete score, breaking lines based on character width.
 
         ``chord_labels`` (measure index -> [(beat in measure, chord name)]) adds a
@@ -326,6 +470,9 @@ class AsciiTabGenerator:
             ""
         ]
 
+        bars = AsciiTabGenerator._lay_out(score, base_unit_in_beats, config, rhythm, base, odd_bars, letters)
+        rhythm_line = legend(rhythm, bars["base"], bars["in_columns"], bars["approximate"])
+
         if config.capo > 0:
             n = config.capo
             if 11 <= (n % 100) <= 13:
@@ -334,6 +481,10 @@ class AsciiTabGenerator:
                 suffix = {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
             header.append(f"// Capo: {n}{suffix} Fret")
 
+        if rhythm_line:
+            header.append(f"// {rhythm_line}")
+        if letters:
+            header.append(f"// {LETTERS_LINE}")
         for line in chord_banner or []:
             header.append(f"// {line}")
 
@@ -351,21 +502,25 @@ class AsciiTabGenerator:
         names: List[tuple] = []           # (column, chord name) for the current staff
         last_label: Optional[str] = None
 
+        lengths: List[tuple] = []         # (column, note-length letters) for the current staff
+
         def flush():
             if names:
                 body.append(AsciiTabGenerator._chord_name_line(names))
+            if letters:
+                body.append(AsciiTabGenerator._letter_line(lengths))
             body.extend(tab_lines)
             body.append("")
 
         for m_idx, measure in enumerate(score.measures):
-            columns: list = []
-            measure_content = AsciiTabGenerator._format_single_measure(measure, base_unit_in_beats, config, m_idx,
-                                                                       columns=columns)
-            
+            measure_content, columns, bar_letters = bars["bars"][m_idx]
+
             if len(tab_lines[0]) + len(measure_content[0]) + 1 > max_line_width:
                 flush()
                 tab_lines = [f"{name}|" for name in string_names]
                 names = []
+                lengths = []
+            lengths += [(len(tab_lines[0]) + col, text) for col, text in bar_letters]
 
             for beat, label in (chord_labels.get(m_idx, []) if chord_labels else []):
                 col = next((c for t, c in columns if t >= beat - 1e-6), None)
@@ -382,6 +537,77 @@ class AsciiTabGenerator:
             flush()
 
         return "\n".join(header + body)
+
+    @staticmethod
+    def _lay_out(score: TabScore, base_unit_in_beats: float, config: MapperConfig, rhythm: str,
+                 base, odd_bars: str, letters: bool) -> Dict:
+        """Every bar's text in the chosen layout: ``bars`` [(lines, [(offset, column)],
+        [(column, letters)])], plus what the legend must say: the ``base`` (dashes), and
+        the 1-based numbers of the bars written ``in_columns`` or only ``approximate``."""
+        n = config.num_strings
+        num, den = score.time_signature
+        bar = exact(num * 4.0 / den if den else num)
+        out: Dict = {"bars": [], "base": None, "in_columns": [], "approximate": []}
+
+        def loose(index, measure):
+            columns, found = [], ([] if letters else None)
+            lines = AsciiTabGenerator._format_single_measure(measure, base_unit_in_beats, config, index,
+                                                             columns=columns, letters=found)
+            if found and any(text is None for _, text in found):    # letters can't say this bar
+                columns = []
+                lines = AsciiTabGenerator._format_single_measure(measure, base_unit_in_beats, config, index,
+                                                                 columns=columns)
+            return lines, columns, found or []
+
+        def lettered(drawn):
+            """A bar's letters, kept only if every length has them and none touch."""
+            lines, columns, found = drawn
+            ends = [col for col, _ in found[1:]] + [len(lines[0]) + 1]
+            if not letters or any(text is None or col + len(text) >= end
+                                  for (col, text), end in zip(found, ends)):
+                found = []
+            return lines, columns, found
+
+        if rhythm == "loose":
+            out["bars"] = [lettered(loose(i, m)) for i, m in enumerate(score.measures)]
+            return out
+
+        onsets = [AsciiTabGenerator._onsets(m, config) for m in score.measures]
+        silent = (["----"] * n, [], [])
+        if rhythm == "columns":
+            for i, (measure, found) in enumerate(zip(score.measures, onsets)):
+                drawn = AsciiTabGenerator._bar_columns(found, bar, n, letters) if found else silent
+                if drawn is None:                       # on no grid: spacing can only hint
+                    drawn = loose(i, measure)
+                    out["approximate"].append(i + 1)
+                out["bars"].append(lettered(drawn))
+            return out
+
+        gaps = [g for found in onsets if found
+                for g in [found[0][0]] + [b - a for a, b in zip([o for o, _ in found], [o for o, _ in found][1:] + [bar])]]
+        out["base"] = exact(base) if base else pick_base(gaps)
+        odd = []
+        for i, found in enumerate(onsets):
+            if not found:
+                out["bars"].append(silent)
+                continue
+            drawn = AsciiTabGenerator._bar_dashes(found, bar, n, out["base"])
+            if drawn is None:
+                odd.append(i + 1)
+                if odd_bars == "columns":
+                    drawn = AsciiTabGenerator._bar_columns(found, bar, n, letters)
+                    if drawn is not None:
+                        out["in_columns"].append(i + 1)
+                if drawn is None:
+                    drawn = AsciiTabGenerator._bar_dashes(found, bar, n, out["base"], nearest=True)
+                    out["approximate"].append(i + 1)
+            out["bars"].append(lettered(drawn))
+        if odd and odd_bars == "error":
+            shown = ", ".join(map(str, odd[:20])) + (" ..." if len(odd) > 20 else "")
+            raise ValueError(f"{len(odd)} bar(s) hold a note length the dash-count table doesn't, with "
+                             f"base {base_name(out['base'])}: bars {shown}. Choose --tab-odd-bars columns or "
+                             "nearest, another --tab-base, or --tab-rhythm columns.")
+        return out
 
     @staticmethod
     def _chord_name_line(names: List[tuple]) -> str:

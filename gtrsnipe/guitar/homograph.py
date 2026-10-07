@@ -1327,9 +1327,9 @@ _TAB_LINE = re.compile(r"^\s*[^\s|/]{1,3}\|")
 def render_tab(report: HomographReport, sol: Solution, *, neutral: bool = False,
                max_line_width: int = 80, command_line: str = "",
                base_config: Optional[MapperConfig] = None, tempo: float = 120.0,
-               time_signature: str = "4/4") -> str:
+               time_signature: str = "4/4", tab_options: Optional[dict] = None) -> str:
     """ASCII tab of the shared fingering, with every song's tuning key in the
-    header. Normal: labeled + '// Tuning:' for song 0, so it reads (and parses)
+    header. ``tab_options``: the tab generator's layout options (--tab-rhythm ...). Normal: labeled + '// Tuning:' for song 0, so it reads (and parses)
     as an ordinary tab of A. ``neutral``: strings numbered 1..N and no default
     tuning, so the text privileges no song."""
     from ..formats.tab.generator.ascii import AsciiTabGenerator
@@ -1342,7 +1342,7 @@ def render_tab(report: HomographReport, sol: Solution, *, neutral: bool = False,
     # would be valid in every tuning, but they aren't needed to spell the songs).
     text = AsciiTabGenerator.generate(song, command_line=command_line,
                                       max_line_width=max_line_width, no_articulations=True,
-                                      mapper_config=cfg, premapped=True)
+                                      mapper_config=cfg, premapped=True, **(tab_options or {}))
     keys = ["// Homograph: this one tab plays a different song in each tuning (low->high):"]
     for j, lab in enumerate(report.labels):
         shift = sol.shifts[j]

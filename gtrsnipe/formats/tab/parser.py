@@ -1,7 +1,9 @@
 from dataclasses import dataclass
+from fractions import Fraction
 from typing import List, Optional
 import re
 from ...core.types import MusicalEvent, Song, Track
+from .rhythm import exact, length_for, letters_length, read_legend
 from ...core.theory import note_name_to_pitch
 from itertools import groupby
 import logging
@@ -109,17 +111,28 @@ class AsciiTabParser:
         logger.debug(f"Dynamically detected {num_strings} strings per block.")
 
         # 3. Split the tab into bars: whatever sits between bar lines, system by system.
-        bars: List[List[str]] = []
+        # Each bar keeps where it starts on the page, and the line just over its row
+        # (which holds the note-length letters, when the header says there are any).
+        said = read_legend(tab_string)
+        tab_line_numbers = [i for i, line in enumerate(lines) if _is_tab_line(line)]
+        bars: List[tuple] = []                       # (segments, page column, line above)
         for i in range(0, len(tab_lines), num_strings):
-            rows = [ln.strip().split('|', 1)[1] for ln in tab_lines[i:i + num_strings]]
+            raw = tab_lines[i:i + num_strings]
+            rows = [ln.strip().split('|', 1)[1] for ln in raw]
             rows += [""] * (num_strings - len(rows))              # an incomplete last system
+            first = tab_line_numbers[i]
+            above = lines[first - 1] if said["letters"] and first > 0 else ""
+            if above.strip().startswith("//") or _is_tab_line(above):
+                above = ""
+            page_col = raw[0].index('|') + 1
             cells = [row.split('|') for row in rows]
             for k in range(max(len(c) for c in cells)):
                 segs = [c[k] if k < len(c) else "" for c in cells]
                 width = max(len(x) for x in segs)
+                here, page_col = page_col, page_col + len(cells[0][k] if k < len(cells[0]) else "") + 1
                 if width == 0:
                     continue                                      # '||', or the text after the last bar line
-                bars.append([x.ljust(width, '-') for x in segs])
+                bars.append(([x.ljust(width, '-') for x in segs], here, above))
 
         # A tab gtrsnipe wrote (it has a '// Tuning' header) starts each note a set
         # number of dashes after the END of the note before it, so a two-digit fret
@@ -127,8 +140,10 @@ class AsciiTabParser:
         # tabs follow no known rule, so their columns are read as they stand.
         own_layout = bool(re.search(r"^\s*//\s*Tuning\b", tab_string, re.MULTILINE))
         marks = {'h': "hammer-on", 'p': "pull-off", 't': "tap"}
+        bar_length = exact(beats_per_bar)
+        approximate: List[int] = []                  # bars (1-based) whose rhythm was only hinted
 
-        for bar_index, segs in enumerate(bars):
+        for bar_index, (segs, page_col, above) in enumerate(bars):
             found: List[_TabEvent] = []
             for string_idx, seg in enumerate(segs):
                 for match in re.finditer(r'(\d+)', seg):
@@ -138,37 +153,39 @@ class AsciiTabParser:
             if not found:
                 continue
             width = len(segs[0])
-            late = {}                                  # start column -> columns to take off
-            if own_layout:
-                widest = {}
-                for ev in found:
-                    widest[ev.char_idx] = max(widest.get(ev.char_idx, 1), len(str(ev.fret)))
-                shift = 0
-                for col in sorted(widest):
-                    late[col] = shift
-                    shift += widest[col] - 1
-                width -= shift
-            starts = sorted({ev.char_idx - late.get(ev.char_idx, 0) for ev in found})
-            # A note's time is its column over the bar's width. The bar's first dash is
-            # padding. The bar line usually cuts the last note's slot one column short
-            # ("-5-7-8-5|" is four equal slots), so the whole width is the measure;
-            # unless a tab from elsewhere has evenly spaced notes whose slots end
-            # exactly at the bar line ("-5-7-8-5-|"), where the padding is extra.
-            lead = 1 if starts[0] >= 1 else 0
-            span = width
-            step = min((b - a for a, b in zip(starts, starts[1:])), default=0)
-            if not own_layout and step and (width - lead) % step == 0:
-                span = width - lead
-            span = max(span, 1)
+            widest = {}                                # onset column -> its widest fret number
             for ev in found:
-                col = ev.char_idx - late.get(ev.char_idx, 0)
-                note_time = (bar_index + (col - lead) / span) * beats_per_bar
+                widest[ev.char_idx] = max(widest.get(ev.char_idx, 1), len(str(ev.fret)))
+
+            # What the tab states exactly comes first: note-length letters, then the
+            # dash count, then columns as time. Failing those, the spacing only hints.
+            hinted = (bar_index + 1) in said["approximate"]            # the writer said so
+            in_columns = not hinted and (said["layout"] == "columns" or (bar_index + 1) in said["in_columns"])
+            when = AsciiTabParser._by_letters(above, page_col, width, widest, bar_length, bar_index == 0)
+            if when is None and said["layout"] == "dashes" and not in_columns and not hinted:
+                when = AsciiTabParser._by_dash_count(widest, width, said["base"], bar_length, bar_index == 0)
+            if when is None and in_columns:
+                lead = 1 if min(widest) >= 1 else 0
+                when = {col: (col - lead) / width * beats_per_bar for col in widest}
+            if when is None:
+                approximate.append(bar_index + 1)
+                when = AsciiTabParser._by_spacing(widest, width, beats_per_bar, own_layout)
+            for ev in found:
+                note_time = bar_index * beats_per_bar + float(when[ev.char_idx])
                 pitch = AsciiTabParser._tab_pos_to_midi(ev.string_idx, ev.fret, num_strings,
                                                         open_string_pitches) + capo
                 track.events.append(MusicalEvent(
                     time=note_time, pitch=pitch,
                     duration=quantization_resolution,        # the legato pass adjusts this
                     velocity=90, string=ev.string_idx, fret=ev.fret, technique=ev.technique))
+
+        # Did the tab state its rhythm? If any bar's was only hinted, nothing written
+        # from this song should claim exact lengths (the tab generator checks this).
+        song.rhythm_approximate = bool(approximate)
+        if approximate and (said["layout"] or said["letters"]):
+            shown = ", ".join(map(str, approximate[:12])) + (" ..." if len(approximate) > 12 else "")
+            logger.info(f"Tab rhythm: bar(s) {shown} read by their spacing (the legend names them as "
+                        "approximate, or they don't add up to a measure as written).")
 
         if not track.events:
             logger.warning("No notes found in tab string.")
@@ -211,6 +228,81 @@ class AsciiTabParser:
         song.tracks.append(track)
         logger.debug("Finished creating Song object.")
         return song
+
+    @staticmethod
+    def _by_letters(above: str, page_col: int, width: int, widest: dict, bar, first_bar: bool):
+        """Onset column -> offset in the bar, from the note-length letters over it; None
+        if there are none, they don't sit over the notes, or don't add up to the bar.
+        A letter with no note under it is a rest; a short first bar is a pickup."""
+        tokens = [(m.start() - page_col, m.group(0)) for m in re.finditer(r"\S+", above)
+                  if page_col <= m.start() < page_col + width]
+        if not tokens or {col for col, _ in tokens} < set(widest):
+            return None
+        at, when = Fraction(0), {}
+        for col, token in tokens:
+            length = letters_length(token)
+            if length is None:
+                return None
+            if col in widest:
+                when[col] = at
+            at += length
+        if set(when) != set(widest):
+            return None
+        if at == bar:
+            return when
+        if first_bar and at < bar:
+            return {col: t + (bar - at) for col, t in when.items()}
+        return None
+
+    @staticmethod
+    def _by_dash_count(widest: dict, width: int, base, bar, first_bar: bool):
+        """Onset column -> offset in the bar, from the dashes after each note (counted
+        from the end of its fret number); None if the bar isn't written that way or
+        doesn't add up to a measure. A short first bar is a pickup."""
+        starts = sorted(widest)
+        if starts[0] < 1:
+            return None                              # no padding dash: not this layout
+        at = Fraction(0)
+        if starts[0] > 1:
+            rest = length_for(starts[0] - 1, base)
+            if rest is None:
+                return None
+            at = rest
+        when = {}
+        for col, nxt in zip(starts, starts[1:] + [width]):
+            length = length_for(nxt - (col + widest[col]), base)
+            if length is None:
+                return None
+            when[col] = at
+            at += length
+        if at == bar:
+            return when
+        if first_bar and at < bar:
+            return {col: t + (bar - at) for col, t in when.items()}
+        return None
+
+    @staticmethod
+    def _by_spacing(widest: dict, width: int, beats_per_bar: float, own_layout: bool) -> dict:
+        """Onset column -> offset in the bar when the tab only hints: a note's time is
+        its column over the bar's width (the bar's first dash is padding)."""
+        late, shift = {}, 0                           # start column -> columns to take off
+        if own_layout:
+            for col in sorted(widest):
+                late[col] = shift
+                shift += widest[col] - 1
+            width -= shift
+        starts = sorted(col - late.get(col, 0) for col in widest)
+        # The bar line usually cuts the last note's slot one column short ("-5-7-8-5|"
+        # is four equal slots), so the whole width is the measure; unless a tab from
+        # elsewhere has evenly spaced notes whose slots end exactly at the bar line
+        # ("-5-7-8-5-|"), where the padding is extra.
+        lead = 1 if starts[0] >= 1 else 0
+        span = width
+        step = min((b - a for a, b in zip(starts, starts[1:])), default=0)
+        if not own_layout and step and (width - lead) % step == 0:
+            span = width - lead
+        span = max(span, 1)
+        return {col: (col - late.get(col, 0) - lead) / span * beats_per_bar for col in widest}
 
     @staticmethod
     def header_capo(tab_string: str) -> Optional[int]:

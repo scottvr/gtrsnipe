@@ -1,7 +1,7 @@
 # Rhythm in gtrsnipe's tabs: the dash-count layout
 
-*Agreed 2026-10-07; not built yet (backlog F08). The measurements quoted are from 300
-Nottingham folk tunes written out as tabs.*
+*Agreed 2026-10-07 and built in v0.8.0 (backlog F08). The measurements quoted are from 300
+Nottingham folk tunes written out as tabs and read back.*
 
 ## A Brief History of Timing
 
@@ -59,15 +59,18 @@ One dash is the *base* note. Each doubling adds two dashes; a dot adds one.
 | dashes | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |
 | with a sixteenth as the base | s | s. | e | e. | q | q. | H | H. | W |
 
-The base is the tune's shortest note unless `--tab-base` names one (see Options). It has to
-be at least as short as the shortest note, or two notes would touch and read as one fret
-number.
+The base is chosen per tune unless `--tab-base` names one (see Options): the longest plain
+note value (whole, half, quarter, eighth, ...) that is no longer than the tune's shortest
+step from one onset to the next. A tune of quarters and eighths gets an eighth; one whose
+shortest step is a dotted eighth also gets an eighth, so the dotted eighth is two dashes.
 
 ## The rules
 
 1. **A bar is one measure.** It is written `|`, one padding dash, its notes, `|`.
 2. **Each onset** is its fret number, then its dashes on every string. The notes of a chord
-   start in the same column and share one length: the time to the next onset.
+   start in the same column and share one length: the time to the next onset. A hammer-on,
+   pull-off or tap mark (`h`, `p`, `t`) takes the place of the dash before its note and
+   counts as that dash.
 3. **Dashes are counted from the end of the fret number**, so a two-digit fret makes a bar
    wider but never changes what it says.
 4. **A rest at the start of a bar** is its dashes after the padding dash: one dash before the
@@ -91,11 +94,12 @@ number.
    whose comments were left out all still read, approximately.
 9. **The check.** A bar's rest and note lengths must add up to a measure (from `// Time:`).
    A bar that doesn't, because someone edited it by hand, is read in proportion like any
-   other tab, and the reader can say which bars those were.
+   other tab, and the reader says which bars those were. One case gets past the check: a
+   *first* bar edited so that it comes up short reads as a pickup (rule 7).
 
 ## Lengths the table doesn't hold
 
-Five or seven base notes, or triplets mixed with even notes: about 2% of bars on the test
+Five or seven base notes, or triplets mixed with even notes: 2.1% of bars on the test
 tunes. By default such a bar is written with **columns as time** (see `columns` under
 Options), which is exact, and the legend names it:
 
@@ -104,16 +108,40 @@ Options), which is exact, and the legend names it:
 ```
 
 `--tab-odd-bars` chooses otherwise: `nearest` writes the nearest lengths the table holds and
-names the bars as approximate; `error` stops and lists them, for when every bar must be in
-one layout.
+the legend names those bars as `approximate` (they are read back by their spacing, like a
+tab with no legend); `error` stops and lists them, for when every bar must be in one layout.
+
+A `--tab-base` longer than a bar's shortest note puts that bar in the same position: its
+lengths aren't in the table, so it is written in columns.
+
+Two limits on that:
+
+- **A bar on no grid.** Columns as time needs the bar's onsets on a grid of at most 64
+  slots. A bar that isn't (unquantized playing, read with `--no-pre-quantize`) is written
+  approximately and the legend says so (`bars 3-5 approximate`), in `columns` and `dashes`
+  alike. Runs of bars are listed as ranges.
+- **Triplets and the default grid.** gtrsnipe snaps every onset to a 32nd-note grid before
+  anything is written, so a triplet reaches the tab already moved (three triplet eighths
+  become a dotted sixteenth, a sixteenth and a dotted sixteenth). That is older than this layout and is its own backlog item (B23).
+  With `--no-pre-quantize` a triplet arrives intact and its bar is written in columns,
+  exactly.
 
 ## Examples
+
+These are gtrsnipe's own output (`--no-articulations`; only the strings in use are shown).
 
 A sixteenth-note run, then a whole note (base: a sixteenth). The second bar contains just one fret number,
 with enough room to say "this is not another sixteenth", and nowhere near in proportion.
 
 ```
 e|-0-1-3-5-7-5-3-1-0-1-3-5-7-5-3-1-|-0---------|
+```
+
+The same bars with hammer-ons and pull-offs, as gtrsnipe writes them by default. Each mark
+sits where a dash was, so the counts don't change:
+
+```
+e|-0h1h3h5h7p5p3p1p0h1h3h5h7p5p3p1-|p0---------|
 ```
 
 *Ode to Joy*, bars 1 to 4 (base: an eighth, the tune's shortest note; `e=1 q=3 q.=4 H=5`).
@@ -135,12 +163,27 @@ A quarter rest and three quarter notes; a silent bar; two half-note chords (base
 `q=1 H=3`):
 
 ```
-e|--0-3-8-|----|---------|
-B|--------|----|---------|
-G|--------|----|-0---0---|
-D|--------|----|-2---0---|
-A|--------|----|-3---2---|
-E|--------|----|-----3---|
+e|------8-|----|-3---3---|
+B|--5-8---|----|-5---3---|
+G|--------|----|-5---4---|
+```
+
+A bar the table doesn't hold: its first note is five sixteenths long. The base is an eighth
+(the shortest step is a dotted eighth), bar 1 is written with columns as time, sixteen slots
+of two columns, and bar 2 is back to counting dashes (`q=3`):
+
+```
+// Rhythm: dash-count, base 1/8; bar 1 in columns   (e=1 e.=2 q=3 q.=4 H=5 H.=6 W=7)
+
+e|-0---------1-----3-------5------|------------------|
+B|--------------------------------|-5---6---8---10---|
+```
+
+With `--tab-letters`, a line of lengths sits over the staff (here over *Ode to Joy*, bar 4):
+
+```
+   q.   e H
+B|-5----3-3-----|
 ```
 
 ## Width and rows
@@ -149,10 +192,22 @@ E|--------|----|-----3---|
   and not on how long its silences are. With one-digit frets a bar is never wider than two
   columns per base note, plus one: 33 columns for a 4/4 bar in sixteenths, 17 in eighths.
   With two-digit frets, 49 and 25.
-- On 300 folk tunes this layout came to 1.3 times the v0.7.0 total width, with 98% of bars
-  exactly decodable (v0.7.0: 33%). With the base fixed at a sixteenth it is 1.6 times.
+- Measured on the 300 tunes, each put on the converter's default grid, written out and read
+  back (onsets compared bar by bar):
+
+  | layout | bars read back exactly | tunes exact | total width | widest bar |
+  |---|---|---|---|---|
+  | `loose` (up to v0.7.0) | 33.3% | 0 of 300 | 1.00 | 43 |
+  | `loose` with `--tab-letters` | 100% | 300 | 1.00 | 43 |
+  | `dashes` (the default) | 100% | 300 | 1.46 | 96 |
+  | `dashes`, `--tab-odd-bars nearest` | 97.9% | 245 | 1.46 | 57 |
+  | `dashes`, `--tab-base 1/16` | 100% | 300 | 1.76 | 120 |
+  | `columns` | 100% | 300 | 1.47 | 120 |
+
+  In the default layout the widest dash-counted bar is 57 columns; the 96 is one of the 2.1%
+  of bars written in columns.
 - Rows work as before: whole bars only, as many as fit `--max-line-width`, and a bar wider than
-  the limit gets a row to itself. **The default width becomes 80 columns** (it was 40, a
+  the limit gets a row to itself. **The default width is 80 columns** (it was 40, a
   leftover from reading tabs on a phone).
 
 ## What it doesn't do
@@ -175,18 +230,38 @@ the way to another.
     start of its slot. Exact, readable with no legend (`// Rhythm: columns` still says so),
     and sometimes wide: a bar mixing short and long notes can pass 80 columns.
   - `loose`: the layout up to v0.7.0, with no `// Rhythm:` line. Compact, and approximate.
-- **`--tab-base {auto,1/4,1/8,1/16,1/32}`** (default `auto`, the tune's shortest note). A
-  fixed base means one table for every tab, at the cost of width.
+
+  One case isn't `dashes` by default: **a tab made from a tab that didn't state its rhythm**
+  (no legend, no letters, or bars that failed the check) stays `loose`. Its note times were
+  read from spacing, and writing them out with a legend would claim an exactness the source
+  never had. Asking for a layout by name overrides that.
+- **`--tab-base {auto,1/1,1/2,1/4,1/8,1/16,1/32}`** (default `auto`, see The table). A fixed
+  base means one table for every tab, at the cost of width.
 - **`--tab-odd-bars {columns,nearest,error}`** (default `columns`): see above.
 - **`--tab-letters`** (off by default): a line of note lengths over the staff, on top of any
   layout. Long notes are capitals and short ones lowercase, like the prefixes of units:
-  `W H q e s t`, with a dot for a dotted note. A letter with nothing under it is a rest.
-  Read back in either case.
+  `W H q e s t`, with a dot for a dotted note and `+` tying two lengths (`q+s`, five
+  sixteenths). A letter with nothing under it is a rest. Read back in either case. Letters
+  are exact on their own, so they make any layout exact, `loose` included, and when a tab
+  has them they are read first. They are written exactly or not at all: a bar holding a
+  length they can't state (a triplet's note) gets no letters, and its layout carries the
+  rhythm.
 - **`--max-line-width`** (default 80).
 - Leaving comment lines out is its own item (parking lot, `--omit-comments`). Without the
   `// Rhythm:` line a tab is still a tab; it just reads approximately.
 
-This changes how every tab looks by default, so it ships as a minor version.
+This changed how every tab looks by default, so it shipped as a minor version (0.8.0).
+
+## What the reader trusts, in order
+
+For each bar: the letters over it, if there are any and they add up; else the dash count, if
+the legend says `dash-count` and doesn't name the bar; else its columns as time, if the
+legend says `columns` or names the bar; else its spacing, approximately. A song read with
+any bar in that last class is marked as having approximate rhythm, which is what keeps a
+tab written from it `loose`.
+
+The code is in `gtrsnipe/formats/tab/rhythm.py` (the table, the letters, the legend), with
+the layouts in `formats/tab/generator/ascii.py` and the reading in `formats/tab/parser.py`.
 
 ## Prior practice
 
