@@ -13,6 +13,7 @@ from ..core.config import MapperConfig
 from ..core.keys import song_key
 from ..core.types import FretPosition, MusicalEvent
 from ..core.types import Song
+from ..guitar.fingering import positioned
 from ..guitar.mapper import GuitarMapper
 from ..player.frame import Frame
 from ..player.render.ascii import AsciiFretboardRenderer
@@ -318,7 +319,7 @@ def build_chord_sheet(
             import copy as _copy
             for track in song.tracks:
                 evs = [_copy.copy(e) for e in track.events]
-                mapped += GuitarMapper(cfg).map_events_to_fretboard(evs, no_articulations=True)
+                mapped += positioned(song, evs, GuitarMapper(cfg), no_articulations=True)
         bar_len = beats_per_measure(song.time_signature)
         for label, span in uniq.items():
             positions, mark = None, ""

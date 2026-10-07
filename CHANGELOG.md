@@ -10,6 +10,54 @@ and Cargo apply to 0.x version ranges. Full SemVer applies from 1.0.0. The publi
 is the CLI flags and the file formats gtrsnipe reads and writes; report wording is
 not part of it.
 
+## [0.7.0] — 2026-10-07
+
+A tab is kept as written (backlog B05). A minor version, because it changes what happens by
+default when the input is a `.tab`.
+
+The rule behind it, which the rest of gtrsnipe already followed: what the source states, the
+output keeps; what it doesn't state is inferred, and said; an explicit option overrides the
+source, a default never does. A tab states where each note is played. Until now that was
+thrown away and chosen again by the mapper.
+
+### Changed
+- **A `.tab` input keeps its own fingering:** strings, frets and the marks `h`, `p` and `t`,
+  bar for bar, in the player, in tab and VexTab output, and in chord-chart diagrams.
+  - It is re-fingered only when an option changes its notes (`--transpose`) or says how to
+    finger it (`--single-string`); the output then carries a `// Fingering:` line saying so.
+  - Mapper options do nothing to a kept tab, and a one-line note says that.
+- **Each bar of a tab is read as one measure,** with a note's time taken from its column
+  across the bar. Bar lines used to be ignored and every column counted as an eighth of a
+  beat, so a bar's length depended on its width: the 42-bar Bach Prelude tab read as 63
+  measures. This changes the timing of every tab → MIDI or ABC conversion, and of chord
+  names read from a tab. Rhythm within a bar is still approximate: a tab's columns don't
+  state durations.
+- The last notes of a tab ring to the end of their bar (they were a 32nd note long).
+
+### Added
+- **`--refinger` / `--no-refinger`** (`gtrsnipe`, `gtrsnipe-play`, `gtrsnipe-chords`).
+  - `--refinger`: always let the mapper choose (the previous behaviour). The tab is then read
+    in its own tuning and capo, and `--tuning` / `--capo` say what to finger it for, so a
+    tab can be re-fingered for another tuning with its notes kept.
+  - `--no-refinger`: never move a note to another string. `--transpose` then slides each note
+    along its string, and stops with a list if a note can't. `--single-string` conflicts.
+- A tab's **`// Time:`** line sets the bar length, and **tap marks** (`t`) are read.
+
+### Fixed
+- **A tab written with a capo read back too low.** The reader ignored both the tab's
+  `// Capo:` line and `--capo`. The tab's own capo is now used unless `--capo` is given.
+- **`gtrsnipe-play` and `gtrsnipe-chords` ignored a tab's `// Tuning:` line** (only the
+  converter adopted it). All three now read a tab in its own tuning unless one is asked for.
+- A chord chart from a tab claimed to show "this song's tab" fingering but showed the
+  mapper's. It now shows the tab's.
+
+### Not changed
+- How tabs are *written*. A bar's columns are still spaced by its own smallest note value,
+  so a tab doesn't state its rhythm exactly. Measured on 300 Nottingham tunes written as tabs
+  and read back: every note stays in its bar, and 33% of bars come back with exactly their
+  rhythm (steady bars do; bars mixing note values, 47% of all bars, don't).
+- `--analyze` and `--homograph` re-finger by design.
+
 ## [0.6.19] — 2026-10-05
 
 Step 4 begins with a bug sweep (backlog B08–B22, H08): the open code bugs from the docs audit

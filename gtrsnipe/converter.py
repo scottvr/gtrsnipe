@@ -178,14 +178,15 @@ def dynamic_quantize_song(intermediate_midi_path: str, processed_audio_path: str
     logger.info(f"--- Dynamic quantization complete. Initial tempo set to {song.tempo:.2f} BPM. ---")
     return song
 
-def transpose_song(song: Song, semitones: int) -> None:
+def transpose_song(song: Song, semitones: int, notes: bool = True) -> None:
     """Move every note by ``semitones`` (clamped to MIDI's range), and the song's key
-    with them."""
+    with them. ``notes=False``: the notes were already moved (a tab slid along its
+    strings), so only the key follows."""
     if not semitones or not song.tracks:
         return
     logger.info(f"--- Transposing all events by {semitones} semitones ---")
     for track in song.tracks:
-        for event in track.events:
+        for event in track.events if notes else ():
             event.pitch = max(0, min(127, event.pitch + semitones))
     if song.key is not None and song.key_source == DOUBTED:
         song.key, song.key_source = None, ""          # a likely default: estimate afresh
@@ -236,7 +237,7 @@ class MusicConverter:
         return output_data
 
 
-    def _parse(self, data: str, format: str, track_num: Optional[int], staccato: bool = False,  units: str = 'beats', quantization_resolution=0.125, open_string_pitches=None, sustain: str = "legato") -> Song:
+    def _parse(self, data: str, format: str, track_num: Optional[int], staccato: bool = False,  units: str = 'beats', quantization_resolution=0.125, open_string_pitches=None, sustain: str = "legato", capo: Optional[int] = None) -> Song:
         if format == 'mid':
             return mid.MidiReader.parse(data, track_number_to_select=track_num)
         elif format == 'abc':
@@ -253,7 +254,7 @@ class MusicConverter:
             return tab.AsciiTabParser.parse(content, staccato=staccato,
                                             quantization_resolution=quantization_resolution,
                                             open_string_pitches=open_string_pitches,
-                                            sustain=sustain)
+                                            sustain=sustain, capo=capo)
         else:
             raise ValueError(f"Unsupported input format: {format}")
 
@@ -432,6 +433,21 @@ def run_solve_tuning(args) -> int:
             save_text_file(tab + "\n", str(p))
         logger.info(f"Wrote {out}")
     return 0
+
+
+def _mapper_options_given(parser, args) -> list:
+    """The mapper options set to something other than their default (as --flags)."""
+    import argparse
+    from .arguments import add_mapper_args
+    probe = argparse.ArgumentParser(add_help=False)
+    add_mapper_args(probe)
+    given = []
+    for action in probe._actions:
+        if action.dest in ("quantization_resolution", "dedupe"):     # not fingering choices
+            continue
+        if getattr(args, action.dest, action.default) != action.default:
+            given.append(max(action.option_strings, key=len))
+    return given
 
 
 def _tab_header_names(path: str) -> Optional[list]:
@@ -691,19 +707,16 @@ def main():
 
         # A user-defined tuning (--tuning-pitches / --drop-low-string) bypasses the
         # named-tuning resolution and validation below.
-        from .arguments import resolve_custom_tuning
-        custom_names = resolve_custom_tuning(args)   # low->high note names, or None
-        user_custom = custom_names                    # asked for, not adopted from a tab
-        # A .tab input with no tuning asked for (STANDARD is only the default)
-        # adopts its own '// Tuning:' header for the WHOLE run -- decode, range
-        # filter, mapping and any tab output -- as if --tuning-pitches named it.
-        if (custom_names is None and not args.bass and args.num_strings is None
-                and tuning_name == 'STANDARD' and not getattr(args, 'tuning_explicit', False)
-                and Path(args.input).suffix.lower() == '.tab'):
-            header = _tab_header_names(args.input)
-            if header:
-                args.tuning_pitches = ",".join(header)
-                custom_names = resolve_custom_tuning(args)
+        from .arguments import adopt_tab_header, resolve_custom_tuning
+        user_custom = resolve_custom_tuning(args)     # asked for, not adopted from a tab
+        # A .tab input with no tuning (or capo) asked for adopts its own '// Tuning:'
+        # and '// Capo:' lines for the WHOLE run -- decode, range filter, mapping and
+        # any tab output -- as if --tuning-pitches and --capo named them.
+        adopt_tab_header(args, args.input)
+        custom_names = resolve_custom_tuning(args)    # low->high note names, or None
+        is_tab_input = Path(args.input).suffix.lower() == '.tab'
+        if is_tab_input and args.refinger is False and args.single_string is not None:
+            parser.error("--single-string re-fingers the tab, so it can't be combined with --no-refinger.")
         is_custom = custom_names is not None
         if is_custom:
             tuning_name = "CUSTOM"
@@ -839,17 +852,59 @@ def main():
         else:
             # Otherwise, we parse normally
             logger.info(f"--- Parsing '{current_file}' as a {format_to_parse} file for final conversion ---")
+            read_open = open_string_pitches_for(tuning_name, custom_names)
+            read_capo = args.capo or 0
+            if format_to_parse == 'tab' and args.refinger:
+                # --refinger: the tab is read as it states itself (its own tuning and
+                # capo lines), and --tuning / --capo are what it is re-fingered FOR.
+                with open(current_file) as f:
+                    if tab.AsciiTabParser.header_tuning(f.read()):
+                        read_open = None
+                read_capo = None
             song = converter._parse(current_file, format_to_parse, args.track, staccato=args.staccato,
                                     quantization_resolution=args.quantization_resolution,
-                                    open_string_pitches=open_string_pitches_for(tuning_name, custom_names),
-                                    sustain=args.sustain)
+                                    open_string_pitches=read_open, sustain=args.sustain, capo=read_capo)
         
         apply_key(song, args.key)
         debug_song_state(song, 5, "After Parsing") 
+        # A tab states its fingering. It is kept as written unless the user asks for it
+        # to be re-fingered, or an option changes the notes or says how to finger them.
+        slid = False
+        if song and format_to_parse == 'tab':
+            if args.refinger:
+                song.refingered = "--refinger"
+            elif args.single_string is not None:
+                song.refingered = "--single-string"
+            elif args.transpose and args.refinger is None:
+                song.refingered = "--transpose changed the notes"
+            elif args.transpose:                      # --no-refinger: along the same strings
+                from .guitar.fingering import slide
+                stuck = slide(song, args.transpose, args.max_fret)
+                if stuck:
+                    logger.error(f"--transpose {args.transpose} with --no-refinger: {len(stuck)} "
+                                 "note(s) can't stay on their string:")
+                    for line in stuck[:10]:
+                        logger.error(f"  {line}")
+                    if len(stuck) > 10:
+                        logger.error(f"  ... and {len(stuck) - 10} more")
+                    logger.error("Drop --no-refinger to let the mapper re-finger the transposed tab.")
+                    exit(1)
+                slid = True
+            song.as_written = not song.refingered
+            if song.refingered:
+                logger.info(f"--- Re-fingering the tab ({song.refingered}) ---")
+            else:
+                logger.info("--- Keeping the tab's own fingering, as written "
+                            "(--refinger lets the mapper choose) ---")
+                if args.refinger is None:
+                    changed = _mapper_options_given(parser, args)
+                    if changed:
+                        logger.info(f"    Mapper options have no effect on it: {', '.join(changed)}")
+
         # --transpose, once, before anything looks at the notes: the range filter,
         # --analyze, the player and every output (chord charts included)
         if song:
-            transpose_song(song, args.transpose)
+            transpose_song(song, args.transpose, notes=not slid)
         
         if not song:
             logger.error(f"Failed to parse {format_to_parse} file or file is empty.")
@@ -889,7 +944,7 @@ def main():
         
         debug_song_state(song, 5, "After Velocity Filter")
 
-        if not args.no_pre_quantize and mapper_config:
+        if not args.no_pre_quantize and mapper_config and not song.as_written:
             logger.info(f"Pre-quantizing before any fretboard mapping.")
             song = pre_quantize_song(song, args.quantization_resolution)    
             

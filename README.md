@@ -4,8 +4,8 @@
 
 Convert to and from .mid, .abc, .vex, and .tab files. (and more.)
 
-## v0.6.19
-Released 2026-10-05. See [CHANGELOG](https://github.com/scottvr/gtrsnipe/blob/main/CHANGELOG.md)
+## v0.7.0
+Released 2026-10-07. See [CHANGELOG](https://github.com/scottvr/gtrsnipe/blob/main/CHANGELOG.md)
 
 # What?
 
@@ -106,8 +106,9 @@ gtrsnipe -i piece.mid -o piece.tab --tuning BARITONE_B --drop-low-string 2
 
 Custom tunings work everywhere (convert, `--play`, chord charts). Generated tabs
 carry a `// Tuning:` header and **round-trip** — feed one back as input and it
-decodes in its own tuning; pass an explicit `--tuning`/`--tuning-pitches` to
-*re-read* the same fingering in a different tuning and hear what it becomes.
+decodes in its own tuning, with its own fingering; pass an explicit
+`--tuning`/`--tuning-pitches` to *re-read* the same fingering in a different tuning and
+hear what it becomes (see [Tab input](#tab-input-kept-as-written)).
 (Tuning tuples and `--show-tuning` are listed low string → high.)
 
 Saving tunings in a .gtrsnipe profile is a way you can always have any tunings
@@ -288,12 +289,47 @@ gtrsnipe-research segments mtc-ann --level phrase          # phrase/motif retrie
 </details>
 
 
+## Tab input: kept as written
+
+A tab states where each note is played, and gtrsnipe keeps that. Play a `.tab`, convert it
+to another tab or chart its chords, and you get the tab's own strings, frets and
+hammer-on, pull-off and tap marks, bar for bar.
+
+```bash
+gtrsnipe -i riff.tab --play                                   # the tab, as written
+gtrsnipe -i riff.tab -o riff.mid                              # its notes
+gtrsnipe -i riff.tab -o mine.tab --refinger                   # let the mapper finger it
+gtrsnipe -i riff.tab -o up.tab --transpose 2                  # new notes: re-fingered, and the header says so
+gtrsnipe -i riff.tab -o up.tab --transpose 2 --no-refinger    # the same shapes, two frets up
+gtrsnipe -i riff.tab -o dropd.mid --tuning DROP_D             # the same fingering, heard in drop D
+gtrsnipe -i riff.tab -o dropd.tab --tuning DROP_D --refinger  # the same notes, fingered for drop D
+```
+
+- **By default** a tab keeps its fingering. It is re-fingered only when an option changes its
+  notes (`--transpose`) or says how to finger it (`--single-string`), and then a
+  `// Fingering:` line in the output says so. Mapper options do nothing to a kept tab; a
+  one-line note says that too.
+- **`--refinger`** always lets the mapper choose. The tab is then read in its own tuning and
+  capo, and `--tuning` / `--capo` say what to finger it *for*.
+- **`--no-refinger`** never moves a note to another string. `--transpose` slides each note
+  along its string, and stops with the list of notes that can't.
+- **What is read:** strings, frets, the marks `h`, `p` and `t`, the bar lines, and the
+  header's tempo, time signature, tuning and capo. The tab's own `// Tuning:` and `// Capo:`
+  lines are used unless you give `--tuning` or `--capo`. Bends, slides and other marks aren't
+  read.
+- **Rhythm is approximate.** Each bar is one measure, and a note's time is its column across
+  the bar, which is how people read tabs. A tab's columns don't state durations. Of 300 folk
+  tunes written out as tabs and read back, every note stayed in its bar, and a third of the
+  bars came back with exactly their rhythm (steady passages do; bars mixing note values
+  don't).
+
 ## Player / Visualizer
 
 `gtrsnipe-play` renders a song as a live ASCII fretboard instead of writing a
 file. It reuses the same parsers and the Viterbi fretboard mapper, so it accepts
 every supported input format — with the same rhythm caveats (precise timing from
-MIDI, approximate from ASCII tab). A 5-fret window auto-follows the playing up
+MIDI, approximate from ASCII tab). A `.tab` is shown with its own fingering, as written
+(`--refinger` shows the mapper's instead). A 5-fret window auto-follows the playing up
 and down the neck; open strings are shown at the nut.
 
 > Since v0.5.0 the player is also a mode of the main tool: `gtrsnipe -i song.mid
@@ -363,7 +399,8 @@ track, 1-indexed, same as the converter), `--orientation {horizontal,vertical}`,
 `--hand {right,left}`, `--fps N` (animation smoothness),
 `--audio {none,midi,fluidsynth}` (`--midi-port`, `--soundfont`, `--instrument`
 NAME-or-0..127, which defaults to the MIDI file's own instrument; `--list-instruments`),
-`--legato`, `--sustain {legato,string}` (see Note lengths below), plus the usual `--tuning`,
+`--legato`, `--sustain {legato,string}` (see Note lengths below), `--refinger` (tab input),
+plus the usual `--tuning`,
 `--tuning-pitches`, `--drop-low-string`, `--num-strings`, `--max-fret`, `--capo`, and `--optimizer`.
 
 **Note lengths.** Playback honors each note's own length: a held bass note rings under a
@@ -425,7 +462,8 @@ which, and `--key auto` always estimates.
 What a diagram shows is a choice, `--chart-voicing`, and the chart's header always says which.
 Each diagram is captioned with its shape (`x32010`: low string first, `x` = muted).
 
-- **`source`** (the default) draws each chord **as this song's tab fingers it**: the bar's
+- **`source`** (the default) draws each chord **as this song's tab fingers it** (for a `.tab`
+  input, the tab's own fingering; otherwise the tab gtrsnipe would write): the bar's
   chord tones, if each string holds one fret and they make one hand shape (at most four
   fingers, an index barre counting as one, within four frets); else the bar's fullest
   simultaneous chord as fingered. A chord with no such bar gets a compact voicing, marked `*`.
@@ -580,6 +618,8 @@ An abridged reference, grouped as in `gtrsnipe --help`. Run `gtrsnipe --help` fo
 - `--transpose TRANSPOSE`: Transpose the music up or down by N semitones (e.g., 2 for up, -3 for down). Applied first, before the range filter and `--analyze`, so it reaches every output and `--play`; the key moves with the notes.
 - `--key KEY`: The song's key (`Eb`, `F#m`, `'D dorian'`). It spells chord names (Ab or G#) in chord charts, `--name-chords` and `--name-chord`, and sets the key signature and note spelling of ABC output. Default: the file's own key (ABC `K:`, a MIDI key signature), else an estimate from the notes; `auto` always estimates. See [Chord charts](#chord-charts).
 - `--no-articulations`: Transcribe with no legato, taps, hammer-ons, pull-offs, etc.
+- `--refinger`, `--no-refinger`: Tab input: whose fingering to show. By default a tab keeps its own, as written, unless an option changes its notes. `--refinger` always uses the mapper; `--no-refinger` never moves a note to another string. See [Tab input](#tab-input-kept-as-written).
+- `--sustain {legato,string}`: Tab input: `legato` (default) holds each note until the next onset; `string` lets it ring until its own string is struck again, as a guitar does (at most one bar). Shapes playback and MIDI output alike.
 - `--staccato`: Do not extend note durations to the start of the next note, instead giving each note an 1/8 note duration. When converting from ASCII tab.
 - `--max-line-width MAX_LINE_WIDTH`: Max number of vertical columns per line of ASCII tab (default: 40).
 - `--name-chords`: ASCII tab output: chord names above the staff (see [Chord names over a tab](#chord-names-over-a-tab---name-chords)).
@@ -588,7 +628,7 @@ An abridged reference, grouped as in `gtrsnipe --help`. Run `gtrsnipe --help` fo
 - `--debug`: Enable detailed debug logging messages.
 
 **Instrument options**
-- `--capo CAPO`: Specify a capo position. All fret numbers will be relative to the capo.
+- `--capo CAPO`: Specify a capo position. All fret numbers will be relative to the capo. A `.tab` input's own `// Capo:` line is used when this isn't given.
 - `--tuning NAME`: Specify the guitar tuning, or `PIANO` for full-range MIDI passthrough: every note kept, MIDI output only (default: STANDARD). NAME is any tuning in [the list below](#current-supported-instrument-tunings).
 - `--num-strings {4,5,6,7}`: Force the number of strings on the tab staff (4, 5, 6, or 7). Defaults to 4 for bass and 6 for guitar.
 - `--max-fret MAX_FRET`: Maximum fret number on the virtual guitar neck (default: 24).
@@ -616,7 +656,7 @@ An abridged reference, grouped as in `gtrsnipe --help`. Run `gtrsnipe --help` fo
 - `--show-tuning [TUNING_NAME]`: Show a tuning's notes and each string's tension on your guitar, with restring suggestions, and exit. With no name, the tuning set by `--tuning-pitches`/`--drop-low-string` (see [Custom tunings](#custom-tunings)).
 - `--name-chord SHAPE`: Name the chord a fret shape plays (e.g. `x,3,2,0,1,0`) in the current tuning, and exit. Repeatable (see [Naming a chord shape](#naming-a-chord-shape---name-chord)).
 
-**Player mode** (`--play`; interactive terminal): `--play`, `--view`, `--clock`, `--tempo`, `--grid`, `--window`, `--width`, `--fps`, `--orientation`, `--hand`, `--audio`, `--midi-port`, `--soundfont`, `--instrument`, `--no-clear`, `--legato`, and `--sustain {legato,string}`, which also applies to MIDI output from a tab: `legato` (default) holds each note until the next onset; `string` lets it ring until its own string is struck again, as a guitar does (at most one bar). See [Player / Visualizer](#player--visualizer).
+**Player mode** (`--play`; interactive terminal): `--play`, `--view`, `--clock`, `--tempo`, `--grid`, `--window`, `--width`, `--fps`, `--orientation`, `--hand`, `--audio`, `--midi-port`, `--soundfont`, `--instrument`, `--no-clear`, `--legato`. See [Player / Visualizer](#player--visualizer).
 
 **Chord chart output** (`-o SONG.chords.md`): `--measures-per-line` (default: 4), `--chord-tone-threshold` (default: 0.15), `--chart-voicing {source,compact,open}` (what the diagrams show; default: the song's own fingering), `--prefer-open-chords` (= `--chart-voicing open`), `--shape-names` (name chords by the standard-tuning shape; also for `--name-chords` and `--name-chord`). See [Chord charts](#chord-charts).
 
