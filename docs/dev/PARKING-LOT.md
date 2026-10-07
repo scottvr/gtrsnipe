@@ -110,6 +110,18 @@ stayed parked.
     takes columns as time would misread it. It is also how engraved music is spaced
     (longer notes get more room, but less than in proportion), which is the argument that
     the idea was sound and the implementation was what fell short.
+  - **A fourth option, and what convention already says** (2026-10-07). A line of note-length
+    letters over the staff, with a compact staff under it: exact, and the narrowest of the
+    four on both sample excerpts (`layouts.txt` in the scripts folder). It is not a new idea.
+    Howard Wright's 1995 guide to tab notation, the newsgroup-era reference, says spacing
+    shows "which notes are the long ones, and which are the short and fast ones" but "will
+    not tell you exactly how long", and describes writing letters "above the corresponding
+    note" (q for a quarter note, e for an eighth), adding that there is "no particular
+    'standard' way" and it is "essential to explain the system you use"
+    (<https://www.classtab.org/tabbing.htm>). Tabs carrying a "Duration Legend" (W H Q E S T X,
+    a dot for dotted notes) also turn up on tab sites; they look like a notation program's
+    text export, which is unverified. So what would be new is a consistent, documented,
+    machine-readable version, not the idea.
   - Scripts: `/Volumes/LaCie/data/midi/_tmp/tabtime/`.
 - **What a tab states that still isn't kept** (from v0.7.0). Its `// Title:` (the converter
   names every output after the input file); bends, slides, vibrato and other marks.
