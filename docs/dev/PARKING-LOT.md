@@ -52,6 +52,21 @@ On this (private) line the same triage also moved the two composing ideas into t
     (a Potts term) vs a cost per distinct position used over the song (a label cost, "stay in
     two positions").
   Pairs with the weights audit and the Viterbi-vs-greedy study above.
+- **Survey: how do tabs in the wild state their tuning?** (scottvr, 2026-10-07; a mental
+  to-do of his, raised when he worried that gtrsnipe's own `// Tuning:` line undercuts the
+  homograph argument). What to count on a sample of third-party tabs (kept local, as R14):
+  - string labels at the start of the lines: present or not; letters or nothing;
+  - whether the labels are the tuning or just string names (a drop-D tab labelled E);
+  - an explicit tuning statement, a capo statement, or neither.
+  - Why it matters (Claude): the published claim is that ambiguity is real "for a tab
+    stripped of its tuning". How often a real tab is in that state is the empirical half of
+    it. And the convention fills the gap: Wright's 1995 guide says "TAB will tell you what
+    tuning the piece is in. If this isn't given explicitly, assume normal tuning"
+    (<https://www.classtab.org/tabbing.htm>). So the objection to meet is not "your tool
+    writes the tuning" but "convention supplies one when the text doesn't". gtrsnipe writing
+    the key is the argument made visible, not a counterexample: the staff alone doesn't
+    determine the notes, so the tool has to say which key it means.
+  - Pairs with R14 and with `--omit-comments` / `--homograph-neutral` (the bare text).
 - **Key changes: how many keys vs how many changes** (scottvr's question, 2026-10-04: do the
   offset measures have a role in key-finding, e.g. the correlation vs Euclidean gap?). Claude's
   reading; nothing here was searched in the literature.
