@@ -152,6 +152,21 @@ stayed parked.
     them, and rework the examples to use them in place of long command lines.
   - Then the stamp could go, or shrink to the profile's name. (Today it also writes the
     user's full file paths into the tab.) It is one of the lines `--omit-comments` covers.
+- **Write a file the tab editors open: gtrsnipe as the generator they lack** (scottvr,
+  2026-10-07). The tab programs are editors; few of them *make* a tab from MIDI, and gtrsnipe
+  does little else. Facts checked that day:
+  - Power Tab Editor 2 (open source again, GPL-3.0, github.com/powertab/powertabeditor) has no
+    MIDI import. It is issue #251, open since June 2017, labelled high priority and good first
+    issue; the maintainer confirmed in November 2024 (discussion #487) that it is still on
+    the wish list.
+  - Its source tree reads and writes its own `.pt2` (a gzip-compressed serialization of the
+    score) and Guitar Pro 7's `.gp`, imports the older Guitar Pro formats, and exports MIDI.
+  - So one writer could reach several editors. Guitar Pro's `.gp` is the likeliest target
+    (a zip of XML, so no new dependency; which other programs open it is unchecked). Such a
+    file carries exact rhythm, techniques, tuning and capo, so the ASCII tab would no longer
+    have to be the only place rhythm can live.
+  - Related: standard notation in and out (below), and F05 (PDF output), which an editor
+    would then do for us.
 - **Standard notation, in and out** (scottvr, 2026-10-07). Engrave proper scores (staff, clef,
   time signature) with an existing tool, and, more interesting and probably more feasible,
   *read* scores so they can be written to the formats gtrsnipe already has. Notes (Claude):
