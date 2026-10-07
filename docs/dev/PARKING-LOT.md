@@ -18,8 +18,8 @@ Their design notes moved to [`NOTES-playability.md`](NOTES-playability.md). What
 stayed parked.
 
 2026-10-07: "tabs that keep time" left the lot for the backlog as F08, after a discussion and
-four sample layouts. The agreed design, its history and the measurements are in
-[`SPEC-tab-rhythm.md`](SPEC-tab-rhythm.md).
+four sample layouts, and was built the same day (v0.8.0). The design, its history and the
+measurements are in [`DESIGN-tab-rhythm.md`](../app/DESIGN-tab-rhythm.md).
 
 ## Ideas
 
@@ -83,7 +83,8 @@ four sample layouts. The agreed design, its history and the measurements are in
   thing to a reader:
   - Lines gtrsnipe reads back, so leaving them out changes what the tab *means*: `// Tuning:`
     (the tuning, and the mark that the tab is in gtrsnipe's layout), `// Capo:`, `// Time:`,
-    `// Tempo:`.
+    `// Tempo:`, and since v0.8.0 `// Rhythm:` and `// Lengths:` (without them the tab's
+    rhythm is read approximately).
   - Lines that only inform: `// Title:`, `// Transcribed with:`, `// Fingering:`, the chord
     and shape-name banners, the homograph keys.
   - Related: `--homograph-neutral` already numbers the strings and omits the default tuning.
@@ -92,6 +93,13 @@ four sample layouts. The agreed design, its history and the measurements are in
   - scottvr, later the same day: the conflation wasn't only a slip. Sometimes the wish is
     to leave out *everything* written as a `//` comment, whatever it says, so the plain
     form (`--omit-comments` with no list) should mean exactly that.
+- **Triplets in the note-length letters** (from F08, 2026-10-07). `--tab-letters` writes
+  `W H q e s t` with dots and `+` ties, which can't state a triplet's note, so a bar holding
+  one gets no letters (its layout still carries the rhythm: such a bar is written in
+  columns). A mark for it (`e3` for a triplet eighth, or a bracket over the group) would
+  close the gap. Worth checking what tabs with rhythm lines already do before choosing;
+  Guitar Pro's text export has a "Duration Legend" with similar letters (from memory, not
+  checked).
 - **Is the command-line stamp still needed? Ship style profiles instead** (scottvr,
   2026-10-07). Every generated tab carries `// Transcribed with: <the command line>`. It was
   there so a result could be reproduced, back when a good tab took a long line of options;

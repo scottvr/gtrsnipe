@@ -80,7 +80,7 @@ keys work left out.
 3. Then choose: **chosen compromises** (M05 optional notes, M06 a hand profile, then M07
    beginner's-version tabs), or M04, the search for an easier tuning.
 4. Whenever the homograph side has time: F07 and R16 (with R14).
-5. F08, the dash-count tab layout: agreed 2026-10-07; when to build it is open.
+5. F08 ✓ (v0.8.0), the dash-count tab layout: agreed and built 2026-10-07.
 
 ---
 
@@ -107,6 +107,7 @@ keys work left out.
 | B20 | ✓ v0.6.19 `player/clock.py` removed (dead since the transport replaced it). | S | docs audit |
 | B21 | ✓ v0.6.19 **Tab reading: a tab gtrsnipe wrote reads back with even timing.** A two-digit fret pushed later notes a column right, which was read as time (steady sixteenths came back as 0.25, 0.375, 0.25). Tabs from elsewhere are read by their columns, as before. Barlines never counted. A tab's bars still don't carry their own lengths: parked as "tabs that keep time". | S–M | R05 |
 | B22 | Partly, v0.6.19: the fallback MIDI reader no longer loses a track over a flat key signature, parses each track once, and reads its first track before scanning it. But py-midi garbles a track's leading events, so key, tempo and meter still aren't reliable there. Parked: replace the fallback reader. | S | v0.6.18 |
+| B23 | **Triplets don't survive a conversion.** (1) The default pre-quantize pass snaps every onset to a 32nd-note grid (`--quantization-resolution 0.125`), so a triplet eighth at 1/3 of a beat lands on 0.375, in every output; the grid choices include no triplet grid, and `--no-pre-quantize` is the only way to keep one. (2) The ABC writer rounds a triplet eighth to three 32nds (`E3/2` at `L:1/16`) with or without the grid, so its bar comes out a 32nd too long. The tab layouts (v0.8.0) do carry triplets exactly when they are given them. | M | F08 testing |
 
 ### Research: homograph phase 3 and the offset profile
 
@@ -170,7 +171,7 @@ Design notes: [`NOTES-playability.md`](NOTES-playability.md).
 | F05 | **Pretty PDF tab output**: typeset tabs as a PDF worth printing (title and header, clean staff lines, measure bars, tuning key, maybe rhythm stems or notation). Intended eventually. The empty stub goes in step 1 so it isn't mistaken for a feature; this item is where PDF output comes back. | M–L | code stub; D6 |
 | F06 | ✓ v0.6.6 **Playability of homograph tabs**: discomfort per note vs A's own best tab, `--homograph-max-discomfort`, `scan --max-discomfort/--max-fret`. Comfort filters hard: 19/50 sampled folk pairs within 50 points per note, 0 within 5. | S + M | R04, parking lot |
 | F07 | **Tab checker follow-ups**: a `--check-tab REF` that lists every conflicting note and bar (not just the first bad string); partial alignment for tabs with a few missing or extra notes; batch mode over many tabs of one song. | M | parking lot |
-| F08 | **Tab rhythm: the dash-count layout.** The dashes after a note name its length (one for the base note, two more per doubling, one more for a dot), with a `// Rhythm:` legend line; `--tab-rhythm dashes\|columns\|loose`, `--tab-base`, `--tab-odd-bars`, `--tab-letters`; default row width 80. Spec: [`SPEC-tab-rhythm.md`](SPEC-tab-rhythm.md). A minor version. | M–L | scottvr, parking lot |
+| F08 | ✓ v0.8.0 **Tab rhythm: the dash-count layout.** The dashes after a note name its length (one for the base note, two more per doubling, one more for a dot), with a `// Rhythm:` legend line; `--tab-rhythm dashes\|columns\|loose`, `--tab-base`, `--tab-odd-bars`, `--tab-letters`; default row width 80. On 300 folk tunes every bar reads back exactly (a third did), at 1.46 times the width. Design: [`DESIGN-tab-rhythm.md`](../app/DESIGN-tab-rhythm.md). | M–L | scottvr, parking lot |
 
 ### Tests and housekeeping
 
