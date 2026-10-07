@@ -87,9 +87,54 @@ stayed parked.
     as hand-written ones are. scottvr's history with this: early experiments at encoding
     timing in the dashes, hoping for something good enough to become a convention, without
     "giant rows of empty lines".
+  - **What the history holds** (looked up 2026-10-07 at scottvr's suggestion). Three layouts
+    were committed, and each later one dropped something the earlier one had:
+    1. December 2024 (`fd583c0`, `src/gtrsnipe/core/tab.py`): strictly proportional, 12
+       characters per beat, with a line of beat numbers over the staff as a ruler. Exact, and
+       48 columns for every 4/4 bar.
+    2. July 2025 (`46ccf63` to `8979623`, `_get_quantized_spacing`): a step function with the
+       shape of a logarithm. A note one unit long got 2 dashes, two units 3, four units 4,
+       longer 5, and the parser carried the inverse (`_spacing_to_beats`). So it was a code:
+       the *number* of dashes named a note length. Its limits were the table (four classes, no
+       dotted values, "longer" read back as six units) and a mismatch between the two sides
+       (dashes were added after the END of a note but measured from its START, so a two-digit
+       fret broke the inverse). No formula-based logarithm was ever committed.
+    3. August 2025 (`7d132e9`): one dash per smallest note value in the bar, today's layout.
+       The parser stopped inverting the generator at that point.
+  - **The dash-count idea, completed, measured on the same tunes.** With a full table (each
+    doubling adds two dashes, a dot adds one: sixteenth 1, eighth 3, quarter 5, half 7, whole
+    9), 98% of bars are exactly decodable and no bar is wider than 34 columns, but the total
+    is x1.63 (most gaps in these tunes are eighths, at 3 dashes each). With the base unit
+    chosen per tune: still 98%, total x1.32, widest 53. It bounds the worst case that
+    proportional bars can't, at a higher average cost, and it needs a legend: a reader that
+    takes columns as time would misread it. It is also how engraved music is spaced
+    (longer notes get more room, but less than in proportion), which is the argument that
+    the idea was sound and the implementation was what fell short.
   - Scripts: `/Volumes/LaCie/data/midi/_tmp/tabtime/`.
 - **What a tab states that still isn't kept** (from v0.7.0). Its `// Title:` (the converter
   names every output after the input file); bends, slides, vibrato and other marks.
+- **`--omit-comments`: leave header lines out of a tab** (scottvr, 2026-10-07; maybe with a
+  list, `--omit-comments tuning,title`, or a separate `--omit-header`). scottvr used "header"
+  and "comment" interchangeably and flagged that as worth a discussion. They aren't the same
+  thing to a reader:
+  - Lines gtrsnipe reads back, so leaving them out changes what the tab *means*: `// Tuning:`
+    (the tuning, and the mark that the tab is in gtrsnipe's layout), `// Capo:`, `// Time:`,
+    `// Tempo:`.
+  - Lines that only inform: `// Title:`, `// Transcribed with:`, `// Fingering:`, the chord
+    and shape-name banners, the homograph keys.
+  - Related: `--homograph-neutral` already numbers the strings and omits the default tuning.
+    A tab with no tuning line is the bare text the homograph argument is about, and any
+    "de facto standard" would have to say which lines are part of the notation.
+- **Standard notation, in and out** (scottvr, 2026-10-07). Engrave proper scores (staff, clef,
+  time signature) with an existing tool, and, more interesting and probably more feasible,
+  *read* scores so they can be written to the formats gtrsnipe already has. Notes (Claude):
+  - MusicXML is the interchange format the notation programs share (MuseScore, LilyPond via
+    its converter, Finale, Sibelius). Reading it would give exact rhythm, key and time
+    signature, which MIDI and tabs don't state; it can also carry string and fret. It is
+    XML, so a reader needs no new dependency.
+  - For engraving, writing LilyPond or MusicXML and letting those tools draw is far less work
+    than drawing. LilyPond can set a tab staff under a notation staff.
+  - gtrsnipe already reads one notation format, Humdrum kern, for the research corpora.
 - **Learned weights and a profile finder** (from the scoring-weights notes, 2026-09-27; kept
   parked at the 2026-10-05 triage). A structured perceptron trained on human-fingered tabs, or
   sampling settings and letting a player rank the distinct tabs. Both wait for the weights
