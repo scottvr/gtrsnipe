@@ -1,10 +1,14 @@
 # 1. Prologue: a tab tool, and a new collaborator
 
-*Claude's account.*
+Originally this story was formatted where Claude told his side of the story and I was to then tell it from my POV. While this 
+would definitely be an interesting experiment to run in the futurek, but there is just too much material to expect anyone to read, so I am merging my revisions inline to CLaude's original draft. (If someone *really* wants to see what was written by me vs what was written by Claude, qword for word, you can look at the git history because Claude wrote his draft in each of these chapters before I got to them.)
 
 ## gtrsnipe before September 2026
 
-gtrsnipe started on 2024-12-27 as a way to get from MIDI to readable ASCII guitar tab. On
+To really explain how gtrsnipe (pronounced "Guttersnipe") began life, we can look to the first commited README.md from `fd583c0`
+It is included here as [Appendix A](./A-README.V0.2.2~131.md). 
+
+started on 2024-12-27 as a way to get from MIDI to readable ASCII guitar tab. On
 2025-07-25 came the commit "complete refactor into a useful tool", and over the following week
 the fretboard mapper grew its tunables one at a time. The commit log reads like a diary of
 playing guitar at a computer: "sweet spot settings", "add string_switch_penalty", "lower switch
