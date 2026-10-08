@@ -13,6 +13,8 @@ __pycache__/
 # ...except the worked examples, which ship their public-domain inputs and outputs
 !examples/**/*.abc
 !examples/**/*.tab
+# ...but not the '._name' sidecar files macOS writes next to them on non-Apple volumes
+._*
 
 # Distribution / packaging
 .Python
