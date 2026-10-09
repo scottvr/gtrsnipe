@@ -176,6 +176,8 @@ gtrsnipe --solve-tuning "C4,C4,G4,G4,A4,A4,G4" -o twinkle.tab -o twinkle.mid   #
 
 This led to an entire research endeavor still underway and partially documented in this repo:
 <a name="tab-homographs-one-tab-a-different-song-per-tuning"></a>
+
+### Tab Homographs
 <details>
 
   <summary>[click to expand] Tab homographs: one tab, a different song per tuning</summary>
