@@ -1,0 +1,19 @@
+digraph {
+    subgraph one {
+        label="TRADITIONAL MUSICAL NOTATION";
+        WN [label="Written Notes"];
+        MI [label="Musical Interpretation"];
+        P1 [label="Performance"];
+        WN -> MI -> P1;
+    }
+
+    subgraph two {
+        label="MECHANICAL INSTRUCTION SYSTEM";
+        PC [label="Physical Coordinates"];
+        CA [label="Configured Apparatus"];
+        P2 [label="Performance"];
+        PC -> CA -> P2;
+    }
+
+    WN -> PC [style=invis, constraint=false];
+}

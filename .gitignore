@@ -187,3 +187,4 @@ tests/golden/cases/
 # Ignored until a workflow for generated HTML is set up on purpose; to commit one
 # deliberately, use `git add -f` and say why in the commit message.
 *.html
+._*
