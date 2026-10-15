@@ -413,7 +413,7 @@ The Court is invited to consider the evidence, examine the mathematics, and refr
 Respectfully submitted,
 
 **SCOTTVR**  
-*Pro Se, Pro Bono, Pro Guitar, Pro Whatever*
+*Pro Se, Pro Bono, Pro Guitar, Pro Tab, Pro Lapsed*
 
 Practitioner Emeritus, The GUM Institute  
 Researcher-in-Residence, PaperclipMaximizer.ai
