@@ -1,5 +1,3 @@
----
-
 ## Outline: The Geometry of Transposition-Invariant Elastic Distance## I. Introduction
 
 * The Problem Space: Introduce time-series matching under temporal deformation (warping) and translation (transposition).
@@ -48,12 +46,3 @@
 
 * Summarize the geometric properties established.
 * Conclude by returning to the narrative frame: the math proves that instrument tablature functions structurally as an elastic, multi-interpretable coordinate instruction system rather than a fixed representation of a singular expressive work.
-
-------------------------------
-## Why This Structure Protects You
-
-   1. It Isolates the Math: Section IV and V are pure discrete mathematics and information theory. By segregating them into their own formal blocks, you can present them with absolute, clinical coldness.
-   2. The Physics/Engineering Filter: Section VI (Computational Complexity) turns your practical limitations into an academic contribution. Discussing the $k \le 6$ guitar string boundary shows you understand how the mathematical abstraction safely docks into real-world computer science.
-
-When you are ready to pivot to the snarky, humor-adjacent copyright paper, would you like to sketch out its structure? We can look at how to frame your "Guitar Tablature Collision Attack" alongside your other thought experiments (like homofo.pyPASTAL or the Snowmen Mayhem Latin Mondegreen) to build an unassailable legal critique of modern algorithmic copyright doctrine.
-

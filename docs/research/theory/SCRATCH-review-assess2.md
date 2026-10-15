@@ -32,6 +32,3 @@ How much to trust it.
 - The numeric check enumerated every path, which limited it to melodies of at most 5 notes.
 - A stronger check is cheap. d_S and d_TV are exact O(n·m) dynamic programs, so I could test them on thousands of real corpus phrases.
 - The richness distance under warping can't be computed exactly at scale (it's a minimum-label path problem), so richness would stay small-case only.
-
-I can run that larger check whenever you like, or you can attack the construction first, since it's the one step everything rests on.
-
