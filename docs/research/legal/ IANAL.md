@@ -12,7 +12,7 @@ proponents of Free Speech, *et cetera, ad nauseam,*
 v.
 
 **SOME JUDGE WITH AN INCORRECT OPINION**,  
-HARRY FOX AGENCY, and the countable set of DOES {1 ...} *aka* &quot;$\aleph _{0}$&quot;,
+HARRY FOX AGENCY, and the countable set of DOES {1 ...} *aka* &quot; $\aleph _{0}$ &quot;,
 
 *Defendants.*
 
