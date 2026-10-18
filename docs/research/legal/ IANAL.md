@@ -18,12 +18,12 @@ HARRY FOX AGENCY, and the countable set of DOES {1 ...} *a/k/a* &quot; $\aleph _
 
 ---
 
-# PLAINTIFF'S MEMORANDUM OF LAW IN SUPPORT OF SUMMARY JUDGMENT
+## PLAINTIFF'S MEMORANDUM OF LAW IN SUPPORT OF SUMMARY JUDGMENT
 
-## I.ANAL
+### I.ANAL
 Well, I don't, actually. But pronouncing it as a word makes me giggle. So you see what I did there? I took the Romam nume- ah, nevermind. "IANAL" means "I Am Not A Lawyer," and this is quite true in my case. However - *just like a **Supreme Court Justice*** - I have **Opinions**. Here you will find mine, substantiated by facts.
 
-### A. Introduction
+#### A. Introduction
 
 The research presented herein proceeds from a deceptively simple observation:
 **Guitar tablature does not explicitly encode musical pitches. It encodes physical locations on an instrument.**
@@ -37,9 +37,9 @@ More significantly, such homographs need not be deliberately constructed; the ma
 
 It is this observation, and its consequences for the alleged identity of an infringing musical representation, that brings us to these proceedings.
 
-## II. THE INDETERMINATE NATURE OF ALPHANUMERIC INSTRUMENT TABLATURE
+### II. THE INDETERMINATE NATURE OF ALPHANUMERIC INSTRUMENT TABLATURE
 
-### A. The Guitar Fretboard as a Coordinate System
+#### A. The Guitar Fretboard as a Coordinate System
 
 Unlike traditional sheet music, which explicitly represents musical pitches through a conventional notation system, alphanumeric guitar tablature describes physical actions on an instrument.
 
@@ -65,7 +65,7 @@ To an ordinary guitarist using standard tuning, this instructs the player to fre
 But notice what the instruction does *not* say.  It does not say "G." It does not specify a frequency.
 It does not even guarantee that the resulting sound will be a conventionally recognizable musical pitch.  It specifies only a string and a fret.  The resulting pitch is determined by a separate property of the instrument: its tuning.
 
-### B. Instrument Tuning as an External Decoding Key
+#### B. Instrument Tuning as an External Decoding Key
 
 Let $K$ represent the instrument's tuning, expressed as the open-string pitches of its constituent strings.  For an ordinary fretted instrument using equal temperament, the resulting pitch, measured in semitones, is:
 
@@ -85,7 +85,7 @@ For example, the third fret of the first string produces G in standard tuning. L
 
 This is not peculiar to an exotic mathematical model. It is a routine property of guitars, exploited by generations of musicians using alternate tunings.  Nevertheless, the distinction is fundamental: a fretboard coordinate is not intrinsically a musical pitch, any more than a coordinate on a map intrinsically identifies a particular building irrespective of which map is being consulted.
 
-### C. The Tablature Homograph
+#### C. The Tablature Homograph
 
 We now arrive at the central evidentiary exhibit: a tablature homograph occurs when a single, unchanged sequence of fretboard coordinates produces distinct musical passages under different tunings.
 
@@ -112,9 +112,9 @@ There need be no copying between the composers, no collaboration, no common insp
 The homograph is therefore not an error, a mistranscription, or a clever exercise in musical quotation;
 it is a natural consequence of a many-to-many relationship between fretboard coordinates, instrument tunings, and musical pitches. This presents a rather uncomfortable question for any assertion that the coordinates themselves inherently identify a single protected musical work.
 
-## III. THE CIPHER PARADOX AND THE AMBIGUITY OF OWNERSHIP
+### III. THE CIPHER PARADOX AND THE AMBIGUITY OF OWNERSHIP
 
-### A. The Polyalphabetic Cipher Analogy
+#### A. The Polyalphabetic Cipher Analogy
 
 For purposes of illustration, tablature may be understood as a kind of keyed encoding system.  In cryptography, the meaning of an encoded message depends upon the interpretation supplied by its decoding key.  Similarly, the pitch sequence represented by guitar tablature depends upon the tuning applied to its coordinate data.
 
@@ -124,7 +124,7 @@ The analogy is not perfect. We are not claiming that a guitar is literally a cry
 
 The existence of a tablature homograph establishes that the apparent musical identity of a fret sequence is not necessarily unique, and if a single sequence can resolve to two independent works, then the relationship between that sequence and either work cannot be established by examining the sequence in isolation.  One must first identify the tuning, musical context, and intended interpretation.
 
-### B. The Ownership Paradox
+#### B. The Ownership Paradox
 
 Suppose Composer A owns the copyright to Song A.  A tablature transcription of Song A produces a particular sequence of coordinates, $T$, under tuning $K_A$.  Now suppose that precisely the same $T$, when interpreted using tuning $K_B$, produces a passage from Song B, an unrelated composition owned by Composer B.  The competing claims appear to concern the same physical instructions.
 
@@ -139,15 +139,15 @@ These questions do not, by themselves, settle copyright infringement. Copyright 
 A claim based solely upon the apparent correspondence between a static fret sequence and a copyrighted composition therefore overlooks the possibility of equally valid, independent musical interpretations;
 the coordinates are insufficient to resolve the dispute *without additional evidence.*
 
-### C. The Limits of the Claim
+#### C. The Limits of the Claim
 
 Plaintiffs do not contend that the discovery of a second interpretation retroactively immunizes every distribution of copyrighted music.  Certainly a file explicitly titled, labeled, arranged, and marketed as the tablature for a particular copyrighted composition may present a straightforward infringement question, regardless of whether somebody could retune a guitar and make it play something else.  Rather, Plaintiffs challenge a stronger proposition often implicit in popular discussions of tablature: that a given fret sequence is, *by its very nature*, an unambiguous embodiment of one particular musical work.
 
 Our constructed examples disprove that proposition, and our computational results investigate how frequently its failure arises in practice.  That distinction is the difference between demonstrating a property of the representation and tenting an unlimited copyright exemption. Admittedly, the latter would be considerably more amusing.
 
-## IV. THE HISTORICAL PRECEDENT OF MACHINE-READABLE MUSICAL INSTRUCTIONS
+### IV. THE HISTORICAL PRECEDENT OF MACHINE-READABLE MUSICAL INSTRUCTIONS
 
-### A. *White-Smith Music Publishing Co. v. Apollo Co.* (1908)
+#### A. *White-Smith Music Publishing Co. v. Apollo Co.* (1908)
 
 The Supreme Court confronted a related representational question more than a century ago.  In *White-Smith Music Publishing Co. v. Apollo Co.*, 209 U.S. 1 (1908), the Court considered whether perforated piano rolls constituted copies of copyrighted musical compositions.  The Court held that, under the copyright law then in effect, the perforated rolls were *not* copies of the sheet music.
 
@@ -183,7 +183,7 @@ The similarity to alphanumeric tablature is apparent.
 
 In both cases, stored spatial instructions must be interpreted against the mechanical configuration of a musical instrument.
 
-### B. ASCII Tablature as the Modern Piano-Roll Analogy
+#### B. ASCII Tablature as the Modern Piano-Roll Analogy
 
 A piano roll specifies which mechanisms should be activated during playback.
 
@@ -201,7 +201,7 @@ It is this configurable correspondence between stored coordinates and resulting 
 
 The resemblance to the historical piano-roll controversy is conceptually instructive, even if the controlling law has changed.
 
-### C. The Rather Inconvenient Matter of Subsequent Legislation
+#### C. The Rather Inconvenient Matter of Subsequent Legislation
 
 Plaintiffs reluctantly acknowledge that Congress has, on occasion, legislated since 1908.
 
@@ -217,9 +217,9 @@ Modern copyright law may recognize mechanically encoded representations as copie
 
 It is the latter assumption that the tablature homograph directly challenges.
 
-## V. THE COMPUTATIONAL EVIDENCE: GTRSNIPE AND ALGORITHMIC HOMOGRAPH DISCOVERY
+### V. THE COMPUTATIONAL EVIDENCE: GTRSNIPE AND ALGORITHMIC HOMOGRAPH DISCOVERY
 
-### A. From Thought Experiment to Executable Mathematics
+#### A. From Thought Experiment to Executable Mathematics
 
 Until now, the Court might reasonably suspect that Plaintiffs have constructed a theoretical curiosity of limited practical importance.
 
@@ -243,7 +243,7 @@ Conversely, as we have established, one fretboard location can represent several
 
 Taken together, these properties form a computational search space in which relationships invisible to casual inspection become discoverable.
 
-### B. The Homograph Search Problem
+#### B. The Homograph Search Problem
 
 Consider two musical passages, $W_A$ and $W_B$.
 
@@ -279,7 +279,7 @@ Still others cannot be reconciled within the permitted tuning and fingering cons
 
 These outcomes can be examined mathematically rather than argued by musical intuition.
 
-### C. Why This Matters
+#### C. Why This Matters
 
 The existence of a constructed homograph establishes that unique musical identity is not an intrinsic property of the coordinate sequence.
 
@@ -291,9 +291,9 @@ It is a property of the representational system that can be characterized comput
 
 Plaintiffs respectfully submit that a mathematical ambiguity which can be constructed, measured, and searched is somewhat more troublesome than one that merely inspires philosophical discussion over beverages.
 
-## VI. THE FAIR USE QUESTION: ALGORITHMIC ANALYSIS AS A DISTINCT PURPOSE
+### VI. THE FAIR USE QUESTION: ALGORITHMIC ANALYSIS AS A DISTINCT PURPOSE
 
-### A. A Different Use of the Same Material
+#### A. A Different Use of the Same Material
 
 Traditional tablature archives generally existed to help musicians learn or perform particular compositions.
 
@@ -307,7 +307,7 @@ The distinction is not that computer processing magically removes copyrighted ex
 
 Rather, it is that **the purpose, operation, and output of the analysis may differ materially from the expressive purpose of the source material.**
 
-### B. The Four-Factor Fair Use Analysis
+#### B. The Four-Factor Fair Use Analysis
 
 Pursuant to 17 U.S.C. Section 107, Plaintiffs offer the following analysis, with their customary confidence and somewhat less customary acknowledgment that fair use is fact-specific.
 
@@ -349,7 +349,7 @@ Nevertheless, potential effects upon legitimate licensing markets for computatio
 
 The strength of this factor therefore depends upon what the software actually reproduces, distributes, and permits users to reconstruct.
 
-### C. Fair Use Is Not the Same Argument as Representational Ambiguity
+#### C. Fair Use Is Not the Same Argument as Representational Ambiguity
 
 For the avoidance of confusion, Plaintiffs emphasize that the homograph finding and the fair use defense address different questions.
 
@@ -365,7 +365,7 @@ The arguments are complementary, not interchangeable.
 
 This distinction is regrettably important, as conflating the two would provide opposing counsel with an objection so straightforward that even Plaintiffs could anticipate it.
 
-## VII. CONCLUSION: LONG LIVE OLGA!
+### VII. CONCLUSION: LONG LIVE OLGA!
 
 The historical suppression of community tablature archives, including the On-Line Guitar Archive (OLGA), represents an instructive chapter in the collision between emerging digital culture and established music publishing interests.
 
@@ -417,7 +417,7 @@ Researcher-in-Residence, PaperclipMaximizer.ai
 
 ---
 
-## APPENDIX A. OBLIGATORY HALLUCINATED CASE LAW
+### APPENDIX A. OBLIGATORY HALLUCINATED CASE LAW
 
 Dubious citations generated by your favorite Legal Research service should be inserted here, preferably after careful scrutiny to ensure they do not refer to nonexistent opinions, imaginary judges, or courtrooms inhabited exclusively by anthropomorphic woodland creatures.
 
