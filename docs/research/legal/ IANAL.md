@@ -20,11 +20,8 @@ HARRY FOX AGENCY, and the countable set of DOES {1 ...} *a/k/a* &quot; $\aleph _
 
 # PLAINTIFF'S MEMORANDUM OF LAW IN SUPPORT OF SUMMARY JUDGMENT
 
-## I. ANAL
-
-Well, I don't, actually. But my wife does.
-
-No, wait. "IANAL" means "I Am Not A Lawyer," and the fact that my wife *is* has absolutely no bearing on anything other than the fact that, when the abbreviation is pronounced as a word, it makes me snicker like a schoolboy.
+## I.ANAL
+Well, I don't, actually. But pronouncing it as a word makes me giggle. So you see what I did there? I took the Romam nume- ah, nevermind. "IANAL" means "I Am Not A Lawyer," and this is quite true in my case. However - *just like a **Supreme Court Justice*** - I have **Opinions**. Here you will find mine, substantiated by facts.
 
 ### A. Introduction
 
