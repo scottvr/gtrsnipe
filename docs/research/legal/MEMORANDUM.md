@@ -1,165 +1,239 @@
-## LEGAL MEMORANDUM: THE IMPACT OF PHYSICAL INSTRUMENT COORDINATE AMBIGUITIES ON COPYRIGHT INFRINGEMENT CLAIMS
+# LEGAL RESEARCH MEMORANDUM
 
-### 1. Introduction and Statement of the Representational Paradox
+## Decoder-Dependent Guitar Tablature, Representational Ambiguity, and Copyright Infringement
 
-In intellectual property litigation involving music technology and digital media, a critical analytical fallacy arises from the failure to distinguish between physical motor instructions and copyrighted musical expression. While traditional copyright doctrine presumes that written sheet music directly embodies protected creative works, alphanumeric guitar tablature functions under a fundamentally different technical framework. Tablature does not directly encode musical pitches, harmonic relationships, or audible expressive structures; rather, it records spatial and mechanical coordinates directing a performer where to position their fingers on an instrument's fretboard. Because the translation of these physical motor coordinates into audible pitch structures depends entirely upon an external operational variable—specifically, the open-string tuning vector applied to the instrument—an isolated sequence of fretboard coordinates cannot be legally or mathematically presumed to embody a unique musical identity. Distinguishing physical execution instructions from protected auditory expression is of paramount strategic importance in infringement actions. Treating raw geometric coordinates as definitive representations of specific copyrighted compositions conflates unprotectable physical processes with protectable expression, misapplying the foundational statutory boundaries of copyright law.
+**Project:** [gtrsnipe](https://github.com/scottvr/gtrsnipe)  
+**Status:** Working technical and legal analysis; research in progress  
+**Jurisdiction:** United States federal copyright law  
+**Date:** October 2026
 
-Mathematically, a passage of alphanumeric guitar tablature is formalized as an ordered sequence of two-dimensional coordinate pairs:
+> **Scope.** This memorandum identifies a mathematically demonstrable ambiguity in guitar tablature, presents the project's reported experimental findings, and examines questions that ambiguity may raise in copyright disputes. It does **not** contend that every tablature file is uncopyrightable, that a homograph automatically defeats an infringement claim, or that all computational processing of copyrighted music is fair use. It is not a legal opinion addressing any particular dispute.
+>
+> **Evidence status.** The R03-R05 figures below are transcribed from the project's research summary. Their authoritative methods, samples, qualifications, and revisions belong in the evolving [experimental results](../results/). The individual report filenames and their current contents should be verified and linked directly before this memorandum is cited as evidence in litigation.
 
-$$T = \big((s_1,f_1),(s_2,f_2),\ldots,(s_n,f_n)\big)$$
+## Questions Presented
 
-where $s_i \in \{1, 2, \ldots, N\}$ represents the string index (for an N-string instrument) and $f_i \in \mathbb{Z}_{\ge 0}$ represents the fret position engaged at temporal step i. To convert any coordinate pair $(s, f)$ into an audible musical pitch $P$, the sequence must be processed through an external pitch decoding function. For a fretted instrument operating under twelve-tone equal temperament, the decoding equation is expressed as:
+1. Can a fixed sequence of guitar string-and-fret coordinates represent more than one musical passage, even when performed on physically realizable instruments?
+2. If so, what can the identity of two such sequences establish about copying of a particular musical composition, especially in an unkeyed short excerpt?
+3. How should copyright doctrine distinguish the physical method of playing an instrument from the protected musical expression a transcription may communicate?
+4. Under what circumstances could computational analysis of tablature, including intermediate copying, qualify as fair use?
 
-$$P = K(s) + f$$
+## Summary of Findings
 
-where $P$ is the resulting musical pitch expressed in semitone units relative to a standard reference frequency (e.g., standard MIDI pitch numbers), $f$ is the non-negative integer fret index, and $K(s)$ represents the external operational key—specifically, a vector mapping each string index $s$ to its assigned open-string pitch value under tuning configuration $K$. The transformation of the entire coordinate sequence $T$ into a discrete pitch array $P = (P_1, P_2, \ldots, P_n)$ is explicitly governed by this vector mapping:
+The technical answer to the first question is **yes**. A guitar tablature is not a sequence of absolute pitches. Its note events specify strings and frets; the sounding pitches depend on the instrument's open-string tuning. A single unchanged passage can therefore decode into different melodies under different tunings. gtrsnipe constructs candidate **tablature homographs**, tests physical and fingering constraints, and verifies the resulting pitch sequences.
 
-$$P_i = K(s_i) + f_i \quad \text{for } i \in \{1, 2, \ldots, n\}$$
+This result has a narrower legal consequence than the assertion that guitar tablature is categorically outside copyright. It means that **coordinate identity alone does not mathematically identify a unique pitch sequence without a tuning assumption**. In an evidentiary setting, that may matter where a dispute rests on matching short, unkeyed passages. It matters less, or not at all, when context supplies the tuning, title, source recording, attribution, arrangement, or other evidence identifying the protected composition.
 
-Because pitch realization is strictly dependent on $K(s)$, altering the operational key $K$ systematically transforms the pitch array $P$, even when the physical coordinate sequence $T$ remains entirely invariant.
-
-This mathematical dependency creates the phenomenon known as the tablature homograph. Let $T$ represent an invariant, static sequence of physical fretboard coordinates, and let $K_A$ and $K_B$ represent two distinct, non-identical open-string tuning vectors. Applying these independent decoding keys to the same physical coordinate sequence yields two distinct musical pitch outputs:
-
-$$F(T, K_A) = W_A$$
-
-$$F(T, K_B) = W_B$$
-
-where $W_A$ and $W_B$ represent entirely independent, non-identical musical compositions. Under specific operational parameters, $W_A$ and $W_B$ resolve to recognizable, distinct excerpts from completely unrelated works. Consequently, a single, unadjusted sequence of mechanical instructions $T$ accurately describes two distinct musical compositions without requiring any copying, joint authorship, or shared creative heritage between the respective copyright owners.
-
-The structural and functional distinctions between traditional notation and alphanumeric tablature are summarized in the comparative matrix below:
-
-|Dimension	|Traditional Musical Notation	| Alphanumeric Tablature |
-|----------------|------------------|--------------------|
-|Primary Encoding Focus	|Inherent pitch, duration, and harmonic values	|Physical spatial coordinates $(s, f)$ on a fretboard|
-|Operational Decoding Dependency	| Self-contained pitch definition; independent of apparatus mechanics	| Absolute dependency on external tuning key vector K(s)|
-|Notation Stability	|Fixed score mapping directly to audible pitches	|Variable coordinate output dependent on operational key $(K)$|
-|System Dependency	|Direct, human-readable musical representation|	Apparatus-dependent spatial execution instructions|
-
-This mathematical reality establishes that physical fretboard coordinates lack an intrinsic, unique musical identity, creating an insuperable representational paradox when litigants attempt to assert exclusive copyright ownership over static instrument coordinate files.
-
-### 2. The Cipher Paradox and Copyright Ownership Indeterminacy
-
-Moving from basic mathematical definitions to information theory and cryptographic analysis, alphanumeric tablature functions identically to a keyed encoding system. In legal proceedings where copyright infringement is alleged based on raw coordinate matching, treating a static sequence of fretboard locations as self-evident proof of copying presents an insurmountable evidentiary hurdle. Without establishing the specific external decoding key intended by the author, an isolated coordinate string constitutes unkeyed data lacking fixed expressive meaning.
-
-Under a polyalphabetic cipher analogy, guitar tablature operates as a keyed encoding framework wherein encoded symbols yield radically different plaintext outputs depending upon the operational key applied. While a fretted instrument neck is not a security cryptographic apparatus, nor is retuning an instrument formal encryption, both systems share a fundamental operational property: identical input symbols produce distinct, structured outputs when processed under different operational keys. Because the pitch sequence rendered by tablature is dictated by the open-string pitch values $K(s)$, an unkeyed coordinate sequence $T$ cannot resolve to a single musical composition in isolation.
-
-This structural indeterminacy creates an acute ownership paradox in intellectual property litigation. Consider a scenario in which Composer $A$ holds a valid copyright in Composition $W_A$, which transcribes to coordinate sequence $T$ under tuning key $K_A$. Concurrently, Composer $B$ holds an independent copyright in Composition $W_B$, which maps to the exact same coordinate sequence $T$ when decoded using tuning key $K_B$. If both creators assert claims over the shared physical instructions $T$, significant legal impasses arise:
-
-* Exclusive Ownership of Raw Coordinates: Neither Composer $A$ nor Composer $B$ can establish exclusive statutory ownership over the raw fretboard coordinates $T$, as the spatial grid sequence exists independently of either specific tuning key vector.
-* Restriction of Independent Publication: Composer $A$ cannot suppress the publication or distribution of coordinate sequence $T$ by Composer $B$, as $T$ serves as an accurate physical representation of Composer $B$'s independent, non-infringing work $W_B$ under key $K_B$.
-* Absence of Reciprocal Copying: The publication of $T$  by Composer $B$ under key $K_B$ does not constitute a reproduction of Composer $A$'s protected expression, despite the absolute physical identity of the recorded spatial sequence.
-
-From a litigation strategy perspective, demonstrating a viable tablature homograph fundamentally reshapes the evidentiary burden of proof. In copyright infringement litigation, the plaintiff bears the initial burden of proving ownership of a valid copyright and actual copying of protected expression. When a plaintiff attempts to establish copying by demonstrating identical fretboard coordinate sequences, the defendant's introduction of a valid homograph shatters the presumption of identity. Demonstrating that $T$ decodes to an independent work $W_B$ under $K_B$ shifts the burden back to the plaintiff to affirmatively establish that the defendant copied the specific tuning vector $K_A$, contextual metadata, and intended expressive identity, rather than unprotectable motor coordinates.
-
-The legal defense grounded in representational ambiguity possesses clear boundaries. This defense applies strictly to raw, abstract, and unadorned coordinate sequences. It does not retroactively immunize commercial files that are explicitly titled, arranged, labeled, and marketed as transcriptions of a specific protected composition. Where external metadata, titling, and commercial positioning establish an express intent to distribute a particular copyrighted work, straightforward infringement questions remain.
-
-When unadorned fretboard coordinates are presented in court without external context or explicit tuning specifications, they exhibit three critical evidentiary deficiencies:
-
-1. Absence of an Inherent Operational Decoding Key: The coordinate sequence lacks an embedded open-string pitch vector $K(s)$, rendering the mathematical determination of actual musical pitches impossible from the spatial text alone.
-2. Indeterminacy of Unique Musical Identity: Because a single coordinate sequence $T$ can simultaneously decode to multiple unrelated compositions $(W_A, W_B)$, the raw spatial data fails to uniquely identify any single underlying protected musical work.
-3. Insufficiency to Establish Infringing Expressive Intent: Static spatial coordinates do not, standing alone, prove an intent to copy protected musical expression, as the physical movements described are fully compatible with independent, non-infringing musical works under alternative operational keys.
-
-These evidentiary gaps demonstrate that static spatial instructions cannot serve as standalone proof of copyright infringement, aligning directly with historical judicial precedents governing mechanical instructions.
-
-### 3. Historical Precedent and Statutory Evolution of Mechanical Instructions
-
-The legal classification of machine-readable and spatial performance instructions has a long statutory and judicial lineage. Understanding the historical division between expressive scores readable by humans and spatial instructions designed to operate a mechanical apparatus remains vital when evaluating modern digital notations like ASCII tablature.
-
-In the landmark decision *White-Smith Music Publishing Co. v. Apollo Co., 209 U.S. 1 (1908)*, the Supreme Court addressed whether perforated paper piano rolls constituted statutory "copies" of copyrighted musical compositions. The Court held that physical piano rolls were not copies under the copyright laws then in effect. The Court's rationale turned on the fundamental distinction between traditional sheet music—a conventional notation system designed to communicate expressive musical ideas directly to human readers—and mechanical control mechanisms designed to physically actuate an apparatus. Although both media ultimately produced audible music, the mechanical spatial roll was classified as an operational component of a machine rather than a direct textual reproduction of protected expression.
-
-TRADITIONAL MUSICAL NOTATION
-[Written Notes] ---> [Musical Interpretation] ---> [Performance]
-
-MECHANICAL INSTRUCTION SYSTEM
-[Physical Coordinates] ---> [Configured Apparatus] ---> [Performance]
-
-ASCII GUITAR TABLATURE
-[Fret Coordinates] ---> [Configured Guitar Tuning] ---> [Performance]
-
-
-ASCII guitar tablature mirrors the mechanical pipeline identified in White-Smith. Both piano rolls and alphanumeric tablatures record spatial positions designed to trigger physical events on an instrument. However, the guitar introduces a structural variable absent in standard player pianos: configurable open-string tuning. While a player piano maintains a fixed key-to-actuator alignment, a guitar permits independent adjustment of open-string pitch baselines $(K)$. Consequently, an identical sequence of ASCII fret coordinates can alter not merely the overall key, but the internal interval structures, harmonic progressions, and musical identities of the output.
-
-Congress subsequently enacted statutory modifications to address the outcome in White-Smith. The Copyright Act of 1909 established statutory mechanical reproduction rights to capture recorded physical performances. Decades later, the Copyright Act of 1976 substantially expanded the statutory definition of "copies" under 17 U.S.C. § 101, defining them as material objects from which a work can be perceived, reproduced, or communicated either directly or "with the aid of a machine or device."
-
-Crucially, however, modern statutory expansion under § 101 must be read in direct conjunction with 17 U.S.C. § 102(b). Section 102(b) explicitly codifies that:
+The legal characterization of a fixed transcription, the inference of actual copying, substantial similarity of protected expression, and fair use remain distinct, fact-sensitive inquiries.
 
 ---
->"In no case does copyright protection for an original work of authorship extend to any idea, procedure, process, system, method of operation, concept, principle, or discovery, regardless of the form in which it is described, explained, illustrated, or embodied in such work."
+
+## 1. The Representational Distinction
+
+### 1.1. Coordinates and sounding pitches
+
+For a simplified monophonic tablature passage, let
+
+\[
+T = ((s_1,f_1), (s_2,f_2), \ldots, (s_n,f_n)),
+\]
+
+where \(s_i\) is the string index and \(f_i\) is a nonnegative fret number. In twelve-tone equal temperament, measured in MIDI-style semitone units, a tuning vector \(K\) specifies the open pitch \(K(s)\) of each string. The decoded pitch at event \(i\) is
+
+\[
+P_i = K(s_i) + f_i.
+\]
+
+The model abstracts away expressive timing, bends, harmonics, muting, and other performance features. Such features may appear explicitly or implicitly in real tablature. Nothing here requires a claim that a full tab is devoid of expressive information; it establishes only that **absolute pitch depends on the tuning**.
+
+A single fret coordinate may sound at a different pitch on a differently tuned instrument, and changing different strings by different amounts can change not just the key but the passage's interval structure.
+
+### 1.2. The tablature homograph
+
+Let \(D(T,K)\) be the pitch sequence obtained by decoding the same fixed tablature \(T\) under tuning \(K\). A tablature homograph is a case in which
+
+\[
+D(T,K_A)=A, \qquad D(T,K_B)=B, \qquad A\ne B,
+\]
+
+where \(A\) and \(B\) are distinct musical passages. They may, in specially constructed or found examples, be recognizable excerpts from unrelated compositions. The existence of such a representation does not establish anything about how either composition was created or whether an actual publisher copied anyone's work.
+
+For a fixed note-by-note alignment of target passages \(A\) and \(B\), define
+
+\[
+\delta_i = b_i-a_i, \qquad r(A,B)=\left|\{\delta_i:1\le i\le n\}\right|.
+\]
+
+For notes assigned to a single string, the difference \(b_i-a_i\) must equal the difference between that string's two open tunings. Thus the number of distinct offset values, termed **offset richness** \(r\), supplies a necessary lower bound on the number of strings required. In an idealized instrument with freely selectable string pitches and adequate fret span, the offset classes can be assigned to strings. On an actual guitar, simultaneous notes, string allocation, fret reach, string tension, and ergonomics impose additional constraints.
+
+The demonstrated proposition is therefore precise: a decoded melody is a function of **both** a coordinate sequence and its tuning. Tablature's expressive interpretation is not always recoverable uniquely from unkeyed coordinates alone.
+
+For the constructive implementation and further mathematical restrictions, see the [gtrsnipe homograph documentation](../../app/DESIGN-homograph.md) and the project's [research results](../results/).
+
+### 1.3. A cryptographic analogy, with limits
+
+A homograph resembles a keyed encoding: identical symbols can yield different meaningful outputs under different decoding parameters. The analogy illustrates *decoder-relative interpretation*; it is not a claim that a tab is encrypted, that a particular cipher classification governs it, or that ciphertext cannot embody copyrighted expression. The key in this model is a physically specified tuning vector, not a legal exemption.
+
 ---
 
-Fretboard coordinates (s_f, f_i) represent a pure method of operation and mechanical procedure for placing fingers on an instrument neck. While modern law treats machine-readable encodings as copies when they fixedly embody a per se recognizable work, § 102(b) precludes extending copyright protection to the underlying mechanical procedure itself.
+## 2. Copyright Questions Raised by Coordinate Ambiguity
 
-What survives from White-Smith is its vital conceptual distinction between a musical work, its mechanical encoding, and the operating context necessary to render it. Modern copyright law recognizes mechanically encoded representations as copies only when fixed to a deterministic musical result; it does not transform an unkeyed, key-dependent spatial grid into a unique statutory work when isolated from operational decoding parameters. This legal principle moves the controversy from theoretical statutory analysis to empirical computational demonstration.
+### 2.1. The statutory boundary between systems and expression
 
-Further, is stands to reason from this, that as a set of coordinates, or even as a method or set of instructions, tablature falls more in the realm of patent protection than it does that of copyright, and obviously there is too much prior art for tablature encoding - even including its decoding key - to qualify for a patent either, but that is outside of the scope of this work.
+[17 U.S.C. Sec. 102(b)](https://www.govinfo.gov/content/pkg/USCODE-2024-title17/html/USCODE-2024-title17-chap1-sec102.htm) excludes copyright protection for ideas, procedures, processes, systems, and methods of operation as such. The method of locating and sounding notes by selecting a guitar string and fret is functional. But that does not necessarily render *every particular ordered sequence* of such instructions unprotectable, particularly where the sequence communicates an underlying composition or contains original selection or arrangement.
 
-### 4. Computational Evidence and Algorithmic Homograph Discovery
+The relevant inquiry is not whether a tab uses functional coordinates **or** embodies musical expression. It can do both. The distinction instead requires identifying the protected expression allegedly taken, the functional elements that remain free for others to use, and the use the defendant actually made of the representation.
 
-To establish whether tablature homographs represent practical legal realities rather than isolated academic anomalies, researchers developed the open-source computational musicology platform gtrsnipe. Moving beyond theoretical assumptions, gtrsnipe provides empirical verification of spatial ambiguities across large, standard musicological corpora, including the Essen Folk, Meertens Tune Collections, Nottingham, POP909, and Lakh datasets.
+### 2.2. Fixation does not require direct human readability
 
-The algorithmic engine of gtrsnipe addresses the homograph search problem by examining how musical pitches map onto alternative physical fretboard layouts. Because a single pitch can often be executed across multiple string and fret combinations, and a single fret position can yield multiple pitches depending on tuning key $K$, the correspondence between sheet music and tablature is non-unique in both directions.
+The Copyright Act defines copies broadly enough to include material objects from which a work may be perceived, reproduced, or communicated **with the aid of a machine or device**. See [17 U.S.C. Sec. 101](https://www.govinfo.gov/content/pkg/USCODE-2024-title17/html/USCODE-2024-title17-chap1-sec101.htm). It would therefore be incorrect to infer that machine dependency or tuning dependency alone prevents a representation from being a copyright-law copy. Nor does the possibility of a second valid decoding necessarily erase the first.
 
-gtrsnipe models the guitar fretboard as a multi-stage, directed trellis graph. For a given musical pitch sequence, trellis nodes at stage i represent valid physical $(s_i, f_i)$ instantiations of pitch $P_i$. Directed edges between stage $i$ and stage $i+1$ represent physical transitions, assigned scalar weights based on ergonomic cost metrics (e.g., hand movement across frets, finger stretch span, string switching effort, and positional stability). The algorithm uses dynamic programming and Viterbi-style trellis path optimization to compute the globally optimal, minimum-cost physical path across the entire composition. Given two distinct compositions $W_A$ and $W_B$, the solver searches the combinatorial space of tuning keys $K_A$ and $K_B$ to determine whether a shared coordinate sequence $T$ satisfies $F(T, K_A)$ = $W_A$ and $F(T, K_B) = W_B$ subject to physical instrument tension constraints.
+A single representation may be capable of conveying two works. That fact does not grant either copyright holder ownership of every abstract coordinate sequence capable of producing the work, and it does not establish that publication of the sequence is invariably lawful. **The use and context still matter.**
 
-Empirical experiments executed across the referenced datasets (specifically experiments R03, R03b, R04, and R05) yielded vital quantitative findings:
+### 2.3. Evidentiary consequences: what an unkeyed match does and does not show
 
-* Tune Family Retrieval and Offset Measures (R03 & R03b Experiments): Experiment R03 evaluated whether counting distinct pitch offsets $(\delta = W_B - W_A)$, termed offset "richness," could retrieve related tune families across whole melodies. Findings revealed that offset richness alone is a weak predictor for whole-melody retrieval, gaining $\le$ 0.006 Mean Average Precision (MAP) over transposition-invariant Hamming distance baselines. However, experiment R03b demonstrated that when applied at the phrase and motif level under optimal dynamic time warping (DTW), offset measures yield a statistically significant performance gain (+0.009 to +0.010 MAP across all expert annotators). This proves that offset richness operates as a true structural measure of phrase-level melodic alignment.
-* Prevalence in Short Passages (R04 Scan): Shared coordinate representations occur with high frequency in short musical phrases. Among sampled folk melodies sharing identical rhythmic structures, approximately one-third (33%) of 8-note phrase pairs fit across a standard six-string fretboard while producing completely unrelated auditory melodies under different tunings. This prevalence declines as passage length increases, falling to 8% for 12-note phrases and 3% for 16-note phrases.
-* Physical String Tension Viability (R04 Physics): Homograph tuning keys do not require physically impossible instrument setups. Physical tension calculations reveal that 93% to 100% of sampled folk pairs (7–20 notes in length) can be physically executed on a standard acoustic or electric guitar anchored in standard tuning for Work A (with 23% to 60% requiring no string gauge modifications). For pop compositions in POP909/Lakh, 23% to 90% are physically playable under anchored conditions, rising to 93%–97% when both compositions permit custom tuning adjustments on a single instrument.
-* Ergonomic and Playability Constraints (R04 Playability): While shared coordinate sequences are physically executable ("fingerable"), they are rarely ergonomically optimal. Out of 50 sampled homograph pairs, 49 yielded valid physical tabs; however, evaluation against gtrsnipe mapper cost metrics showed that only 19 pairs fell within 50 cost points per note of the original composition's native tab, 4 fell within 20 points, and 0 fell within 5 points. Shared tabs are physically achievable, though unoptimized fingerings reflect mechanical trade-offs.
-* As-Written Fingering Ambiguity (R05 Experiment): Evaluating published, complete transcriptions ("as-written" fingerings) revealed that short 8-note passages exhibit hundreds of valid homograph partners. However, at phrase lengths of 24 and 32 notes, no unrelated-sounding melodies satisfy exact coordinate identity. The analysis proved that specific physical fingering choices, rather than raw melodic contours alone, dictate the existence of homograph partners.
+A claimant relying on matching coordinate data would need to establish that the defendant copied protected expression, not merely point to the existence of a mathematically reproducible string/fret sequence. A credible homograph may help test whether *raw coordinate coincidence*, viewed in isolation, uniquely supports the inference the claimant proposes.
 
-The empirical research findings and their direct legal implications are synthesized in the table below:
+It would **not** automatically defeat other evidence of copying, shift a statutory burden of proof, negate the relevance of a transcription's title or tuning metadata, or permit the distribution of a labeled full-song transcription without authorization. It also would not prove independent creation; independent creation is a separate factual question.
 
-Claim	Status	Empirical Evidence	Legal Implications
-Short Passage Tab Sharing	Holds	33% of 8-note folk phrases share tabs; 8% at 12 notes; 3% at 16 notes (R04).	Substantial overlap in short passages prevents automated coordinate matching from proving copying.
-String Tension Viability	Holds	93%–100% of folk pairs (7–20 notes) fit real instruments without breaking strings (R04).	Homograph defenses cannot be dismissed as physically impossible or theoretical fabrications.
-Playability / Ergonomics	Mostly False	49/50 pairs have valid tabs, but 0/50 fall within 5 cost points of native ergonomics (R04).	Shared coordinates exist physically, though unoptimized fingerings reflect mechanical trade-offs.
-As-Written Fingering Ambiguity	Tempered	Hundreds of partners at 8 notes; 0 unrelated partners at 24+ notes (R05).	Long, continuous transcriptions retain identity, but short excerpt claims remain ambiguous.
+The most promising potential application is therefore an evidentiary one: **a demonstration that a short, unkeyed coordinate match admits alternative explanations under stated and physically feasible decoding assumptions**. The demonstration is strongest when the alternative is supported by reproducible physical decoding, not merely by choosing an arbitrary and unusable tuning.
 
-Because computing these Viterbi paths and string tension models requires executing dynamic programming across complete musical files, computational tools must process copyrighted transcriptions in their entirety, directly raising the statutory fair use defense.
+---
 
-### 5. Four-Factor Fair Use Analysis for Computational Musicology
+## 3. Historical Precedent: Mechanical Encodings and Their Legal Treatment
 
-The operation of computational musicology platforms such as gtrsnipe requires parsing digital transcriptions to evaluate physical playability, dynamic pathing, and representational homographs. Under 17 U.S.C. § 107, evaluating whether computational parsing of copyrighted tablature data constitutes non-infringing fair use requires balancing four statutory factors.
+In [*White-Smith Music Publishing Co. v. Apollo Co.*, 209 U.S. 1 (1908)](https://supreme.justia.com/cases/federal/us/209/1/), the Supreme Court held that perforated piano rolls were not statutory copies of musical compositions under the law **then in force**. The case illustrates how novel encoding media can expose uncertainties in legal categories, and it furnishes a historical comparison between readable scores and mechanical instructions.
 
-#### Factor 1: Purpose and Character of the Use
+That result is **not a controlling modern exemption for tablature**. Congress addressed mechanical reproductions in the 1909 Act, and the 1976 Act adopted a substantially broader definition of copies, including those perceptible with the aid of a machine or device. The contemporary argument cannot simply substitute the guitar for the player piano and claim *White-Smith* decides the case.
 
-Automated parsing of tablature files by computational engines serves a transformative, highly research-oriented purpose. Rather than reproducing transcriptions for commercial distribution or entertainment, tools like gtrsnipe extract mathematical, spatial, and ergonomic data to evaluate structural representational properties. This functional, analytical operation aligns directly with judicial precedents affirming that intermediate copying necessary to perform functional data analysis constitutes fair use, as established in *Sega Enterprises Ltd. v. Accolade, Inc., 977 F.2d 1510 (9th Cir. 1992)*.
+What remains useful is the historical question *White-Smith* presented: how should law characterize a representation whose relation to a musical work is mediated by a device? gtrsnipe adds a factual complication distinctive to a retunable fretted instrument: the device itself may be reconfigured to decode the **same physical coordinates into different musical passages**.
 
-#### Factor 2: Nature of the Copyrighted Work
+Whether that additional property changes a result under contemporary copyright law depends on the protected material, the challenged conduct, and the evidentiary record. It should not be presented as an already established doctrinal rule.
 
-While underlying musical compositions represent creative expression sitting near the core of copyright protection, alphanumeric tablature files inherently incorporate non-protectable functional constraints under 17 U.S.C. § 102(b). Fretboard transcriptions reflect mechanical finger positions dictated by human hand anatomy, string scale lengths, and instrument physics. The functional, geometric mechanics embedded within tablature limit the scope of copyright monopolization over the underlying coordinate instructions.
+---
 
-#### Factor 3: Amount and Substantiality Used
+## 4. Computational Evidence: The gtrsnipe Research Program
 
-Computational musicology engines frequently parse complete tablature files. Full-file ingestion is technically and algorithmically mandatory: evaluating global string tension viability and solving the Viterbi trellis path requires computing state transitions across the full temporal length of a piece. Selecting an optimal path through a multi-stage trellis cannot be accomplished by analyzing isolated fragments. Because full-file ingestion is strictly tailored to an analytical objective and does not redistribute expressive content to the public, full-file parsing is justified under Factor 3.
+### 4.1. Reproducible construction and independent verification
 
-#### Factor 4: Effect Upon Potential Market
+[gtrsnipe](https://github.com/scottvr/gtrsnipe) maps musical events to feasible string/fret positions and implements a homograph search over aligned passages, offset classes, tunings, and instrument constraints. Its distinct operating modes include unrestricted tunings, an *anchored* mode in which the first passage uses a specified tuning, and a *middle* mode in which both performances are retunings of one instrument configuration. The code also supports an **as-written** test: whether a preexisting tab's *actual fingering* can be retuned to sound another passage.
 
-Command-line research platforms designed to discover homographs and compute physical playability metrics do not act as commercial market substitutes for authorized sheet music or commercial songbooks. A consumer seeking an expressive score for performance will not find utility in raw algorithmic reports detailing string tension metrics, Viterbi path costs, or multi-tuning offset transformations. Consequently, analytical research tools exert no market harm on the primary licensing markets for consumer music scores.
+Candidates are checked against available fret positions, simultaneous-string constraints, modeled string-tension limits, and a playability scoring system. Returned solutions are checked by decoding their string/fret assignments under each proposed tuning. The implementation uses bounded searches and heuristic selection in parts of the pipeline; it should not be described as globally optimal over all possible tunings and fingerings without qualifications.
 
-To maintain strategic clarity in intellectual property litigation, defense counsel must rigorously distinguish between the structural defense and the statutory fair use defense:
+The crucial distinctions for interpretation are:
 
-* Representational Ambiguity Argument: Asserts that raw coordinate data $T$ lacks a single, inherent musical identity prior to applying an external decoding key $K$, meaning the media itself does not uniquely represent a single protected work under 17 U.S.C. § 102(b).
-* Fair Use Defense (17 U.S.C. § 107): Asserts that even where underlying source material unambiguously encodes a specific copyrighted composition, analyzing and processing that data for distinct computational, research, or educational purposes is statutorily permissive.
+- **Mathematical possibility:** Does a common unkeyed coordinate sequence exist in an idealized setting?
+- **Physical feasibility:** Can realistic strings, tensions, and fretboards realize the candidate?
+- **Playability:** Is it ergonomically plausible, rather than merely theoretically fingerable?
+- **As-written coincidence:** Does a *particular preexisting transcription* possess a homograph partner without changing its recorded fingering?
 
-Differentiating between these two legal concepts ensures that structural properties of instrument representations are not confused with statutory exceptions for computational research.
+Evidence at one level must not silently be promoted into evidence at the next.
 
-#### 6. Conclusion and Legal Prayer for Relief
+### 4.2. Reported experimental observations
 
-The legal controversy surrounding digital instrument transcriptions carries deep historical roots, notably evidenced by enforcement actions and cease-and-desist campaigns that led to the shutdown of prominent community repositories such as the On-Line Guitar Archive (OLGA). Throughout the 1990s and 2000s, publishing entities and licensing organizations (such as the Harry Fox Agency) issued blanket takedown notices premised on an oversimplified, legally flawed equation: asserting that physical coordinate transcriptions are per se direct reproductions of copyrighted musical compositions.
+The results below are **reported findings from the project's R03, R03b, R04, and R05 studies**, not new calculations made for this memorandum. Consult the [current results directory](../results/) for the reports, data-processing choices, denominators, and subsequent corrections.
 
-While that enforcement logic holds true for full-length transcriptions accompanied by explicit metadata and standard tuning references, rigorous computational analysis demonstrates that the underlying representational mechanics are far more complex. Spatial coordinates record motor positions, not acoustic pitches; pitch realization requires an external tuning key vector $K(s)$; and identical coordinate sequences can simultaneously represent multiple unrelated compositions under physically viable instrument settings.
+| Study | Finding reported in project summary | Proper interpretation / limitation |
+| --- | --- | --- |
+| R03: tune-family retrieval | Whole-melody offset richness was a weak standalone similarity feature; the reported MAP improvement over a transposition-invariant Hamming baseline was at most 0.006. | A measure's mathematical structure does not guarantee useful melodic retrieval. |
+| R03b: phrases and motifs | The reported phrase-level, alignment-based comparison improved MAP by approximately 0.009-0.010 across the evaluated annotators. | Modest, task-specific predictive improvement; reproduce significance estimates and baselines from the study before citing statistical significance. |
+| R04: short-passages scan | In the stated sampled folk-pair protocol, reported compatible proportions were about 33% at 8 notes, 8% at 12 notes, and 3% at 16 notes. | These are conditional rates among the studied, rhythm-compatible samples, not estimates for all pairs of copyrighted songs or published tabs. |
+| R04: string physics | Selected homograph candidates were reported physically viable at high rates for folk samples (93%-100% in certain conditions), with a range of anchored-mode outcomes for pop datasets. | Specify the candidate-selection denominator, tuning mode, string set, and thresholds. Feasibility is not evidence of ordinary playing practice. |
+| R04: ergonomics | 49 of 50 sampled candidates reportedly had a valid physical tab; only 19 were within 50 mapper cost units per note of native fingering, four within 20, and none within five. | A possible shared tab may still be conspicuously unnatural or costly to play. The mapper score is a model, not an independently validated measure of human comfort. |
+| R05: as-written matching | The summary reports many partners for sampled eight-note excerpts and no unrelated partners found at 24 and 32 notes under the evaluated conditions. | An observed zero is not a proof of impossibility. As-written identity is materially more constrained than free construction. |
 
-Where static spatial instructions are isolated from external contextual metadata, no intrinsic mathematical property establishes which underlying musical composition was intended. Grounding copyright infringement actions solely on raw physical coordinate identity ignores the mathematical and physical realities of fretted stringed instruments.
+**Reporting requirement.** Before an individual figure is offered as evidence in a legal filing, the linked report should specify the exact corpus version, sample size and pairing procedure, filtering criteria, alignment rule, whether octave changes or transposition were permitted, physical parameters, code revision, random seeds where applicable, and uncertainty intervals. Those details define the population to which the result can responsibly be generalized.
 
-**PRAYER FOR RELIEF**
+The negative and narrowing results are not incidental. They are part of the finding: homograph prevalence declines with passage length in these experiments; models differ in what they permit; and an existing tab is considerably harder to match than a newly constructed common tab.
 
-Premised upon the mathematical proofs, empirical evidence, and statutory analysis set forth herein, Defendant respectfully requests that this Court grant the following formal relief pursuant to federal equity practice and the Declaratory Judgment Act, 28 U.S.C. § 2201:
+### 4.3. A narrower and testable evidentiary proposition
 
-1. Declaratory Judgment of Mathematical Homographs: Enter a formal judicial declaration recognizing the mathematical existence of tablature homographs, establishing that an invariant sequence of fretboard coordinates T decodes to multiple independent musical compositions under distinct open-string tuning vectors K.
-2. Declaratory Judgment of Non-Uniqueness under 17 U.S.C. § 102(b): Hold that unkeyed physical instrument spatial coordinates constitute unprotectable motor procedures under 17 U.S.C. § 102(b) and do not exhibit an inherent, one-to-one identity with protected musical expression in the absence of explicit operational decoding parameters.
-3. Order Denying Copyright Monopolization of Fretboard Geometry: Refuse to extend copyright protection or monopoly control over abstract geometric fretboard coordinate relationships where such spatial configurations merely describe physical motor actions on an instrument neck.
-4. Order Affirming Protection for Computational Musicology Research: Order that the automated parsing, dynamic programming trellis path analysis, and structural evaluation of instrument coordinates by computational musicology platforms constitutes non-infringing fair use under 17 U.S.C. § 107.
-5. Judicial Notice of Repository History and Metadata Context: Take formal judicial notice of the contextual history of community tablature archives, holding that raw, unadorned mechanical coordinate matching is legally insufficient to establish willful infringement without independent proof of intended copying of protected expression and key metadata.
+A prospective empirical question is: **For a specified class of unkeyed, length-limited tablature passages, how frequently could a coordinate-based matcher associate the same coordinates with genuinely distinct underlying music under plausible tuning assumptions?** That question can be tested with disclosed corpora and scoring rules. It is not answered merely by showing that one homograph exists; nor does it establish how courts must weigh a given match.
+
+---
+
+## 5. Computational Analysis and the Four-Factor Fair-Use Inquiry
+
+A separate issue arises when a researcher copies or parses copyrighted material to study its structural or functional properties. Fair use under [17 U.S.C. Sec. 107](https://www.govinfo.gov/content/pkg/USCODE-2024-title17/html/USCODE-2024-title17-chap1-sec107.htm) requires consideration of the challenged **use** under all four statutory factors. The fact that gtrsnipe uses mathematics or dynamic programming is not, by itself, a fair-use exemption.
+
+### Factor 1: Purpose and character
+
+Analysis of a work to measure fingering geometry, tune similarity, or homograph prevalence can have a purpose distinct from supplying a performable substitute for the original. That distinction may favor fair use in an appropriately delimited research use, especially where the output consists of aggregated measurements rather than redistributed tabs. It is not dispositive. The Supreme Court has emphasized that the purpose of the *specific challenged use* matters; calling a technology transformative in the abstract is insufficient. See [*Andy Warhol Foundation v. Goldsmith*, 598 U.S. 508 (2023)](https://supreme.justia.com/cases/federal/us/598/21-869/).
+
+### Factor 2: Nature of the work
+
+The underlying musical compositions are creative works entitled to substantial copyright protection. At the same time, functional fingering conventions and the abstract fretboard coordinate system implicate the exclusion of methods and systems under Section 102(b). Those observations bear on the analysis; they do not automatically make the transcribed compositions unprotected.
+
+### Factor 3: Amount and substantiality
+
+Certain whole-passage or whole-work analyses may require processing a complete source to obtain a valid result. Other research questions, including short-phrase searches, do not. Any claim of necessity should identify the algorithm, its actual input requirements, and why a less extensive use would not serve the specified analytical purpose. Private intermediate processing and redistribution of complete playable transcriptions are different activities.
+
+### Factor 4: Market effects
+
+A research report that discloses aggregate homograph rates or physical constraints is ordinarily less substitutive than a downloadable, playable tab of a commercially exploited composition. But gtrsnipe itself can *produce* playable tabs, so different outputs and distribution practices must be evaluated separately. Both actual and reasonably cognizable potential market effects may matter.
+
+### Relevant but non-dispositive analogies
+
+In [*Sega Enterprises Ltd. v. Accolade, Inc.*, 977 F.2d 1510 (9th Cir. 1992)](https://openjurist.org/977/f2d/1510/sega-enterprises-ltd-v-accolade-inc), the court accepted fair use for certain intermediate copying undertaken to learn unprotected functional aspects of computer software. In [*Authors Guild v. Google, Inc.*, 804 F.3d 202 (2d Cir. 2015)](https://law.justia.com/cases/federal/appellate-courts/ca2/13-4829/13-4829-2015-10-16.html), copying books to support search and limited snippets was held fair use on that record. Neither case resolves rights in musical transcriptions or grants blanket authorization to ingest and republish protected music.
+
+The research-use argument is strongest when the record distinguishes **what was copied internally, why that amount was needed, what was exposed externally, and whether the output competes with licensed expressive uses**.
+
+---
+
+## 6. Historical Context: OLGA and the Cost of Unlitigated Questions
+
+The On-Line Guitar Archive (OLGA) and similar community projects supplied amateur transcriptions long before algorithmic homograph discovery was practical. Their history illustrates the consequences of threatened copyright litigation for volunteer-run technical and cultural archives, but it should not be rewritten as a judicial holding in either direction.
+
+Contemporary reporting documents a 1998 shutdown following a threat from the **Harry Fox Agency** and renewed pressure in 2006 from representatives of the **National Music Publishers' Association** and **Music Publishers Association**, followed by OLGA's withdrawal. These are distinct episodes and should not be attributed interchangeably. See the [*Washington Post*, July 1998](https://www.washingtonpost.com/archive/business/1998/07/20/no-music-for-site-readers/935b2669-2849-4c41-9294-59c7c5d31103/), [*Ars Technica*, August 2006](https://arstechnica.com/uncategorized/2006/08/7498/), and [*InfoWorld*, January 2007](https://www.infoworld.com/article/2196474/publishers-strike-wrong-chord-with-musicians.html).
+
+No result reported here demonstrates that the old archives' full-song distribution was lawful, that their operators would have prevailed in court, or that the market for tablature became monopolized as a result. The more defensible historical inquiry is whether the expense and risk of litigation prevented technical distinctions about amateur transcription, mechanical notation, and independent creation from receiving full adversarial examination.
+
+The homograph work supplies an additional tool for such examination today. It cannot retroactively decide those cases.
+
+---
+
+## 7. Potential Uses in a Concrete Dispute
+
+For a genuine claim based partly on a short coordinate excerpt, an expert could:
+
+1. Preserve the precise accused tab and surrounding metadata, including title, tuning declarations, provenance, layout, and timing.
+2. Reconstruct the claimed coordinate matching without silently assuming standard tuning.
+3. Identify plausible alternative tuning vectors and perform the actual pitch decoding.
+4. Test whether alternatives are physically feasible on a specified instrument and disclose discomfort or contrived fingering.
+5. Compare the matched passage length, as-written behavior, and relevant source-population baselines with the project's published experiments.
+6. Distinguish what these experiments show about **representational uniqueness** from separate evidence about access, copying, substantial similarity, distribution, and fair use.
+
+No one of these steps warrants an automatic ruling. Together, they could make a technical record more informative and prevent an assumption about physical notation from being treated as a measured fact.
+
+## 8. Conclusion
+
+An unchanged sequence of guitar string-and-fret coordinates can produce different pitch sequences under different tuning vectors. gtrsnipe demonstrates that property constructively and reports empirical studies of its frequency and physical limitations. The project thereby supplies an explicit model of a distinction that can be obscured when guitar tablature is treated as though its coordinates uniquely identify absolute notes.
+
+The consequence is **not** that tablature is categorically uncopyrightable, that a second decoding defeats any first owner's rights, or that research software is automatically exempt from infringement liability. The defensible contribution is narrower and potentially more useful: **the strength of an inference from coordinate identity depends on the decoding assumptions, the length and context of the excerpt, and the physical and statistical plausibility of alternative explanations**.
+
+A future court or litigant may find that distinction immaterial in a case involving a fully attributed transcription of a familiar song. In a dispute resting on short, isolated, unkeyed coordinate matches, however, the distinction may be exactly the fact that requires examination.
+
+---
+
+## Authorities and Research Record
+
+### Statutes and decisions
+
+- [17 U.S.C. Sec. 101: Definitions](https://www.govinfo.gov/content/pkg/USCODE-2024-title17/html/USCODE-2024-title17-chap1-sec101.htm).
+- [17 U.S.C. Sec. 102: Subject matter of copyright](https://www.govinfo.gov/content/pkg/USCODE-2024-title17/html/USCODE-2024-title17-chap1-sec102.htm).
+- [17 U.S.C. Sec. 107: Fair use](https://www.govinfo.gov/content/pkg/USCODE-2024-title17/html/USCODE-2024-title17-chap1-sec107.htm).
+- [*White-Smith Music Publishing Co. v. Apollo Co.*, 209 U.S. 1 (1908)](https://supreme.justia.com/cases/federal/us/209/1/).
+- [*Sega Enterprises Ltd. v. Accolade, Inc.*, 977 F.2d 1510 (9th Cir. 1992)](https://openjurist.org/977/f2d/1510/sega-enterprises-ltd-v-accolade-inc).
+- [*Authors Guild v. Google, Inc.*, 804 F.3d 202 (2d Cir. 2015)](https://law.justia.com/cases/federal/appellate-courts/ca2/13-4829/13-4829-2015-10-16.html).
+- [*Andy Warhol Foundation for the Visual Arts, Inc. v. Goldsmith*, 598 U.S. 508 (2023)](https://supreme.justia.com/cases/federal/us/598/21-869/).
+
+### Project materials
+
+- [Results and experimental revisions: R03, R03b, R04, R05](../results/).
+- [Tablature homograph design and constraints](../../app/DESIGN-homograph.md).
+- [gtrsnipe source repository](https://github.com/scottvr/gtrsnipe).
+- [Original satirical companion: *IANAL.md*](IANAL.md).
+
+**Versioning note for prospective legal use:** A link to a report on the mutable `main` branch is helpful for ordinary research, but poor as an evidentiary snapshot. For any cited result, retain a commit-SHA permalink, script and dataset versions, and generated outputs or hashes. This memorandum deliberately points to the living results index; a subsequent legal brief should cite a fixed revision of each individual report.
+
+<!-- Editorial follow-up: Replace the results-directory links beside R03/R03b/R04/R05 with verified relative paths to the individual reports once their exact names are confirmed. Reconcile all numerical assertions against current reports. -->
