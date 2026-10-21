@@ -27,6 +27,26 @@ measurements are in [`DESIGN-tab-rhythm.md`](../app/DESIGN-tab-rhythm.md).
 
 ## Ideas
 
+- **Report the unfiltered counts, and revisit the "sounds unrelated" threshold** (scottvr,
+  2026-10-21). The R04 scan excludes pairs that sound alike (C₁ ≤ ½ and contour agreement
+  ≤ 0.6), and where any such threshold sits is arguable. Two asks:
+  - Always state the totals *before* each filter, so a reader can see what the decision "these
+    sound similar" removes and judge whether it is even a valid filter. The R04 tables give
+    pairs / eligible / trivial / unrelated-sounding per length, but the pairs that fit six
+    strings *and* sound alike are never discussed as a result in their own right.
+  - The easy path is interesting too, at least as raw statistics. Pairs of distinct, separately
+    claimed compositions by different authors that match closely (even ~90% in the *same*
+    tuning, which the scan discards as "a capo, not a homograph") are a baseline worth computing
+    and noting in the data, even if they are a different study topic. Lots of songs have
+    similar passages; if they didn't, homographs would be even harder (which we showed, taking
+    the hard path in the name of good science). Discounting pieces because "they already sound
+    similar anyway" hides that baseline.
+  - The example to keep in mind: the first Lakh run's best 24-note pair, Debby Boone's *You
+    Light Up My Life* intro against a figure from Metallica's *For Whom the Bell Tolls*
+    (`@1-24` / `@141-164`). The shared tab is real and verified note for note, but it is two
+    repeated 6-note cells, so it was filtered as trivial (RESULTS-R04 §4, story 06). Not
+    evidence, but a good demo.
+
 - **More strings for homographs** (scottvr, 2026-09-27).
   - 7- and 8-string guitars: 7-string tunings and `--num-strings 7` already exist, and the
     solver's free mode allows up to 12 strings. Anchored/middle need an 8-string tuning and
