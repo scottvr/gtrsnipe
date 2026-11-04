@@ -243,7 +243,16 @@ candidate order have changed since; the two unison chords are unplayable-chosen 
    time. Both tabs sit in one position and both are playable, so it is a preference, not
    an error, and the asymmetry is the thing to remember: inside a chord the rule rewards
    open strings, inside a fretted line it avoids them. `tests/unit/test_mapper_scoring.py`
-   pins the two chord numbers and the line case.
+   pins the two chord numbers and the line case. *scottvr, same day, on that side effect:
+   this is the Asturias family of problems. `let_ring_bonus` and then the diagonal span
+   were added in the wiki walk-through by analyzing a failure and answering it with a
+   parameter, and they worked. 0-7-0-7-0-7 on one string is easy to play but not exactly
+   this; Bach is the other direction, too much on one string. `--single-string` only half
+   addresses it, built for an Angus Young lick or the Eruption tremolo, not a whole piece.
+   A weight instead of a boolean, or a second boolean, would resolve it and seems kludgy:
+   infinite tweakability ends with every song needing a profile, and someone who knows
+   enough to write that profile could transcribe by hand. Fine for now; it goes under M06
+   as the case a hand-position state should absorb, not a knob.*
 3. `sweet_spot_bonus`: working as designed. *scottvr (2026-11-04): the two forces (a flat toll
    for leaving the window, a graded one per fret above it) go in the README beside the three
    related options and in `--help`, not the wiki, which few people find and which he may
@@ -323,6 +332,10 @@ and the corpus pieces are not ours to ship.
     assign real fingers (index barre allowed or not) and reject shapes needing a missing one.
   - Tabs: the mapper's span and movement costs assume four fingers; a profile would narrow
     the playable span and penalize stretches the hand can't make.
+  - A hand *position* state belongs here too (M01 q2, 2026-11-04): open strings are free
+    inside a chord and a trip to the nut inside a line, so an open pedal under a line at
+    the fifth position gets fretted. Not a weight; a knob per case is the road to a profile
+    per song, which scottvr declined.
   - Natural companions: the "optional notes" entry (top-three voicings, shells, power
     chords; scottvr's "funk" and, jokingly, "Iommi factor" modes) -- all chosen compromises,
     each disclosed, never silent.
