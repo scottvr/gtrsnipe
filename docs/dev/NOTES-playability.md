@@ -92,7 +92,7 @@ defaults themselves, which the sweep can then check for changed tabs.
 | `fret_span_penalty` | 100 | fret of span inside a chord | 33 |
 | `sweet_spot_bonus` | 0.5 | fingering whose average is inside the window (a flat toll for leaving it; the penalty above is the graded one) | 0.17 |
 | `let_ring_bonus` (Asturias: 210) | 0 | string of the previous fingering left free | 70 at the Asturias setting |
-| the sentinel | 1000 | chord span past the limit (a flat **return**); diagonal span (subtracted) | 333 |
+| the sentinel | 1000 | chord span past the limit (subtracted since 2026-11-04; was a flat **return**); diagonal span (subtracted) | 333 |
 
 **Three modelling facts, from the code.** Hypotheses for the discussion, not verdicts:
 scottvr's point stands that the open-string handling was deliberate in places (a sus shape
@@ -109,8 +109,8 @@ sweep, not a code read, says which knobs are wired to something.
 3. *A string switch is counted by symmetric difference*, so a single note changing string
    costs two units, not one.
 
-**The sentinel can't rank.** When no candidate fits the span limit, every candidate returns
-the same flat -1000 and the mapper picks arbitrarily (first in sort order, then whatever the
+**The sentinel couldn't rank** (fixed the same day; see q1 below). When no candidate fit the
+span limit, every candidate returned the same flat -1000 and the mapper picked arbitrarily (first in sort order, then whatever the
 path prefers), with the transition terms never consulted. Both mappers do it; the line dates
 from the July 2025 refactor, so it is not a Viterbi regression. Where it bites:
 - the sus-shape probe, x-5-7-7-0-0 slid to 7, 10, 12: with open strings counted, 0 of 108
@@ -121,10 +121,10 @@ from the July 2025 refactor, so it is not a Viterbi regression. Where it bites:
   so all 12 candidates tie at -1000 and fret 10 on the A string beats fret 5 on the D string
   because the flat return discarded the movement cost that would have ranked them. `--dedupe`
   (as the wiki's final command does) removes the chord; `--ignore-open` fixes the open case.
-- Options to discuss: subtract the sentinel instead of returning it (least-bad ranking, as
+- Options discussed: subtract the sentinel instead of returning it (least-bad ranking, as
   the diagonal check already does); or keep the hard rule and make the no-fit case explicit
   in the tab (a marker, a warning naming the chord), since "no fingering fits your hand" is
-  information the player wants.
+  information the player wants. Both, as of 2026-11-04 (q1).
 
 **The sweep on three real pieces** (the wiki's Mr Crowley organ intro, 168 notes; Asturias
 v1, 44; the full Bach prelude, 654), distinct tabs per knob over its ladder, pooled:
@@ -185,7 +185,8 @@ On the six fast probes the picture is the same: `sweet_spot_bonus`, `barre_bonus
 5-note chords): at the defaults *every weight knob is dead*, because every candidate of every
 chord returns the flat -1000 and the weights never get a vote. Only `--ignore-open`,
 `unplayable_fret_span` 8 and `--optimizer greedy` change its tab. The sentinel doesn't just
-fail to rank; it switches the whole scorer off for that chord.
+fail to rank; it switches the whole scorer off for that chord. (Measured before the q1 fix;
+after it, the probe's widest chosen span drops from 19 to 9 and the weights are live again.)
 
 **Ablation pairs** (`--pair A,B`: distinct tabs of B over its ladder, at each value of A), on
 the three pieces:
@@ -220,7 +221,20 @@ exactly (the 30 Viterbi differences are the docs-audit's known "22 of 70 chords"
 candidate order have changed since; the two unison chords are unplayable-chosen in both).
 
 **For the discussion with scottvr** (his call, not mine):
-1. The sentinel: rank the no-fit case, or flag it, or both?
+1. The sentinel: rank the no-fit case, or flag it, or both? *scottvr (2026-11-04): an obvious
+   oversight; for the pieces he was transcribing any choice happened to be as good as another,
+   so nothing stood out, but it is not something to leave to chance. Both: rank, and tell the
+   player, so that if the fingering still sucks they know the mapper had no real choice. The
+   message can live behind the existing debug flood or use a proper level; the verbosity
+   structure (today it is everything-or-nothing short of exceptions) is a parking-lot note.*
+   Done the same day: the scorer subtracts the 1000 and keeps scoring, so the least bad
+   fingering wins on the other terms; both mappers then warn, at the default verbosity, naming
+   the chord, the beat, the limit and the shape chosen ("No fingering of the chord at beat
+   3.125 (G3 G3) fits within 4 frets; chose the least bad: S3:F0 S4:F5 (span 5)."). Measured
+   on the three real pieces, Asturias v6 and the seven probes, both optimizers (22 tabs): 18
+   unchanged; Asturias v1 changes 4 of 44 notes (the two unisons go from G0 A10 to G0 D5,
+   widest span 10 to 5); the sus probe changes 20 of 35 (widest span 19 to 9, from the A19 e0
+   nonsense). Nothing else moved. Tests: `tests/unit/test_mapper_scoring.py`.
 2. Open strings in the movement term: a position, or none? His sus-shape example argues the
    chord keeps a position while its open strings don't; a "last fretted position" rule gives
    exactly that. *scottvr (2026-11-04): deliberate, and the intent was exactly the pull-down.

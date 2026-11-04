@@ -9,8 +9,9 @@ a threshold is a priority, not a trade-off; one that changes it smoothly is a ge
 exchange rate. The sweep also
 checks two things a weight table can't show: that scaling every weight together
 leaves every tab unchanged (only ratios matter), and whether a fingering the scorer
-calls unplayable (chord span past ``unplayable_fret_span``) is ever chosen anyway,
-which would mean the -1000 sentinel was outbid.
+calls unplayable (chord span past ``unplayable_fret_span``) is ever chosen anyway:
+that is the no-fit case, where no fingering of a chord fits the hand and the mapper
+takes the least bad one and says so.
 
 Inputs are anything ``gtrsnipe-research`` reads, plus the built-in probe pieces:
 short constructed passages that exercise one scorer question each (an open-string

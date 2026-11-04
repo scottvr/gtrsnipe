@@ -27,6 +27,14 @@ measurements are in [`DESIGN-tab-rhythm.md`](../app/DESIGN-tab-rhythm.md).
 
 ## Ideas
 
+- **A verbosity structure for the mapper's messages** (scottvr, 2026-11-04, while answering
+  M01 q1). Today the mapper is everything-or-nothing short of exceptions: `--debug` is a
+  `-vvvvvvvvv` flood meant for him to see why a score didn't match his head, and the rest is
+  a handful of warnings. The no-fit warning ("No fingering of the chord at beat ... fits
+  within N frets; chose the least bad ...") went in at warning level so the player is told.
+  If such messages turn out indistinguishable from clear choices, they can live behind a
+  verbosity flag forever; either way the levels (what a player sees by default, what `-v`
+  adds, what `--debug` dumps) want deciding once, with the tiered `--help` below.
 - **Tiered `--help`, ffmpeg-style** (scottvr, 2026-11-04). The option count makes the full help a
   firehose. Today: a short usage by default and the grouped detail on `--help`. Next: several
   levels, from usage, to one group's detail on request (`--help mapper`, `--help tab`, ...), to

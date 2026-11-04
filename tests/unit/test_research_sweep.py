@@ -50,8 +50,8 @@ def test_greedy_has_no_path_score():
 
 def test_unplayable_chosen_counts_spans_past_the_limit():
     # x-5-7-7-0-0: D3 A3 D4 with open B and E. With open strings counted in the span
-    # no fingering fits 4 frets, every candidate returns the flat -1000, and the
-    # mapper picks one anyway: the sentinel can't rank them.
+    # no fingering fits 4 frets; the mapper places the chord anyway (the least bad of
+    # them, ranked on the other terms) and the run counts it.
     chord = Song(tracks=[Track(events=[MusicalEvent(0, p, 2, 90) for p in (50, 57, 62, 59, 64)])])
     r = SW.finger(chord, MapperConfig())
     assert r.unplayable_chosen == 1

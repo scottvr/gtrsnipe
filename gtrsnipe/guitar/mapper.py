@@ -4,7 +4,7 @@ from typing import Dict, Set, Optional, List, Tuple
 from itertools import groupby
 from ..core.types import MusicalEvent, FretPosition, Tuning, Technique
 from ..core.config import MapperConfig
-from ..core.theory import note_name_to_pitch
+from ..core.theory import note_name_to_pitch, pitch_to_note_name
 from collections import Counter
 
 import logging
@@ -73,18 +73,37 @@ class GuitarMapper:
                 logger.warning(f"Note with pitch {event.pitch} is unplayable on string {string_index+1} (fret {fret}) and was dropped.")
         return mapped_events
 
-    def _score_fingering(self, fingering: Fingering, prev_fingering: Optional[Fingering], prev_prev_fingering: Optional[Fingering]) -> float:
-        """Scores a fingering based on internal shape, position, and transition cost."""
-        
-        # 1. Internal Shape Score (Compactness)
+    def _chord_span(self, fingering: Fingering) -> int:
+        """Fret span of a fingering as the scorer sees it (open strings dropped under --ignore-open)."""
         if self.config.ignore_open:
             frets = [pos.fret for pos in fingering if pos.fret > 0]
         else:
             frets = [pos.fret for pos in fingering]
-        fret_span = (max(frets) - min(frets)) if frets else 0
+        return (max(frets) - min(frets)) if frets else 0
+
+    def _report_no_fit(self, group: List[MusicalEvent], fingering: Fingering) -> None:
+        """Tell the player when the chosen fingering is wider than the hand: every
+        fingering of that chord was, and the mapper chose the least bad."""
+        span = self._chord_span(fingering)
+        if span > self.config.unplayable_fret_span:
+            names = " ".join(pitch_to_note_name(ev.pitch) for ev in group)
+            shape = " ".join(f"S{p.string + 1}:F{p.fret}" for p in fingering)
+            logger.warning(
+                f"No fingering of the chord at beat {group[0].time:g} ({names}) fits within "
+                f"{self.config.unplayable_fret_span} frets; chose the least bad: {shape} (span {span})."
+            )
+
+    def _score_fingering(self, fingering: Fingering, prev_fingering: Optional[Fingering], prev_prev_fingering: Optional[Fingering]) -> float:
+        """Scores a fingering based on internal shape, position, and transition cost."""
+        
+        # 1. Internal Shape Score (Compactness)
+        fret_span = self._chord_span(fingering)
+        score = -fret_span * self.config.fret_span_penalty
         if fret_span > self.config.unplayable_fret_span:
-            return -1000
-        score = -fret_span * self.config.fret_span_penalty 
+            # Wider than the hand: rank it below every fingering that fits, but keep
+            # scoring, so that when no fingering of a chord fits (all of them land here)
+            # the other terms still choose the least bad one instead of the first one.
+            score -= 1000
 
         # 2. Positional Score (Where on the neck?)
         if fingering:
@@ -446,6 +465,7 @@ class GuitarMapper:
             f = cand[t][chosen_idx[t]]
             for i, ev in enumerate(g2):
                 ev.fret, ev.string = f[i].fret, f[i].string
+            self._report_no_fit(g2, f)
             out.extend(g2)
         return out
 
@@ -462,6 +482,7 @@ class GuitarMapper:
                 for i, note_event in enumerate(group_to_finger):
                     note_event.fret = fingering[i].fret
                     note_event.string = fingering[i].string
+                self._report_no_fit(group_to_finger, fingering)
                 multi_string_events.extend(group_to_finger)
                 prev_prev_fingering = last_fingering
                 last_fingering = fingering

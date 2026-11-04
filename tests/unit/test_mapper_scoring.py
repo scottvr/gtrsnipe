@@ -40,3 +40,44 @@ def test_single_note_to_open_string_is_charged_the_full_distance():
     fret_7 = (FretPosition(string=0, fret=7),)
     assert movement_cost(mapper, fret_7, open_e) == pytest.approx(7 * 3)
     assert movement_cost(mapper, open_e, fret_7) == pytest.approx(7 * 3)
+
+
+# --- the no-fit case (M01 q1, 2026-11-04): rank the least bad fingering and say so ---
+
+import logging
+
+from gtrsnipe.core.types import MusicalEvent
+
+
+def unison_g3():
+    """Asturias v1's doubled unison: G3 on two strings never fits 4 frets (G0 with D5, A10 or E15)."""
+    return [[MusicalEvent(0.0, 55, 1.0, 90), MusicalEvent(0.0, 55, 1.0, 90)]]
+
+
+def test_no_fit_chord_is_ranked_not_arbitrary():
+    mapper = GuitarMapper(MapperConfig())
+    out = mapper.map_multi_string(unison_g3())
+    frets = sorted((ev.string, ev.fret) for ev in out)
+    assert frets == [(2, 0), (3, 5)]          # G0 D5, span 5: the least bad, not G0 A10
+    span = mapper._chord_span(tuple(FretPosition(s, f) for s, f in frets))
+    assert span > mapper.config.unplayable_fret_span
+
+
+@pytest.mark.parametrize("optimizer", ["viterbi", "greedy"])
+def test_no_fit_chord_is_reported(optimizer, caplog):
+    mapper = GuitarMapper(MapperConfig(optimizer=optimizer))
+    with caplog.at_level(logging.WARNING, logger="gtrsnipe.guitar.mapper"):
+        if optimizer == "greedy":
+            mapper._map_multi_string_greedy(unison_g3())
+        else:
+            mapper.map_multi_string(unison_g3())
+    msgs = [r.message for r in caplog.records if "fits within" in r.message]
+    assert len(msgs) == 1
+    assert "G3 G3" in msgs[0] and "span 5" in msgs[0] and "beat 0" in msgs[0]
+
+
+def test_fitting_chord_is_not_reported(caplog):
+    mapper = GuitarMapper(MapperConfig())
+    with caplog.at_level(logging.WARNING, logger="gtrsnipe.guitar.mapper"):
+        mapper.map_multi_string([[MusicalEvent(0.0, 64, 1.0, 90), MusicalEvent(0.0, 71, 1.0, 90)]])
+    assert not [r for r in caplog.records if "fits within" in r.message]

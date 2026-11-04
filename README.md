@@ -716,7 +716,7 @@ An abridged reference, grouped as in `gtrsnipe --help`. Run `gtrsnipe --help` fo
 - `--string-switch-penalty STRING_SWITCH_PENALTY`: Penalty for switching strings (default: 5.0).
 - `--high-fret-penalty HIGH_FRET_PENALTY`: Penalty for playing high on the neck (default: 5).
 - `--low-string-high-fret-multiplier LOW_STRING_HIGH_FRET_MULTIPLIER`: Multiplier penalty for playing high on the neck on low strings (default: 10).
-- `--unplayable-fret-span UNPLAYABLE_FRET_SPAN`: Fret span considered unplayable (default: 4).
+- `--unplayable-fret-span UNPLAYABLE_FRET_SPAN`: Fret span considered unplayable (default: 4). A chord that no fingering can bring within it is still placed, by the least bad fingering, and the mapper says so (the chord, the beat and the shape it chose).
 - `--sweet-spot-bonus SWEET_SPOT_BONUS`: Bonus for every fingering inside the sweet spot (default: 0.5). Two forces keep the hand in the window: this bonus is a flat toll for leaving it in either direction, and `--high-fret-penalty` is a graded one, charged per fret above the window's top. Below the window there is no graded penalty, so the bonus is what keeps the hand from dropping under `--sweet-spot-low`; above it, the two add up.
 - `--sweet-spot-low SWEET_SPOT_LOW`: Lowest fret of the "sweet spot" (default: 0, open).
 - `--sweet-spot-high SWEET_SPOT_HIGH`: Highest fret of the "sweet spot" (default: 12).

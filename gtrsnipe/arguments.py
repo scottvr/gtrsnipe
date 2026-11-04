@@ -106,7 +106,8 @@ def add_mapper_args(target) -> None:
         help='Multiplier penalty for playing high on the neck on low strings (default: 10).')
     target.add_argument(
         '--unplayable-fret-span', type=int, default=4,
-        help='Fret span considered unplayable (default: 4).')
+        help='Fret span considered unplayable (default: 4). A chord that no fingering can '
+             'bring within it is still placed, by the least bad fingering, and reported.')
     target.add_argument(
         '--sweet-spot-bonus', type=float, default=0.5,
         help='Bonus for every fingering inside the sweet spot (default 0.5): a flat toll for '
