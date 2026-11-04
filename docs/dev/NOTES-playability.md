@@ -87,7 +87,7 @@ defaults themselves, which the sweep can then check for changed tabs.
 | `high_fret_penalty` | 5 | fret the average sits above the sweet spot | 1.7; × 10 when a low string is used |
 | `fretted_open_penalty` | 20 | fretted note whose pitch is an open string (`--prefer-open` only) | 6.7 |
 | `fret_span_penalty` | 100 | fret of span inside a chord | 33 |
-| `sweet_spot_bonus` | 0.5 | fingering whose average is inside the window (needs a lower edge to have a case) | 0.17 |
+| `sweet_spot_bonus` | 0.5 | fingering whose average is inside the window (a flat toll for leaving it; the penalty above is the graded one) | 0.17 |
 | `let_ring_bonus` (Asturias: 210) | 0 | string of the previous fingering left free | 70 at the Asturias setting |
 | the sentinel | 1000 | chord span past the limit (a flat **return**); diagonal span (subtracted) | 333 |
 
@@ -158,16 +158,18 @@ On the six fast probes the picture is the same: `sweet_spot_bonus`, `barre_bonus
 `unplayable_fret_span` and `diagonal_span_penalty` never change a probe; `movement_penalty`,
 `string_switch_penalty`, `fretted_open_penalty`, `let_ring_bonus`, `sweet_spot_high` and
 `prefer_open` change four of six. Readings:
-- `sweet_spot_bonus` decides nothing at the defaults, and the reason is the window, not the
-  size. With `sweet_spot_low` at 0 no fingering can be *below* the window, so the bonus is a
-  constant added to every candidate that isn't above the high edge, and a constant cancels;
-  the only comparisons left are inside-vs-above, where it pushes the same way as the
-  per-fret penalty and can only confirm what the penalty decided (a bonus of 100 at low 0
-  changes nothing on any piece). So above the window it is *redundant with* the penalty,
-  not dominated by it, and "how much the sweet spot matters" works through the lower edge
-  (or with the high-fret penalty at 0). With the edge at 4 it is live on every piece, and the
-  default 0.5 flips at 0 and at 1.0: a balance point, working as designed (scottvr: the edges
-  were added after the bonus for exactly this).
+- `sweet_spot_bonus` changed no tab on these three pieces at the defaults, and that is a fact
+  about the pieces: none of them ever had an above-window candidate close to winning, so no
+  size of bonus could show. The structure (corrected 2026-11-04, after I had wrongly called
+  the bonus redundant with the penalty): an above-window fingering must overcome the bonus
+  *plus* `high_fret_penalty` × its distance above the edge. The bonus is a flat toll for
+  leaving the window, the penalty a graded one, and they complement each other: with the
+  penalty small, a passage near the 19th fret goes to G17–G19 at bonus 0 and comes back to
+  e8–e10 at bonus 5. A bonus of 1000 with no bounds set is a real preference ("never leave
+  the neck below 12 whatever the movement saved"). With a lower edge the bonus is also the
+  only term telling inside from below, which is why `sweet_spot_low` 4 makes it live on every
+  piece here, and the default 0.5 then flips at 0 and at 1.0. Working as designed; scottvr
+  was right about this from the start (the edges were added after the bonus for exactly this).
 - The trade-off knobs (`movement`, `string_switch`, `fretted_open`) are live and flip
   within ×2 of their defaults, i.e. the defaults sit near a boundary, which is what
   hand-balancing one failure at a time would produce.
@@ -219,9 +221,8 @@ candidate order have changed since; the two unison chords are unplayable-chosen 
 2. Open strings in the movement term: a position, or none? His sus-shape example argues the
    chord keeps a position while its open strings don't; a "last fretted position" rule gives
    exactly that.
-3. `sweet_spot_bonus`: working as designed with an edge; the open question is only whether
-   the docs should say that the bonus needs `--sweet-spot-low` to do anything (today a user
-   raising the bonus alone sees no change and can't tell why).
+3. `sweet_spot_bonus`: working as designed. Nothing to change; the wiki could explain the two
+   forces (a flat toll for leaving the window, a graded one per fret above it) in a sentence.
 4. `barre_bonus`/`barre_penalty`: two knobs on purpose (above); only the difference reaches the
    score, which the help text could say. Nothing to change.
 5. Round the defaults to whole-fret rates and re-run the sweep to see what changes.
