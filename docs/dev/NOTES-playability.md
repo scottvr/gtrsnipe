@@ -302,6 +302,9 @@ candidate order have changed since; the two unison chords are unplayable-chosen 
    Decision: the originals are whole numbers already (3, 5, 100, 5, 20, 0.5); the fractions
    only appear in the frets-of-travel column. Nothing to round; q5 closes with no change,
    and the two tables above now carry the cost of each rounding should it come up again.
+   *scottvr: no design notes survive and he won't claim intelligent design, but trial and
+   error may be why the values are as large as they are: a fret at 3 instead of 1 leaves
+   room for nuance, a switch at five thirds of a fret, in whole numbers.*
 6. M02 is already in the table: `optimizer` is live on every input. The corpus comparison
    (`--sample nottingham:N`, Lakh for chords) is one command away, once the cubic loop is
    fixed or the sample avoids dense chords.
