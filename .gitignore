@@ -188,3 +188,7 @@ tests/golden/cases/
 # deliberately, use `git add -f` and say why in the commit message.
 *.html
 ._*
+
+# Local data beside the repo (/opt/claude/gtrsnipe): corpus caches and run outputs, never committed
+data/
+runs/

@@ -414,10 +414,17 @@ CORPORA: Dict[str, CorpusSpec] = {s.name: s for s in [
 ]}
 
 
+LOCAL_DATA = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "data")
+
+
 def corpus_root(root: Optional[str] = None) -> str:
+    """``--data``, else ``$GTRSNIPE_CORPUS_ROOT``, else ``data/`` beside the package (a
+    checkout's own, git-ignored data folder holding at least ``_cache/``)."""
     root = root or os.environ.get(ROOT_ENV)
+    if not root and os.path.isdir(os.path.join(LOCAL_DATA, "_cache")):
+        root = LOCAL_DATA
     if not root:
-        raise ValueError(f"no corpus root: pass --data DIR or set {ROOT_ENV}")
+        raise ValueError(f"no corpus root: pass --data DIR, set {ROOT_ENV}, or keep caches in {LOCAL_DATA}/_cache")
     if not os.path.isdir(root):
         raise ValueError(f"corpus root {root!r} is not a directory")
     return root
