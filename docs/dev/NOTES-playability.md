@@ -235,9 +235,15 @@ candidate order have changed since; the two unison chords are unplayable-chosen 
    the same open E is 0.57 frets, 1.7 points. Each open string already held pulls the
    pre-move average toward the open shape. The cost of the rule is the single-line case
    (open E then fret 7 is seven frets each way); a "last fretted position" rule would keep
-   his chord behaviour and drop that, at the price of a state. His comment is on the
-   modelling fact, not yet a verdict on this question; a unit test pins the two chord
-   numbers either way (`tests/unit/test_mapper_scoring.py`).
+   his chord behaviour and drop that, at the price of a state. *scottvr: yes, working as
+   designed and justified as it stands, for now, until better ways are sorted out (M06).*
+   The one undesirable effect, measured on the open-pedal probe: at the defaults the pedal
+   E is fingered at B5 on every beat and never open, because each open E is a trip to the
+   nut and back (seven frets each way); with `movement_penalty` 0 the mapper takes e0 every
+   time. Both tabs sit in one position and both are playable, so it is a preference, not
+   an error, and the asymmetry is the thing to remember: inside a chord the rule rewards
+   open strings, inside a fretted line it avoids them. `tests/unit/test_mapper_scoring.py`
+   pins the two chord numbers and the line case.
 3. `sweet_spot_bonus`: working as designed. *scottvr (2026-11-04): the two forces (a flat toll
    for leaving the window, a graded one per fret above it) go in the README beside the three
    related options and in `--help`, not the wiki, which few people find and which he may
