@@ -117,3 +117,23 @@ def test_cli_sweep_writes_json_and_tabs(tmp_path, capsys):
 def test_cli_sweep_rejects_unknown_knob(capsys):
     assert research_main(["sweep", "C4 D4", "--knobs", "nope"]) == 2
     assert "unknown knob" in capsys.readouterr().err
+
+
+def test_pair_sweep_revives_the_sweet_spot_bonus():
+    # dead at sweet_spot_low = 0 (no fingering can be below the window), live with an edge
+    song = line([45, 48, 50, 52, 55, 57, 60, 62, 64, 67, 64, 62, 60, 57, 55, 52, 50, 48, 45])
+    pr = SW.sweep_pair(song, "run", "sweet_spot_low", "sweet_spot_bonus")
+    assert pr.a_values[0] == 0 and pr.distinct_b_at(0) == 1
+    assert max(pr.distinct_b_at(i) for i in range(len(pr.a_values))) > 1
+    d = pr.to_dict()
+    assert d["distinct"] == pr.distinct and len(d["distinct_b_at_a"]) == len(pr.a_values)
+    assert "distinct sweet_spot_bonus" in SW.format_pair(pr)
+
+
+def test_cli_pair(tmp_path, capsys):
+    out = tmp_path / "p.json"
+    assert research_main(["sweep", "C4 D4 E4 C4 G4", "--pair", "sweet_spot_low,sweet_spot_bonus",
+                          "--json", str(out)]) == 0
+    assert json.loads(out.read_text())["pairs"][0]["a"] == "sweet_spot_low"
+    assert "at each sweet_spot_low" in capsys.readouterr().out
+    assert research_main(["sweep", "C4 D4", "--pair", "sweet_spot_low,sweet_spot_low"]) == 2

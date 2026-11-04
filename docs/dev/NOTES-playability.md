@@ -67,7 +67,7 @@ as written when each idea was parked, not a plan: each item gets its plan when i
 ### M01, first pass (2026-11-04): the audit from the code, and the sweep
 
 **The tool.** `gtrsnipe-research sweep SONG... [--probes] [--sample CORPUS:N] [--knobs a,b]
-[--tabs DIR] [--json FILE] [-v]` varies one mapper knob at a time over a ladder (weights at
+[--pair A,B ...] [--tabs DIR] [--json FILE] [-v]` varies one mapper knob at a time over a ladder (weights at
 0, 1/8 … 16 × the default; zero-default bonuses at 0, 1, 3 … 3000; the integer and flag
 knobs over their ranges), fingers each input under each setting, and counts the *distinct*
 tabs. `--tabs` writes every distinct tab out, so the judging is done on tabs, not weights.
@@ -146,7 +146,11 @@ On the six fast probes the picture is the same: `sweet_spot_bonus`, `barre_bonus
 `unplayable_fret_span` and `diagonal_span_penalty` never change a probe; `movement_penalty`,
 `string_switch_penalty`, `fretted_open_penalty`, `let_ring_bonus`, `sweet_spot_high` and
 `prefer_open` change four of six. Readings:
-- `sweet_spot_bonus` at 0.17 frets decides nothing anywhere. Dead knob.
+- `sweet_spot_bonus` decides nothing at the defaults, and the reason is the window, not the
+  size: with `sweet_spot_low` at 0 no fingering can be *below* the window, and above it the
+  per-fret penalty dominates, so the bonus (the only term that tells inside from below) never
+  gets a case. Give the window a lower edge and it is live on every piece (the pairs below).
+  scottvr: that is exactly why the low/high edges were added after the bonus.
 - The trade-off knobs (`movement`, `string_switch`, `fretted_open`) are live and flip
   within ×2 of their defaults, i.e. the defaults sit near a boundary, which is what
   hand-balancing one failure at a time would produce.
@@ -154,6 +158,29 @@ On the six fast probes the picture is the same: `sweet_spot_bonus`, `barre_bonus
   (70 frets of travel: "ringing always wins"), not a trade-off.
 - `high_fret_penalty` only matters at 0 on these pieces; the ×10 low-string multiplier
   likewise. Whether they matter on pieces that live above the 12th fret is untested.
+
+**The sus-shape probe under the sweep** (x-5-7-7-0-0 slid to 7, 10, 12 and back; seven
+5-note chords): at the defaults *every weight knob is dead*, because every candidate of every
+chord returns the flat -1000 and the weights never get a vote. Only `--ignore-open`,
+`unplayable_fret_span` 8 and `--optimizer greedy` change its tab. The sentinel doesn't just
+fail to rank; it switches the whole scorer off for that chord.
+
+**Ablation pairs** (`--pair A,B`: distinct tabs of B over its ladder, at each value of A), on
+the three pieces:
+
+| A | B | reading |
+|---|---|---|
+| `sweet_spot_low` 0 → 2 … 12 | `sweet_spot_bonus` | 1 distinct at 0; 4–6 at 2–9 (Crowley, Bach), 2 (Asturias); back to 1–4 at 12 |
+| `sweet_spot_high` 5 … 24 | `high_fret_penalty` | 7–8 distinct at 5, 4–6 at 7, 1–3 at 9, 1–2 from 12 up: the penalty is "rare" only because these pieces live below the 12th fret |
+| `high_fret_penalty` | `low_string_high_fret_multiplier` | Bach: live (5 distinct) when the penalty is small, 2 at the default; Crowley, Asturias: never |
+| `diagonal_span_penalty` | `let_ring_bonus` | 4–7 distinct off, 5–8 on: the t-2 term adds a tab or two but let-ring is live either way |
+| `barre_penalty` | `barre_bonus` | Crowley 2–4 at every penalty; Asturias and Bach 1 everywhere (no barres to find) |
+| `ignore_open` | `unplayable_fret_span` | Asturias only (the unisons): 3 distinct with opens counted, 2 without |
+
+So "dead at the defaults" has two causes to tell apart: a term with no case to decide
+(`sweet_spot_bonus`, `high_fret_penalty` on low-neck pieces), and a term that is too small
+to decide its case (none found yet). A full ablation, every pair, is 17 × 16 / 2 grids of
+up to 81 runs; on these pieces that is about ten minutes, so it can simply be run.
 
 **Replicating the wiki, both mappers** (each documented command run on the documented tab's
 own notes, `--refinger`; "same" = notes with the wiki's string and fret):
@@ -175,8 +202,9 @@ candidate order have changed since; the two unison chords are unplayable-chosen 
 2. Open strings in the movement term: a position, or none? His sus-shape example argues the
    chord keeps a position while its open strings don't; a "last fretted position" rule gives
    exactly that.
-3. `sweet_spot_bonus`: delete, or make it big enough to mean something (it is the only term
-   that *rewards* being in the window; the penalty above the window is what works today).
+3. `sweet_spot_bonus`: it only works with a lower edge, and the default edge is 0. Either the
+   default `sweet_spot_low` moves (the Asturias steps used 4) or the bonus becomes a
+   *below-window penalty* like the one above the window, so the window has two real edges.
 4. `barre_bonus`/`barre_penalty`: one knob, signed.
 5. Round the defaults to whole-fret rates and re-run the sweep to see what changes.
 6. M02 is already in the table: `optimizer` is live on every input. The corpus comparison

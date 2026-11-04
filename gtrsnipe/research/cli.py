@@ -356,6 +356,23 @@ def cmd_sweep(a) -> int:
     for k in knobs or []:
         if k not in SW.KNOBS:
             raise ValueError(f"unknown knob {k!r} (known: {', '.join(SW.KNOBS)})")
+    pairs = []
+    for spec in a.pair or []:
+        x, _, y = spec.partition(",")
+        if x not in SW.KNOBS or y not in SW.KNOBS or x == y:
+            raise ValueError(f"--pair wants two different knob names, got {spec!r}")
+        pairs.append((x, y))
+    if pairs:
+        report = {"pairs": []}
+        for label, song in inputs:
+            for x, y in pairs:
+                pr = SW.sweep_pair(song, label, x, y)
+                print(SW.format_pair(pr))
+                report["pairs"].append(pr.to_dict())
+        if a.json:
+            with open(a.json, "w") as f:
+                json.dump(report, f, indent=1, default=str)
+        return 0
     results = []
     for label, song in inputs:
         r = SW.sweep_song(song, label, knobs=knobs, check_scale=not a.no_scale_check)
@@ -502,6 +519,8 @@ def build_parser() -> argparse.ArgumentParser:
     sw.add_argument("--sample", nargs="+", metavar="CORPUS:N", help="N random tunes of a cached corpus")
     sw.add_argument("--seed", type=int, default=1)
     sw.add_argument("--knobs", help="comma-separated knob names (default: all)")
+    sw.add_argument("--pair", action="append", metavar="A,B",
+                    help="ablation: grid over two knobs; distinct tabs of B at each A (repeatable)")
     sw.add_argument("--no-scale-check", action="store_true")
     sw.add_argument("--tabs", metavar="DIR", help="write every distinct tab here")
     sw.add_argument("--json", help="also write the results here")

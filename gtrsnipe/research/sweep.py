@@ -336,6 +336,58 @@ def format_song(r: SongResult) -> str:
     return "\n".join(lines)
 
 
+# -- pairs (ablation) --------------------------------------------------------------
+
+@dataclass
+class PairResult:
+    """A grid over two knobs: for each value of ``a``, the distinct tabs ``b`` produces
+    over its ladder. A knob dead at the defaults can be live once another moves
+    (sweet_spot_bonus needs a lower edge, sweet_spot_low > 0, to decide anything)."""
+    label: str
+    a: str
+    b: str
+    a_values: List[object]
+    b_values: List[object]
+    signatures: List[List[Signature]]       # [i][j] for a_values[i], b_values[j]
+
+    def distinct_b_at(self, i: int) -> int:
+        return len(set(self.signatures[i]))
+
+    def distinct_a_at(self, j: int) -> int:
+        return len({row[j] for row in self.signatures})
+
+    @property
+    def distinct(self) -> int:
+        return len({sig for row in self.signatures for sig in row})
+
+    def to_dict(self) -> dict:
+        return {"label": self.label, "a": self.a, "b": self.b, "a_values": self.a_values,
+                "b_values": self.b_values, "distinct": self.distinct,
+                "distinct_b_at_a": [self.distinct_b_at(i) for i in range(len(self.a_values))],
+                "distinct_a_at_b": [self.distinct_a_at(j) for j in range(len(self.b_values))]}
+
+
+def sweep_pair(song: Song, label: str, a: str, b: str, *,
+               base: Optional[MapperConfig] = None) -> PairResult:
+    base = base or MapperConfig()
+    ka, kb = KNOBS[a], KNOBS[b]
+    grid = []
+    for va in ka.ladder:
+        row = []
+        for vb in kb.ladder:
+            settings = dict(ka.settings(va))
+            settings.update(kb.settings(vb))
+            row.append(finger(song, configured(base, **settings)).signature)
+        grid.append(row)
+    return PairResult(label, a, b, list(ka.ladder), list(kb.ladder), grid)
+
+
+def format_pair(r: PairResult) -> str:
+    head = f"{r.label}: {r.b} over its ladder, at each {r.a} ({r.distinct} distinct tabs in the grid)"
+    cells = "  ".join(f"{str(v):>6}" for v in r.a_values)
+    counts = "  ".join(f"{r.distinct_b_at(i):>6}" for i in range(len(r.a_values)))
+    return f"{head}\n    {r.a:>18}: {cells}\n    {'distinct ' + r.b:>18}: {counts}"
+
 # -- probes -----------------------------------------------------------------------
 
 def _song(title: str, groups: Sequence[Sequence[int]], beat: float = 1.0) -> Song:
