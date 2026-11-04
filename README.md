@@ -4,8 +4,8 @@
 
 Convert to and from .mid, .abc, .vex, and .tab files. (and more.)
 
-## v0.8.0
-Released 2026-10-07. See [CHANGELOG](https://github.com/scottvr/gtrsnipe/blob/main/CHANGELOG.md)
+## v0.8.1
+Released 2026-11-04. See [CHANGELOG](https://github.com/scottvr/gtrsnipe/blob/main/CHANGELOG.md)
 
 # What?
 
@@ -279,6 +279,8 @@ gtrsnipe-research families mtc-ann                         # tune-family retriev
 gtrsnipe-research scan essen mtc-fs --solve 40 --tabs out/  # phrases of different songs that share a tab
 gtrsnipe-research aswritten examples/aswritten/*.tab       # can a tab's own fingering play another song?
 gtrsnipe-research segments mtc-ann --level phrase          # phrase/motif retrieval on MTC-ANN's annotations (R03b)
+gtrsnipe-research sweep asturias.tab --probes --sample nottingham:20   # vary one mapper knob at a time; count distinct tabs (M01)
+gtrsnipe-research optimizers --sample nottingham:100 essen:100         # Viterbi vs greedy on the same tunes, one objective (M02)
 ```
 
 </details>
