@@ -27,6 +27,25 @@ measurements are in [`DESIGN-tab-rhythm.md`](../app/DESIGN-tab-rhythm.md).
 
 ## Ideas
 
+- **The Viterbi mapper's inner loop is cubic in the candidate count** (found by the M01 sweep,
+  2026-11-04). For each stage it loops over (current, previous, previous-previous) even when the
+  score doesn't read t-2, so a 5-note chord with ~250 fingerings costs seconds per stage: the
+  sus-shape probe takes 13.7 s for seven chords. Collapsing the first-order case to "best
+  predecessor per previous fingering, computed once per stage" is exact (same tie-breaking:
+  first index with the maximum) and quadratic. Real pieces are fine today (Asturias ≤ 20
+  candidates per chord, 0.02 s), so this only matters for dense chords and for sweeps.
+- **`--track` on a type-0 MIDI** (2026-11-04): a single-track file with several channels (the
+  "Mr Crowley.mid" in `archives-to-go-through/`) fails with "file has 1 tracks". The research
+  corpus reader already splits by (track, channel); the converter could select a channel the
+  same way (`--track` by channel when the file has one track, or a `--channel` flag).
+- **Read Power Tab (`.ptb`) and tab PDFs** (scottvr, 2026-11-04): `archives-to-go-through/` holds
+  collections of third-party tabs as Power Tab files and PDFs (a Top-100 classic rock set among
+  them), which would be R14's "tabs as written" input if gtrsnipe could read them. scottvr
+  recalls the Power Tab Editor author open-sourcing it and starting a powertab2, both on
+  GitHub (to verify); its source reads `.ptb` and writes `.pt2`/`.gp`, so the format is
+  documented in code. PDFs would need text extraction of the tab lines first. Pairs with the
+  parked "write a file the tab editors open" entry below.
+
 - **Report the unfiltered counts, and revisit the "sounds unrelated" threshold** (scottvr,
   2026-10-21). The R04 scan excludes pairs that sound alike (C₁ ≤ ½ and contour agreement
   ≤ 0.6), and where any such threshold sits is arguable. Two asks:
