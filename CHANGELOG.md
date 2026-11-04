@@ -10,6 +10,49 @@ and Cargo apply to 0.x version ranges. Full SemVer applies from 1.0.0. The publi
 is the CLI flags and the file formats gtrsnipe reads and writes; report wording is
 not part of it.
 
+## [0.8.1] — 2026-11-04
+
+The measuring stick, first pass (backlog M01 and M02), done with scottvr answering the
+design questions in [`docs/dev/NOTES-playability.md`](docs/dev/NOTES-playability.md). The
+defaults stay as they are: the audit found them deliberate, and the one real defect was in
+how the mapper handled a chord nothing fits.
+
+### Fixed
+- **A chord that no fingering can bring within `--unplayable-fret-span` is placed by the
+  least bad fingering, and the mapper says so.** Before, every fingering of such a chord
+  scored the same flat sentinel and the first one won, with the movement and string terms
+  never consulted (a doubled unison in Asturias came out on frets 0 and 10 instead of 0
+  and 5). Both optimizers now rank them on the other terms and warn at the default
+  verbosity: `No fingering of the chord at beat 3.125 (G3 G3) fits within 4 frets; chose
+  the least bad: S3:F0 S4:F5 (span 5).` Measured on three real pieces and seven probes
+  under both optimizers: only the tabs with such chords change.
+
+### Added
+- **`gtrsnipe-research sweep`**: the scoring-weights sweep. Varies one mapper knob at a time
+  over a ladder and counts the distinct tabs, with the knob's breakpoints, a scale check
+  (doubling every weight changes no tab: only ratios matter), seven constructed probe
+  passages, `--pair A,B` ablation grids, and `--tabs` to write every distinct tab.
+- **`gtrsnipe-research optimizers`**: Viterbi against greedy on the same inputs, scored
+  under the one objective. On 450 tunes from five corpora Viterbi was never worse, better
+  on 86%, a third of a point per note on average; the hand-travel and big-jump proxies
+  follow the weights rather than the optimizer (POP909 trades more travel for fewer
+  switches, as the weights ask).
+- The greedy mapper reports its path score (`last_path_score`) like the Viterbi mapper.
+
+### Changed
+- `--sweet-spot-bonus`, `--sweet-spot-low/high` and `--high-fret-penalty` help and README:
+  the two forces (a flat toll for leaving the window, a graded one per fret above it) are
+  explained where the options are, so the bonus is not mistaken for dead when the window
+  has no lower edge.
+- `--unplayable-fret-span` help and README say what happens when nothing fits.
+- `docs/dev/NOTES-playability.md`: the M01 audit (exchange rates read off the code, three
+  modelling facts, the sweep on three pieces, the wiki command lines replicated under both
+  optimizers, the six questions and scottvr's answers) and the M02 table.
+  `docs/dev/PARKING-LOT.md`: the Viterbi cubic inner loop, `--track` on type-0 MIDI,
+  reading Power Tab and PDF tabs, a verbosity structure for the mapper's messages, a tiered
+  `--help`, the docs restructure, and the homograph scan's unfiltered counts and
+  similarity cutoff.
+
 ## [0.8.0] — 2026-10-07
 
 Tabs that keep time (backlog F08). A minor version, because it changes how every tab gtrsnipe
