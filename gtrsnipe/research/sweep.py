@@ -1,9 +1,12 @@
 """The scoring-weights sweep (backlog M01, step 5): which knobs are wired to anything?
 
 Vary one mapper knob at a time over a ladder of values, finger each song under each
-setting, and count the *distinct* tabs. A knob that never changes a tab on any input
-is dead weight; one that changes it only past a threshold is a priority, not a
-trade-off; one that changes it smoothly is a genuine exchange rate. The sweep also
+setting, and count the *distinct* tabs. A knob that never changes a tab on any input at the
+defaults is idle there (its case may not arise: the sweet-spot bonus is the window's
+only lower edge, so it needs one), which is why some knobs are also swept in the
+context they were designed for (the ``@`` entries); one that changes a tab only past
+a threshold is a priority, not a trade-off; one that changes it smoothly is a genuine
+exchange rate. The sweep also
 checks two things a weight table can't show: that scaling every weight together
 leaves every tab unchanged (only ratios matter), and whether a fingering the scorer
 calls unplayable (chord span past ``unplayable_fret_span``) is ever chosen anyway,
@@ -35,12 +38,17 @@ Signature = Tuple[Tuple[int, int], ...]        # (string, fret) per note, in (ti
 
 @dataclass(frozen=True)
 class Knob:
-    name: str
+    name: str                        # the MapperConfig field
     kind: str                        # "weight" (float), "int", "flag", "choice"
     default: object
     ladder: Tuple[object, ...]       # values tried, default included
-    needs: Dict[str, object] = field(default_factory=dict)   # other settings for it to matter
+    needs: Dict[str, object] = field(default_factory=dict)   # the context it is swept in
     note: str = ""
+    alias: str = ""                  # key in KNOBS when the same field is swept in a context
+
+    @property
+    def key(self) -> str:
+        return self.alias or self.name
 
     def settings(self, value) -> Dict[str, object]:
         out = dict(self.needs)
@@ -52,12 +60,12 @@ _SCALE = (0, 0.125, 0.25, 0.5, 1, 2, 4, 8, 16)
 _ABS = (0, 1, 3, 10, 30, 100, 300, 1000, 3000)
 
 
-def _weight(name, default, needs=None, note=""):
+def _weight(name, default, needs=None, note="", alias=""):
     ladder = tuple(default * s for s in _SCALE) if default else _ABS
-    return Knob(name, "weight", default, ladder, needs or {}, note)
+    return Knob(name, "weight", default, ladder, needs or {}, note, alias)
 
 
-KNOBS: Dict[str, Knob] = {k.name: k for k in [
+KNOBS: Dict[str, Knob] = {k.key: k for k in [
     _weight("movement_penalty", 3.0, note="per fret the average fret moves between fingerings"),
     _weight("string_switch_penalty", 5.0,
             note="per string entering or leaving the set used (a single-note switch counts 2)"),
@@ -79,9 +87,21 @@ KNOBS: Dict[str, Knob] = {k.name: k for k in [
     Knob("diagonal_span_penalty", "flag", False, (False, True),
          note="-1000 when the span across consecutive fingerings exceeds the limit"),
     Knob("optimizer", "choice", "viterbi", ("viterbi", "greedy"), note="M02: the legacy mapper"),
+    # The same knobs in the context they were designed for. A knob can be idle at the
+    # defaults because its case never arises there, not because it does nothing:
+    # the sweet-spot bonus is the window's only lower edge, so it needs one; the
+    # high-fret penalty needs a high edge the piece actually crosses.
+    _weight("sweet_spot_bonus", 0.5, needs={"sweet_spot_low": 4}, alias="sweet_spot_bonus@low4",
+            note="the bonus with a lower edge (the Asturias steps used 4)"),
+    _weight("high_fret_penalty", 5.0, needs={"sweet_spot_high": 7}, alias="high_fret_penalty@high7",
+            note="the penalty with a high edge at the 7th fret"),
+    _weight("low_string_high_fret_multiplier", 10.0, needs={"sweet_spot_high": 7},
+            alias="low_string_high_fret_multiplier@high7"),
+    _weight("barre_bonus", 0.0, needs={"barre_penalty": 10.0}, alias="barre_bonus@penalty10",
+            note="the bonus against a standing penalty of 10"),
 ]}
 
-WEIGHT_NAMES = [k.name for k in KNOBS.values() if k.kind == "weight"]
+WEIGHT_NAMES = sorted({k.name for k in KNOBS.values() if k.kind == "weight"})
 
 
 # -- one run ----------------------------------------------------------------------
@@ -231,7 +251,7 @@ def sweep_song(song: Song, label: str, *, base: Optional[MapperConfig] = None,
     for name in names:
         k = KNOBS[name]
         values = list(k.ladder)
-        current = getattr(base, name)
+        current = getattr(base, k.name)
         if current not in values:
             values.append(current)
             values.sort(key=lambda v: (str(type(v)), v))
@@ -260,8 +280,12 @@ class KnobSummary:
 
     @property
     def verdict(self) -> str:
+        """``idle``: no ladder value changed any tab *with the other knobs at their
+        defaults*. That is a fact about the defaults, not the knob: its case may never
+        arise there (see the @context entries). ``rare``: a change on under a quarter
+        of the inputs. ``live``: the rest."""
         if self.live_songs == 0:
-            return "dead"
+            return "idle"
         if self.live_songs < max(1, self.songs // 4):
             return "rare"
         return "live"
@@ -326,7 +350,7 @@ def format_song(r: SongResult) -> str:
              + (f", UNPLAYABLE CHOSEN {b.unplayable_chosen}" if b.unplayable_chosen else "")]
     for name, kr in r.knobs.items():
         if kr.distinct == 1:
-            lines.append(f"  {name:32} dead here")
+            lines.append(f"  {name:32} idle here")
             continue
         parts = []
         for v, run in zip(kr.values, kr.runs):

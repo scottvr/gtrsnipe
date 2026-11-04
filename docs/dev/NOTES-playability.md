@@ -87,7 +87,7 @@ defaults themselves, which the sweep can then check for changed tabs.
 | `high_fret_penalty` | 5 | fret the average sits above the sweet spot | 1.7; × 10 when a low string is used |
 | `fretted_open_penalty` | 20 | fretted note whose pitch is an open string (`--prefer-open` only) | 6.7 |
 | `fret_span_penalty` | 100 | fret of span inside a chord | 33 |
-| `sweet_spot_bonus` | 0.5 | fingering whose average is inside the window | 0.17 |
+| `sweet_spot_bonus` | 0.5 | fingering whose average is inside the window (needs a lower edge to have a case) | 0.17 |
 | `let_ring_bonus` (Asturias: 210) | 0 | string of the previous fingering left free | 70 at the Asturias setting |
 | the sentinel | 1000 | chord span past the limit (a flat **return**); diagonal span (subtracted) | 333 |
 
@@ -140,17 +140,34 @@ v1, 44; the full Bach prelude, 654), distinct tabs per knob over its ladder, poo
 | `barre_bonus` / `barre_penalty` | rare | 1/3 | 5 / 7 | 30 / 10 (Crowley only) |
 | `high_fret_penalty`, `low_string_high_fret_multiplier` | rare | 1/3 | 4 | 0 (Bach only) |
 | `unplayable_fret_span` | rare | 1/3 | 5 | 3, 5 (Asturias only) |
-| `sweet_spot_bonus` | **dead** | 0/3 | 3 | never |
+| `sweet_spot_bonus` | idle at the defaults | 0/3 | 3 | never (no lower edge, so no case) |
+| `sweet_spot_bonus` with `sweet_spot_low` 4 | live | 3/3 | 13 | 0 (all three), ×2 (two): the default 0.5 is a working balance point |
+| `high_fret_penalty` with `sweet_spot_high` 7 | live | 2/3 | 11 | ×½ and ×4 (Bach), ×¼ (Crowley) |
+
+The verdicts are about the *defaults*, not the knobs ("idle" = no ladder value changed a tab
+with every other knob at its default). A knob can be idle because its case never arises
+there, so the sweep also runs some knobs in the context they were designed for (the `@`
+entries: `sweet_spot_bonus@low4`, `high_fret_penalty@high7`, `barre_bonus@penalty10`).
+scottvr's reminder (2026-11-04): find out why the fence is there before taking it down. The
+sweet-spot edges were added so the bonus had a range to apply to; a player may set only the
+high edge, only the low edge, or how much the window matters; and the barre pair is two
+knobs on purpose, for the early user who wanted no barre shapes at all and would not have
+thought to type a negative bonus.
 
 On the six fast probes the picture is the same: `sweet_spot_bonus`, `barre_bonus`,
 `unplayable_fret_span` and `diagonal_span_penalty` never change a probe; `movement_penalty`,
 `string_switch_penalty`, `fretted_open_penalty`, `let_ring_bonus`, `sweet_spot_high` and
 `prefer_open` change four of six. Readings:
 - `sweet_spot_bonus` decides nothing at the defaults, and the reason is the window, not the
-  size: with `sweet_spot_low` at 0 no fingering can be *below* the window, and above it the
-  per-fret penalty dominates, so the bonus (the only term that tells inside from below) never
-  gets a case. Give the window a lower edge and it is live on every piece (the pairs below).
-  scottvr: that is exactly why the low/high edges were added after the bonus.
+  size. With `sweet_spot_low` at 0 no fingering can be *below* the window, so the bonus is a
+  constant added to every candidate that isn't above the high edge, and a constant cancels;
+  the only comparisons left are inside-vs-above, where it pushes the same way as the
+  per-fret penalty and can only confirm what the penalty decided (a bonus of 100 at low 0
+  changes nothing on any piece). So above the window it is *redundant with* the penalty,
+  not dominated by it, and "how much the sweet spot matters" works through the lower edge
+  (or with the high-fret penalty at 0). With the edge at 4 it is live on every piece, and the
+  default 0.5 flips at 0 and at 1.0: a balance point, working as designed (scottvr: the edges
+  were added after the bonus for exactly this).
 - The trade-off knobs (`movement`, `string_switch`, `fretted_open`) are live and flip
   within ×2 of their defaults, i.e. the defaults sit near a boundary, which is what
   hand-balancing one failure at a time would produce.
@@ -202,10 +219,11 @@ candidate order have changed since; the two unison chords are unplayable-chosen 
 2. Open strings in the movement term: a position, or none? His sus-shape example argues the
    chord keeps a position while its open strings don't; a "last fretted position" rule gives
    exactly that.
-3. `sweet_spot_bonus`: it only works with a lower edge, and the default edge is 0. Either the
-   default `sweet_spot_low` moves (the Asturias steps used 4) or the bonus becomes a
-   *below-window penalty* like the one above the window, so the window has two real edges.
-4. `barre_bonus`/`barre_penalty`: one knob, signed.
+3. `sweet_spot_bonus`: working as designed with an edge; the open question is only whether
+   the docs should say that the bonus needs `--sweet-spot-low` to do anything (today a user
+   raising the bonus alone sees no change and can't tell why).
+4. `barre_bonus`/`barre_penalty`: two knobs on purpose (above); only the difference reaches the
+   score, which the help text could say. Nothing to change.
 5. Round the defaults to whole-fret rates and re-run the sweep to see what changes.
 6. M02 is already in the table: `optimizer` is live on every input. The corpus comparison
    (`--sample nottingham:N`, Lakh for chords) is one command away, once the cubic loop is

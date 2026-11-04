@@ -16,9 +16,11 @@ def line(pitches, beat=0.5):
 
 
 def test_knob_ladders_contain_the_default():
-    for k in SW.KNOBS.values():
-        assert k.default in k.ladder, k.name
-        assert len(set(k.ladder)) == len(k.ladder), k.name
+    for key, k in SW.KNOBS.items():
+        assert k.default in k.ladder, key
+        assert len(set(k.ladder)) == len(k.ladder), key
+        assert key == (k.alias or k.name)
+    assert SW.KNOBS["sweet_spot_bonus@low4"].settings(2.0) == {"sweet_spot_low": 4, "sweet_spot_bonus": 2.0}
 
 
 def test_fretted_open_penalty_needs_prefer_open():
@@ -68,8 +70,15 @@ def test_sweep_song_breakpoints_and_dead_knobs():
     assert mv.distinct >= 1
     assert set(mv.breakpoints) <= set(mv.values[1:])
     assert 3.0 not in mv.differs_from_default
-    assert r.knobs["sweet_spot_bonus"].distinct == 1          # 0.17 frets decides nothing
+    assert r.knobs["sweet_spot_bonus"].distinct == 1          # idle: no lower edge, no case
     assert r.scale_invariant is True
+
+
+def test_sweet_spot_bonus_in_its_context_is_live():
+    song = line([45, 48, 50, 52, 55, 57, 60, 62, 64, 67, 64, 62, 60, 57, 55, 52, 50, 48, 45])
+    r = SW.sweep_song(song, "run", knobs=["sweet_spot_bonus", "sweet_spot_bonus@low4"], check_scale=False)
+    assert r.knobs["sweet_spot_bonus"].distinct == 1
+    assert r.knobs["sweet_spot_bonus@low4"].distinct > 1
 
 
 def test_scale_invariance_holds_on_the_probes():
@@ -85,12 +94,12 @@ def test_summary_verdicts():
     results = [SW.sweep_song(s, f"s{i}", knobs=["movement_penalty", "sweet_spot_bonus"])
                for i, s in enumerate(songs)]
     summ = {s.knob: s for s in SW.summarize(results)}
-    assert summ["sweet_spot_bonus"].verdict == "dead"
+    assert summ["sweet_spot_bonus"].verdict == "idle"
     assert summ["sweet_spot_bonus"].live_songs == 0
     assert summ["movement_penalty"].songs == 2
     assert summ["movement_penalty"].distinct_total >= 2
     text = SW.format_summary(list(summ.values()), results)
-    assert "sweet_spot_bonus" in text and "dead" in text
+    assert "sweet_spot_bonus" in text and "idle" in text
     assert "only ratios matter" in text
 
 
