@@ -79,7 +79,14 @@ counts fingerings chosen past `unplayable_fret_span`.
 the defaults restated, not a proposal; any one knob could be the unit. (The column divides
 by `movement_penalty`: a 1.7 there is a string switch at the defaults, not a proposed
 price for a fret of travel. That misreading started part of the discussion below;
-scottvr, 2026-11-04.) Rounding them to
+scottvr, 2026-11-04.) *scottvr, same day: a string switch costing more than a fret of
+travel is intentional. Staying on a fret, or moving by one, takes more effort from string
+to string than the same move up or down one string. For some common patterns it is a wash,
+and the prev / prev_prev terms, kludgy or not, tend to make it come out even; a penalized
+string hop is unlikely to force an unwanted fingering or forbid a desirable one where a
+player would call it even odds. Qualitative experience, not a measured claim; he is open
+to constructed cases that test it.* The position-run and open-vs-fretted probes are the
+closest existing cases: both flip when the switch rate drops to one fret (q5). Rounding them to
 whole frets isn't a scaling question (5/3 stays 5/3 at any scale): it means rounding the
 defaults themselves, which the sweep can then check for changed tabs.
 
@@ -274,7 +281,27 @@ candidate order have changed since; the two unison chords are unplayable-chosen 
    day: README option text and the `--sweet-spot-bonus` help.
 4. `barre_bonus`/`barre_penalty`: two knobs on purpose (above); only the difference reaches the
    score, which the help text could say. Nothing to change.
-5. Round the defaults to whole-fret rates and re-run the sweep to see what changes.
+5. Round the defaults to whole-fret rates and re-run the sweep to see what changes. *scottvr
+   (2026-11-04): go.* Measured on the 22 tabs (three real pieces, Asturias v6, seven probes,
+   both optimizers), against the defaults scaled to `movement_penalty` 1 (5/3, 100/3, 5/3,
+   20/3, 1/6), which fingers every tab the same except one: Bach under Viterbi moves 26
+   notes between two tabs that score *identically* under both configs, a tie broken by
+   float noise, so Bach has families of tabs the scorer cannot tell apart (noted; nothing to
+   do). Each change below was scored both ways under its own config to separate ties from
+   real changes:
+   - `high_fret_penalty` 5/3 to 2: nothing. `fret_span_penalty` 100/3 to 33: one Crowley
+     note, a tie. `fretted_open_penalty` 20/3 to 7 (only matters under `--prefer-open`):
+     nine Bach notes, real but 0.3 points.
+   - `string_switch_penalty` 5/3 rounded up to 2: real on Crowley/Viterbi (14 notes) and
+     Asturias v6/greedy (4); the bonus value (1/6, 0 or 1) changes nothing on top, as
+     expected with no lower edge.
+   - truncated to 1 instead (scottvr's question): a switch then costs exactly one fret, and
+     eight tabs flip, all real: Bach +96 switches under Viterbi (92 notes), Asturias v6 +16
+     (8 notes), the position-run and open-vs-fretted probes too. That is the behaviour the
+     intentional 5-vs-3 is there to prevent (his note above the table).
+   Decision: the originals are whole numbers already (3, 5, 100, 5, 20, 0.5); the fractions
+   only appear in the frets-of-travel column. Nothing to round; q5 closes with no change,
+   and the two tables above now carry the cost of each rounding should it come up again.
 6. M02 is already in the table: `optimizer` is live on every input. The corpus comparison
    (`--sample nottingham:N`, Lakh for chords) is one command away, once the cubic loop is
    fixed or the sample avoids dense chords.

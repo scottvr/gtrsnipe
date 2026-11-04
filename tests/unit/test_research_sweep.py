@@ -43,9 +43,9 @@ def test_finger_counts_what_the_scorer_counts():
     assert r.switches % 2 == 0
 
 
-def test_greedy_has_no_path_score():
+def test_greedy_path_score_is_reported():
     r = SW.finger(line([64, 71, 64]), MapperConfig(optimizer="greedy"))
-    assert r.score is None
+    assert r.score is not None
 
 
 def test_unplayable_chosen_counts_spans_past_the_limit():
@@ -146,3 +146,10 @@ def test_cli_pair(tmp_path, capsys):
     assert json.loads(out.read_text())["pairs"][0]["a"] == "sweet_spot_low"
     assert "at each sweet_spot_low" in capsys.readouterr().out
     assert research_main(["sweep", "C4 D4", "--pair", "sweet_spot_low,sweet_spot_low"]) == 2
+
+
+def test_groups_follow_the_mapper_quantization():
+    # two notes 0.01 beats apart are one chord to the mapper (resolution 0.125), two to exact time
+    evs = [MusicalEvent(1.0, 60, 1, 90), MusicalEvent(1.01, 64, 1, 90), MusicalEvent(2.0, 67, 1, 90)]
+    assert [len(g) for g in SW._groups(evs)] == [1, 1, 1]
+    assert [len(g) for g in SW._groups(evs, 0.125)] == [2, 1]

@@ -81,3 +81,22 @@ def test_fitting_chord_is_not_reported(caplog):
     with caplog.at_level(logging.WARNING, logger="gtrsnipe.guitar.mapper"):
         mapper.map_multi_string([[MusicalEvent(0.0, 64, 1.0, 90), MusicalEvent(0.0, 71, 1.0, 90)]])
     assert not [r for r in caplog.records if "fits within" in r.message]
+
+
+# --- both mappers report a path score under the one objective (M02) ---
+
+def test_greedy_reports_a_path_score_equal_to_its_choices():
+    groups = [[MusicalEvent(t * 0.5, p, 0.5, 90)] for t, p in enumerate((64, 71, 64, 69, 64, 71, 67))]
+    mapper = GuitarMapper(MapperConfig(optimizer="greedy"))
+    out = mapper._map_multi_string_greedy(groups)
+    assert mapper.last_path_score is not None
+    fings = [(FretPosition(ev.string, ev.fret),) for ev in out]
+    total, prev, pp = 0.0, None, None
+    for f in fings:
+        total += mapper._score_fingering(f, prev, pp)
+        pp, prev = prev, f
+    assert mapper.last_path_score == pytest.approx(total)
+    # the global optimum is never below the greedy path on the same objective
+    viterbi = GuitarMapper(MapperConfig())
+    viterbi.map_multi_string([[MusicalEvent(t * 0.5, p, 0.5, 90)] for t, p in enumerate((64, 71, 64, 69, 64, 71, 67))])
+    assert viterbi.last_path_score >= mapper.last_path_score - 1e-9

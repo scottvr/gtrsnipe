@@ -110,7 +110,7 @@ WEIGHT_NAMES = sorted({k.name for k in KNOBS.values() if k.kind == "weight"})
 @dataclass
 class Run:
     signature: Signature
-    score: Optional[float]           # Viterbi path score summed over tracks; None under greedy
+    score: Optional[float]           # path score summed over tracks, under either optimizer (same objective)
     notes: int
     placed: int
     travel: float                    # mean |change of average fret| between fingerings
@@ -126,10 +126,14 @@ class Run:
         return d
 
 
-def _groups(events: Sequence[MusicalEvent]) -> List[List[MusicalEvent]]:
+def _groups(events: Sequence[MusicalEvent], resolution: float = 0.0) -> List[List[MusicalEvent]]:
+    """Events grouped the way the mapper groups them: by time quantized to ``resolution``
+    (the config's ``quantization_resolution``; 0 means exact time)."""
+    def q(t: float) -> float:
+        return round(t / resolution) * resolution if resolution else t
     out: List[List[MusicalEvent]] = []
-    for e in sorted(events, key=lambda e: (e.time, e.pitch)):
-        if out and abs(out[-1][0].time - e.time) < 1e-9:
+    for e in sorted(events, key=lambda e: (q(e.time), e.pitch)):
+        if out and abs(q(out[-1][0].time) - q(e.time)) < 1e-9:
             out[-1].append(e)
         else:
             out.append([e])
@@ -162,7 +166,7 @@ def finger(song: Song, cfg: MapperConfig) -> Run:
             ok = [e for e in mapped if e.string is not None and e.fret is not None]
             placed += len(ok)
             prev_avg, prev_strings = None, None
-            for g in _groups(ok):
+            for g in _groups(ok, cfg.quantization_resolution):
                 sig += [(e.string, e.fret) for e in sorted(g, key=lambda e: (e.time, e.pitch))]
                 frets = [e.fret for e in g]
                 strings = {e.string for e in g}

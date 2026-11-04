@@ -226,6 +226,7 @@ class GuitarMapper:
                 max_score = score
                 best_fingering = fingering
         logger.debug(f"best score: {max_score} {best_fingering}")
+        self._last_choice_score = max_score if best_fingering is not None else None
         return best_fingering
 
 
@@ -470,10 +471,15 @@ class GuitarMapper:
         return out
 
     def _map_multi_string_greedy(self, time_groups: List[List[MusicalEvent]]) -> List[MusicalEvent]:
-        """Legacy greedy per-step mapping, kept behind --optimizer greedy."""
+        """Legacy greedy per-step mapping, kept behind --optimizer greedy.
+
+        Sets ``last_path_score`` like the Viterbi mapper: the sum of the chosen
+        fingerings' scores under the same objective, so the two can be compared."""
         multi_string_events = []
         last_fingering: Optional[Fingering] = None
         prev_prev_fingering: Optional[Fingering] = None
+        self.last_path_score = None
+        path_score = 0.0
 
         for note_group in time_groups:
             group_to_finger = self._preprocess_group(note_group)
@@ -486,6 +492,8 @@ class GuitarMapper:
                 multi_string_events.extend(group_to_finger)
                 prev_prev_fingering = last_fingering
                 last_fingering = fingering
+                path_score += self._last_choice_score
+                self.last_path_score = path_score
             else:
                 logger.warning(f"Could not find a playable fingering for notes at time {note_group[0].time}")
         return multi_string_events
