@@ -78,6 +78,10 @@ keys work left out.
    Then B05 ✓ (v0.7.0): a tab is kept as written, and its bars are read as measures.
 2. **The measuring stick** (M01–M03): the weights audit, Viterbi vs greedy across a corpus,
    and a first tab difficulty measure. The later playability items depend on it.
+   M01 ✓ (v0.8.1, first pass: the audit, the sweep tool, the six questions answered with
+   scottvr in `NOTES-playability.md`; the defaults kept, the no-fit sentinel fixed) and
+   M02 ✓ (v0.8.1: `gtrsnipe-research optimizers`, 450 tunes, never worse, better on 86%).
+   M03 remains.
 3. Then choose: **chosen compromises** (M05 optional notes, M06 a hand profile, then M07
    beginner's-version tabs), or M04, the search for an easier tuning.
 4. Whenever the homograph side has time: F07 and R16 (with R14), and the composed
@@ -133,8 +137,6 @@ Design notes: [`NOTES-playability.md`](NOTES-playability.md).
 
 | ID | Item | Size | Source |
 |---|---|---|---|
-| M01 | **Weights audit**: each score term's feature and unit; the defaults as exchange rates (one fret of hand travel = 1); which weights are structural and which are taste; priorities disguised as big numbers; `barre_bonus`/`barre_penalty` as one knob; open strings scoring no better than fretted notes. *First pass done 2026-11-04 with scottvr (`gtrsnipe-research sweep`; six questions answered in [`NOTES-playability.md`](NOTES-playability.md)); the no-fit sentinel fixed; defaults kept.* | M | scottvr, parking lot |
-| M02 | **Viterbi vs greedy across a corpus**: does the Viterbi mapper's improvement generalize? Score per note, hand travel and big jumps on a corpus sample, not one piece. *Done 2026-11-04 (`gtrsnipe-research optimizers`): 450 tunes, never worse, better on 86%, a third of a point per note; proxies follow the weights, not the optimizer.* | M | scottvr, docs audit |
 | M03 | **A tab difficulty measure**: objective complexity from the tab (travel, stretches, speed at tempo, chord changes, barres, position shifts), after a literature search, validated against graded repertoire. | M–L | scottvr |
 | M04 | **Search for an easier tuning** than the traditional one: local search on the mapper's score over nearby tunings, string physics as a constraint, the traditional tuning's score reported beside the best found. | M | scottvr |
 | M05 | **Optional notes**: let the user change what gets tabbed (`--max-chord-notes`, top-three and shell voicings; then a drop cost per note by musical importance), with what was dropped reported. | M–L | scottvr |
