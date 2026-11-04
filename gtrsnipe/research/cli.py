@@ -10,6 +10,8 @@
     gtrsnipe-research segments mtc-ann --level phrase --scope family
     gtrsnipe-research scan essen mtc-fs --solve 50 --tabs out/
     gtrsnipe-research aswritten song.tab --corpora essen mtc-fs lakh-clean
+    gtrsnipe-research sweep crowley.mid:5 asturias.tab --probes --sample nottingham:20
+    gtrsnipe-research optimizers --sample nottingham:100 essen:100 --json m02.json
 
 A song is a corpus reference (``NAME:ID``, optionally ``@START-END`` in notes,
 1-based inclusive, or ``#pN`` for phrase N), or anything ``--homograph`` reads:
@@ -19,6 +21,7 @@ or an inline melody.
 from __future__ import annotations
 
 import argparse
+import copy
 import os
 import re
 import statistics
@@ -333,6 +336,109 @@ def cmd_aswritten(a) -> int:
     return 0
 
 
+def _song_inputs(a, what: str):
+    """(label, Song) pairs from positional songs, --probes and --sample CORPUS:N."""
+    import random
+    from . import sweep as SW
+    inputs = []
+    if a.probes:
+        inputs += SW.probes()
+    for spec in a.songs:
+        inputs.append((spec, load_song(spec, a.data)[0]))
+    for spec in a.sample or []:
+        name, _, n = spec.partition(":")
+        mels = _melodies(name, a.data)
+        rng = random.Random(a.seed)
+        for m in rng.sample(mels, min(int(n or 10), len(mels))):
+            inputs.append((m.ref, m.to_song()))
+    if not inputs:
+        raise ValueError(f"nothing to {what}: give songs, --probes or --sample CORPUS:N")
+    return inputs
+
+
+def cmd_optimizers(a) -> int:
+    """M02: Viterbi vs greedy on the same inputs, under the one objective."""
+    import json
+    from . import sweep as SW
+    pairs = []
+    for label, song in _song_inputs(a, "compare"):
+        p = SW.compare_optimizers(song, label)
+        pairs.append(p)
+        if a.verbose:
+            print(f"  {label:40s} gain/note {p.gain_per_note:6.3f}  travel {p.greedy.travel:.2f}->{p.viterbi.travel:.2f}"
+                  f"  jumps {p.greedy.jumps}->{p.viterbi.jumps}  switches {p.greedy.switches}->{p.viterbi.switches}"
+                  f"  secs {p.seconds[1]:.2f}->{p.seconds[0]:.2f}", flush=True)
+    print(SW.format_optimizers(pairs))
+    if a.json:
+        with open(a.json, "w") as f:
+            json.dump({"summary": SW.summarize_optimizers(pairs), "pairs": [p.to_dict() for p in pairs]}, f, indent=1)
+    return 0
+
+
+def cmd_sweep(a) -> int:
+    import json
+    from . import sweep as SW
+    inputs = _song_inputs(a, "sweep")
+    knobs = a.knobs.split(",") if a.knobs else None
+    for k in knobs or []:
+        if k not in SW.KNOBS:
+            raise ValueError(f"unknown knob {k!r} (known: {', '.join(SW.KNOBS)})")
+    pairs = []
+    for spec in a.pair or []:
+        x, _, y = spec.partition(",")
+        if x not in SW.KNOBS or y not in SW.KNOBS or x == y:
+            raise ValueError(f"--pair wants two different knob names, got {spec!r}")
+        pairs.append((x, y))
+    if pairs:
+        report = {"pairs": []}
+        for label, song in inputs:
+            for x, y in pairs:
+                pr = SW.sweep_pair(song, label, x, y)
+                print(SW.format_pair(pr))
+                report["pairs"].append(pr.to_dict())
+        if a.json:
+            with open(a.json, "w") as f:
+                json.dump(report, f, indent=1, default=str)
+        return 0
+    results = []
+    for label, song in inputs:
+        r = SW.sweep_song(song, label, knobs=knobs, check_scale=not a.no_scale_check)
+        results.append(r)
+        if a.verbose:
+            print(SW.format_song(r))
+            print()
+        if a.tabs:
+            _write_sweep_tabs(a.tabs, label, song, r)
+    summ = SW.summarize(results)
+    print(SW.format_summary(summ, results))
+    if a.json:
+        with open(a.json, "w") as f:
+            json.dump({"summary": [vars(s) for s in summ],
+                       "songs": [r.to_dict() for r in results]}, f, indent=1, default=str)
+    return 0
+
+
+def _write_sweep_tabs(folder: str, label: str, song, r) -> None:
+    """One ASCII tab per distinct fingering a knob produced, for listening/reading."""
+    from ..core.config import MapperConfig
+    from ..formats.tab.generator.ascii import AsciiTabGenerator
+    from . import sweep as SW
+    safe = re.sub(r"[^A-Za-z0-9_.@-]+", "_", label)
+    os.makedirs(folder, exist_ok=True)
+    seen = {}
+    for name, kr in r.knobs.items():
+        for v, run in zip(kr.values, kr.runs):
+            if run.signature in seen:
+                continue
+            seen[run.signature] = (name, v)
+            cfg = SW.configured(MapperConfig(), **SW.KNOBS[name].settings(v))
+            text = AsciiTabGenerator.generate(copy.deepcopy(song), command_line=f"sweep {name}={v}",
+                                              no_articulations=True, mapper_config=cfg)
+            tag = "default" if run.signature == r.base.signature else f"{name}={v}"
+            with open(os.path.join(folder, f"{safe}.{tag}.tab"), "w") as f:
+                f.write(text)
+
+
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(prog="gtrsnipe-research", description=__doc__.split("\n\n")[0])
     ap.add_argument("--data", help=f"corpus root folder (default: ${C.ROOT_ENV})")
@@ -433,6 +539,29 @@ def build_parser() -> argparse.ArgumentParser:
     aw.add_argument("--show", type=int, default=15, help="hits listed per tab (default 15)")
     aw.add_argument("--json", help="also write the results here")
     aw.set_defaults(func=cmd_aswritten)
+
+    sw = sub.add_parser("sweep", help="vary one mapper knob at a time; count distinct tabs (M01)")
+    sw.add_argument("songs", nargs="*", help="songs to finger (files, corpus refs, inline)")
+    sw.add_argument("--probes", action="store_true", help="include the built-in probe passages")
+    sw.add_argument("--sample", nargs="+", metavar="CORPUS:N", help="N random tunes of a cached corpus")
+    sw.add_argument("--seed", type=int, default=1)
+    sw.add_argument("--knobs", help="comma-separated knob names (default: all)")
+    sw.add_argument("--pair", action="append", metavar="A,B",
+                    help="ablation: grid over two knobs; distinct tabs of B at each A (repeatable)")
+    sw.add_argument("--no-scale-check", action="store_true")
+    sw.add_argument("--tabs", metavar="DIR", help="write every distinct tab here")
+    sw.add_argument("--json", help="also write the results here")
+    sw.add_argument("-v", "--verbose", action="store_true", help="per-song detail")
+    sw.set_defaults(func=cmd_sweep)
+
+    op = sub.add_parser("optimizers", help="Viterbi vs greedy on the same inputs, one objective (M02)")
+    op.add_argument("songs", nargs="*", help="songs to finger (files, corpus refs, inline)")
+    op.add_argument("--probes", action="store_true", help="include the built-in probe passages")
+    op.add_argument("--sample", nargs="+", metavar="CORPUS:N", help="N random tunes of a cached corpus")
+    op.add_argument("--seed", type=int, default=1)
+    op.add_argument("--json", help="also write the results here")
+    op.add_argument("-v", "--verbose", action="store_true", help="per-song detail")
+    op.set_defaults(func=cmd_optimizers)
     return ap
 
 
