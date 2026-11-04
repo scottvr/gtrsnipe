@@ -109,7 +109,9 @@ def add_mapper_args(target) -> None:
         help='Fret span considered unplayable (default: 4).')
     target.add_argument(
         '--sweet-spot-bonus', type=float, default=0.5,
-        help='Bonus for playing in the ideal lower fret range.')
+        help='Bonus for every fingering inside the sweet spot (default 0.5): a flat toll for '
+             'leaving the window in either direction, beside --high-fret-penalty, which is '
+             'charged per fret above it. Below --sweet-spot-low only this bonus applies.')
     target.add_argument(
         '--sweet-spot-low', type=int, default=0,
         help='Lowest fret of the "sweet spot" (default 0 - open)')

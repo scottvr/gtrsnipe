@@ -221,8 +221,11 @@ candidate order have changed since; the two unison chords are unplayable-chosen 
 2. Open strings in the movement term: a position, or none? His sus-shape example argues the
    chord keeps a position while its open strings don't; a "last fretted position" rule gives
    exactly that.
-3. `sweet_spot_bonus`: working as designed. Nothing to change; the wiki could explain the two
-   forces (a flat toll for leaving the window, a graded one per fret above it) in a sentence.
+3. `sweet_spot_bonus`: working as designed. *scottvr (2026-11-04): the two forces (a flat toll
+   for leaving the window, a graded one per fret above it) go in the README beside the three
+   related options and in `--help`, not the wiki, which few people find and which he may
+   retire in a docs restructure (parked, with a tiered ffmpeg-style `--help`).* Done the same
+   day: README option text and the `--sweet-spot-bonus` help.
 4. `barre_bonus`/`barre_penalty`: two knobs on purpose (above); only the difference reaches the
    score, which the help text could say. Nothing to change.
 5. Round the defaults to whole-fret rates and re-run the sweep to see what changes.

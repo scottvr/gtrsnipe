@@ -27,6 +27,16 @@ measurements are in [`DESIGN-tab-rhythm.md`](../app/DESIGN-tab-rhythm.md).
 
 ## Ideas
 
+- **Tiered `--help`, ffmpeg-style** (scottvr, 2026-11-04). The option count makes the full help a
+  firehose. Today: a short usage by default and the grouped detail on `--help`. Next: several
+  levels, from usage, to one group's detail on request (`--help mapper`, `--help tab`, ...), to
+  everything. Means more argparse groups than we have, extending what the grouped help started.
+- **Docs restructure; retire the wiki** (scottvr, 2026-11-04). Few people find the wiki tab or click
+  wiki links in a README, and the README has grown huge. Move what the wiki says into the docs
+  tree (the examples are already snapshotted under `docs/wiki/`), split the README, and keep the
+  option text in one place that both the README and `--help` draw from (the README's option
+  bullets are hand-copied from the help today).
+
 - **The Viterbi mapper's inner loop is cubic in the candidate count** (found by the M01 sweep,
   2026-11-04). For each stage it loops over (current, previous, previous-previous) even when the
   score doesn't read t-2, so a 5-note chord with ~250 fingerings costs seconds per stage: the
