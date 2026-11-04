@@ -11,6 +11,7 @@
     gtrsnipe-research scan essen mtc-fs --solve 50 --tabs out/
     gtrsnipe-research aswritten song.tab --corpora essen mtc-fs lakh-clean
     gtrsnipe-research sweep crowley.mid:5 asturias.tab --probes --sample nottingham:20
+    gtrsnipe-research optimizers --sample nottingham:100 essen:100 --json m02.json
 
 A song is a corpus reference (``NAME:ID``, optionally ``@START-END`` in notes,
 1-based inclusive, or ``#pN`` for phrase N), or anything ``--homograph`` reads:
@@ -335,8 +336,8 @@ def cmd_aswritten(a) -> int:
     return 0
 
 
-def cmd_sweep(a) -> int:
-    import json
+def _song_inputs(a, what: str):
+    """(label, Song) pairs from positional songs, --probes and --sample CORPUS:N."""
     import random
     from . import sweep as SW
     inputs = []
@@ -351,7 +352,33 @@ def cmd_sweep(a) -> int:
         for m in rng.sample(mels, min(int(n or 10), len(mels))):
             inputs.append((m.ref, m.to_song()))
     if not inputs:
-        raise ValueError("nothing to sweep: give songs, --probes or --sample CORPUS:N")
+        raise ValueError(f"nothing to {what}: give songs, --probes or --sample CORPUS:N")
+    return inputs
+
+
+def cmd_optimizers(a) -> int:
+    """M02: Viterbi vs greedy on the same inputs, under the one objective."""
+    import json
+    from . import sweep as SW
+    pairs = []
+    for label, song in _song_inputs(a, "compare"):
+        p = SW.compare_optimizers(song, label)
+        pairs.append(p)
+        if a.verbose:
+            print(f"  {label:40s} gain/note {p.gain_per_note:6.3f}  travel {p.greedy.travel:.2f}->{p.viterbi.travel:.2f}"
+                  f"  jumps {p.greedy.jumps}->{p.viterbi.jumps}  switches {p.greedy.switches}->{p.viterbi.switches}"
+                  f"  secs {p.seconds[1]:.2f}->{p.seconds[0]:.2f}", flush=True)
+    print(SW.format_optimizers(pairs))
+    if a.json:
+        with open(a.json, "w") as f:
+            json.dump({"summary": SW.summarize_optimizers(pairs), "pairs": [p.to_dict() for p in pairs]}, f, indent=1)
+    return 0
+
+
+def cmd_sweep(a) -> int:
+    import json
+    from . import sweep as SW
+    inputs = _song_inputs(a, "sweep")
     knobs = a.knobs.split(",") if a.knobs else None
     for k in knobs or []:
         if k not in SW.KNOBS:
@@ -526,6 +553,15 @@ def build_parser() -> argparse.ArgumentParser:
     sw.add_argument("--json", help="also write the results here")
     sw.add_argument("-v", "--verbose", action="store_true", help="per-song detail")
     sw.set_defaults(func=cmd_sweep)
+
+    op = sub.add_parser("optimizers", help="Viterbi vs greedy on the same inputs, one objective (M02)")
+    op.add_argument("songs", nargs="*", help="songs to finger (files, corpus refs, inline)")
+    op.add_argument("--probes", action="store_true", help="include the built-in probe passages")
+    op.add_argument("--sample", nargs="+", metavar="CORPUS:N", help="N random tunes of a cached corpus")
+    op.add_argument("--seed", type=int, default=1)
+    op.add_argument("--json", help="also write the results here")
+    op.add_argument("-v", "--verbose", action="store_true", help="per-song detail")
+    op.set_defaults(func=cmd_optimizers)
     return ap
 
 

@@ -153,3 +153,23 @@ def test_groups_follow_the_mapper_quantization():
     evs = [MusicalEvent(1.0, 60, 1, 90), MusicalEvent(1.01, 64, 1, 90), MusicalEvent(2.0, 67, 1, 90)]
     assert [len(g) for g in SW._groups(evs)] == [1, 1, 1]
     assert [len(g) for g in SW._groups(evs, 0.125)] == [2, 1]
+
+
+def test_compare_optimizers_same_objective():
+    song = line([64, 71, 64, 69, 64, 71, 67, 62, 60, 64])
+    p = SW.compare_optimizers(song, "probe:x")
+    assert p.group == "probe" and p.viterbi.score is not None and p.greedy.score is not None
+    assert p.viterbi.score >= p.greedy.score - 1e-9           # the global optimum never loses
+    assert p.gain_per_note >= 0
+    s = SW.summarize_optimizers([p])
+    assert s["tunes"] == 1 and s["viterbi_worse"] == 0.0
+    assert "Viterbi vs greedy" in SW.format_optimizers([p])
+
+
+def test_cli_optimizers(tmp_path, capsys):
+    out = tmp_path / "o.json"
+    assert research_main(["optimizers", "C4 D4 E4 C4 G4 E4 C4", "--json", str(out), "-v"]) == 0
+    rep = json.loads(out.read_text())
+    assert rep["summary"]["tunes"] == 1 and rep["pairs"][0]["viterbi"]["score"] is not None
+    assert "gain/note" in capsys.readouterr().out
+    assert research_main(["optimizers"]) == 2

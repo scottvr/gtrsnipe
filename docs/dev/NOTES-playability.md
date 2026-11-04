@@ -307,7 +307,43 @@ candidate order have changed since; the two unison chords are unplayable-chosen 
    room for nuance, a switch at five thirds of a fret, in whole numbers.*
 6. M02 is already in the table: `optimizer` is live on every input. The corpus comparison
    (`--sample nottingham:N`, Lakh for chords) is one command away, once the cubic loop is
-   fixed or the sample avoids dense chords.
+   fixed or the sample avoids dense chords. *scottvr (2026-11-04): go.* Done the same day;
+   results in the M02 section below.
+
+### M02, first pass (2026-11-04): Viterbi vs greedy across five corpora
+
+The greedy mapper now reports its path score under the same objective as Viterbi (the sum
+of its chosen fingerings' scores), so the two are compared score to score, not by proxies
+alone. `gtrsnipe-research optimizers --sample nottingham:100 essen:100 mtc-fs:100
+lakh-clean:100 pop909:50` (seed 1, defaults, `--data` at the corpus root) reproduces this;
+the run below used the same code paths from a scratch script. A jump is a change of
+average fret of five frets or more. 450 tunes, 132,326 notes.
+
+| corpus | tunes | notes | same tab | Viterbi better | worse | gain per note, mean (max) | travel g to v | jumps g to v | switches g to v | seconds g to v |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Nottingham | 100 | 10,385 | 7% | 93% | 0% | 0.35 (1.30) | 2.09 to 2.02 | 605 to 594 | 2,228 to 2,202 | 0.3 to 0.9 |
+| Essen | 100 | 5,027 | 20% | 77% | 0% | 0.29 (1.40) | 1.69 to 1.64 | 217 to 210 | 1,188 to 1,124 | 0.1 to 0.5 |
+| MTC-FS | 100 | 7,522 | 25% | 74% | 0% | 0.32 (2.47) | 1.78 to 1.72 | 449 to 436 | 1,584 to 1,564 | 0.2 to 0.7 |
+| Lakh clean | 100 | 92,888 | 1% | 99% | 0% | 0.41 (3.78) | 2.28 to 2.16 | 10,482 to 9,320 | 83,644 to 82,758 | 14 to 734 |
+| POP909 | 50 | 16,504 | 12% | 88% | 0% | 0.29 (1.09) | 1.84 to 1.85 | 901 to 1,037 | 3,942 to 3,310 | 0.8 to 6.2 |
+| all | 450 | 132,326 | 13% | 86% | 0% | 0.34 (3.78) | 1.95 to 1.88 | 12,654 to 11,597 | 92,586 to 90,958 | 16 to 743 |
+
+What it says:
+- **The improvement generalizes, and it is never a loss.** Viterbi is worse on no tune (it
+  can't be: first-order Viterbi is exact on this objective at the defaults, with the t-2
+  term off), equal on 13%, better on 86%. The mean gain is a third of a point per note, a
+  ninth of a fret of travel per note at the defaults; the median per corpus is 0.18 to
+  0.36. The largest gains are on long Lakh melodies (3.8 per note on one 489-note tune).
+- **The proxies follow the objective, mostly.** Travel and big jumps fall by 4% and 8% over
+  the set, switches by 2%. POP909 is the exception: Viterbi makes *more* big jumps there
+  (1,037 against 901) and the same travel, while cutting switches by 16%: the objective
+  prices a switch at five thirds of a fret, so on those tunes it bought fewer switches with
+  more travel. "Fewer big jumps" is therefore not a property of the optimizer; it is a
+  property of the weights, which Viterbi merely optimizes better. M03's difficulty
+  measure, not M02, is where a jump count belongs.
+- **Time.** On melodies Viterbi costs three to five times greedy (a second a tune at most).
+  Lakh's dense tunes are where the cubic inner loop (parked) bites: 734 s against 14 s over
+  100 tunes, 187 s on one 4,032-note tune.
 
 Raw results, the 81 distinct tabs and the replicated tabs are in the session scratchpad
 (`sweep/real.json`, `sweep/tabs/`, `repro/`); they stay off the repo because the wiki tab

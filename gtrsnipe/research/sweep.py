@@ -22,6 +22,7 @@ guitarist can read.
 from __future__ import annotations
 
 import copy
+import os
 import logging
 from dataclasses import dataclass, field, fields
 from typing import Dict, List, Optional, Sequence, Tuple
@@ -107,6 +108,9 @@ WEIGHT_NAMES = sorted({k.name for k in KNOBS.values() if k.kind == "weight"})
 
 # -- one run ----------------------------------------------------------------------
 
+JUMP_FRETS = 5.0                     # a change of average fret this big counts as a big jump
+
+
 @dataclass
 class Run:
     signature: Signature
@@ -119,6 +123,7 @@ class Run:
     max_span: int                    # widest chord span chosen (fretted and open, as scored)
     open_share: float
     unplayable_chosen: int           # chords chosen with span > unplayable_fret_span
+    jumps: int = 0                   # position changes of JUMP_FRETS frets or more
 
     def metrics(self) -> dict:
         d = vars(self).copy()
@@ -147,7 +152,7 @@ def finger(song: Song, cfg: MapperConfig) -> Run:
     mapper_log.setLevel(logging.ERROR)
     sig: List[Tuple[int, int]] = []
     score, have_score = 0.0, True
-    notes = placed = switches = max_fret = max_span = unplayable = 0
+    notes = placed = switches = max_fret = max_span = unplayable = jumps = 0
     travel_sum, travel_n, opens = 0.0, 0, 0
     try:
         for track in song.tracks:
@@ -184,13 +189,83 @@ def finger(song: Song, cfg: MapperConfig) -> Run:
                 if prev_avg is not None:
                     travel_sum += abs(avg - prev_avg)
                     travel_n += 1
+                    jumps += 1 if abs(avg - prev_avg) >= JUMP_FRETS else 0
                     switches += len(strings.symmetric_difference(prev_strings))
                 prev_avg, prev_strings = avg, strings
     finally:
         mapper_log.setLevel(saved)
     return Run(tuple(sig), score if have_score else None, notes, placed,
                travel_sum / travel_n if travel_n else 0.0, switches, max_fret, max_span,
-               opens / placed if placed else 0.0, unplayable)
+               opens / placed if placed else 0.0, unplayable, jumps)
+
+
+# -- M02: Viterbi vs greedy, one objective --------------------------------------------
+
+@dataclass
+class OptimizerPair:
+    label: str
+    group: str                       # corpus name, "probe", or "file"
+    viterbi: Run
+    greedy: Run
+    seconds: Tuple[float, float]     # (viterbi, greedy)
+
+    @property
+    def gain_per_note(self) -> float:
+        if self.viterbi.score is None or self.greedy.score is None or not self.viterbi.placed:
+            return 0.0
+        return (self.viterbi.score - self.greedy.score) / self.viterbi.placed
+
+    def to_dict(self) -> dict:
+        return {"label": self.label, "group": self.group, "gain_per_note": self.gain_per_note,
+                "seconds": self.seconds, "same_tab": self.viterbi.signature == self.greedy.signature,
+                "viterbi": self.viterbi.metrics(), "greedy": self.greedy.metrics()}
+
+
+def compare_optimizers(song: Song, label: str, base: Optional[MapperConfig] = None) -> OptimizerPair:
+    """Finger ``song`` under both optimizers of ``base`` (defaults if None); both report
+    their path score under the one objective, so the pair is comparable."""
+    import time
+    base = base or MapperConfig()
+    runs, secs = [], []
+    for opt in ("viterbi", "greedy"):
+        t0 = time.perf_counter()
+        runs.append(finger(song, configured(base, optimizer=opt)))
+        secs.append(time.perf_counter() - t0)
+    group = "probe" if label.startswith("probe:") else (label.partition(":")[0] if ":" in label and not os.path.exists(label) else "file")
+    return OptimizerPair(label, group, runs[0], runs[1], (secs[0], secs[1]))
+
+
+def summarize_optimizers(pairs: Sequence[OptimizerPair]) -> dict:
+    n = len(pairs) or 1
+    gains = [p.gain_per_note for p in pairs]
+    return {
+        "tunes": len(pairs),
+        "notes": sum(p.viterbi.placed for p in pairs),
+        "same_tab": sum(1 for p in pairs if p.viterbi.signature == p.greedy.signature) / n,
+        "viterbi_better": sum(1 for p in pairs if p.gain_per_note > 1e-9) / n,
+        "viterbi_worse": sum(1 for p in pairs if p.gain_per_note < -1e-9) / n,
+        "gain_per_note_mean": sum(gains) / n,
+        "gain_per_note_max": max(gains) if pairs else 0.0,
+        "travel": (sum(p.greedy.travel for p in pairs) / n, sum(p.viterbi.travel for p in pairs) / n),
+        "jumps": (sum(p.greedy.jumps for p in pairs), sum(p.viterbi.jumps for p in pairs)),
+        "switches": (sum(p.greedy.switches for p in pairs), sum(p.viterbi.switches for p in pairs)),
+        "seconds": (sum(p.seconds[1] for p in pairs), sum(p.seconds[0] for p in pairs)),
+    }
+
+
+def format_optimizers(pairs: Sequence[OptimizerPair]) -> str:
+    groups = []
+    for p in pairs:
+        if p.group not in groups:
+            groups.append(p.group)
+    lines = [f"Viterbi vs greedy, one objective; g = greedy, v = Viterbi; a jump is >= {JUMP_FRETS:g} frets",
+             f"  {'group':12s} tunes   notes  same tab  v better  v worse  gain/note (max)   travel g->v    jumps g->v   switches g->v   secs g->v"]
+    for g in groups + (["all"] if len(groups) > 1 else []):
+        s = summarize_optimizers([p for p in pairs if g == "all" or p.group == g])
+        lines.append(f"  {g:12s} {s['tunes']:5d} {s['notes']:7d}   {s['same_tab']:6.1%}   {s['viterbi_better']:6.1%}   {s['viterbi_worse']:5.1%}"
+                     f"   {s['gain_per_note_mean']:6.3f} ({s['gain_per_note_max']:5.2f})   {s['travel'][0]:4.2f}->{s['travel'][1]:4.2f}"
+                     f"   {s['jumps'][0]:5d}->{s['jumps'][1]:<5d}  {s['switches'][0]:6d}->{s['switches'][1]:<6d}  {s['seconds'][0]:5.1f}->{s['seconds'][1]:<6.1f}")
+    return "\n".join(lines)
 
 
 def configured(base: MapperConfig, **settings) -> MapperConfig:
