@@ -46,6 +46,11 @@ measurements are in [`DESIGN-tab-rhythm.md`](../app/DESIGN-tab-rhythm.md).
     (`@1-24` / `@141-164`). The shared tab is real and verified note for note, but it is two
     repeated 6-note cells, so it was filtered as trivial (RESULTS-R04 §4, story 06). Not
     evidence, but a good demo.
+  - **To discuss together (scottvr, 2026-11-04):** what "alike" or "similar" means here, as
+    something *heard*; whether there is a cutoff at all; and how to report the remainder. The
+    cases to tell apart: the same piece under another name (*Ça plane pour moi* vs *Jet Boy,
+    Jet Girl*), a transposition only, a tempo difference only, tempo plus transposition,
+    truncation or extension, and so on down to "fits six strings but sounds alike".
 
 - **More strings for homographs** (scottvr, 2026-09-27).
   - 7- and 8-string guitars: 7-string tunings and `--num-strings 7` already exist, and the
