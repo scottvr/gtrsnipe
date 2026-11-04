@@ -7,11 +7,14 @@ the live wiki.
 
 - **Source:** wiki commit `9301478` (2025-08-09), copied 2026-09-26.
 - **Edited here since:** on 2026-09-28 the pages were brought up to date with the code of
-  v0.6.10 (the docs audit, `docs/dev/DOCS-AUDIT.md`, items WK-1 to WK-27). None of these edits
-  are on the live wiki yet.
-- **File names:** the wiki's page names contain `? # : ( ) "` and a Unicode hyphen, which
-  Windows checkouts can't handle, so the copies have plain names. Links between pages still
-  use the wiki's names.
+  v0.6.10 (the docs audit, `docs/dev/DOCS-AUDIT.md`, items WK-1 to WK-27). Pushed to the live
+  wiki on 2026-11-04 (its commits b30ef35 and the rename after it), so the two match again.
+- **File names:** the wiki's page names used to contain `? # : ( ) "` and a Unicode hyphen,
+  which Windows checkouts can't handle, so the copies got plain names. On 2026-11-04 the live
+  pages were renamed to these same plain names and every link updated; the old page URLs do
+  not redirect.
+- **Which is the source:** this folder. Edit here, then copy the pages onto a clone of
+  `https://github.com/scottvr/gtrsnipe.wiki.git` (same file names) and push.
 
 ## Versions
 

@@ -17,7 +17,7 @@ Beyond writing files, gtrsnipe can **play** a song: `gtrsnipe-play` animates it 
 
 Smaller tools along the way: chord names written over a tab (`--name-chords`), the chord any fret shape plays (`--name-chord`), a ranking of tunings by how playable a song is in each (`--analyze`), and each string's tension in a tuning, so you know before you retune whether your strings will take it (`--show-tuning`).
 
-At its core, gtrsnipe uses an intelligent fretboard mapper that analyzes notes and chords to find comfortable and logical fingerings on the guitar neck. [This process is highly customizable](https://github.com/scottvr/gtrsnipe/wiki/1.-FretboardMapper-Algorithm-Configuration-and-Tunables), allowing you to fine-tune the output to match your personal playing style and preferences.
+At its core, gtrsnipe uses an intelligent fretboard mapper that analyzes notes and chords to find comfortable and logical fingerings on the guitar neck. [This process is highly customizable](https://github.com/scottvr/gtrsnipe/wiki/1.FretboardMapper-Algorithm-Configuration-and-Tunables), allowing you to fine-tune the output to match your personal playing style and preferences.
 
 -----
 
@@ -758,15 +758,15 @@ If you already have a clean, isolated guitar track, you can skip the demucs and 
 
 **MIDI-to-Tab (Classic V1 Functionality)**
 
-[`gtrsnipe -i "MrCrowley.mid" -o "mrcrowley.tab" --track 5`](https://github.com/scottvr/gtrsnipe/wiki/2.-Example-%E2%80%90-Mr-Crowley-organ-intro)
+[`gtrsnipe -i "MrCrowley.mid" -o "mrcrowley.tab" --track 5`](https://github.com/scottvr/gtrsnipe/wiki/2.Example-Mr-Crowley-organ-intro)
 
 # Other Examples
 
-[All other examples and detailed usage information has been moved to the Wiki](<https://github.com/scottvr/gtrsnipe/wiki/0.-GTRSnipe-(aka-%22guttersnipe%22)>)
+[All other examples and detailed usage information has been moved to the Wiki](<https://github.com/scottvr/gtrsnipe/wiki/0.GTRSnipe>)
 
 ## Advanced Usage: Mapper Tuning
 
-The real power of gtrsnipe comes from its customizability. You can fine-tune the fretboard mapping algorithm and the audio separation models to get the perfect transcription. [Detailed documentation with troubleshooting examples are being created in the wiki.](https://github.com/scottvr/gtrsnipe/wiki/1.-FretboardMapper-Algorithm-Configuration-and-Tunables)
+The real power of gtrsnipe comes from its customizability. You can fine-tune the fretboard mapping algorithm and the audio separation models to get the perfect transcription. [Detailed documentation with troubleshooting examples are being created in the wiki.](https://github.com/scottvr/gtrsnipe/wiki/1.FretboardMapper-Algorithm-Configuration-and-Tunables)
 
 
 ### Current Supported Instrument Tunings
