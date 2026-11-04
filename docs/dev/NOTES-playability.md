@@ -76,7 +76,10 @@ that doubling every weight leaves every tab unchanged (it does: only the ratios 
 counts fingerings chosen past `unplayable_fret_span`.
 
 **The exchange rates, read off `_score_fingering` with hand travel as the unit.** They are
-the defaults restated, not a proposal; any one knob could be the unit. Rounding them to
+the defaults restated, not a proposal; any one knob could be the unit. (The column divides
+by `movement_penalty`: a 1.7 there is a string switch at the defaults, not a proposed
+price for a fret of travel. That misreading started part of the discussion below;
+scottvr, 2026-11-04.) Rounding them to
 whole frets isn't a scaling question (5/3 stays 5/3 at any scale): it means rounding the
 defaults themselves, which the sweep can then check for changed tabs.
 
@@ -220,7 +223,21 @@ candidate order have changed since; the two unison chords are unplayable-chosen 
 1. The sentinel: rank the no-fit case, or flag it, or both?
 2. Open strings in the movement term: a position, or none? His sus-shape example argues the
    chord keeps a position while its open strings don't; a "last fretted position" rule gives
-   exactly that.
+   exactly that. *scottvr (2026-11-04): deliberate, and the intent was exactly the pull-down.
+   The term is a thumb on the scale, the cheapest one that needs no extra flag: "avoid a
+   big jump to an open shape from a fretted chord, but avoid it less the more of those
+   strings you are already playing open." An A barre at the fifth fret moving to open E
+   should be tipped toward something closer harder than an open Asus4 making the same
+   move. He hasn't run a transcription with debug on in a long while and won't swear it
+   holds in every case; there was no functional test for it.* The numbers from
+   `_score_fingering` say it does what he intended, by construction: 5-7-7-6-5-5 (average
+   5.83) to 0-2-2-1-0-0 (0.83) is 5.0 frets, 15 points at the default; x-0-2-2-3-0 (1.4) to
+   the same open E is 0.57 frets, 1.7 points. Each open string already held pulls the
+   pre-move average toward the open shape. The cost of the rule is the single-line case
+   (open E then fret 7 is seven frets each way); a "last fretted position" rule would keep
+   his chord behaviour and drop that, at the price of a state. His comment is on the
+   modelling fact, not yet a verdict on this question; a unit test pins the two chord
+   numbers either way (`tests/unit/test_mapper_scoring.py`).
 3. `sweet_spot_bonus`: working as designed. *scottvr (2026-11-04): the two forces (a flat toll
    for leaving the window, a graded one per fret above it) go in the README beside the three
    related options and in `--help`, not the wiki, which few people find and which he may
