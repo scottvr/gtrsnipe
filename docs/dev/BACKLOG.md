@@ -156,8 +156,10 @@ M03 and M06.
   - [x] both time bases built on the measure side (`--both`); first numbers in
     `NOTES-playability.md`: tabs and folk corpora have no note ends, so end-to-start sits on
     its floor there; POP909 (67% early releases) is the input that can tell them apart
-  - [ ] the scorer-side version, run on POP909 and performance MIDI; where the tabs differ,
-    scottvr plays them and judges
+  - [x] the scorer-side version (`--movement-time-base onset|end`, 2026-11-07) run on 60
+    pieces; numbers in `NOTES-playability.md`, listening set in `runs/m08-2026-11-07/`
+  - [ ] scottvr plays the differing tabs and judges; then the reference (0.5 s) and floor
+    (0.05 s) get set from that, and the default decided
   - [ ] for tabs in the wild, compare approximate (dash-derived) against off, the same way
   - [ ] the outcome is called out explicitly either way, in the notes and any paper, with
     the evidence beside it: if end-to-start wins, as a departure from Hori & Sagayama; if

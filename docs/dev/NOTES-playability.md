@@ -562,6 +562,34 @@ Asturias v6: half a finger, no span, hand at 4 at most, repetitiveness 0.75. The
 index ranks the sus-slide probe hardest, which is right (wide shapes moving fast), and the
 open-pedal probe at the bottom.
 
+**M08, scorer side (2026-11-07).** Built: `--movement-time-base onset|end` multiplies the
+movement penalty by `--movement-reference` (0.5 s) over the gap, floored at
+`--movement-min-gap` (0.05 s); off by default. The gap is a per-stage constant, so Viterbi
+stays exact (the landmine test now pins the fourth argument). The generators pass the
+song's tempo; `--analyze`, the chord charts and the player still map at the default 120.
+First run (`runs/m08-2026-11-07/`, 60 pieces, 25,497 notes; every input at tempo 120):
+
+| input | onset base changes | end base changes | onset vs end differ |
+|---|---|---|---|
+| Mr Crowley (168 notes) | 18 | 4 | 18 |
+| Asturias v1 / v6 | 0 / 11 | 0 / 11 | 0 / 0 |
+| probes (7) | 3 pieces, 0–2 notes | same | position-run only |
+| POP909 (18 tunes) | 13% of notes | 33% | on every tune |
+| Lakh clean (15) | 14% | 20% | every tune |
+| Nottingham (10) | 9% | 42% | every tune |
+
+What it says so far: the onset base is a moderate thumb on the scale (a tenth of the notes
+on melodies, a tenth of Crowley). The end base on inputs that hold every note to the next
+onset (tabs, folk, the probes) is not a timing rule at all but a ten-fold movement penalty,
+which is why it rewrites 42% of a Nottingham tune; only POP909 and Lakh, where notes are
+released early, test what it is for. The G2-to-B2 unit case shows the intended effect: with
+a quarter second the mapper takes the string switch instead of a four-fret move, and with a
+whole second it moves again. The listening set for scottvr is in `runs/m08-2026-11-07/tabs/`
+(Crowley, Asturias v6, two probes, four POP909 tunes, three tabs each) with a README on what
+the comparison can and cannot show. Open: the reference and floor are guesses; the floor is
+the whole story wherever notes are held, so a release-aware input (POP909, performance MIDI,
+or a tab layout with an end mark) is the only ground on which end-to-start can be judged.
+
 **Still to do in M03** (backlog): shape uncommonness (needs a reference corpus of shapes);
 the graded set (RCM list matched to free tabs); the validation; and then the weights.
 

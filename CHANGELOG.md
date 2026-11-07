@@ -31,6 +31,12 @@ the last release.
   its rate against the time available, shape change, technique marks) and a per-tab profile
   (mean, quadratic mean, max; shifts per minute; repetitiveness; a provisional index). Both
   time bases for a hand move (`--both`, M08).
+- Mapper: `--movement-time-base onset|end` (M08) scales the movement penalty by the time
+  the hand had for the move (`--movement-reference`, default 0.5 s, over the gap, floored at
+  `--movement-min-gap` 0.05 s). Off by default; tabs are unchanged unless it is given.
+- Docs: `docs/dev/M03-graded-set.md`, the brief for the graded tab set; the 2026-02
+  whitepaper draft restored to `docs/research/theory/`; the research README on the mapper
+  as a research topic.
 
 ## [0.8.1] — 2026-11-04
 
