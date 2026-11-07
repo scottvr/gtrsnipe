@@ -741,6 +741,28 @@ question) are, on the editors: the sweet-spot ceiling (+3.7 on top of prefer-ope
 switch 0 (+1.3 on top of the pair), high-fret 50 (+0.5, never negative). Everything else is
 zero or negative once those are in.
 
+**The ceiling alone** (same day; `ceiling.py`, `ceiling.txt`: sweet spot ending at 3 to 12, with
+and without `--prefer-open`, with and without string switch 0; agreement with the editors on
+the 44 graded tabs, and with the three originals' own tabs):
+
+| ceiling | graded, plain | graded, + prefer-open | graded, + both | Crowley (own tab) | Bach (own tab) |
+|---|---|---|---|---|---|
+| 3 | 85.6% | 88.9% | **89.3%** | 66–68% | 96–99% |
+| 4 | 81.6% | 87.0% | 87.3% | 66–69% | 95–**99.8%** |
+| 5 | 73.8% | 85.4% | 86.2% | 68–75% | 92–96% |
+| 7 | 65.9% | 82.5% | 83.9% | 74–83% | 80–91% |
+| 9 | 59.5% | 81.5% | 82.8% | 74–**90.5%** | 60–83% |
+| 12 (default) | 52.4% | 77.7% | 79.4% | 74–90.5% | 42–82% |
+
+The editors' agreement is monotone in the ceiling all the way down to 3, the lowest tried: the
+ceiling by itself gets 86%, and prefer-open on top adds 3 more (it adds 25 at the default
+ceiling, so the two measure much the same thing, open strings pulling the mean fret down).
+Bach's own tab is reproduced at 99.8% by its actual command (ceiling 4, string switch 0).
+Crowley is the mirror image: it wants the ceiling at 9 or above and no prefer-open, and the
+low ceiling costs it a quarter of its notes. So the beginner/intermediate classical profile is
+"ceiling 3 or 4, prefer open, string switch low", the defaults are not that, and Crowley is
+the standing reminder of why.
+
 What the full factorial adds over the one-knob table (on the three originals):
 
 - **Interactions are real, and the let-ring knob is the one that needs company.** Let-ring
