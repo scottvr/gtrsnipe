@@ -430,9 +430,11 @@ class GuitarMapper:
         return valid
 
     def _t2_delta(self, rk, rj, rpp) -> float:
-        """What the scorer's t-2 term adds to score(f_k, f_j, None) when the true
-        f_{t-2} has fretted range ``rpp``: the diagonal-span check over the three
-        fingerings' fretted frets fires (-1000) where the check over two did not.
+        """Whether (and by how much, -1000) the scorer's t-2 term would change
+        score(f_k, f_j, None) when the true f_{t-2} has fretted range ``rpp``: the
+        diagonal-span check over the three fingerings' fretted frets fires where the
+        check over two did not. The DP uses it as a test and re-scores with the
+        diagonal feature set, so the bits match the plain scorer.
         Mirrors the LANDMINE GUARD block in _score_fingering exactly (the only t-2
         read), with ranges in place of fret lists; the equivalence test holds the
         plain triple loop as the oracle for both."""
@@ -492,7 +494,12 @@ class GuitarMapper:
         emis = memo.setdefault("emission", {})      # fingering -> emission features
         pairs = memo.setdefault("transition", {})   # (fingering, prev, gap) -> transition features
 
-        def sc(f, p, pp, gap=None):
+        DIAG = self.FEATURE_NAMES.index("diagonal_break") - E
+
+        def sc(f, p, pp, gap=None, broken=False):
+            """Step score; ``broken`` re-scores the memoised pair with the diagonal-break
+            feature set, which is exactly what the true f_{t-2} would have done to it
+            (same term order, so the same bits as the plain scorer)."""
             e = emis.get(f)
             if e is None:
                 e = emis[f] = emit(f)
@@ -502,6 +509,8 @@ class GuitarMapper:
             v = pairs.get(key)
             if v is None:
                 v = pairs[key] = trans(f, p, None, gap)
+            if broken:
+                v = v[:DIAG] + (1.0,) + v[DIAG + 1:]
             return dot(e, w_e, v, w_t)
 
         BP = [dict() for _ in range(T)]
@@ -541,11 +550,17 @@ class GuitarMapper:
                     rk = ranges[t][k]
                     for j, fj in enumerate(prev_c):
                         base = sc(fk, fj, None, gaps[t])
+                        broken = None                        # scored lazily, once per (k, j)
                         rj = ranges[t - 1][j]
                         best_s = None
                         best_i = -1
                         for key, (v, i) in buckets[j].items():
-                            s = v + base + self._t2_delta(rk, rj, key)
+                            if self._t2_delta(rk, rj, key):
+                                if broken is None:
+                                    broken = sc(fk, fj, None, gaps[t], broken=True)
+                                s = v + broken
+                            else:
+                                s = v + base
                             if best_s is None or s > best_s or (s == best_s and i < best_i):
                                 best_s = s
                                 best_i = i
