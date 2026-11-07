@@ -349,6 +349,104 @@ Raw results, the 81 distinct tabs and the replicated tabs are in the session scr
 (`sweep/real.json`, `sweep/tabs/`, `repro/`); they stay off the repo because the wiki tab
 and the corpus pieces are not ours to ship.
 
+### Hand position (2026-11-07): scottvr's note, and the index-finger proxy measured
+
+**The note** (scottvr, a phone note found and copied to
+`docs/note-scoring-hand_on_neck_position.txt`; prompted by DOCS-AUDIT WK-5, "`--movement-penalty`
+is per fret the hand's average position moves"). The points, in his order:
+1. Hand position changes only between notes, never inside a note or chord. A chord's average
+   fret is a center point, not a change; if a center is wanted at all it should be the median.
+2. The hand is where the index finger is. The forearm passes under the neck, the wrist bends
+   to bring the fingertips down onto the face of the neck, so the index finger is a proxy for
+   the wrist and the hand is fixed to the wrist. Reach to higher frets is governed by fret
+   span, and the span settings exist for hand size; both point at the lowest fretted fret as
+   the position, not the mean.
+3. This only matters once scoring considers hand position. Movement is scored today from
+   prev and prev_prev by fret arithmetic, not by hand position except through that average.
+   Not all increments are alike: A major as a full barre at 5 (5-7-7-6-5-5) to B at 7
+   (7-9-9-8-7-7) moves the hand two frets with the shape unchanged; it is easy for an
+   experienced player, as easy as a single-string 5-to-7 slide, harder than a hammer-on.
+4. The right transition cost is probably: how far the shape changes (zero for the barre
+   slide; one finger lifted for A to A minor), how far the hand moves (two frets there), and
+   the chord's complexity, because keeping a hard shape together while moving it is harder,
+   likely scaling with complexity, probably multiplicative rather than additive, possibly on
+   a log scale. The difficulty of the barre slide may not be exactly zero, only negligible
+   until the shape is complex enough.
+5. Direction may matter: the under-and-around routing of the forearm means wrist stress
+   changes differently toward the nut and toward the bridge. Both ends are harder; how much
+   is player dependent. One sweet spot for single notes and chords is probably enough, but
+   write it down when it is decided.
+6. The Mr Crowley intro, full chords with single fretted notes between them, is the script
+   to walk through if hand (neck position) scoring and finger scoring turn out to be two
+   things.
+
+**What Claude knew, and didn't.** Fact 1 of the M01 audit already says it from the code: a
+fingering is one number, its average fret, there is no hand and there are no fingers, and a
+hand-position state ("where the index sits; notes within reach cost no travel") is the M06
+question. WK-5 is a statement about the code, and the code never moves a chord inside
+itself: the average is used only in differences between consecutive fingerings (the movement
+term) and in the sweet-spot test (where on the neck a fingering sits). So point 1 was
+understood, and the audit's wording is right. Points 2, 4 and 5 were new: the anatomical
+argument for the index finger (not "the lowest fret" as a convenience but the wrist's proxy,
+with reach extending upward from it only), the nut-side discomfort as a separate thing from
+the bridge-side one, and the multiplicative complexity scaling. Without the note Claude would
+have reached for the mean or for the fret interval, with reach counted symmetrically.
+
+**Measured** (`runs/hand-position-2026-11-07/handpos2.py`, defaults, Viterbi): three rules
+for a chord's position in the movement and sweet-spot terms, with single notes scored as
+shipped so that the open-string behaviour decided in q2 is untouched: the mean (shipped), the
+median, and the lowest fretted fret ("index", all-open counted as the nut). Changed notes
+against the shipped tab:
+
+| piece | notes | median | index | why |
+|---|---|---|---|---|
+| Mr Crowley (wiki) | 168 | 22 | 14 | the fretted line between chords moves to the next string down, see below |
+| Asturias v1 | 44 | 0 | 3 | an open B before a G4+B0 chord gets fretted at G4 (a tie under the mean, broken toward the chord's index) |
+| Asturias v6 | 45 | 0 | 0 | |
+| probe: sus-slide | 35 | 18 | 4 | median: x-5-7-7-0-0 has median 5 and the open strings stop pulling the shape toward the nut, the behaviour confirmed in q2 |
+| probes: wide-chord, open-pedal | 22 | 0 | 0 | |
+| 5 Nottingham tunes | 412 | 0 | 0 | single notes, by construction |
+
+(A first version that also took open single notes to have no position changed 433 notes in
+34 of 50 pieces; all of that is q2's open-string rule, not this question, and the script
+`handpos.py` keeps it for the record.)
+
+The Crowley bar is the case the note asked for. The intro opens x-5-7-7-6-x (index at 5,
+mean 6.2), then the line E3 F3 G3, then 5-7-7-5-5-x (index at 5). Shipped: the line is
+A7 A8 A10. Index rule: D2 D3 D5. Read as a hand: from the index at 5, A7 and A8 are within
+reach (ring and little finger, no movement); A10 needs the hand at about 7; the hand goes
+5 to 7 and back, two frets each way. The index proxy without a reach rule charges A7 two
+frets and A10 five and so prefers to take the whole hand down to the second position, where
+D2 D3 D5 sit under it. The mean got the better line by luck: 6.2 is near 7. So swapping the
+mean for the index is a regression on his own script piece, and the proposal that works is the
+note's two halves together: position is the index finger, and notes within the span above
+it cost no travel. That is the hand-position state of fact 1 and M06, not a change of
+statistic. The note's own examples under the two rules, transition cost at the defaults:
+A to A minor (lift one finger) 0.5 against 0; A with the little finger added on e7 1.0
+against 0; A to B as a barre slide 6 under both; open A (x-0-2-2-2-0) to the A barre 18.9
+against 14.
+
+**Where this leads** (his call):
+1. Mean to index alone: no. Index plus reach: yes, as the M06 hand state. It stays a
+   function of the previous and the current fingering, so first-order Viterbi stays exact
+   (the landmine guard in `_score_fingering` is about t-2 only).
+2. His transition formula fits the exchange-rate framing and is allowed to be multiplicative
+   as long as it reads only prev and current. Shape change needs finger assignment, which
+   nothing has today (M06 gives it); position change is the index delta beyond reach;
+   complexity is span, fretted count and barre. One caution: `fret_span_penalty` at 100 per
+   fret is charged on every onset already, the largest term in every real score (Crowley
+   -6844 is mostly span), so a complexity factor on movement would count span twice unless
+   span's own role is rethought in the same pass.
+3. Direction. The code's sweet spot has only a bridge-side penalty (`high_fret_penalty`
+   above `sweet_spot_high`; below `sweet_spot_low` nothing happens, which is why the sweep
+   found that knob dead on real pieces). A nut-side twin is a one-line term; whether it is
+   on is player dependent, so it belongs to a profile with the default off. Nothing measured
+   says single notes and chords need different sweet spots.
+4. Median: the worst of the three. It keeps the mean's center-point meaning and drops the
+   open-string pull-down.
+5. The Crowley intro stays the test piece for hand-versus-finger scoring; the bar above is
+   the first case.
+
 ## M03: a tab difficulty measure
 
 - **A tab difficulty measure** (scottvr, 2026-09-30). Tab sites sort by difficulty labels
