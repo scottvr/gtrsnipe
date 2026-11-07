@@ -33,6 +33,26 @@ def test_open_and_single_notes():
     assert o[1].position == 7 and o[1].fingers == 1 and o[1].shift == 0.0  # no position to move from
 
 
+def test_lazy_hand_stays_put_within_reach_and_moves_the_least_that_fits():
+    # the A minor pentatonic box at the 5th position: frets 5-8 on every string, no hand move
+    box = [(0, 1, [(5, 5)]), (1, 1, [(5, 8)]), (2, 1, [(4, 5)]), (3, 1, [(4, 7)]), (4, 1, [(0, 8)]), (5, 1, [(0, 5)])]
+    o = D.onsets(_song(box))
+    assert [x.position for x in o] == [5.0] * 6 and all(x.shift == 0 for x in o)
+    assert [x.index_fret for x in o] == [5, 8, 5, 7, 8, 5]
+    # reach 0 is the plain index proxy: every note is its own position
+    o0 = D.onsets(_song(box), reach=0)
+    assert [x.position for x in o0] == [5.0, 8.0, 5.0, 7.0, 8.0, 5.0]
+    # a shape anchors the index at its lowest fret even when the lazy hand could reach it
+    o = D.onsets(_song([(0, 1, [(0, 5)]), (1, 1, [(1, 7), (0, 8)])]))
+    assert o[1].position == 7.0 and o[1].shift == 2.0
+    # a note beyond reach moves the hand up the least that fits; a lower one pulls it down to itself
+    o = D.onsets(_song([(0, 1, [(0, 5)]), (1, 1, [(0, 10)]), (2, 1, [(0, 2)])]))
+    assert [x.position for x in o] == [5.0, 7.0, 2.0] and [x.shift for x in o] == [0.0, 2.0, 5.0]
+    # the hand is carried across an open note
+    o = D.onsets(_song([(0, 1, [(0, 5)]), (1, 1, [(0, 0)]), (2, 1, [(0, 12)])]))
+    assert o[1].position is None and o[2].shift == 4.0     # 5 -> 9 (12 - reach), not 12
+
+
 def test_barre_slide_moves_two_frets_with_no_shape_change():
     o = D.onsets(_song([(0, 1, A_BARRE), (1, 1, B_BARRE)]))
     assert o[1].shift == 2 and o[1].shape_change == 12   # every (string, fret) pair differs
@@ -71,7 +91,7 @@ def test_profile_counts_and_uses_the_tabs_own_fingering():
     p = D.profile(song, "x")
     assert p.fingering == "as written" and p.onsets == 4 and p.notes == 14
     assert p.shifts == 1                     # the barre slide; the open note has no position
-    assert p.max_position == 12 and p.position_range == 7
+    assert p.max_position == 9 and p.position_range == 4      # the lazy hand reaches 12 from 9
     assert math.isclose(p.chord_share, 0.5) and math.isclose(p.barre_share, 0.5)
     assert p.stats["fingers"][2] == 4 and p.index > 0
 

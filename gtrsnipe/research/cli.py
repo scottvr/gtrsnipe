@@ -449,12 +449,12 @@ def cmd_difficulty(a) -> int:
     for label, song in inputs:
         bases = D.TIME_BASES if a.both else (a.time_base,)
         for tb in bases:
-            p = D.profile(song, label, time_base=tb, min_gap=a.min_gap, refinger=a.refinger)
+            p = D.profile(song, label, time_base=tb, min_gap=a.min_gap, refinger=a.refinger, reach=a.reach)
             profiles.append(p)
             if a.verbose:
                 fingered = song if (p.fingering == "as written") else D.finger_song(song)
                 print(f"== {label} ({p.fingering}, time base {tb})")
-                print(D.format_onsets(D.onsets(fingered, time_base=tb, min_gap=a.min_gap)))
+                print(D.format_onsets(D.onsets(fingered, time_base=tb, min_gap=a.min_gap, reach=a.reach)))
                 print()
     print(D.format_profiles(profiles))
     if a.json:
@@ -599,6 +599,8 @@ def build_parser() -> argparse.ArgumentParser:
     df.add_argument("--both", action="store_true", help="profile under both time bases (M08)")
     df.add_argument("--min-gap", type=float, default=0.05, metavar="SECONDS",
                     help="floor on the time a move can be charged against (default 0.05)")
+    df.add_argument("--reach", type=int, default=3, metavar="FRETS",
+                    help="frets above the index finger the hand covers without moving (default 3; 0 = no hand model)")
     df.add_argument("--json", help="also write the profiles here")
     df.add_argument("-v", "--verbose", action="store_true", help="per-onset detail")
     df.set_defaults(func=cmd_difficulty)

@@ -38,6 +38,7 @@ TIME_BASES = ("end", "onset")
 # gap is zero almost everywhere.
 MIN_GAP_SECONDS = 0.05
 SHIFT_FRETS = 2       # a change of hand position this large or more counts as a shift
+REACH_FRETS = 3       # frets above the index finger the hand covers without moving (four fingers, one per fret)
 
 
 @dataclass
@@ -47,7 +48,11 @@ class Onset:
     seconds: float                  # time at the song's tempo
     notes: int                      # pitches struck together
     fretted: int                    # of which fretted (not open)
-    position: Optional[float]       # the index finger's fret: lowest fretted fret; None if all open
+    index_fret: Optional[int]       # the lowest fretted fret of this onset; None if all open
+    position: Optional[float]       # where the hand is: the index finger's fret. A shape (two or more
+                                    # fretted notes) puts it at the lowest fretted fret; a single note
+                                    # follows the lazy hand model: the hand stays put while the note lies
+                                    # within REACH_FRETS above it, else moves the least distance that fits
     fingers: int                    # fingers down, the lowest fret's notes counted once (an index barre)
     span: int                       # highest fretted fret minus lowest; 0 under two fretted notes
     barre: bool                     # two or more notes on the lowest fretted fret
@@ -122,8 +127,10 @@ def fingered_events(song: Song) -> List[MusicalEvent]:
 
 
 def onsets(song: Song, *, time_base: str = "end", min_gap: float = MIN_GAP_SECONDS,
-           resolution: float = 0.0) -> List[Onset]:
-    """The per-onset descriptors of a fingered song (first track)."""
+           resolution: float = 0.0, reach: int = REACH_FRETS) -> List[Onset]:
+    """The per-onset descriptors of a fingered song (first track). ``reach`` is the lazy hand
+    model's span above the index finger; 0 puts the hand at every onset's lowest fretted fret
+    (the plain index-finger proxy)."""
     if time_base not in TIME_BASES:
         raise ValueError(f"time_base must be one of {TIME_BASES}, got {time_base!r}")
     spb = _seconds_per_beat(song)
@@ -133,19 +140,33 @@ def onsets(song: Song, *, time_base: str = "end", min_gap: float = MIN_GAP_SECON
     prev: Optional[Onset] = None
     prev_pairs: set = set()
     prev_end_beats: Optional[float] = None
+    hand: Optional[float] = None       # the lazy hand's position, carried across all-open onsets
     for i, g in enumerate(groups):
         t = g[0].time
         frets = [e.fret for e in g]
         fretted = sorted(f for f in frets if f > 0)
-        pos = float(fretted[0]) if fretted else None
+        idx = fretted[0] if fretted else None
+        if idx is None:
+            pos = None                                  # nothing to hold; the hand stays where it was
+        elif len(fretted) >= 2:
+            pos = float(idx)                            # a shape anchors the index finger at its lowest fret
+        elif hand is None or hand > idx:
+            pos = float(idx)                            # down the neck to the lowest fretted note
+        elif fretted[-1] <= hand + reach:
+            pos = hand                                  # everything is within reach: no move
+        else:
+            pos = float(min(idx, fretted[-1] - reach))  # up the neck, the least that fits
+        if pos is not None:
+            hand = pos
         lowest_count = fretted.count(fretted[0]) if fretted else 0
         fingers = len(fretted) - max(0, lowest_count - 1)
         span = (fretted[-1] - fretted[0]) if len(fretted) >= 2 else 0
         barre = lowest_count >= 2
         pairs = {(e.string, e.fret) for e in g}
         shape_change = len(pairs ^ prev_pairs) if prev is not None else 0
-        if prev is not None and pos is not None and prev.position is not None:
-            shift = abs(pos - prev.position)
+        prev_pos = next((o.position for o in reversed(out) if o.position is not None), None)
+        if prev is not None and pos is not None and prev_pos is not None:
+            shift = abs(pos - prev_pos)
         else:
             shift = 0.0
         if prev is None:
@@ -161,7 +182,7 @@ def onsets(song: Song, *, time_base: str = "end", min_gap: float = MIN_GAP_SECON
         else:
             ioi = max(e.duration for e in g) * spb
         tech = sum(1 for e in g if e.technique and str(e.technique).lower() not in ("pick", "technique.pick", "none"))
-        o = Onset(time=t, seconds=t * spb, notes=len(g), fretted=len(fretted), position=pos,
+        o = Onset(time=t, seconds=t * spb, notes=len(g), fretted=len(fretted), index_fret=idx, position=pos,
                   fingers=fingers, span=span, barre=barre, shift=shift,
                   gap=gap if math.isfinite(gap) else 0.0, move_rate=move_rate,
                   shape_change=shape_change, ioi=max(ioi, 0.0), technique=tech)
@@ -243,12 +264,12 @@ def _mqm(xs: Sequence[float]) -> Tuple[float, float, float]:
 
 
 def profile(song: Song, label: str = "", *, time_base: str = "end", min_gap: float = MIN_GAP_SECONDS,
-            refinger: bool = False, cfg: Optional[MapperConfig] = None) -> Profile:
+            refinger: bool = False, cfg: Optional[MapperConfig] = None, reach: int = REACH_FRETS) -> Profile:
     """The difficulty profile of a song: its own fingering if it has one (a tab), else the
     mapper's; ``refinger`` forces the mapper's."""
     own = bool(fingered_events(song)) and not refinger
     fingered = song if own else finger_song(song, cfg)
-    os_ = onsets(fingered, time_base=time_base, min_gap=min_gap)
+    os_ = onsets(fingered, time_base=time_base, min_gap=min_gap, reach=reach)
     events = fingered_events(fingered)
     spb = _seconds_per_beat(fingered)
     if not os_:
@@ -303,11 +324,12 @@ def format_profiles(profiles: Sequence[Profile]) -> str:
 
 
 def format_onsets(os_: Sequence[Onset]) -> str:
-    rows = [f"{'beat':>7s} {'sec':>6s} {'n':>2s} {'pos':>4s} {'fng':>3s} {'spn':>3s} {'brr':>3s} "
+    rows = [f"{'beat':>7s} {'sec':>6s} {'n':>2s} {'idx':>4s} {'pos':>4s} {'fng':>3s} {'spn':>3s} {'brr':>3s} "
             f"{'shift':>5s} {'gap':>6s} {'mv/s':>6s} {'chg':>3s} {'ioi':>5s} {'tech':>4s}"]
     for o in os_:
         pos = f"{o.position:4.0f}" if o.position is not None else "   -"
-        rows.append(f"{o.time:7.3f} {o.seconds:6.2f} {o.notes:2d} {pos} {o.fingers:3d} {o.span:3d} "
+        idx = f"{o.index_fret:4d}" if o.index_fret is not None else "   -"
+        rows.append(f"{o.time:7.3f} {o.seconds:6.2f} {o.notes:2d} {idx} {pos} {o.fingers:3d} {o.span:3d} "
                     f"{'  b' if o.barre else '  .'} {o.shift:5.1f} {o.gap:6.2f} {o.move_rate:6.1f} "
                     f"{o.shape_change:3d} {o.ioi:5.2f} {o.technique:4d}")
     return "\n".join(rows)
