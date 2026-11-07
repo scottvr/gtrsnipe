@@ -12,6 +12,7 @@
     gtrsnipe-research aswritten song.tab --corpora essen mtc-fs lakh-clean
     gtrsnipe-research sweep crowley.mid:5 asturias.tab --probes --sample nottingham:20
     gtrsnipe-research optimizers --sample nottingham:100 essen:100 --json m02.json
+    gtrsnipe-research difficulty song.tab crowley.mid:5 --probes --both -v
 
 A song is a corpus reference (``NAME:ID``, optionally ``@START-END`` in notes,
 1-based inclusive, or ``#pN`` for phrase N), or anything ``--homograph`` reads:
@@ -439,6 +440,29 @@ def _write_sweep_tabs(folder: str, label: str, song, r) -> None:
                 f.write(text)
 
 
+def cmd_difficulty(a) -> int:
+    """M03: per-onset difficulty descriptors and a profile per tab (M08: both time bases)."""
+    import json
+    from . import difficulty as D
+    inputs = _song_inputs(a, "profile")
+    profiles = []
+    for label, song in inputs:
+        bases = D.TIME_BASES if a.both else (a.time_base,)
+        for tb in bases:
+            p = D.profile(song, label, time_base=tb, min_gap=a.min_gap, refinger=a.refinger)
+            profiles.append(p)
+            if a.verbose:
+                fingered = song if (p.fingering == "as written") else D.finger_song(song)
+                print(f"== {label} ({p.fingering}, time base {tb})")
+                print(D.format_onsets(D.onsets(fingered, time_base=tb, min_gap=a.min_gap)))
+                print()
+    print(D.format_profiles(profiles))
+    if a.json:
+        with open(a.json, "w") as f:
+            json.dump([p.to_dict() for p in profiles], f, indent=1, default=str)
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(prog="gtrsnipe-research", description=__doc__.split("\n\n")[0])
     ap.add_argument("--data", help=f"corpus root folder (default: ${C.ROOT_ENV})")
@@ -562,6 +586,22 @@ def build_parser() -> argparse.ArgumentParser:
     op.add_argument("--json", help="also write the results here")
     op.add_argument("-v", "--verbose", action="store_true", help="per-song detail")
     op.set_defaults(func=cmd_optimizers)
+
+    df = sub.add_parser("difficulty", help="per-onset difficulty descriptors and a profile per tab (M03)")
+    df.add_argument("songs", nargs="*", help="tabs or songs (files, corpus refs, inline)")
+    df.add_argument("--probes", action="store_true", help="include the built-in probe passages")
+    df.add_argument("--sample", nargs="+", metavar="CORPUS:N", help="N random tunes of a cached corpus")
+    df.add_argument("--seed", type=int, default=1)
+    df.add_argument("--refinger", action="store_true", help="ignore a tab's own fingering; use the mapper's")
+    df.add_argument("--time-base", choices=("end", "onset"), default="end",
+                    help="time a hand move is charged against: end of the previous note to the next onset "
+                         "(default), or onset to onset (Hori & Sagayama)")
+    df.add_argument("--both", action="store_true", help="profile under both time bases (M08)")
+    df.add_argument("--min-gap", type=float, default=0.05, metavar="SECONDS",
+                    help="floor on the time a move can be charged against (default 0.05)")
+    df.add_argument("--json", help="also write the profiles here")
+    df.add_argument("-v", "--verbose", action="store_true", help="per-onset detail")
+    df.set_defaults(func=cmd_difficulty)
     return ap
 
 
