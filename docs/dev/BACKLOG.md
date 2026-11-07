@@ -18,7 +18,7 @@ The single list of open work, as of **v0.8.1 (2026-11-07)**.
 - **Unreleased changes** are listed under `## [Unreleased]` at the top of the CHANGELOG as
   they are committed; the release renames the heading. Commit as work lands; push only with
   a version bump.
-- **IDs are stable** and never reused. Next free: B26, R19, P07, C08, M09, F09, H10.
+- **IDs are stable** and never reused. Next free: B27, R19, P07, C08, M09, F09, H10.
 
 Sizes: **S** is an hour or less, **M** is about a session, **L** is several sessions.
 
@@ -85,6 +85,17 @@ Sizes: **S** is an hour or less, **M** is about a session, **L** is several sess
   `tests/mapper/test_viterbi_equivalence.py`); chordal second-order pieces 10–18× faster.
   Next step if needed: split the scorer into per-fingering and per-transition parts.
   ✓ unreleased, 2026-11-07
+- [ ] **B26** **Feature-vector scorer** (scottvr's cache idea, 2026-11-07, as the parking lot
+  framed it): the step score as `step_features` · `step_weights`, emission and transition
+  parts cached separately in the DP, `map_paths_for_weights` for many weight vectors on one
+  feature pass. Design note in `DESIGN-viterbi-mapper.md` §2.2.
+  - [x] scorer refactored, bit-identical scores (oracle test), 927 tests green (branch
+    `feat/feature-vector-scorer`)
+  - [x] `map_paths_for_weights` reproduces separate mappers (checked on 3 vectors, Crowley)
+  - [ ] the research sweep and the weight fit go through it (`gtrsnipe-research`)
+  - [ ] recover the ~20% single-mapping cost if it matters (slots, fewer tuple builds)
+  - [ ] make `prefer_open`, `let_ring` on/off, `diagonal_span` pure weights where exact (the
+    let-ring gate on the t-2 read is the obstacle; see §2.2)
 - [ ] **B23** **Triplets don't survive a conversion.** (1) The default pre-quantize pass snaps
   every onset to a 32nd-note grid (`--quantization-resolution 0.125`), so a triplet eighth at
   1/3 of a beat lands on 0.375, in every output; the grid choices include no triplet grid, and

@@ -17,6 +17,10 @@ the last release.
 
 ## [Unreleased]
 
+- Mapper (B26): the scorer is now features × weights (`GuitarMapper.step_features`,
+  `step_weights`, `FEATURE_NAMES`), with emission and transition features cached separately in
+  the Viterbi DP, and `map_paths_for_weights()` maps a song under many weight vectors from one
+  feature pass (for knob sweeps and weight fits). Scores and tabs are bit-identical to v0.8.2.
 ## [0.8.2] — 2026-11-07
 
 The research turn on the mapper (backlog M03 and M08), with scottvr: a difficulty measure, a

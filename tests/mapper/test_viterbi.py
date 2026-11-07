@@ -224,14 +224,17 @@ def test_the_scorer_reads_no_history_deeper_than_two_steps():
     else, the search stops being exact: update `second_order` in map_multi_string
     and this test together."""
     import inspect
-    source = inspect.getsource(GuitarMapper._score_fingering)
-    params = list(inspect.signature(GuitarMapper._score_fingering).parameters)
-    # gap_seconds (M08) is a per-stage constant, the time the hand had for the move, not history
-    assert params == ["self", "fingering", "prev_fingering", "prev_prev_fingering", "gap_seconds"]
+    # the history is read by step_features; _score_fingering is its dot product with the weights
+    source = inspect.getsource(GuitarMapper.transition_features)
+    for fn in (GuitarMapper._score_fingering, GuitarMapper.step_features, GuitarMapper.transition_features):
+        params = list(inspect.signature(fn).parameters)
+        # gap_seconds (M08) is a per-stage constant, the time the hand had for the move, not history
+        assert params == ["self", "fingering", "prev_fingering", "prev_prev_fingering", "gap_seconds"]
     assert "prev_prev_fingering:" in source                     # it is still read somewhere
     assert _ungated_reads(source) == []
+    assert "step_features(" in inspect.getsource(GuitarMapper._score_fingering)   # it only delegates
     # the DP turns its pair-states on under exactly that gate
-    dp = inspect.getsource(GuitarMapper.map_multi_string)
+    dp = inspect.getsource(GuitarMapper._viterbi)
     assert "second_order = bool(self.config.diagonal_span_penalty and self.config.let_ring_bonus > 0)" in dp
     # the check itself catches a read outside the gate, or in a gate's else branch
     leak = "def f(self, fingering, prev_fingering, prev_prev_fingering):\n" \

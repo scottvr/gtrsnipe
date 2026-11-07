@@ -82,6 +82,29 @@ implementation:
 Because greedy's realized total is `Σ_t score(chosen_t, …)` over the same
 candidate universe and the same function, the DP optimum is provably **≥ greedy**.
 
+**Since the feature-vector refactor (branch `feat/feature-vector-scorer`, 2026-11-07):**
+the scorer *is* the decomposition framing, made explicit. `step_features(f, prev, pp, gap)`
+returns a 10-vector (`FEATURE_NAMES`): five **emission** features of the fingering alone
+(span, span break, in sweet spot, frets over the sweet spot, barre) and five
+**transition** features of the step into it (frets of travel × the M08 time factor,
+strings switched, diagonal break, strings left ringing, fretted notes with an open twin).
+`step_weights()` turns the config into the vector they are scored against (penalties
+negative; the two `-1000` short-circuits are weights on 0/1 features; the diagonal weight
+is 0 when the flag is off, the fretted-open weight is 0 unless `--prefer-open`).
+`_score_fingering` is their dot product, accumulated in the old term order, so every
+score is bit-identical to the pre-refactor scorer (20/20 oracle runs). Structural settings
+stay in the features: the sweet-spot bounds, the unplayable span, ignore-open, the
+diagonal flag, and whether let-ring is on at all (the second-order gate reads the
+config's `let_ring_bonus > 0`, not the weight).
+
+What it buys: the DP caches emission features once per candidate per stage and
+transition features once per `(f_t, f_{t-1}, gap)`, and `map_paths_for_weights()` runs
+the DP for many weight vectors on **one** feature pass, which is what a knob sweep or a
+weight fit needs; a profile is a weight vector; tempo scaling (M08) is a multiplier on
+one component. Single mappings pay ~20% for the tuple building (Sor minuet, first order:
+1.0 s → 1.25 s); the sweep side is where it pays back.
+
+
 ### 2.3 Adaptive model order — first-order by default, exact second-order when needed
 
 `score` depends on `f_{t-2}` **only** through the block guarded by

@@ -266,7 +266,7 @@ original notes in git history.
   as a cost; the stylistic profiles (classical vs metal) would then set that threshold rather
   than the flag. Numbers: "The same sweep against the editors" and "Crowley by ear" in
   [`NOTES-playability.md`](NOTES-playability.md).
-- [ ] **Feature-vector scorer (and, behind it, a cache of step features)** (scottvr + Claude,
+- [x] **Feature-vector scorer (and, behind it, a cache of step features)** → backlog B26, started 2026-11-07 (scottvr + Claude,
   2026-11-07; from the B25 speed-up and scottvr's idea of a persistent LRU of repeating
   changes). A step score is a weighted sum of a handful of features (frets moved, strings
   changed, span, mean position over the ceiling, fretted notes with an open twin, strings left
