@@ -91,7 +91,8 @@ Sizes: **S** is an hour or less, **M** is about a session, **L** is several sess
   feature pass. Design note in `DESIGN-viterbi-mapper.md` §2.2.
   - [x] scorer refactored, bit-identical scores (oracle test), 927 tests green (branch
     `feat/feature-vector-scorer`)
-  - [x] `map_paths_for_weights` reproduces separate mappers (checked on 3 vectors, Crowley)
+  - [x] `map_paths_for_weights` reproduces separate mappers: all 2,816 (piece, weight-vector)
+    rows of the graded sweep's weight-only quarter, to the note (`weights_demo.py` in the run folder)
   - [ ] the research sweep and the weight fit go through it (`gtrsnipe-research`)
   - [x] single-mapping cost recovered (emission cache); sweep-side gain is 2–3× per vector
     because the DP loops, not the scoring, now dominate; a vectorised DP would be the next step
