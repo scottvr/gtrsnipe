@@ -34,6 +34,8 @@ the last release.
 - Mapper: `--movement-time-base onset|end` (M08) scales the movement penalty by the time
   the hand had for the move (`--movement-reference`, default 0.5 s, over the gap, floored at
   `--movement-min-gap` 0.05 s). Off by default; tabs are unchanged unless it is given.
+- Research: the first graded set (RCM 2018 levels matched to classtab.org tabs, 50 pieces)
+  and the measure's first rank correlations (hand move rate 0.71 with the level).
 - Tab reader: string lines without a label (`|---`, `||---`), with a label but no bar
   (`E-----`), and bare dashes with notes on them are read; classtab.org's `=` sustain marks
   are not notes. About a fifth of classtab's 3,977 tabs read as empty before (B24).

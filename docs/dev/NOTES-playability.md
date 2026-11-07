@@ -590,6 +590,41 @@ the comparison can and cannot show. Open: the reference and floor are guesses; t
 the whole story wherever notes are held, so a release-aware input (POP909, performance MIDI,
 or a tab layout with an end mark) is the only ground on which end-to-start can be judged.
 
+**First validation (2026-11-07): 49 classtab tabs against their RCM level.** The RCM 2018
+syllabus list (414 pieces, nine levels) matched by composer, opus and title against the
+classtab.org archive (3,977 ASCII tabs, the monthly zip, local under `data/classtab-zip/`)
+gave 50 sure matches (score 4 or more; 65 weaker candidates await a hand check), spread over
+every level, 3 to 9 per level. Reading them needed B24 (a fifth of classtab's tabs open their
+string lines with a bare `|` or no label; fixed, 98% read now), and the tabs' own fingerings
+check out against classtab's MIDI (exact or found inside the MIDI with repeats expanded for
+26 of the 37 that have one; the rest differ in content, an accidental or a pickup bar).
+Spearman's rho of each descriptor against the level, onset time base, tempo 120 throughout
+(`runs/m03-graded-set-2026-11-07/first-correlation.json`):
+
+| descriptor | rho | | descriptor | rho |
+|---|---|---|---|---|
+| hand move rate, mean | **0.71** | | max hand position | 0.67 |
+| hand move rate, max | **0.71** | | position range | 0.67 |
+| provisional index | 0.66 | | shifts per minute | 0.66 |
+| span, max | 0.64 | | length in onsets | 0.60 |
+| shift, mean | 0.59 | | barre share | 0.57 |
+| fingers down, mean | 0.54 | | notes per second | 0.47 |
+| length in seconds | 0.44 | | span, mean | 0.38 |
+| notes per onset | 0.26 | | chord share | 0.18 |
+| shape change, mean | 0.12 | | repetitiveness | −0.06 |
+
+All of the first twelve are significant at p < 0.001 on 49 pieces. What it says, with the
+caveats of a first pass: the hand's movement (how far, how fast, how high) is the strongest
+single family, above Ariga et al.'s 0.55 for index-finger movement on 50 rated tabs; the
+hand-set index lands at 0.66 without any fitting; the two descriptors borrowed from the
+rubric literature that do nothing here are shape change and repetitiveness (the RCM books
+are all short, repetitive study pieces, so there is no spread to correlate). Length
+correlates too (0.60), which is a confound to keep in view: graded repertoire gets longer
+as it gets harder, and the measure should not be allowed to learn that. Needed before any
+weight is fitted: the 65 candidates checked by hand, Trinity or ABRSM as a second list,
+real tempi (every classtab tab is read at 120), and the 49 looked at for mismatched
+matches (a wrong opus number is a wrong level).
+
 **Still to do in M03** (backlog): shape uncommonness (needs a reference corpus of shapes);
 the graded set (RCM list matched to free tabs); the validation; and then the weights.
 

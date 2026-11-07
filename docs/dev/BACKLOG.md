@@ -49,9 +49,14 @@ Sizes: **S** is an hour or less, **M** is about a session, **L** is several sess
         repetitiveness) and their profile (mean, quadratic mean, max); the lazy hand model
         (`gtrsnipe-research difficulty`, 2026-11-07)
       - [ ] shape uncommonness (needs a reference corpus of fingered shapes)
-      - [ ] a graded set: the RCM 2018 list matched to tabs we can obtain (ClassClef,
-        classtab.org, GAPS); Trinity or ABRSM as a second list
-      - [ ] validate by rank correlation and adjacent accuracy; per-ingredient correlations
+      - [x] a first graded set: the RCM 2018 list matched to classtab.org's archive, 50 sure
+        matches copied to `/Volumes/LaCie/data/midi/graded/rcm/` with a manifest (2026-11-07)
+      - [ ] the 65 weak candidates in that manifest checked by hand (scottvr); Trinity or
+        ABRSM as a second list; ClassClef / GAPS for what classtab lacks
+      - [x] first rank correlations, 49 pieces: hand move rate 0.71, the provisional index
+        0.66, length 0.60 (a confound); in `NOTES-playability.md` (2026-11-07)
+      - [ ] validate properly: more pieces, real tempi, adjacent accuracy, the length confound
+        handled; then fit the weights
       - [ ] ship as `gtrsnipe-research difficulty` with a per-tab report
     - [ ] M08 the time-scaled movement cost, in the scorer and the measure (scottvr,
       2026-11-07: implement)
@@ -105,7 +110,10 @@ Sizes: **S** is an hour or less, **M** is about a session, **L** is several sess
     again" is inferred, not confirmed)
 - [ ] **R14** **Third-party tabs as written**: R05's natural next input (tabs from community
   sites, checked against a reference MIDI). Kept local for copyright reasons. Pairs with the
-  tab checker (F07) and the parked Power Tab reader. (M; R05)
+  tab checker (F07) and the parked Power Tab reader. **Input found 2026-11-07:** classtab.org's
+  archive (3,977 classical tabs with 2,341 MIDI twins, local under `data/classtab-zip/`),
+  of which a quarter state no tuning, the "stripped" case the homograph argument is about;
+  the tuning survey's numbers are in the parking lot. (M; R05)
 - [ ] **R16** **Homograph comfort: offer every compatible string to each interval class.**
   Today a class may use only its assigned strings plus one spare, so the measured discomfort
   is an upper bound (a plain transposition still costs 0.57 points per note). Also: under a
