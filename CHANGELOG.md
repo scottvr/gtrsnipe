@@ -34,6 +34,9 @@ the last release.
 - Mapper: `--movement-time-base onset|end` (M08) scales the movement penalty by the time
   the hand had for the move (`--movement-reference`, default 0.5 s, over the gap, floored at
   `--movement-min-gap` 0.05 s). Off by default; tabs are unchanged unless it is given.
+- Tab reader: string lines without a label (`|---`, `||---`), with a label but no bar
+  (`E-----`), and bare dashes with notes on them are read; classtab.org's `=` sustain marks
+  are not notes. About a fifth of classtab's 3,977 tabs read as empty before (B24).
 - Docs: `docs/dev/M03-graded-set.md`, the brief for the graded tab set; the 2026-02
   whitepaper draft restored to `docs/research/theory/`; the research README on the mapper
   as a research topic.

@@ -41,6 +41,44 @@ class AsciiTabParser:
             last = evs[-1]
             last.duration = min(max(end - last.time, last.duration), bar)
 
+    _LABELED = re.compile(r'^\s*[^\s|\-]{1,3}\s*\|')          # e|---  E |---
+    _UNLABELED_BAR = re.compile(r'^\s*\|{1,2}[-=0-9]')          # |---  ||---
+    _LABEL_NO_BAR = re.compile(r'^\s*[A-Ga-g][#b]?\s?-{2,}')    # E-----
+    _BARE = re.compile(r'^\s*-{2,}')                             # ------0--
+    _TAB_CHARS = re.compile(r'[-=0-9|hpbrs/\\~^xX()*.<>vt ]+')
+
+    @staticmethod
+    def _is_tab_line(s: str) -> bool:
+        if AsciiTabParser._LABELED.match(s) or AsciiTabParser._UNLABELED_BAR.match(s):
+            return True
+        m = AsciiTabParser._LABEL_NO_BAR.match(s)
+        if m:
+            body = s[re.match(r'^\s*[A-Ga-g][#b]?\s?', s).end():].strip()
+            return bool(re.search(r'[0-9|]', body)) and bool(AsciiTabParser._TAB_CHARS.fullmatch(body))
+        if AsciiTabParser._BARE.match(s):
+            body = s.strip()
+            return bool(re.search(r'[0-9|]', body)) and bool(AsciiTabParser._TAB_CHARS.fullmatch(body))
+        return False
+
+    @staticmethod
+    def _split_tab_line(s: str):
+        """(content, page column of the content's first character): the string line with its
+        label and opening bar removed. Content after an opening bar begins past it, as the
+        labeled form always had; a line with no bar keeps everything after the label."""
+        m = AsciiTabParser._LABELED.match(s) or AsciiTabParser._UNLABELED_BAR.match(s)
+        if m:
+            bar = s.index('|')
+            start = bar + 1
+            if s[start:start + 1] == '|':                        # '||' opens the first bar
+                start += 1
+            return s[start:], start
+        m = AsciiTabParser._LABEL_NO_BAR.match(s)
+        if m:
+            start = re.match(r'^\s*[A-Ga-g][#b]?\s?', s).end()
+            return s[start:], start
+        start = len(s) - len(s.lstrip())
+        return s[start:], start
+
     @staticmethod
     def parse(tab_string: str, staccato: bool = False, quantization_resolution: float = 0.125,
               open_string_pitches: Optional[List[int]] = None, sustain: str = "legato",
@@ -79,10 +117,14 @@ class AsciiTabParser:
             open_string_pitches = AsciiTabParser.header_tuning(tab_string)
 
         lines = tab_string.split('\n')
-        # A tab line is a short (1-3 char) string label then '|' — accepts any
-        # tuning's labels (not just eBGDAE), and comment lines never match.
-        def _is_tab_line(s):
-            return bool(re.match(r'^\s*[^\s|]{1,3}\|', s))
+        # A tab line is a string line of the tab, in any of the forms found in the wild:
+        #   e|---  E |---   a short (1-3 char) label, then the bar (gtrsnipe's own form)
+        #   |---  ||---     no label, the line opens with its bar (classtab.org, many sites)
+        #   E-----          a note-name label with no bar
+        #   ------0--       bare dashes, only when something sits on them (a digit or a bar),
+        #                   so that a rule of dashes under a heading is not a string
+        # Comment lines never match. Unlabeled lines are read top line = highest string.
+        _is_tab_line = AsciiTabParser._is_tab_line
         tab_lines = [line for line in lines if _is_tab_line(line)]
 
         # 1. First, simply check if any tab lines were found at all.
@@ -118,13 +160,14 @@ class AsciiTabParser:
         bars: List[tuple] = []                       # (segments, page column, line above)
         for i in range(0, len(tab_lines), num_strings):
             raw = tab_lines[i:i + num_strings]
-            rows = [ln.strip().split('|', 1)[1] for ln in raw]
+            split = [AsciiTabParser._split_tab_line(ln) for ln in raw]
+            rows = [content for content, _ in split]
             rows += [""] * (num_strings - len(rows))              # an incomplete last system
             first = tab_line_numbers[i]
             above = lines[first - 1] if said["letters"] and first > 0 else ""
             if above.strip().startswith("//") or _is_tab_line(above):
                 above = ""
-            page_col = raw[0].index('|') + 1
+            page_col = split[0][1]
             cells = [row.split('|') for row in rows]
             for k in range(max(len(c) for c in cells)):
                 segs = [c[k] if k < len(c) else "" for c in cells]

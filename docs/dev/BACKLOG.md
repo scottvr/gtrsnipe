@@ -18,7 +18,7 @@ The single list of open work, as of **v0.8.1 (2026-11-07)**.
 - **Unreleased changes** are listed under `## [Unreleased]` at the top of the CHANGELOG as
   they are committed; the release renames the heading. Commit as work lands; push only with
   a version bump.
-- **IDs are stable** and never reused. Next free: B24, R19, P07, C08, M09, F09, H10.
+- **IDs are stable** and never reused. Next free: B25, R19, P07, C08, M09, F09, H10.
 
 Sizes: **S** is an hour or less, **M** is about a session, **L** is several sessions.
 
@@ -70,6 +70,9 @@ Sizes: **S** is an hour or less, **M** is about a session, **L** is several sess
   flat key signature, parses each track once, and reads its first track before scanning it.
   But py-midi garbles a track's leading events, so key, tempo and meter still aren't reliable
   there. Parked: replace the fallback reader. (S; v0.6.18)
+- [x] **B24** Tab reader: string lines without labels (`|---`, `||---`), labels without a
+  bar, bare dashes; classtab's `=` sustain marks. Found on the classtab archive: 74 of a
+  400-tab sample read as empty. ✓ unreleased, 2026-11-07
 - [ ] **B23** **Triplets don't survive a conversion.** (1) The default pre-quantize pass snaps
   every onset to a 32nd-note grid (`--quantization-resolution 0.125`), so a triplet eighth at
   1/3 of a beat lands on 0.375, in every output; the grid choices include no triplet grid, and
