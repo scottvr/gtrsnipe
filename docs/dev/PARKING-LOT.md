@@ -278,3 +278,12 @@ original notes in git history.
   cache of *scores* does not pay: a step costs ~10 µs to compute, the key must carry every
   weight, and any knob change cools the whole store. If a persistent cache ever makes sense it
   holds features, not scores. Pairs with "Learned weights and a profile finder" above.
+- [ ] **A technical whitepaper on how the mapper got here** (scottvr, 2026-11-07). Not a theory
+  claim: the blunt math of v0.2's greedy argmax and its piecemeal weights, the move to the
+  Viterbi trellis (and the one scorer term that forces second order), the measurement turn
+  (agreement with editors, the 2^k sweep, the ceiling curve, Crowley by ear), making it fast
+  without changing it (B25, oracle test), and the feature-vector direction; written for people
+  autodidacting into a domain, in the spirit of his paint-by-numbers loop-to-CUDA write-up.
+  Raw material already in the repo: `docs/app/DESIGN-viterbi-mapper.md`, `CHANGELOG.md`,
+  `docs/dev/NOTES-playability.md`, the git history of `gtrsnipe/guitar/mapper.py`, and the
+  restored draft in `docs/research/theory/`.
