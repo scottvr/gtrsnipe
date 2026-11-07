@@ -257,3 +257,12 @@ original notes in git history.
   parked at the 2026-10-05 triage). A structured perceptron trained on human-fingered tabs, or
   sampling settings and letting a player rank the distinct tabs. Both wait for the weights
   audit (M01) and for human fingerings to learn from. Notes: [`NOTES-playability.md`](NOTES-playability.md).
+- [ ] **Prefer-open gated by hand position** (scottvr + Claude, 2026-11-07). `--prefer-open`
+  penalises a fretted note whenever an open equivalent exists, wherever the hand is, which is why
+  it ships off: in a passage at frets 5 to 7 a sudden open string is jarring in timbre, even if
+  it is the least effort. The editors' tabs (first position, 39% open) love it, the Crowley
+  bars hate it (4 of 16 notes). A position-aware form would prefer the open string only when
+  the hand position (index finger, M06) is already near the nut, or charge the timbre jump
+  as a cost; the stylistic profiles (classical vs metal) would then set that threshold rather
+  than the flag. Numbers: "The same sweep against the editors" and "Crowley by ear" in
+  [`NOTES-playability.md`](NOTES-playability.md).
