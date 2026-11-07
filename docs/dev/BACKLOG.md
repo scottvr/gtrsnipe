@@ -18,7 +18,7 @@ The single list of open work, as of **v0.8.1 (2026-11-07)**.
 - **Unreleased changes** are listed under `## [Unreleased]` at the top of the CHANGELOG as
   they are committed; the release renames the heading. Commit as work lands; push only with
   a version bump.
-- **IDs are stable** and never reused. Next free: B24, R19, P07, C08, M08, F09, H09.
+- **IDs are stable** and never reused. Next free: B24, R19, P07, C08, M09, F09, H10.
 
 Sizes: **S** is an hour or less, **M** is about a session, **L** is several sessions.
 
@@ -51,6 +51,8 @@ Sizes: **S** is an hour or less, **M** is about a session, **L** is several sess
         classtab.org, GAPS); Trinity or ABRSM as a second list
       - [ ] validate by rank correlation and adjacent accuracy; per-ingredient correlations
       - [ ] ship as `gtrsnipe-research difficulty` with a per-tab report
+    - [ ] M08 the time-scaled movement cost, in the scorer and the measure (scottvr,
+      2026-11-07: implement)
   - [ ] then choose: **chosen compromises** (M05 optional notes, M06 a hand profile, then M07
     beginner's-version tabs), or M04, the search for an easier tuning
   - [ ] whenever the homograph side has time: F07 and R16 (with R14), and the composed pieces
@@ -142,6 +144,12 @@ M03 and M06.
 - [ ] **M06** **A hand profile**: which fingers are available (accessibility), for chord
   shapes and for the mapper's span and movement costs; and the hand-position state (position
   is the index finger; notes within the span above it cost no travel). (M; scottvr)
+- [ ] **M08** **Time-scaled movement cost**: a hand move costs more the less time there is
+  for it (exact with a tempo, relative without; MIDI's default tempo serves). Gated on
+  rhythm reliability: automatic when the tab's header marks gtrsnipe's layout, a user flag
+  for tabs in the wild. Design notes under "Time-scaled movement cost" in
+  [`NOTES-playability.md`](NOTES-playability.md); Hori & Sagayama 2016 is the precedent. (M;
+  scottvr, M03 survey)
 - [ ] **M07** **Beginner's-version tabs**: a simplified, disclosed version of a complex tab,
   from M05 and M06 plus the difficulty measure. (M; scottvr)
 
@@ -173,3 +181,8 @@ M03 and M06.
   (M; scottvr, 2026-09-28)
   - [ ] Gemini's role (the `collision_plot_template.py` credit) is his to describe, in
     chapter 10 (✎; docs audit decision 5)
+- [ ] **H09** **Document why the tab header matters** (scottvr, 2026-11-07): until every tab
+  is made by gtrsnipe or the practice spreads, the gtrsnipe lines in a tab's comment header
+  (`// Transcribed with:`, `// Rhythm:`, `// Lengths:`) tell gtrsnipe, and anyone else, that
+  the dashes can be relied on for timing. Users should want to keep them. Touches the parked
+  `--omit-comments` and command-line-stamp entries. (S)

@@ -447,6 +447,33 @@ against 14.
 5. The Crowley intro stays the test piece for hand-versus-finger scoring; the bar above is
    the first case.
 
+**Weights are path-dependent** (scottvr, 2026-11-07, on reading the mean/median/index numbers
+above). The weights and options arrived one at a time, from a few to dozens quickly, each
+tuned against the scorer as it stood that day. So a later weight that looks right today may
+be an order of magnitude too heavy, or unneeded, only because of how an earlier one was set
+before it arrived; and a change we expect to improve a tab can come out worse for the same
+reason. Keep this in mind for every knob-tuning and ablation run in this phase: a
+one-knob-at-a-time sweep (which is how the weights were born) can only confirm the path; the
+pair sweeps (`--pair A,B`) and refitting the earlier weights when a term is changed are the
+tests that can find it. *Claude:* the exchange-rate table in M01 is the map of today's path,
+and `fret_span_penalty`'s double role (span charged on every onset, and again if complexity
+scales movement) is the first candidate.
+
+**Time-scaled movement cost** (scottvr, 2026-11-07, deciding Claude's question from the M03
+survey: implement it, in the scorer as well as the measure; a gut feeling brushed off several
+times during development, now possible because a gtrsnipe-generated tab's rhythm is exact
+since v0.8.0). His statement: the penalty for a hand move rises as the time from the end of
+note or chord 1 to the start of note or chord 2 falls; with a tempo the time is exact, without
+one it is relative (MIDI reading has a default tempo, which will do); for tabs in the wild
+without the gtrsnipe header the dash counts are not reliable, so the term is either invariant
+to that or gated: automatic when the header says the layout is ours, a user flag otherwise.
+*Claude, two notes for the design:* (1) Hori & Sagayama scale by the onset-to-onset interval;
+the end-to-start gap he names is the time the hand is actually free, and it is zero for
+every held or legato line (let-ring, the Asturias pedal), so the two measures differ exactly
+where the scorer already has terms. Propose: onset-to-onset as the base with a floor, and
+end-to-start measured alongside on the real pieces before choosing. (2) Backlog M08; the
+header documentation is H09.
+
 ## M03: a tab difficulty measure
 
 - **A tab difficulty measure** (scottvr, 2026-09-30). Tab sites sort by difficulty labels
