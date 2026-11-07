@@ -153,6 +153,10 @@ M03 and M06.
     [`NOTES-playability.md`](NOTES-playability.md) (2026-11-07)
   - [ ] the same sweep against the 44 graded classtab tabs (editors' fingerings), then fit
     weights to them (scottvr: fit to the graded set, and to the originals, and to both)
+  - [ ] defaults vs profiles (scottvr, 2026-11-07): fit the defaults to the upper syllabus
+    levels and the non-pedagogical sample; ship beginner and intermediate profiles for the
+    first-position repertoire, where the defaults agree least (notes: "Agreement by grade")
+  - [ ] scottvr's ear check on the three calibration tabs in `runs/m03-graded-set-2026-11-07/listen/`
 - [ ] **M04** **Search for an easier tuning** than the traditional one: local search on the
   mapper's score over nearby tunings, string physics as a constraint, the traditional tuning's
   score reported beside the best found. (M; scottvr)

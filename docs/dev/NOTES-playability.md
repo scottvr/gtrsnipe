@@ -764,6 +764,18 @@ command 140, string switch 2.5 or 1 or movement 6 all 144, string switch 0 154, 
 4 158 (Crowley lives above fret 4). Caveat: `--prefer-open` moves these bars to open position
 (4 of 16 notes agree), which is the Crowley side of the per-idiom split above.
 
+**Agreement by grade, and a direction for defaults vs profiles** (2026-11-07). The defaults'
+agreement with the editors rises with the syllabus level: Preparatory to Level 4, 29 tabs,
+mean 40–47% with a 21–78% spread; Levels 5 to 8, 15 tabs, mean 49–67% with a narrow spread
+(Level 8: 62–69%). Beginner repertoire is written for first position and open strings, which
+is exactly where the defaults go elsewhere; by Level 8 the music forces the hand up the neck
+and editor and mapper solve the same constrained problem. *scottvr's direction from this:* set
+the **defaults** against the upper levels (and the non-pedagogical sample), and serve the lower
+levels with named **profiles** (beginner, intermediate) built from the two-knob fit rather than
+bending the defaults toward first position. Caveat: 15 tabs at Levels 5–8 is thin; the 65
+unchecked candidates in the LaCie manifest would thicken it. Three calibration tabs for his own
+ear (least, median, most agreement) are in `runs/m03-graded-set-2026-11-07/listen/`.
+
 **Still to do in M03** (backlog): shape uncommonness (needs a reference corpus of shapes);
 the graded set (RCM list matched to free tabs); the validation; and then the weights.
 
