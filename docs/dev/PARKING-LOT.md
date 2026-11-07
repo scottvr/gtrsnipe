@@ -15,6 +15,11 @@ original notes in git history.
   end-to-start time base needs ends, so a mark for "released here" (a rest symbol on the
   string, or a letters-line rest) would make a gtrsnipe tab carry what MIDI carries. Changes
   the layout, so it needs the golden cases and the round-trip checked; pairs with H09.
+  scottvr's candidates (2026-11-07, thought about before, never written out): underscores
+  while a note sounds and dashes for silence (`----5___----7_9_----`); or a mark at the
+  note's end, `>` (`----5-->----7>9>----`) or a subtler `.` that calls back to notation. A
+  single pipe was rejected: confusing for readers on a full six-string chord, and a note
+  spanning a bar line would need read-ahead or a second pass. To discuss when it comes up.
 - [ ] **A verbosity structure for the mapper's messages** (scottvr, 2026-11-04, while answering
   M01 q1). Today the mapper is everything-or-nothing short of exceptions: `--debug` is a
   `-vvvvvvvvv` flood meant for him to see why a score didn't match his head, and the rest is
