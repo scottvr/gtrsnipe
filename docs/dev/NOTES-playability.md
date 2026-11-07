@@ -688,6 +688,50 @@ Liszt and Zelda included; editors' open-string share 27%) it holds: defaults 59%
 two together 76.5% (166/16, the worst loss 12 points on a Handel suite). What is left to
 test is a corpus that is not classical guitar.
 
+**The option set as a 2^k sweep** (same day; scottvr asked for every subset of the wiki's
+Asturias command, each knob alone, each pair, and so on, so that a small gain is not written off
+because another knob cancels it; `runs/m03-knob-sweep-2026-11-07/`, `sweep.py` and `analyze.py`).
+Ten scoring knobs from the command (string switch 0, prefer-open, span 3, high-fret 50,
+fretted-open 10, movement 20, let-ring 210, diagonal span, sweet spot 4 to 9), 1,024 subsets,
+on the three original pieces, agreement against the tab each wiki page settled on. *Caveat
+that governs this run:* those three references are earlier gtrsnipe outputs scottvr accepted,
+not editors' fingerings, so the sweep measures how far today's scorer is from those settings
+(Asturias v6 reproduces exactly: the full set and `ring210+diag` both give 100%; Bach was made by
+v0.2's greedy mapper with the sweet spot ending at 4, which is not in this set, so nothing
+reaches 100%). The editors' version of the same sweep, on the 44 graded tabs, is the one that
+counts and is in the same folder (`graded.json`).
+
+| three originals, pooled by note | agreement |
+|---|---|
+| defaults | 51% |
+| best single: `--string-switch-penalty 0` | 75% |
+| best pair: `--string-switch-penalty 0 --prefer-open` | 80% |
+| best triple: the pair plus sweet spot ending at 9 | 81% |
+| any larger subset | no better; the full ten-knob set 77% |
+
+What the full factorial adds over the one-knob table:
+
+- **Interactions are real, and the let-ring knob is the one that needs company.** Let-ring
+  210 alone is erratic (helps in 281 of 512 contexts, hurts in 205, worst −10 points); with
+  `--diagonal-span-penalty` on, its effect is 9 points better on average (+26 on Asturias,
+  +11 on Bach). That pair is what made Asturias v6: together they reproduce it exactly,
+  neither alone gets past 71%.
+- **Three knobs substitute for each other.** String switch 0, movement 20 and let-ring 210
+  each take defaults to 64–75% alone, and each adds nothing or less once another is on
+  (switch × ring −6.5, switch × move −4.2, move × ring −3.2 points). They all fight the same
+  thing, hopping strings for a note the current string could play.
+- **Dead or conditional knobs:** high-fret 50 flat in 456 of 512 contexts (never hurts, max
+  +1.4); span 3 flat in 320; fretted-open 10 is flat unless prefer-open is on, as the scorer
+  reads it, and then it is a wash (+90 / −88 contexts).
+- **Sweet spot low 4 is a Crowley knob.** It hurts in 416 contexts and never helps pooled
+  (Asturias collapses to 4% agreement); on Crowley alone, which sits in the upper
+  positions, it is the single best knob (+8).
+- **The pieces want different things.** Prefer-open is the best second knob on Bach
+  (+11) and on Asturias, and hurts Crowley in 308 contexts (−11 alone). Diagonal span is
+  the strongest mean effect on Bach (+6.7, never hurts) and hurts Crowley in 396 contexts.
+  This is the first measured case for per-idiom profiles rather than one set of defaults:
+  no subset of these ten reaches the three pieces' individual bests at once.
+
 **Still to do in M03** (backlog): shape uncommonness (needs a reference corpus of shapes);
 the graded set (RCM list matched to free tabs); the validation; and then the weights.
 

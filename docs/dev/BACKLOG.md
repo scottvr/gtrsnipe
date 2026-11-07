@@ -148,6 +148,11 @@ M03 and M06.
 - [ ] **M03** **A tab difficulty measure**: objective complexity from the tab (travel,
   stretches, speed at tempo, chord changes, barres, position shifts), after a literature
   search, validated against graded repertoire. (M–L; scottvr)
+  - [x] every subset of the wiki's Asturias option set (2^10) on the three original pieces:
+    interactions, substitutes and dead knobs in "The option set as a 2^k sweep" in
+    [`NOTES-playability.md`](NOTES-playability.md) (2026-11-07)
+  - [ ] the same sweep against the 44 graded classtab tabs (editors' fingerings), then fit
+    weights to them (scottvr: fit to the graded set, and to the originals, and to both)
 - [ ] **M04** **Search for an easier tuning** than the traditional one: local search on the
   mapper's score over nearby tunings, string physics as a constraint, the traditional tuning's
   score reported beside the best found. (M; scottvr)
