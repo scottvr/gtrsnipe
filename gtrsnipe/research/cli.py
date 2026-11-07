@@ -1,4 +1,4 @@
-"""``gtrsnipe-research``: corpus caches and offset profiles.
+"""``gtrsnipe-research``: corpus caches, offset profiles, and the mapper studies (M01–M03).
 
     gtrsnipe-research corpus list
     gtrsnipe-research [--data DIR] corpus build essen

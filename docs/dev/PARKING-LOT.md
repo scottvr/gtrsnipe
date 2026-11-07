@@ -10,6 +10,11 @@ original notes in git history.
 
 ## Ideas
 
+- [ ] **A note-end mark in the tab layout** (from M08, 2026-11-07). The dash-count layout
+  states onsets exactly; a note's end is a reading convention (legato, staccato, string). The
+  end-to-start time base needs ends, so a mark for "released here" (a rest symbol on the
+  string, or a letters-line rest) would make a gtrsnipe tab carry what MIDI carries. Changes
+  the layout, so it needs the golden cases and the round-trip checked; pairs with H09.
 - [ ] **A verbosity structure for the mapper's messages** (scottvr, 2026-11-04, while answering
   M01 q1). Today the mapper is everything-or-nothing short of exceptions: `--debug` is a
   `-vvvvvvvvv` flood meant for him to see why a score didn't match his head, and the rest is

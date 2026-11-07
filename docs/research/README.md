@@ -30,6 +30,20 @@ tested how far that argument goes. How the feature itself works is in
      own wiki tabs of two pieces)
 6. **How it happened:** [`story/`](story/README.md).
 
+## The mapper itself (M01–M03, since 2026-11-04)
+
+The fretboard mapper turned into a second research topic once we measured it. "The fretboard
+problem" (choosing a fingering for a score) has a literature of its own (Sayegh 1989, Radicioni,
+Hori & Sagayama 2016), and estimating how hard a tab is to play has a smaller, newer one
+(2012 to 2025, mostly piano; three guitar papers). What we have so far:
+
+- the weights audit and knob sweep (M01) and Viterbi against greedy across five corpora (M02),
+  in [`../dev/NOTES-playability.md`](../dev/NOTES-playability.md), with the design questions
+  answered there, including hand position as the index finger (2026-11-07);
+- the difficulty literature, [`literature/LITERATURE-difficulty.md`](literature/LITERATURE-difficulty.md),
+  and the first cut of a tab difficulty measure (M03), `gtrsnipe-research difficulty`;
+- the commands: `gtrsnipe-research sweep`, `optimizers`, `difficulty`.
+
 ## Where the claims stand (2026-09-30)
 
 | claim | status | evidence |

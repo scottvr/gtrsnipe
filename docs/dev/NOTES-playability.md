@@ -478,8 +478,11 @@ note to the start of the next is the time the hand truly has. Pedal notes are op
 in one position, so no movement is charged there whatever the gap.* Decided: end-to-start.
 Where the gap is zero and the hand must move, the cost is real (the player cuts the note or
 arrives late), which onset-to-onset would hide. Two consequences: the term needs note
-*ends*, which MIDI has and a gtrsnipe tab carries in `// Lengths:` but a tab in the wild
-does not (dashes give onsets only), one more reason for H09; and score-derived MIDI often
+*ends*, which MIDI has and **no tab does, ours included** (scottvr's correction, same day:
+a tab's dashes give exact onsets and nothing else; a note's end is a reading convention,
+legato to the next onset, staccato for the grid unit, or string mode until the string is
+struck again, and the `// Lengths:` letters are note values, not ends). So on any tab the
+end-to-start gap is undefined unless the layout gains an end mark (parked); and score-derived MIDI often
 holds every note to the next onset, so a floor on the gap, not a zero, is the practical
 minimum. *scottvr, later: since this contradicts the literature we searched, call the
 departure out explicitly, with evidence: build both time bases and compare the tabs; where
@@ -545,8 +548,9 @@ has some (25%). So the M08 comparison cannot be run on tabs or folk tunes at all
 POP909-like input, or MIDI of real performances, and even there the floor is the knob that
 decides most of the difference. Two consequences: (1) for tabs in the wild the end-to-start
 base is not merely approximate, it is undefined, and onset to onset is the only rule
-available there; (2) a gtrsnipe tab carries lengths, so it can carry ends, which is one more
-thing the header buys (H09). The scorer-side comparison (where fingerings may differ) is
+available there; (2) the same is true of a gtrsnipe tab (scottvr's correction above: the
+layout carries onsets, and ends are a reading convention), so an end mark in the layout is
+what it would take, which is parked; H09 still holds for the onsets. The scorer-side comparison (where fingerings may differ) is
 still to run, on POP909.
 
 **Other things the first run shows.** The as-written tabs that predate v0.8.0 read with
