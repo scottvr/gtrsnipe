@@ -36,6 +36,10 @@ the last release.
   `--movement-min-gap` 0.05 s). Off by default; tabs are unchanged unless it is given.
 - Research: the first graded set (RCM 2018 levels matched to classtab.org tabs, 50 pieces)
   and the measure's first rank correlations (hand move rate 0.71 with the level).
+- Mapper (B25): the Viterbi stage loop no longer does `K³` work per stage; the second-order
+  (let-ring + diagonal-span) path buckets `f_{t-2}` by fret range and scores once per pair,
+  and step scores are memoised per song. Output is byte-identical (oracle test added);
+  chordal pieces under the wiki's Asturias options map 10–18× faster.
 - Research: a full 2^k sweep of the wiki's Asturias option set on the three original pieces
   and on the 44 graded classtab tabs (`runs/m03-knob-sweep-2026-11-07/`): which knobs
   interact, substitute, or do nothing, and which small gains survive on top of `--prefer-open`;

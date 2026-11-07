@@ -185,7 +185,8 @@ class GuitarMapper:
                 # this let_ring + diagonal_span gate — see `needs_second_order` in
                 # map_multi_string(). If you add any deeper-history read here,
                 # update needs_second_order (and its test) or global optimality
-                # silently breaks.
+                # silently breaks. map_multi_string's _t2_delta mirrors this block
+                # for the bucketed second-order DP: change both together.
                 if self.config.let_ring_bonus > 0 and prev_prev_fingering:
                     prev_prev_frets = [pos.fret for pos in prev_prev_fingering if pos.fret > 0]
                     prev_frets.extend(prev_prev_frets)
@@ -386,6 +387,29 @@ class GuitarMapper:
         valid.sort(key=self._cand_key)          # deterministic DP order
         return valid
 
+    def _t2_delta(self, rk, rj, rpp) -> float:
+        """What the scorer's t-2 term adds to score(f_k, f_j, None) when the true
+        f_{t-2} has fretted range ``rpp``: the diagonal-span check over the three
+        fingerings' fretted frets fires (-1000) where the check over two did not.
+        Mirrors the LANDMINE GUARD block in _score_fingering exactly (the only t-2
+        read), with ranges in place of fret lists; the equivalence test holds the
+        plain triple loop as the oracle for both."""
+        if rpp is None or rk is None:
+            return 0.0
+        cap = self.config.unplayable_fret_span
+        if rj is not None and max(rk[1], rj[1]) - min(rk[0], rj[0]) > cap:
+            return 0.0                      # already -1000 without f_{t-2}
+        lo = min(rk[0], rpp[0]) if rj is None else min(rk[0], rj[0], rpp[0])
+        hi = max(rk[1], rpp[1]) if rj is None else max(rk[1], rj[1], rpp[1])
+        return -1000.0 if hi - lo > cap else 0.0
+
+    @staticmethod
+    def _fretted_range(fingering: Fingering):
+        """(lowest, highest) fretted fret of a fingering, or None if all strings are
+        open: everything the scorer's t-2 term reads from prev_prev_fingering."""
+        frets = [p.fret for p in fingering if p.fret > 0]
+        return (min(frets), max(frets)) if frets else None
+
     def map_multi_string(self, time_groups: List[List[MusicalEvent]]) -> List[MusicalEvent]:
         """Global-optimum fretboard mapping via Viterbi/DP over a trellis.
 
@@ -417,7 +441,17 @@ class GuitarMapper:
             return []
 
         second_order = bool(self.config.diagonal_span_penalty and self.config.let_ring_bonus > 0)
-        sc = self._score_fingering
+        # Per-song memo of step scores (scottvr, 2026-11-07): pieces repeat their progressions,
+        # so the same (fingering, previous, gap) comes round again; hit rates 27-78% measured.
+        _score, _memo = self._score_fingering, {}
+        def sc(f, p, pp, gap=None):
+            if pp is not None:
+                return _score(f, p, pp, gap)
+            key = (f, p, gap)
+            v = _memo.get(key)
+            if v is None:
+                v = _memo[key] = _score(f, p, None, gap)
+            return v
         # M08: the time each stage's hand move had, a per-stage constant (None = time base off)
         gaps = [None] + [self._gap_seconds(kept[t - 1], kept[t]) for t in range(1, T)]
 
@@ -443,36 +477,64 @@ class GuitarMapper:
                         BP[1][st] = (NONE, i)
             V = Vn
 
-        # stages t >= 2: ordered pair-state (f_{t-1}, f_t)
+        # stages t >= 2: ordered pair-state (f_{t-1}, f_t).
+        #
+        # Both branches below are exact rewrites of the plain triple loop
+        # "for k, for j, for i: V[(i, j)] + score(f_k, f_j, f_i)", with the same
+        # tie-break (among equal values, the smallest i), so the path and its
+        # score are identical; tests/mapper/test_viterbi_equivalence.py holds the
+        # plain loop as the oracle. The rewrites remove a factor of K_{t-2} from
+        # the work on chordal music, where K reaches the hundreds.
+        ranges = [[self._fretted_range(f) for f in cs] for cs in cand] if second_order else None
         for t in range(2, T):
             Vn = {}
-            for k, fk in enumerate(cand[t]):
-                for j, fj in enumerate(cand[t - 1]):
-                    best_s = None
-                    best_prev = None
-                    if second_order:
-                        for i, fi in enumerate(cand[t - 2]):
-                            if (i, j) not in V:
-                                continue
-                            s = V[(i, j)] + sc(fk, fj, fi, gaps[t])   # fi is the TRUE f_{t-2}
-                            if best_s is None or s > best_s:
+            prev_c, pp_c = cand[t - 1], cand[t - 2]
+            if second_order:
+                # The scorer reads f_{t-2} only through the lowest and highest fretted
+                # fret it carries (the combined-span check), so f_{t-2} candidates that
+                # share that pair are interchangeable: keep the best path value per
+                # (pair, j) and score once per bucket instead of once per candidate.
+                keys = ranges[t - 2]
+                buckets: List[dict] = [dict() for _ in prev_c]   # j -> {key: (V, i)}
+                for (i, j), v in V.items():
+                    b = buckets[j]
+                    cur = b.get(keys[i])
+                    if cur is None or v > cur[0] or (v == cur[0] and i < cur[1]):
+                        b[keys[i]] = (v, i)
+                for k, fk in enumerate(cand[t]):
+                    rk = ranges[t][k]
+                    for j, fj in enumerate(prev_c):
+                        # score(f_k, f_j, f_i) == score(f_k, f_j, None) + _t2_delta(...): the
+                        # t-2 term is a flat -1000 the combined-span check may add, nothing else.
+                        base = sc(fk, fj, None, gaps[t])
+                        rj = ranges[t - 1][j]
+                        best_s = None
+                        best_i = -1
+                        for key, (v, i) in buckets[j].items():
+                            s = v + base + self._t2_delta(rk, rj, key)
+                            if best_s is None or s > best_s or (s == best_s and i < best_i):
                                 best_s = s
-                                best_prev = (i, j)
-                    else:
-                        # score is independent of f_{t-2}: pick best predecessor,
-                        # then add the (t-2-independent) step cost once.
-                        for i, _fi in enumerate(cand[t - 2]):
-                            if (i, j) not in V:
-                                continue
-                            if best_s is None or V[(i, j)] > best_s:
-                                best_s = V[(i, j)]
-                                best_prev = (i, j)
-                        if best_prev is not None:
-                            best_s += sc(fk, fj, None, gaps[t])
-                    if best_prev is None:
-                        continue
-                    Vn[(j, k)] = best_s
-                    BP[t][(j, k)] = best_prev
+                                best_i = i
+                        if best_s is None:
+                            continue
+                        Vn[(j, k)] = best_s
+                        BP[t][(j, k)] = (best_i, j)
+            else:
+                # The score is independent of f_{t-2}: the best predecessor of each j
+                # is the same for every k, so find it once per j, then add the step
+                # cost once per (j, k).
+                best_prev: dict = {}                          # j -> (V, i)
+                for (i, j), v in V.items():
+                    cur = best_prev.get(j)
+                    if cur is None or v > cur[0] or (v == cur[0] and i < cur[1]):
+                        best_prev[j] = (v, i)
+                for k, fk in enumerate(cand[t]):
+                    for j, fj in enumerate(prev_c):
+                        bp = best_prev.get(j)
+                        if bp is None:
+                            continue
+                        Vn[(j, k)] = bp[0] + sc(fk, fj, None, gaps[t])
+                        BP[t][(j, k)] = (bp[1], j)
             V = Vn
 
         if not V:

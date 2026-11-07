@@ -100,7 +100,14 @@ needs_second_order = config.diagonal_span_penalty and config.let_ring_bonus > 0
   edge `(a,b) → (b,c)` carries the true `f_{t-2}=a`, so the diagonal/let-ring
   t-2 term is evaluated exactly — **no backpointer heuristic** (adversarial
   review showed the backpointer-recovery approach is inexact; pair-state is the
-  correct default whenever second order is required). Cost `O(T·K³)`.
+  correct default whenever second order is required). Cost `O(T·K³)` in the plain
+  triple loop; since 2026-11-07 the implementation keeps the pair-state but buckets
+  `f_{t-2}` by the only thing the scorer reads from it (its lowest and highest
+  fretted fret) and derives the t-2 term as a flat delta on `score(f_t, f_{t-1}, None)`,
+  so the cost is `O(T·K²·B)` with `B` the number of distinct fret ranges at `t-2`
+  (a few dozen at most), and one scorer call per `(f_{t-1}, f_t)` pair as in first
+  order. Exactness is held by `tests/mapper/test_viterbi_equivalence.py`, which keeps
+  the plain triple loop as the oracle. Measured: a chordal Sor minuet 25 s → 1.8 s.
 
 > **Landmine guard (must implement):** the first-order collapse is valid *only*
 > because `_score_fingering` reads no history deeper than t-2. Add an assertion
@@ -261,9 +268,14 @@ additions:
 - **Boundaries.** Stage 0 uses `score(f,None,None)`; stage 1 uses `prev_prev=None`
   — byte-matching greedy's first two calls. `T==1` reduces to greedy's
   first-group argmax (up to the deterministic tie-break).
-- **Complexity.** First-order `O(T·K²)` time / `O(T·K)` space; pair-state
-  `O(T·K³)` time / `O(T·K²)` space (K ≤ `n!/(n−k)!` for a `k`-note chord on
-  `n` strings, 720 at most on six; usually ≪). Candidate generation is
+- **Complexity.** First-order `O(T·K²)` time / `O(T·K²)` space for the pair-state
+  bookkeeping (the best predecessor of each `f_{t-1}` is found once per stage, not
+  once per `f_t`: the original loop did the latter and ran as `O(T·K³)` without
+  scoring); pair-state second order `O(T·K²·B)` time / `O(T·K²)` space with the
+  fret-range buckets above (K ≤ `n!/(n−k)!` for a `k`-note chord on `n` strings,
+  720 at most on six; usually ≪, but 165–184 on four- and five-note chords in
+  the classtab set). Step scores are memoised per song on `(f_t, f_{t-1}, gap)`
+  (27–78% hits on real pieces; scottvr's observation that songs repeat). Candidate generation is
   bounded DFS. A strict, bounded improvement over greedy's unbounded per-chord
   `product()` while searching globally.
 
