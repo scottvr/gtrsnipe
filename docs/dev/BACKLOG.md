@@ -93,7 +93,8 @@ Sizes: **S** is an hour or less, **M** is about a session, **L** is several sess
     `feat/feature-vector-scorer`)
   - [x] `map_paths_for_weights` reproduces separate mappers (checked on 3 vectors, Crowley)
   - [ ] the research sweep and the weight fit go through it (`gtrsnipe-research`)
-  - [ ] recover the ~20% single-mapping cost if it matters (slots, fewer tuple builds)
+  - [x] single-mapping cost recovered (emission cache); sweep-side gain is 2–3× per vector
+    because the DP loops, not the scoring, now dominate; a vectorised DP would be the next step
   - [ ] make `prefer_open`, `let_ring` on/off, `diagonal_span` pure weights where exact (the
     let-ring gate on the t-2 read is the obstacle; see §2.2)
 - [ ] **B23** **Triplets don't survive a conversion.** (1) The default pre-quantize pass snaps

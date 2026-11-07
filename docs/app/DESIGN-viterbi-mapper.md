@@ -104,8 +104,11 @@ What it buys: the DP caches emission features once per candidate per stage and
 transition features once per `(f_t, f_{t-1}, gap)`, and `map_paths_for_weights()` runs
 the DP for many weight vectors on **one** feature pass, which is what a knob sweep or a
 weight fit needs; a profile is a weight vector; tempo scaling (M08) is a multiplier on
-one component. Single mappings pay ~20% for the tuple building (Sor minuet, first order:
-1.0 s → 1.25 s); the sweep side is where it pays back.
+one component. Single mappings cost the same as before the refactor once the emission
+cache is in (Sor minuet, first order 1.0 s, second order 1.9 s against 25 s before B25);
+on a 64-vector sweep the DP itself, not the scoring, is now the cost, so the feature pass
+buys roughly 2 to 3× per vector on chordal pieces (measured on the 44 graded tabs), not
+the order of magnitude a vectorised DP would.
 
 
 ### 2.3 Adaptive model order — first-order by default, exact second-order when needed
