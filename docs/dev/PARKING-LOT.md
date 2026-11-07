@@ -126,6 +126,13 @@ original notes in git history.
     the key is the argument made visible, not a counterexample: the staff alone doesn't
     determine the notes, so the tool has to say which key it means.
   - Pairs with R14 and with `--omit-comments` / `--homograph-neutral` (the bare text).
+  - **Measured on classtab.org's archive, 2026-11-07** (3,977 classical tabs, the monthly
+    zip; script in the session, numbers in `runs/m03-graded-set-2026-11-07/`): 75% name a
+    tuning in the header (2,207 standard, 385 drop D, 99 with F# on the 3rd string, 30
+    DGDGBE, then a tail), 25% say nothing; 2% mention a capo; 80% label their string lines,
+    17% open them with a bare `|`. Whether a drop-D tab's labels say D or E is not yet
+    counted. So on this site a quarter of the tabs are "stripped of their tuning" as the
+    argument has it, and the convention (assume standard) carries them.
 - [ ] **Key changes: how many keys vs how many changes** (scottvr's question, 2026-10-04: do the
   offset measures have a role in key-finding, e.g. the correlation vs Euclidean gap?). Claude's
   reading; nothing here was searched in the literature.
