@@ -481,7 +481,11 @@ arrives late), which onset-to-onset would hide. Two consequences: the term needs
 *ends*, which MIDI has and a gtrsnipe tab carries in `// Lengths:` but a tab in the wild
 does not (dashes give onsets only), one more reason for H09; and score-derived MIDI often
 holds every note to the next onset, so a floor on the gap, not a zero, is the practical
-minimum. (2) Backlog M08; the header documentation is H09.
+minimum. *scottvr, later: since this contradicts the literature we searched, call the
+departure out explicitly, with evidence: build both time bases and compare the tabs; where
+they differ he plays them, which should settle it. For tabs in the wild he expects
+approximate (dash-derived) to beat off, tested the same way.* (2) Backlog M08; the header
+documentation is H09.
 
 ## M03: a tab difficulty measure
 
