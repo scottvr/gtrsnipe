@@ -24,6 +24,8 @@ the last release.
 - Docs: the hand-position discussion (the index finger as the hand's position, reach by
   span, transition cost as shape × move × complexity) in `docs/dev/NOTES-playability.md`,
   with the index-finger proxy measured against the mean; no scorer change, feeds M03 and M06.
+- Research: the M03 literature survey, `docs/research/literature/LITERATURE-difficulty.md`
+  (difficulty and playability estimation for guitar and piano; ground-truth sources).
 
 ## [0.8.1] — 2026-11-04
 

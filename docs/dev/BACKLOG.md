@@ -43,6 +43,14 @@ Sizes: **S** is an hour or less, **M** is about a session, **L** is several sess
       [`NOTES-playability.md`](NOTES-playability.md) ✓ v0.8.1
     - [x] M02 Viterbi vs greedy, 450 tunes, never worse, better on 86% ✓ v0.8.1
     - [ ] M03 a tab difficulty measure
+      - [x] literature search, `docs/research/literature/LITERATURE-difficulty.md` (2026-11-07)
+      - [ ] the ingredients as per-onset descriptors from a tab (index-finger travel scaled by
+        time, fingers down, stretch, barre, notes per second, chord changes, position shifts,
+        shape uncommonness, repetitiveness) and their profile (mean, quadratic mean, max)
+      - [ ] a graded set: the RCM 2018 list matched to tabs we can obtain (ClassClef,
+        classtab.org, GAPS); Trinity or ABRSM as a second list
+      - [ ] validate by rank correlation and adjacent accuracy; per-ingredient correlations
+      - [ ] ship as `gtrsnipe-research difficulty` with a per-tab report
   - [ ] then choose: **chosen compromises** (M05 optional notes, M06 a hand profile, then M07
     beginner's-version tabs), or M04, the search for an easier tuning
   - [ ] whenever the homograph side has time: F07 and R16 (with R14), and the composed pieces

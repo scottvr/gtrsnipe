@@ -462,6 +462,13 @@ against 14.
   - A literature search comes first: automatic difficulty estimation exists at least for
     piano, and some for guitar. Relates to the weights audit's "whole-tab difficulty
     meta-score" and "difficulty before transcription" above.
+  - **Literature pass done 2026-11-07:** [`LITERATURE-difficulty.md`](../research/literature/LITERATURE-difficulty.md).
+    Ten papers (six read in full), three on guitar. The ingredients it supports, the
+    aggregation (means and the maximum, not totals), the validation (rank correlation
+    against the RCM 2018 syllabus list, 413 pieces in nine levels, matched to free tabs)
+    and the ceiling (MSE about 1 on a 10-level scale, at annotator noise) are in its §4.
+    Two of the guitar papers define hand position as the index finger, as scottvr's
+    hand-position note does; one scales the movement cost by the time available.
 
 ## M04: search for an easier tuning
 
