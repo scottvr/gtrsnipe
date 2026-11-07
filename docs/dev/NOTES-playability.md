@@ -732,6 +732,38 @@ What the full factorial adds over the one-knob table:
   This is the first measured case for per-idiom profiles rather than one set of defaults:
   no subset of these ten reaches the three pieces' individual bests at once.
 
+**Crowley by ear** (2026-11-07; scottvr's first verdict from the listening set, with his
+corrected fingering in `runs/m08-2026-11-07/tabs/crowley-organ-scottvr-byhand.tab`). Two
+passages, each repeated once, so eight notes:
+
+1. *Bars 1 and 11, after the D-minor shape at frets 5 to 7:* the melody E3 F3 G3. He plays
+   A string 7, 8, then D string 5, staying in position. The Viterbi defaults play 7, 8, then
+   G3 at A string **10**; the wiki's own command under Viterbi (`--sweet-spot-high 8`) plays
+   all three on the D string at **2, 3, 5** and then jumps back up for the next chord. Both are
+   the scorer avoiding one string switch: a one-string hop costs 10 (symmetric difference,
+   both strings, at 5 each) = 3.3 frets of travel, so a detour of up to three frets to stay
+   on a string wins. The greedy mapper got this bar right by accident (it never looks ahead
+   to the G3). Any exchange rate at or under 2.5 per string, or movement at 6, gives his
+   fingering as the optimum on these bars (16 of 16 notes).
+2. *Bar 9 (and 19), after the C#4/E4 dyad at frets 5 and 6:* F3 E3. The wiki (greedy) tab
+   drops to the D string at 3, 2; he plays A string 8, 7; **every Viterbi setting already
+   plays 8, 7**. From the dyad's mean fret 5.5 the two are an exact tie (2.5 frets, one
+   switch, both in the sweet spot); greedy breaks it by candidate order, Viterbi sees the
+   D chord at 5 to 7 coming. One vote for Viterbi in the greedy-vs-Viterbi pair.
+3. *Not fixed by any knob:* at the end of bar 2 (and 12), before the F chord at frets 1 to 3,
+   every Viterbi setting plays A3 G3 on the G string at 2 and open, diving early; he plays
+   D string 7, 5 and shifts once for the chord. Under the mean-fret model the dive is cheaper
+   by about a point (two short moves beat one long one). Under the index-finger model it is
+   a tie: four frets of shift either way. What separates them is the *count* of shifts, one
+   against two, which no term charges today. That is the "shape change × hand move" factor in
+   scottvr's hand-position note, and the first measured case for a per-shift cost on top of
+   the per-fret one.
+
+Agreement with the wiki tab corrected by his bar-9 fix (168 notes): defaults 144, the wiki
+command 140, string switch 2.5 or 1 or movement 6 all 144, string switch 0 154, sweet spot low
+4 158 (Crowley lives above fret 4). Caveat: `--prefer-open` moves these bars to open position
+(4 of 16 notes agree), which is the Crowley side of the per-idiom split above.
+
 **Still to do in M03** (backlog): shape uncommonness (needs a reference corpus of shapes);
 the graded set (RCM list matched to free tabs); the validation; and then the weights.
 
