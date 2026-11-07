@@ -682,7 +682,11 @@ way. This is the first measurement against human fingerings the project has had,
 the defaults were tuned to something other than how editors finger these pieces. The
 decision it asks for is scottvr's, with the idiom caveat above and the path-dependence
 warning: whether the defaults change (or a "classical" profile ships), and whether the same
-holds on the broader sample (running as this was written) and on non-classical tabs.
+holds on non-classical tabs. **On the broader 184-tab sample** (the whole archive's spread,
+Liszt and Zelda included; editors' open-string share 27%) it holds: defaults 59%,
+`--prefer-open` 71% (162 pieces better, 16 worse), `--sweet-spot-high 5` 70% (160/18), the
+two together 76.5% (166/16, the worst loss 12 points on a Handel suite). What is left to
+test is a corpus that is not classical guitar.
 
 **Still to do in M03** (backlog): shape uncommonness (needs a reference corpus of shapes);
 the graded set (RCM list matched to free tabs); the validation; and then the weights.
