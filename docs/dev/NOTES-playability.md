@@ -710,9 +710,9 @@ counts and is in the same folder (`graded.json`).
 | any larger subset | no better; the full ten-knob set 77% |
 
 **The same sweep against the editors** (44 graded classtab tabs, 2026-11-07, agreement with
-the editor's string and fret, pooled by note; `graded.json`; the 256 subsets with let-ring and
-diagonal-span both on are the second-order Viterbi quarter and were still running when this
-was written, so the let-ring × diagonal interaction below is from the originals only):
+the editor's string and fret, pooled by note; `graded.json`, all 1,024 subsets; the 256 with
+let-ring and diagonal-span both on are the second-order Viterbi quarter, which took most of
+the run until B25):
 
 | 44 graded tabs | agreement |
 |---|---|
@@ -732,6 +732,12 @@ movement penalty keeps the hand from leaving for the open strings); let-ring 210
 252 first-order contexts** (−9.6 mean); sweet spot low 4 hurts in all 380; fretted-open 10
 hurts wherever it acts (−2.1; it weakens prefer-open). The marginal path flattens after four
 knobs: prefer-open, the ceiling, string switch 0, high-fret 50, then tenths of a point.
+*With the second-order quarter in:* no subset containing let-ring enters any best-of-size
+row; let-ring 210 hurts in 359 of 512 contexts and helps in 143, and the 143 are almost all
+contexts with diagonal-span on (let-ring × diagonal +9.5 on the editors too, the same pair
+the originals showed). Diagonal span's mean effect rises to +6.1 because it repairs let-ring's
+damage, not because it helps the editors on its own (−0.6 on top of the best pair). Span 3
+never hurts (+2.4 mean) and pays only alongside diagonal span (+4.8 interaction).
 
 *Originals vs editors.* The three originals' best single knob was string switch 0 (+24) and
 they rewarded movement 20 and let-ring 210 as substitutes for it; the editors' best single is

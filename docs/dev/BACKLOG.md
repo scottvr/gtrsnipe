@@ -158,8 +158,10 @@ M03 and M06.
   - [x] every subset of the wiki's Asturias option set (2^10) on the three original pieces:
     interactions, substitutes and dead knobs in "The option set as a 2^k sweep" in
     [`NOTES-playability.md`](NOTES-playability.md) (2026-11-07)
-  - [ ] the same sweep against the 44 graded classtab tabs (editors' fingerings), then fit
-    weights to them (scottvr: fit to the graded set, and to the originals, and to both)
+  - [x] the same sweep against the 44 graded classtab tabs (editors' fingerings): "The same
+    sweep against the editors" and "The ceiling alone" in `NOTES-playability.md` (2026-11-07)
+  - [ ] fit weights to the graded set, the originals, and both (scottvr); wants the
+    feature-vector scorer (parking lot) to be cheap
   - [ ] defaults vs profiles (scottvr, 2026-11-07): fit the defaults to the upper syllabus
     levels and the non-pedagogical sample; ship beginner and intermediate profiles for the
     first-position repertoire, where the defaults agree least (notes: "Agreement by grade")
