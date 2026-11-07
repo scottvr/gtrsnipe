@@ -246,10 +246,18 @@ class GuitarMapper:
             fingering, prev_fingering, prev_prev_fingering, gap_seconds)
 
     @staticmethod
-    def score_features(features: Tuple[float, ...], weights: Tuple[float, ...]) -> float:
-        """Dot product, accumulated in feature order."""
+    def score_features(features: Tuple[float, ...], weights: Tuple[float, ...],
+                       more: Tuple[float, ...] = (), more_weights: Tuple[float, ...] = ()) -> float:
+        """Dot product accumulated term by term in feature order, continuing through
+        ``more`` (the transition features after the emission ones) in ONE running sum: the
+        pre-refactor scorer's order, so scores are bit-identical and near-ties break the
+        same way. (Two partial sums added together moved the last bit on fret averages
+        over three notes and flipped a tie on one classtab piece.)"""
         score = 0.0
         for f, w in zip(features, weights):
+            if f:
+                score += f * w
+        for f, w in zip(more, more_weights):
             if f:
                 score += f * w
         return score
@@ -489,12 +497,12 @@ class GuitarMapper:
             if e is None:
                 e = emis[f] = emit(f)
             if pp is not None:
-                return dot(e, w_e) + dot(trans(f, p, pp, gap), w_t)
+                return dot(e, w_e, trans(f, p, pp, gap), w_t)
             key = (f, p, gap)
             v = pairs.get(key)
             if v is None:
                 v = pairs[key] = trans(f, p, None, gap)
-            return dot(e, w_e) + dot(v, w_t)
+            return dot(e, w_e, v, w_t)
 
         BP = [dict() for _ in range(T)]
         V = {}

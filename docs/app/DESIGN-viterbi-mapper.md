@@ -91,8 +91,11 @@ strings switched, diagonal break, strings left ringing, fretted notes with an op
 `step_weights()` turns the config into the vector they are scored against (penalties
 negative; the two `-1000` short-circuits are weights on 0/1 features; the diagonal weight
 is 0 when the flag is off, the fretted-open weight is 0 unless `--prefer-open`).
-`_score_fingering` is their dot product, accumulated in the old term order, so every
-score is bit-identical to the pre-refactor scorer (20/20 oracle runs). Structural settings
+`_score_fingering` is their dot product, accumulated as ONE running sum in the old term
+order, so every score is bit-identical to the pre-refactor scorer (20/20 oracle runs). The
+order matters: adding the emission and transition halves as two partial sums moved the
+last bit on three-note fret averages and flipped a tie on one classtab piece, so the
+equivalence test asserts exact equality of path scores, not closeness. Structural settings
 stay in the features: the sweet-spot bounds, the unplayable span, ignore-open, the
 diagonal flag, and whether let-ring is on at all (the second-order gate reads the
 config's `let_ring_bonus > 0`, not the weight).

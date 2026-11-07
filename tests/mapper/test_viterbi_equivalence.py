@@ -91,7 +91,7 @@ def test_dp_matches_plain_triple_loop(name, seed):
     oracle_path, oracle_score = _plain_viterbi(GuitarMapper(cfg), copy.deepcopy(groups))
     mapper = GuitarMapper(cfg)
     out = mapper.map_multi_string(copy.deepcopy(groups))
-    assert mapper.last_path_score == pytest.approx(oracle_score, abs=1e-9)
+    assert mapper.last_path_score == oracle_score      # bit-exact: a last-bit drift flips near-ties (Sor op. 35 no. 3, 2026-11-07)
     # compare fingerings stage by stage through the written-back events
     written = sorted(out, key=lambda e: (e.time, e.pitch))
     expect = []
