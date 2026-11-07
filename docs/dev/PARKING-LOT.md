@@ -266,3 +266,15 @@ original notes in git history.
   as a cost; the stylistic profiles (classical vs metal) would then set that threshold rather
   than the flag. Numbers: "The same sweep against the editors" and "Crowley by ear" in
   [`NOTES-playability.md`](NOTES-playability.md).
+- [ ] **Feature-vector scorer (and, behind it, a cache of step features)** (scottvr + Claude,
+  2026-11-07; from the B25 speed-up and scottvr's idea of a persistent LRU of repeating
+  changes). A step score is a weighted sum of a handful of features (frets moved, strings
+  changed, span, mean position over the ceiling, fretted notes with an open twin, strings left
+  ringing, barre count, span break). Compute the feature vector once per (fingering, previous,
+  gap) pair and make the score a dot product with a weight vector: profiles and defaults become
+  vectors applied at runtime (tempo scaling multiplies one component, scottvr's example); a
+  2^k sweep or a weight fit computes features once and re-runs only the dot product and the
+  Viterbi pass; the per-song memo (B25) stores features and survives weight changes. A disk
+  cache of *scores* does not pay: a step costs ~10 µs to compute, the key must carry every
+  weight, and any knob change cools the whole store. If a persistent cache ever makes sense it
+  holds features, not scores. Pairs with "Learned weights and a profile finder" above.
