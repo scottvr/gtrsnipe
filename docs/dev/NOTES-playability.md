@@ -653,6 +653,31 @@ classical editions favour open strings and first position by tradition as well a
 training and test set the parked learned-weights idea was waiting for, and agreement with
 them is a metric the sweep tool can carry (first ablation below).
 
+**Which knob closes the gap** (same day; agreement = notes with the editor's string and
+fret, over the 44 graded tabs; `runs/m03-graded-set-2026-11-07/agreement-ablation.json`):
+
+| setting | agreement | open strings | mean highest fret |
+|---|---|---|---|
+| defaults | 52% | 14% | 12.0 |
+| `--prefer-open` | 78% | 30% | 10.4 |
+| `--sweet-spot-high 5` | 74% | 20% | 7.6 |
+| `--sweet-spot-high 4 --prefer-open` | **87%** | 33% | 7.0 |
+| `--sweet-spot-high 5 --prefer-open --string-switch-penalty 2.5` | 86% | 32% | 7.1 |
+| movement 6 or 12; string switch 2.5 or 1; let-ring 3 | 55–56% | | |
+| movement 1; string switch 10 | 47% | | |
+| span 25 or 400; barre bonus; high-fret penalty 20; sweet-spot bonus 5 | 52% (dead) | | |
+| the editors themselves | 100% | 39% | 5.2 |
+
+Two existing knobs, both off or flat by default, take the mapper from agreeing with the
+editors on half the notes to agreeing on seven in eight: prefer open strings, and a sweet
+spot that ends at the 4th or 5th fret instead of the 12th. Nothing else moves it more than a
+few points, and the movement and string-switch exchange rate is dead on this set either
+way. This is the first measurement against human fingerings the project has had, and it says
+the defaults were tuned to something other than how editors finger these pieces. The
+decision it asks for is scottvr's, with the idiom caveat above and the path-dependence
+warning: whether the defaults change (or a "classical" profile ships), and whether the same
+holds on the broader sample (running as this was written) and on non-classical tabs.
+
 **Still to do in M03** (backlog): shape uncommonness (needs a reference corpus of shapes);
 the graded set (RCM list matched to free tabs); the validation; and then the weights.
 
