@@ -99,6 +99,17 @@ def add_mapper_args(target) -> None:
         '--string-switch-penalty', type=float, default=5.0,
         help='Penalty for switching strings (default: 5.0).')
     target.add_argument(
+        '--movement-time-base', choices=('onset', 'end'), default=None,
+        help='Scale the movement penalty by the time the hand had for the move: onset to onset, or '
+             'from the end of the previous notes to the next onset (default: off, time-blind).')
+    target.add_argument(
+        '--movement-reference', type=float, default=0.5, metavar='SECONDS',
+        help='With --movement-time-base: a move with this much time costs the plain penalty; less time '
+             'costs proportionally more (default: 0.5).')
+    target.add_argument(
+        '--movement-min-gap', type=float, default=0.05, metavar='SECONDS',
+        help='With --movement-time-base: the least time a move is charged against (default: 0.05).')
+    target.add_argument(
         '--high-fret-penalty', type=float, default=5,
         help='Penalty for playing high on the neck (default: 5).')
     target.add_argument(
@@ -437,6 +448,9 @@ def build_mapper_config(args, *, tuning: str, num_strings: int) -> MapperConfig:
         let_ring_bonus=args.let_ring_bonus,
         diagonal_span_penalty=args.diagonal_span_penalty,
         optimizer=args.optimizer,
+        movement_time_base=args.movement_time_base or "",
+        movement_reference_seconds=args.movement_reference,
+        min_gap_seconds=args.movement_min_gap,
     )
 
 

@@ -162,7 +162,8 @@ def finger(song: Song, cfg: MapperConfig) -> Run:
             if not events:
                 continue
             notes += len(events)
-            mapper = GuitarMapper(copy.deepcopy(cfg))
+            mcfg = copy.deepcopy(cfg); mcfg.tempo_bpm = song.tempo or 120.0
+            mapper = GuitarMapper(mcfg)
             mapped = mapper.map_events_to_fretboard(events, no_articulations=True)
             if mapper.last_path_score is None:
                 have_score = False

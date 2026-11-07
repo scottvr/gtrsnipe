@@ -4,6 +4,14 @@ from ...core.config import MapperConfig
 from ...guitar.fingering import positioned
 from ...guitar.mapper import GuitarMapper
 from typing import Optional
+def _config_with_tempo(cfg, song):
+    """A copy of the mapper config carrying the song's tempo (M08 needs seconds)."""
+    import copy as _copy
+    out = _copy.copy(cfg)
+    out.tempo_bpm = getattr(song, "tempo", None) or 120.0
+    return out
+
+
 class VextabGenerator:
     @staticmethod
     def generate(song: Song, default_note_length: str = "1/16", no_articulations=False,
@@ -28,7 +36,7 @@ class VextabGenerator:
                         f"text Title: {song.title}",
                         ""]
         
-        mapper = GuitarMapper(config=mapper_config)
+        mapper = GuitarMapper(config=_config_with_tempo(mapper_config, song))
         all_mapped_events = []
         for track in song.tracks:
             if not track.events: continue

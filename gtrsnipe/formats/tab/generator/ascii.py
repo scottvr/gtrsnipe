@@ -14,6 +14,14 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
+def _config_with_tempo(cfg, song):
+    """A copy of the mapper config carrying the song's tempo (M08 needs seconds)."""
+    import copy as _copy
+    out = _copy.copy(cfg)
+    out.tempo_bpm = getattr(song, "tempo", None) or 120.0
+    return out
+
+
 class AsciiTabGenerator:
     @staticmethod
     def generate(song: Song, command_line: str, max_line_width: int = 80, default_note_length: str = "1/16", 
@@ -57,7 +65,7 @@ class AsciiTabGenerator:
         if mapper_config is None:
             mapper_config = MapperConfig()
 
-        mapper = GuitarMapper(config=mapper_config)
+        mapper = GuitarMapper(config=_config_with_tempo(mapper_config, song))
         mapped_song = Song(tempo=song.tempo, time_signature=song.time_signature, title=song.title, tracks=[])
 
         total_mapped_notes = 0

@@ -226,7 +226,8 @@ def test_the_scorer_reads_no_history_deeper_than_two_steps():
     import inspect
     source = inspect.getsource(GuitarMapper._score_fingering)
     params = list(inspect.signature(GuitarMapper._score_fingering).parameters)
-    assert params == ["self", "fingering", "prev_fingering", "prev_prev_fingering"]
+    # gap_seconds (M08) is a per-stage constant, the time the hand had for the move, not history
+    assert params == ["self", "fingering", "prev_fingering", "prev_prev_fingering", "gap_seconds"]
     assert "prev_prev_fingering:" in source                     # it is still read somewhere
     assert _ungated_reads(source) == []
     # the DP turns its pair-states on under exactly that gate

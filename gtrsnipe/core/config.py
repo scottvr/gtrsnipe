@@ -55,6 +55,17 @@ class MapperConfig:
     # Diagonal fret span check
     diagonal_span_penalty: bool = False
 
+    # Time-scaled movement (M08). When movement_time_base is set, the movement penalty is
+    # multiplied by movement_reference_seconds / gap, where gap is the time the hand had for
+    # the move, floored at min_gap_seconds: "onset" = onset to onset (Hori & Sagayama 2016),
+    # "end" = from the end of the previous notes to this onset (scottvr: lifting the finger
+    # ends the note). "" leaves movement time-blind, the default until M08 decides.
+    # tempo_bpm turns beats into seconds; the generators set it from the song.
+    movement_time_base: str = ""
+    movement_reference_seconds: float = 0.5
+    min_gap_seconds: float = 0.05
+    tempo_bpm: float = 120.0
+
     # Fretboard optimizer: "viterbi" (global DP optimum, default) or "greedy"
     # (legacy per-step argmax, kept behind the flag to reproduce older fingerings).
     optimizer: str = "viterbi"

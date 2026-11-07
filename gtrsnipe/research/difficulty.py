@@ -112,7 +112,8 @@ def finger_song(song: Song, cfg: Optional[MapperConfig] = None) -> Song:
             for e in track.events:
                 e.string = e.fret = None
             if track.events:
-                track.events = GuitarMapper(copy.deepcopy(cfg)).map_events_to_fretboard(
+                mcfg = copy.deepcopy(cfg); mcfg.tempo_bpm = out.tempo or 120.0
+                track.events = GuitarMapper(mcfg).map_events_to_fretboard(
                     track.events, no_articulations=True)
     finally:
         log.setLevel(saved)

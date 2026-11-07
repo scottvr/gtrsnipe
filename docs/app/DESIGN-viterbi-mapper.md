@@ -112,6 +112,11 @@ needs_second_order = config.diagonal_span_penalty and config.let_ring_bonus > 0
 > `test_the_scorer_reads_no_history_deeper_than_two_steps` fails if the scorer reads t-2
 > outside its gate or gains a deeper parameter (v0.6.19).*
 
+_Since 2026-11-07 (M08): `_score_fingering` takes a fourth argument, `gap_seconds`, the time
+the hand had for the move into this stage. It is a property of the stage (computed from the
+onset groups before the DP runs), not of the path, so the first-order collapse is unaffected;
+the landmine test pins the signature._
+
 ## 3. Reference algorithm (pair-state, collapsing to first-order)
 
 ```python

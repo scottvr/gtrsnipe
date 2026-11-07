@@ -93,8 +93,32 @@ class GuitarMapper:
                 f"{self.config.unplayable_fret_span} frets; chose the least bad: {shape} (span {span})."
             )
 
-    def _score_fingering(self, fingering: Fingering, prev_fingering: Optional[Fingering], prev_prev_fingering: Optional[Fingering]) -> float:
-        """Scores a fingering based on internal shape, position, and transition cost."""
+    def _movement_factor(self, gap_seconds: Optional[float]) -> float:
+        """How much dearer a hand move is for the time it had (M08): reference / gap, floored;
+        1.0 when the time base is off or the gap is unknown (the first onset)."""
+        if not self.config.movement_time_base or gap_seconds is None:
+            return 1.0
+        gap = max(gap_seconds, self.config.min_gap_seconds)
+        return self.config.movement_reference_seconds / gap
+
+    def _gap_seconds(self, prev_group: Optional[List[MusicalEvent]], group: List[MusicalEvent]) -> Optional[float]:
+        """The time the hand had between two onset groups, by the configured time base; None
+        when there is no previous group or the time base is off."""
+        if not self.config.movement_time_base or not prev_group:
+            return None
+        spb = 60.0 / (self.config.tempo_bpm if self.config.tempo_bpm and self.config.tempo_bpm > 0 else 120.0)
+        t = group[0].time
+        if self.config.movement_time_base == "end":
+            start = max(e.time + e.duration for e in prev_group)
+        else:
+            start = prev_group[0].time
+        return max(0.0, (t - start) * spb)
+
+    def _score_fingering(self, fingering: Fingering, prev_fingering: Optional[Fingering], prev_prev_fingering: Optional[Fingering],
+                         gap_seconds: Optional[float] = None) -> float:
+        """Scores a fingering based on internal shape, position, and transition cost.
+        ``gap_seconds`` is the time the hand had for the move from ``prev_fingering`` (M08);
+        a per-stage constant, so it leaves first-order Viterbi exact."""
         
         # 1. Internal Shape Score (Compactness)
         fret_span = self._chord_span(fingering)
@@ -139,7 +163,7 @@ class GuitarMapper:
             avg_current_fret = sum(p.fret for p in fingering) / len(fingering)
             avg_prev_fret = sum(p.fret for p in prev_fingering) / len(prev_fingering)
             fret_diff = abs(avg_current_fret - avg_prev_fret)
-            score -= fret_diff * self.config.movement_penalty
+            score -= fret_diff * self.config.movement_penalty * self._movement_factor(gap_seconds)
             
             # Penalize changing strings
             strings_used = {pos.string for pos in fingering}
@@ -203,7 +227,8 @@ class GuitarMapper:
         return score    
     
     
-    def _find_optimal_fingering(self, notes: List[MusicalEvent], prev_fingering: Optional[Fingering], prev_prev_fingering: Optional[Fingering]) -> Optional[Fingering]:
+    def _find_optimal_fingering(self, notes: List[MusicalEvent], prev_fingering: Optional[Fingering], prev_prev_fingering: Optional[Fingering],
+                                gap_seconds: Optional[float] = None) -> Optional[Fingering]:
         note_positions = []
         for note in notes:
             positions = self._positions_for(note)
@@ -219,8 +244,8 @@ class GuitarMapper:
             if len(strings_used) != len(fingering):
                 continue
 
-            score = self._score_fingering(fingering, prev_fingering, prev_prev_fingering)
-            
+            score = self._score_fingering(fingering, prev_fingering, prev_prev_fingering, gap_seconds)
+
             logger.debug(f"considering score: {score} {fingering}")
             if score > max_score:
                 max_score = score
@@ -393,6 +418,8 @@ class GuitarMapper:
 
         second_order = bool(self.config.diagonal_span_penalty and self.config.let_ring_bonus > 0)
         sc = self._score_fingering
+        # M08: the time each stage's hand move had, a per-stage constant (None = time base off)
+        gaps = [None] + [self._gap_seconds(kept[t - 1], kept[t]) for t in range(1, T)]
 
         BP = [dict() for _ in range(T)]
 
@@ -409,7 +436,7 @@ class GuitarMapper:
                 for i, fi in enumerate(cand[0]):
                     if (NONE, i) not in V:
                         continue
-                    s = V[(NONE, i)] + sc(fj, fi, None)
+                    s = V[(NONE, i)] + sc(fj, fi, None, gaps[1])
                     st = (i, j)
                     if st not in Vn or s > Vn[st]:
                         Vn[st] = s
@@ -427,7 +454,7 @@ class GuitarMapper:
                         for i, fi in enumerate(cand[t - 2]):
                             if (i, j) not in V:
                                 continue
-                            s = V[(i, j)] + sc(fk, fj, fi)   # fi is the TRUE f_{t-2}
+                            s = V[(i, j)] + sc(fk, fj, fi, gaps[t])   # fi is the TRUE f_{t-2}
                             if best_s is None or s > best_s:
                                 best_s = s
                                 best_prev = (i, j)
@@ -441,7 +468,7 @@ class GuitarMapper:
                                 best_s = V[(i, j)]
                                 best_prev = (i, j)
                         if best_prev is not None:
-                            best_s += sc(fk, fj, None)
+                            best_s += sc(fk, fj, None, gaps[t])
                     if best_prev is None:
                         continue
                     Vn[(j, k)] = best_s
@@ -478,12 +505,14 @@ class GuitarMapper:
         multi_string_events = []
         last_fingering: Optional[Fingering] = None
         prev_prev_fingering: Optional[Fingering] = None
+        last_group: Optional[List[MusicalEvent]] = None
         self.last_path_score = None
         path_score = 0.0
 
         for note_group in time_groups:
             group_to_finger = self._preprocess_group(note_group)
-            fingering = self._find_optimal_fingering(group_to_finger, last_fingering, prev_prev_fingering)
+            fingering = self._find_optimal_fingering(group_to_finger, last_fingering, prev_prev_fingering,
+                                                     self._gap_seconds(last_group, group_to_finger))
             if fingering:
                 for i, note_event in enumerate(group_to_finger):
                     note_event.fret = fingering[i].fret
@@ -492,6 +521,7 @@ class GuitarMapper:
                 multi_string_events.extend(group_to_finger)
                 prev_prev_fingering = last_fingering
                 last_fingering = fingering
+                last_group = group_to_finger
                 path_score += self._last_choice_score
                 self.last_path_score = path_score
             else:
