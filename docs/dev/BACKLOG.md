@@ -154,8 +154,9 @@ M03 and M06.
   - [ ] build both time bases, onset-to-onset (Hori) and end-to-start (ours), and run the
     real pieces and probes under each; where the tabs differ, scottvr plays them and judges
   - [ ] for tabs in the wild, compare approximate (dash-derived) against off, the same way
-  - [ ] the departure from the literature is called out explicitly in the notes and any
-    paper, with that evidence beside it
+  - [ ] the outcome is called out explicitly either way, in the notes and any paper, with
+    the evidence beside it: if end-to-start wins, as a departure from Hori & Sagayama; if
+    onset-to-onset wins, as a rationale they did not give (scottvr, 2026-11-07)
 - [ ] **M07** **Beginner's-version tabs**: a simplified, disclosed version of a complex tab,
   from M05 and M06 plus the difficulty measure. (M; scottvr)
 
