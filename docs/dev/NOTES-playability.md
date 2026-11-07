@@ -510,6 +510,57 @@ documentation is H09.
     Two of the guitar papers define hand position as the index finger, as scottvr's
     hand-position note does; one scales the movement cost by the time available.
 
+### M03, first cut (2026-11-07): the descriptors, and what the two time bases do
+
+`gtrsnipe-research difficulty SONG... [--probes] [--sample CORPUS:N] [--both] [--reach N] [-v]`
+(`gtrsnipe/research/difficulty.py`). A tab is read as onsets with the fingering it states (a
+`.tab`) or the mapper's (anything else, or `--refinger`). Per onset: the index fret (lowest
+fretted), the hand position, fingers down (the lowest fret's notes counted once, an index
+barre), span, barre, the hand's shift in frets, the gap it had for it, the move rate in frets
+per second, the shape change (string-fret pairs that differ), the inter-onset time and the
+technique marks. Per tab: mean, quadratic mean and max of each; shifts per minute; position
+range; chord and barre shares; repetitiveness (Lempel-Ziv on the shape sequence); notes per
+second; and a provisional index with hand-set weights that nothing depends on.
+
+**The hand model was necessary before any number meant anything.** With position = each
+onset's lowest fretted fret (the plain index proxy), a jig at the fifth position showed 130
+hand shifts per minute and a mean shift of 1.7 frets per note, because every note on another
+fret counted as a move. The lazy hand of fact 1 (M01) fixes it: a shape anchors the index at
+its lowest fret; a single note leaves the hand where it is while it lies within `reach` frets
+above the index (default 3, four fingers on four frets), else the hand moves the least
+distance that fits. That alone took the jig to 54 shifts per minute and Crowley from 60 to
+17, which is what a player would count. `--reach 0` reproduces the proxy for comparison. This
+is the first working piece of M06's hand state, on the measure side only; the scorer still
+has no hand.
+
+**The two time bases (M08), first numbers.** On every input we have, the end-to-start base
+sits on its floor almost everywhere, so its move rate is just shift divided by the floor
+(0.05 s): Crowley's mean move rate is 13.4 frets per second end-to-start against 1.7 onset to
+onset, and its hardest move 80 against 12.8. The reason is the inputs, not the rule: a tab
+states no note ends (its durations are the dash counts to the next note), the folk corpora
+hold every note to the next onset (Nottingham releases 0.1% of notes early, Essen 3%, MTC
+2%), and the mapper's probes are built that way too. The only corpus with real releases is
+POP909 (67% of notes end before the next onset, median duration 0.76 of the interval); Lakh
+has some (25%). So the M08 comparison cannot be run on tabs or folk tunes at all: it needs
+POP909-like input, or MIDI of real performances, and even there the floor is the knob that
+decides most of the difference. Two consequences: (1) for tabs in the wild the end-to-start
+base is not merely approximate, it is undefined, and onset to onset is the only rule
+available there; (2) a gtrsnipe tab carries lengths, so it can carry ends, which is one more
+thing the header buys (H09). The scorer-side comparison (where fingerings may differ) is
+still to run, on POP909.
+
+**Other things the first run shows.** The as-written tabs that predate v0.8.0 read with
+approximate rhythm (`~rhythm` in the table), and their seconds are not to be trusted:
+Asturias v1 comes out as 44 notes in 3.9 s, so every time-based descriptor of a tab without
+`// Rhythm:` is unreliable, exactly the gating scottvr described. Crowley (as written, 70
+onsets): 1.7 fingers down and a 0.8-fret span on average, 31% barres, hand never above 6.
+Asturias v6: half a finger, no span, hand at 4 at most, repetitiveness 0.75. The provisional
+index ranks the sus-slide probe hardest, which is right (wide shapes moving fast), and the
+open-pedal probe at the bottom.
+
+**Still to do in M03** (backlog): shape uncommonness (needs a reference corpus of shapes);
+the graded set (RCM list matched to free tabs); the validation; and then the weights.
+
 ## M04: search for an easier tuning
 
 - **Search for an easier tuning than the one assumed** (scottvr, 2026-10-02). Not only "is

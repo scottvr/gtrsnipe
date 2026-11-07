@@ -44,9 +44,11 @@ Sizes: **S** is an hour or less, **M** is about a session, **L** is several sess
     - [x] M02 Viterbi vs greedy, 450 tunes, never worse, better on 86% ✓ v0.8.1
     - [ ] M03 a tab difficulty measure
       - [x] literature search, `docs/research/literature/LITERATURE-difficulty.md` (2026-11-07)
-      - [ ] the ingredients as per-onset descriptors from a tab (index-finger travel scaled by
+      - [x] the ingredients as per-onset descriptors from a tab (index-finger travel scaled by
         time, fingers down, stretch, barre, notes per second, chord changes, position shifts,
-        shape uncommonness, repetitiveness) and their profile (mean, quadratic mean, max)
+        repetitiveness) and their profile (mean, quadratic mean, max); the lazy hand model
+        (`gtrsnipe-research difficulty`, 2026-11-07)
+      - [ ] shape uncommonness (needs a reference corpus of fingered shapes)
       - [ ] a graded set: the RCM 2018 list matched to tabs we can obtain (ClassClef,
         classtab.org, GAPS); Trinity or ABRSM as a second list
       - [ ] validate by rank correlation and adjacent accuracy; per-ingredient correlations
@@ -151,8 +153,11 @@ M03 and M06.
   for tabs in the wild. Design notes under "Time-scaled movement cost" in
   [`NOTES-playability.md`](NOTES-playability.md); Hori & Sagayama 2016 is the precedent. (M;
   scottvr, M03 survey)
-  - [ ] build both time bases, onset-to-onset (Hori) and end-to-start (ours), and run the
-    real pieces and probes under each; where the tabs differ, scottvr plays them and judges
+  - [x] both time bases built on the measure side (`--both`); first numbers in
+    `NOTES-playability.md`: tabs and folk corpora have no note ends, so end-to-start sits on
+    its floor there; POP909 (67% early releases) is the input that can tell them apart
+  - [ ] the scorer-side version, run on POP909 and performance MIDI; where the tabs differ,
+    scottvr plays them and judges
   - [ ] for tabs in the wild, compare approximate (dash-derived) against off, the same way
   - [ ] the outcome is called out explicitly either way, in the notes and any paper, with
     the evidence beside it: if end-to-start wins, as a departure from Hori & Sagayama; if

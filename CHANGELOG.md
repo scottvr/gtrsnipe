@@ -26,6 +26,11 @@ the last release.
   with the index-finger proxy measured against the mean; no scorer change, feeds M03 and M06.
 - Research: the M03 literature survey, `docs/research/literature/LITERATURE-difficulty.md`
   (difficulty and playability estimation for guitar and piano; ground-truth sources).
+- Research: `gtrsnipe-research difficulty` (M03 first cut): per-onset difficulty descriptors
+  of a tab (hand position under a lazy hand model, fingers down, span, barre, hand shift and
+  its rate against the time available, shape change, technique marks) and a per-tab profile
+  (mean, quadratic mean, max; shifts per minute; repetitiveness; a provisional index). Both
+  time bases for a hand move (`--both`, M08).
 
 ## [0.8.1] — 2026-11-04
 
