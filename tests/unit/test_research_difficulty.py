@@ -90,7 +90,7 @@ def test_profile_counts_and_uses_the_tabs_own_fingering():
     song = _song([(0, 1, A_BARRE), (1, 1, B_BARRE), (2, 1, [(0, 0)]), (3, 1, [(0, 12)])])
     p = D.profile(song, "x")
     assert p.fingering == "as written" and p.onsets == 4 and p.notes == 14
-    assert p.shifts == 1                     # the barre slide; the open note has no position
+    assert p.shifts == 2                     # the barre slide (5 to 7), then 7 to 9 for the e12 (reach 3)
     assert p.max_position == 9 and p.position_range == 4      # the lazy hand reaches 12 from 9
     assert math.isclose(p.chord_share, 0.5) and math.isclose(p.barre_share, 0.5)
     assert p.stats["fingers"][2] == 4 and p.index > 0
