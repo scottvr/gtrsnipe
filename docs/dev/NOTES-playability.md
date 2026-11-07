@@ -709,7 +709,39 @@ counts and is in the same folder (`graded.json`).
 | best triple: the pair plus sweet spot ending at 9 | 81% |
 | any larger subset | no better; the full ten-knob set 77% |
 
-What the full factorial adds over the one-knob table:
+**The same sweep against the editors** (44 graded classtab tabs, 2026-11-07, agreement with
+the editor's string and fret, pooled by note; `graded.json`; the 256 subsets with let-ring and
+diagonal-span both on are the second-order Viterbi quarter and were still running when this
+was written, so the let-ring × diagonal interaction below is from the originals only):
+
+| 44 graded tabs | agreement |
+|---|---|
+| defaults | 52% |
+| best single: `--prefer-open` (better on all 44 pieces) | 78% |
+| best pair: + sweet spot ending at 9 | 81.5% |
+| + string switch 0 | 83% |
+| + high-fret 50, + span 3, + diagonal span | 83.3 / 83.4 / 83.6% |
+| the two-knob set from the one-knob ablation, sweet spot ending at **4** (not in this set) | 87% |
+
+Main effects over all contexts: prefer-open **+13 mean, never below +1.9, helps in every one of
+378 contexts**; sweet spot ending at 9 +5, helps in all 381; high-fret 50 +1.0, never hurts;
+span 3 +0.9, never hurts; diagonal span +1.4 (hurts in 18 contexts, and −0.6 on top of the
+best pair); string switch 0 +1.3 (+7.8 alone, +1.7 once prefer-open is on: a substitute);
+movement 20 **−3.5 mean**, +4.7 alone but −9.5 in interaction with prefer-open (a heavy
+movement penalty keeps the hand from leaving for the open strings); let-ring 210 **hurts in all
+252 first-order contexts** (−9.6 mean); sweet spot low 4 hurts in all 380; fretted-open 10
+hurts wherever it acts (−2.1; it weakens prefer-open). The marginal path flattens after four
+knobs: prefer-open, the ceiling, string switch 0, high-fret 50, then tenths of a point.
+
+*Originals vs editors.* The three originals' best single knob was string switch 0 (+24) and
+they rewarded movement 20 and let-ring 210 as substitutes for it; the editors' best single is
+prefer-open (+25), they take string switch 0 only as a small third knob, and they reject
+movement 20 and let-ring 210 outright. The "small gains that survive on top" (scottvr's
+question) are, on the editors: the sweet-spot ceiling (+3.7 on top of prefer-open), string
+switch 0 (+1.3 on top of the pair), high-fret 50 (+0.5, never negative). Everything else is
+zero or negative once those are in.
+
+What the full factorial adds over the one-knob table (on the three originals):
 
 - **Interactions are real, and the let-ring knob is the one that needs company.** Let-ring
   210 alone is erratic (helps in 281 of 512 contexts, hurts in 205, worst −10 points); with

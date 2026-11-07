@@ -37,7 +37,8 @@ the last release.
 - Research: the first graded set (RCM 2018 levels matched to classtab.org tabs, 50 pieces)
   and the measure's first rank correlations (hand move rate 0.71 with the level).
 - Research: a full 2^k sweep of the wiki's Asturias option set on the three original pieces
-  (`runs/m03-knob-sweep-2026-11-07/`): which knobs interact, substitute, or do nothing;
+  and on the 44 graded classtab tabs (`runs/m03-knob-sweep-2026-11-07/`): which knobs
+  interact, substitute, or do nothing, and which small gains survive on top of `--prefer-open`;
   written up in `docs/dev/NOTES-playability.md`.
 - Tab reader: string lines without a label (`|---`, `||---`), with a label but no bar
   (`E-----`), and bare dashes with notes on them are read; classtab.org's `=` sustain marks
