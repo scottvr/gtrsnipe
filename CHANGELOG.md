@@ -17,6 +17,16 @@ the last release.
 
 ## [Unreleased]
 
+## [0.8.2] — 2026-11-07
+
+The research turn on the mapper (backlog M03 and M08), with scottvr: a difficulty measure, a
+graded tab set, the first measurements of gtrsnipe's fingerings against human editors', and
+a full factorial sweep of the scoring knobs, written up in
+[`docs/dev/NOTES-playability.md`](docs/dev/NOTES-playability.md). Nothing a tab shows
+changes by default: the new mapper options are off unless given, and the Viterbi speed-up
+(B25) is byte-identical on every input tested. The tab reader now reads classtab.org's
+archive (B24).
+
 - Docs: the backlog, parking lot and research to-do lists use checkbox lines, ticked in
   place (the convention is at the top of `docs/dev/BACKLOG.md`). The 2026-09-28 docs audit
   and `docs/dev/archive/` were reconciled and retired to git history (`git show v0.8.1:...`);
