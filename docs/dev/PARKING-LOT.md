@@ -10,6 +10,26 @@ original notes in git history.
 
 ## Ideas
 
+- [ ] **Transposed tabs: find the offset before comparing** (scottvr, 2026-11-07). Tabs in the
+  wild are often not in the piece's key: the fingering was chosen for ease and a tuning or a
+  capo would fix the pitch (classtab's Bach cello prelude is "in G", a tenth above ours). Any
+  comparison of two tabs of one piece (fingering agreement, difficulty, the tab checker F07,
+  R14) should first find the transposition, either with the offset-profile tools (TI-Hamming,
+  the homograph commands) or simply the dominant pitch offset over the first bar, then
+  compare with it applied. Re-fingering a tab's *own* notes needs no such step.
+- [ ] **Profiles that mimic a transcriptionist** (scottvr, 2026-11-07). The agreement metric
+  (notes fingered as the editor fingered them) turns a corpus of one editor's or one site's
+  tabs into a target: derive their statistics (open-string share, highest position, how a
+  string switch trades against a move) and fit or constrain a profile to them. The parked
+  "learned weights and a profile finder" entry, with a concrete objective and the classtab
+  archive as the first corpus; whether it is feasible per editor (enough tabs by one hand)
+  is unchecked.
+- [ ] **Profiles that transpose to fit their fret window: "shredder"** (scottvr, 2026-11-07).
+  gtrsnipe can constrain pitches and either drop or transpose notes out of range
+  (`--normalize-pitch`). A profile that confines playing to, say, the 12th fret up should be
+  able to say "transpose the piece into my window" rather than drop everything below it: the
+  Bach prelude as a high-neck shred. Needs a fret-window constraint the mapper honours and
+  the transpose-into-range rule to apply to that window, not just to the open strings.
 - [ ] **A note-end mark in the tab layout** (from M08, 2026-11-07). The dash-count layout
   states onsets exactly; a note's end is a reading convention (legato, staccato, string). The
   end-to-start time base needs ends, so a mark for "released here" (a rest symbol on the
