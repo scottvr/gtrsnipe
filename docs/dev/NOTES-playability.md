@@ -625,6 +625,34 @@ weight is fitted: the 65 candidates checked by hand, Trinity or ABRSM as a secon
 real tempi (every classtab tab is read at 120), and the 49 looked at for mismatched
 matches (a wrong opus number is a wrong level).
 
+**gtrsnipe's fingering against the editors' (2026-11-07; scottvr's question).** Each
+classtab tab's notes re-fingered by the mapper at the defaults and compared with the tab's
+own fingering (`runs/m03-graded-set-2026-11-07/fingering-vs-classtab.json`):
+
+| | 44 graded tabs | 184 sampled tabs |
+|---|---|---|
+| notes identical (string and fret), median | 51% | 57% |
+| mapper's path score above the tab's, per note | 16 (median 12) | 36 (median 22) |
+| tabs where the editor's fingering scores higher | 0 | 0 |
+| hand move rate, mean (frets/s): editor vs mapper | 0.63 vs 2.29 | 1.58 vs 2.77 |
+| highest hand position: editor vs mapper | 5.2 vs 10.3 | 9.0 vs 11.0 |
+| open-string share: editor vs mapper | 39% vs 14% | 27% vs 12% |
+| fret span, mean: editor vs mapper | 0.18 vs 0.25 | 0.30 vs 0.33 |
+
+So: half the notes agree. By the scorer's own objective the editors' fingerings are always
+worse, by a lot (the mapper is the optimum of that objective, so the only question was by
+how much). By the hand descriptors, the ones that correlate 0.7 with the grade, the editors'
+fingerings are much easier: a third of the hand movement, half as high on the neck, nearly
+three times the open strings. The scorer optimises something that is not hand ease, and the
+three places it differs from the editors are the three places M01 already flagged: open
+strings cost a trip to the nut in the movement term (q2's side effect, here at corpus
+scale), the sweet spot is flat from 0 to 12 so nothing prefers the low positions, and the
+exchange rate between a string switch and a fret of movement. The caveat is the idiom:
+classical editions favour open strings and first position by tradition as well as ease, so
+"agrees with the editors" is not the whole target; but 3,000 human fingerings are now the
+training and test set the parked learned-weights idea was waiting for, and agreement with
+them is a metric the sweep tool can carry (first ablation below).
+
 **Still to do in M03** (backlog): shape uncommonness (needs a reference corpus of shapes);
 the graded set (RCM list matched to free tabs); the validation; and then the weights.
 
