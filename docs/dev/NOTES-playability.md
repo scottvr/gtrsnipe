@@ -668,8 +668,14 @@ fret, over the 44 graded tabs; `runs/m03-graded-set-2026-11-07/agreement-ablatio
 | span 25 or 400; barre bonus; high-fret penalty 20; sweet-spot bonus 5 | 52% (dead) | | |
 | the editors themselves | 100% | 39% | 5.2 |
 
-Two existing knobs, both off or flat by default, take the mapper from agreeing with the
-editors on half the notes to agreeing on seven in eight: prefer open strings, and a sweet
+*scottvr asked how the wiki's final Asturias command would do, since with three pieces tabbed
+it is the option set he would have called a classical profile.* On the same 44 tabs: 71%
+(open strings 29%, highest fret 9.8); its earlier form with the sweet spot at 4 to 9: 73%;
+the same set with the sweet spot ending at 5 instead: 84.5%. So of its ten options, the one
+doing the work is `--prefer-open`; the heavy movement penalty (20), the free string switch
+and the let-ring bonus (210) add nothing the editors would recognise, and the thing it
+lacks is the low sweet-spot ceiling. Two existing knobs, both off or flat by default, take
+the mapper from agreeing with the editors on half the notes to agreeing on seven in eight: prefer open strings, and a sweet
 spot that ends at the 4th or 5th fret instead of the 12th. Nothing else moves it more than a
 few points, and the movement and string-switch exchange rate is dead on this set either
 way. This is the first measurement against human fingerings the project has had, and it says
