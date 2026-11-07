@@ -471,8 +471,17 @@ to that or gated: automatic when the header says the layout is ours, a user flag
 the end-to-start gap he names is the time the hand is actually free, and it is zero for
 every held or legato line (let-ring, the Asturias pedal), so the two measures differ exactly
 where the scorer already has terms. Propose: onset-to-onset as the base with a floor, and
-end-to-start measured alongside on the real pieces before choosing. (2) Backlog M08; the
-header documentation is H09.
+end-to-start measured alongside on the real pieces before choosing. *scottvr, same day:
+end-to-start, and it does not conflict. A fretted note lasts exactly as long as the finger
+stays on the fret, because lifting the finger ends the note; so the gap from the end of one
+note to the start of the next is the time the hand truly has. Pedal notes are open or stay
+in one position, so no movement is charged there whatever the gap.* Decided: end-to-start.
+Where the gap is zero and the hand must move, the cost is real (the player cuts the note or
+arrives late), which onset-to-onset would hide. Two consequences: the term needs note
+*ends*, which MIDI has and a gtrsnipe tab carries in `// Lengths:` but a tab in the wild
+does not (dashes give onsets only), one more reason for H09; and score-derived MIDI often
+holds every note to the next onset, so a floor on the gap, not a zero, is the practical
+minimum. (2) Backlog M08; the header documentation is H09.
 
 ## M03: a tab difficulty measure
 

@@ -144,8 +144,9 @@ M03 and M06.
 - [ ] **M06** **A hand profile**: which fingers are available (accessibility), for chord
   shapes and for the mapper's span and movement costs; and the hand-position state (position
   is the index finger; notes within the span above it cost no travel). (M; scottvr)
-- [ ] **M08** **Time-scaled movement cost**: a hand move costs more the less time there is
-  for it (exact with a tempo, relative without; MIDI's default tempo serves). Gated on
+- [ ] **M08** **Time-scaled movement cost**: a hand move costs more the shorter the gap from the
+  end of the previous note to the next onset (decided 2026-11-07: end-to-start, since lifting
+  the finger ends the note; exact with a tempo, relative without; MIDI's default tempo serves). Gated on
   rhythm reliability: automatic when the tab's header marks gtrsnipe's layout, a user flag
   for tabs in the wild. Design notes under "Time-scaled movement cost" in
   [`NOTES-playability.md`](NOTES-playability.md); Hori & Sagayama 2016 is the precedent. (M;
