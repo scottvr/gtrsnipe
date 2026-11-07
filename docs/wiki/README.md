@@ -7,7 +7,7 @@ the live wiki.
 
 - **Source:** wiki commit `9301478` (2025-08-09), copied 2026-09-26.
 - **Edited here since:** on 2026-09-28 the pages were brought up to date with the code of
-  v0.6.10 (the docs audit, `docs/dev/DOCS-AUDIT.md`, items WK-1 to WK-27). Pushed to the live
+  v0.6.10 (the docs audit of 2026-09-28, items WK-1 to WK-27; `git show v0.8.1:docs/dev/DOCS-AUDIT.md`). Pushed to the live
   wiki on 2026-11-04 (its commits b30ef35 and the rename after it), so the two match again.
 - **File names:** the wiki's page names used to contain `? # : ( ) "` and a Unicode hyphen,
   which Windows checkouts can't handle, so the copies got plain names. On 2026-11-04 the live
@@ -29,10 +29,8 @@ and page 1 is a reference rebuilt from `gtrsnipe --help` and `gtrsnipe/arguments
 
 ## Differences from the live wiki
 
-- Every page except Home and the footer differs, as described above.
-- The live wiki's Asturias page (4) still uses `--count-fret-span-across-neighbors`, which
-  commit 99e36d6 renamed to `--diagonal-span-penalty`. gtrsnipe now rejects the old name, so
-  that page's later commands fail as written. The copy here uses the new name.
+None since the 2026-11-04 push (the live Asturias page's `--count-fret-span-across-neighbors`,
+renamed to `--diagonal-span-penalty` by commit 99e36d6, was fixed by it). Edit here first.
 
 | file here | wiki page |
 |---|---|

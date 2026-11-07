@@ -10,6 +10,21 @@ and Cargo apply to 0.x version ranges. Full SemVer applies from 1.0.0. The publi
 is the CLI flags and the file formats gtrsnipe reads and writes; report wording is
 not part of it.
 
+**Unreleased work.** Changes land under `## [Unreleased]` at the top as they are committed
+(one line each, backlog IDs where they apply); cutting a release renames that heading to the
+version and date and starts a fresh empty one. An empty Unreleased section means the tree is
+the last release.
+
+## [Unreleased]
+
+- Docs: the backlog, parking lot and research to-do lists use checkbox lines, ticked in
+  place (the convention is at the top of `docs/dev/BACKLOG.md`). The 2026-09-28 docs audit
+  and `docs/dev/archive/` were reconciled and retired to git history (`git show v0.8.1:...`);
+  what was still open is under R13 and H07.
+- Docs: the hand-position discussion (the index finger as the hand's position, reach by
+  span, transition cost as shape × move × complexity) in `docs/dev/NOTES-playability.md`,
+  with the index-finger proxy measured against the mean; no scorer change, feeds M03 and M06.
+
 ## [0.8.1] — 2026-11-04
 
 The measuring stick, first pass (backlog M01 and M02), done with scottvr answering the
@@ -845,7 +860,7 @@ invocations are unchanged (byte-identical output).**
 
 ## [0.3.0] — 2026-09-23
 
-Release plan and design docs live in [`docs/dev/archive/`](docs/dev/archive/RELEASE-PLAN-v0.3.0.md).
+Release plan: `git show v0.8.1:docs/dev/archive/RELEASE-PLAN-v0.3.0.md` (retired from the tree 2026-11-07).
 
 ### Added
 - **Global fretboard optimization.** A dynamic-programming / Viterbi trellis
@@ -896,7 +911,7 @@ Release plan and design docs live in [`docs/dev/archive/`](docs/dev/archive/RELE
 - Crash on `--dedupe` (an undefined `_normalize_pitch` helper).
 - Removed a stray `DEBUG PARSER` `print()` from the tab parser.
 
-See [`docs/dev/archive/AUDIT-findings.md`](docs/dev/archive/AUDIT-findings.md).
+See `git show v0.8.1:docs/dev/archive/AUDIT-findings.md` (retired from the tree 2026-11-07).
 
 ### Known limitations
 - **VexTab** does not yet emit hammer-on/pull-off/tap articulation symbols or

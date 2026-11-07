@@ -238,19 +238,17 @@ The two distinguishing choices:
   time the transposition changes. For Lemström & Mäkinen that includes a return to an earlier
   one; for Allali et al. it is inferred, not confirmed (see the table below).
 
-### Citations to verify (none checked in this session)
+### Citations to verify (R13; none checked when this note was written)
 
-| citation (as remembered) | what this note relies on |
-|---|---|
-| T. Eiter, H. Mannila, *Computing discrete Fréchet distance*, Tech. Report CD-TR 94/64, Christian Doppler Laboratory for Expert Systems, TU Vienna, 1994 | the definition of the discrete Fréchet distance via couplings; that it is a (pseudo)metric |
-| H. Alt, M. Godau, "Computing the Fréchet distance between two polygonal curves," *Int. J. Computational Geometry & Applications* 5(1–2):75–91, 1995 | the continuous Fréchet distance; reparametrization invariance |
-| H. Sakoe, S. Chiba, "Dynamic programming algorithm optimization for spoken word recognition," *IEEE Trans. ASSP* 26(1):43–49, 1978 | DTW's definition |
-| any standard source that DTW violates the triangle inequality | DTW is not a metric |
-| L. Chen, R. Ng, "On the marriage of Lp-norms and edit distance," VLDB 2004, pp. 792–803 | ERP is a metric |
-| P.-F. Marteau, "Time warp edit distance with stiffness adjustment for time series matching," *IEEE TPAMI* 31(2):306–318, 2009 | TWED is a metric |
-| any standard source for the minimum-label path problem being NP-hard on general graphs (e.g. the "minimum label path" / "minimum color path" literature) | the complexity remark under Caveats |
-| J. Allali, P. Ferraro, P. Hanna, C. Iliopoulos, "Local transpositions in alignment of polyphonic musical sequences," SPIRE 2007 | that a return to an earlier transposition is charged again (inferred in the survey, not confirmed) |
-| A. Stefan, V. Athitsos, G. Das, "The Move-Split-Merge metric for time series," *IEEE TKDE* 25(6):1425–1438, 2013 | MSM is a metric |
+- [ ] T. Eiter, H. Mannila, *Computing discrete Fréchet distance*, Tech. Report CD-TR 94/64, Christian Doppler Laboratory for Expert Systems, TU Vienna, 1994 — relied on for: the definition of the discrete Fréchet distance via couplings; that it is a (pseudo)metric
+- [ ] H. Alt, M. Godau, "Computing the Fréchet distance between two polygonal curves," *Int. J. Computational Geometry & Applications* 5(1–2):75–91, 1995 — relied on for: the continuous Fréchet distance; reparametrization invariance
+- [ ] H. Sakoe, S. Chiba, "Dynamic programming algorithm optimization for spoken word recognition," *IEEE Trans. ASSP* 26(1):43–49, 1978 — relied on for: DTW's definition
+- [ ] any standard source that DTW violates the triangle inequality — relied on for: DTW is not a metric
+- [ ] L. Chen, R. Ng, "On the marriage of Lp-norms and edit distance," VLDB 2004, pp. 792–803 — relied on for: ERP is a metric
+- [ ] P.-F. Marteau, "Time warp edit distance with stiffness adjustment for time series matching," *IEEE TPAMI* 31(2):306–318, 2009 — relied on for: TWED is a metric
+- [ ] any standard source for the minimum-label path problem being NP-hard on general graphs (e.g. the "minimum label path" / "minimum color path" literature) — relied on for: the complexity remark under Caveats
+- [ ] J. Allali, P. Ferraro, P. Hanna, C. Iliopoulos, "Local transpositions in alignment of polyphonic musical sequences," SPIRE 2007 — relied on for: that a return to an earlier transposition is charged again (inferred in the survey, not confirmed)
+- [ ] A. Stefan, V. Athitsos, G. Das, "The Move-Split-Merge metric for time series," *IEEE TKDE* 25(6):1425–1438, 2013 — relied on for: MSM is a metric
 
 What to look for while verifying:
 1. Does any Fréchet or time-series source state the triangle inequality for a *general* class

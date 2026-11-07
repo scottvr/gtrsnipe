@@ -63,15 +63,16 @@ tested how far that argument goes. How the feature itself works is in
 
 ## Open questions
 
-- **R13:** the citation pass for the stutter-invariance principle and the Fréchet
-  connection (scottvr, in progress). See PROOF-alignment, "Citations to verify".
-- The complexity of the fewest-distinct-offsets warping path (d_richness) on the alignment
+- [ ] **R13:** the citation pass for the stutter-invariance principle and the Fréchet
+  connection (scottvr, in progress). See PROOF-alignment, "Citations to verify", and the
+  sub-items under R13 in [`../dev/BACKLOG.md`](../dev/BACKLOG.md).
+- [ ] The complexity of the fewest-distinct-offsets warping path (d_richness) on the alignment
   grid. (R03b computes it exactly up to 6 offsets, the guitar range.)
-- **R10–R11:** re-rhythm in the scan, and the full Lakh corpus. See
+- [ ] **R10–R11:** re-rhythm in the scan, and the full Lakh corpus. See
   [`../dev/BACKLOG.md`](../dev/BACKLOG.md).
-- **Third-party tabs as written** (R05's natural next input), kept local for copyright
+- [ ] **R14, third-party tabs as written** (R05's natural next input), kept local for copyright
   reasons.
-- **The structure note's §6 hypothesis, tested directly:** that low richness with high reuse
+- [ ] **The structure note's §6 hypothesis, tested directly:** that low richness with high reuse
   marks sequences, echoes or call-and-response at a fixed interval. R03b's indirect test
   (phrase and motif identity) didn't support it; a direct test needs annotations of sequences.
-- **StegTab's later academic variants**, not yet examined.
+- [ ] **StegTab's later academic variants**, not yet examined.

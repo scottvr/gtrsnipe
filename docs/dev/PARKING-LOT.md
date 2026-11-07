@@ -1,33 +1,16 @@
 # Parking lot
 
 Quick capture for new ideas. Write one or two lines each; there's no need to think them
-through or start them. Nothing here is scheduled.
-
-At each triage, every entry either moves into [`BACKLOG.md`](BACKLOG.md), the single list
-of open work with a plan, or is declined, and is removed from this file. (This is part of
-The Dull Protocol, described at the top of the backlog.)
-
-Earlier entries (custom tunings, profiles, homographs, MIDI player defaults) were
-triaged on 2026-09-26, and the step-2 entries (now B07, F06, R10–R13) on 2026-09-27. The
-finished ones are in the CHANGELOG, the open ones are in the backlog, and the original
-notes are in git history.
-
-Triaged again on 2026-10-05 (after step 3). Into the backlog: the open code bugs (B08–B22,
-H08), the playability group (M01–M07), the tab checker (F07) and homograph comfort (R16).
-Their design notes moved to [`NOTES-playability.md`](NOTES-playability.md). What follows
-stayed parked.
-
-On this (private) line the same triage also moved the two composing ideas into the backlog
-(R17, R18) and closed the computer-vision entry: its content is in the structure note
-(revisions 3 and 4) and LITERATURE §6, and its citations are checked under R13.
-
-2026-10-07: "tabs that keep time" left the lot for the backlog as F08, after a discussion and
-four sample layouts, and was built the same day (v0.8.0). The design, its history and the
-measurements are in [`DESIGN-tab-rhythm.md`](../app/DESIGN-tab-rhythm.md).
+through or start them. Nothing here is scheduled. Each entry is a checkbox line; at each
+triage it either moves into [`BACKLOG.md`](BACKLOG.md), the single list of open work with a
+plan, or is declined, and is removed from this file. (This is part of The Dull Protocol,
+described at the top of the backlog.) Triaged 2026-09-26, 2026-09-27, 2026-10-05 and
+2026-10-07; the finished entries are in the CHANGELOG, the open ones in the backlog, and the
+original notes in git history.
 
 ## Ideas
 
-- **A verbosity structure for the mapper's messages** (scottvr, 2026-11-04, while answering
+- [ ] **A verbosity structure for the mapper's messages** (scottvr, 2026-11-04, while answering
   M01 q1). Today the mapper is everything-or-nothing short of exceptions: `--debug` is a
   `-vvvvvvvvv` flood meant for him to see why a score didn't match his head, and the rest is
   a handful of warnings. The no-fit warning ("No fingering of the chord at beat ... fits
@@ -35,28 +18,28 @@ measurements are in [`DESIGN-tab-rhythm.md`](../app/DESIGN-tab-rhythm.md).
   If such messages turn out indistinguishable from clear choices, they can live behind a
   verbosity flag forever; either way the levels (what a player sees by default, what `-v`
   adds, what `--debug` dumps) want deciding once, with the tiered `--help` below.
-- **Tiered `--help`, ffmpeg-style** (scottvr, 2026-11-04). The option count makes the full help a
+- [ ] **Tiered `--help`, ffmpeg-style** (scottvr, 2026-11-04). The option count makes the full help a
   firehose. Today: a short usage by default and the grouped detail on `--help`. Next: several
   levels, from usage, to one group's detail on request (`--help mapper`, `--help tab`, ...), to
   everything. Means more argparse groups than we have, extending what the grouped help started.
-- **Docs restructure; retire the wiki** (scottvr, 2026-11-04). Few people find the wiki tab or click
+- [ ] **Docs restructure; retire the wiki** (scottvr, 2026-11-04). Few people find the wiki tab or click
   wiki links in a README, and the README has grown huge. Move what the wiki says into the docs
   tree (the examples are already snapshotted under `docs/wiki/`), split the README, and keep the
   option text in one place that both the README and `--help` draw from (the README's option
   bullets are hand-copied from the help today).
 
-- **The Viterbi mapper's inner loop is cubic in the candidate count** (found by the M01 sweep,
+- [ ] **The Viterbi mapper's inner loop is cubic in the candidate count** (found by the M01 sweep,
   2026-11-04). For each stage it loops over (current, previous, previous-previous) even when the
   score doesn't read t-2, so a 5-note chord with ~250 fingerings costs seconds per stage: the
   sus-shape probe takes 13.7 s for seven chords. Collapsing the first-order case to "best
   predecessor per previous fingering, computed once per stage" is exact (same tie-breaking:
   first index with the maximum) and quadratic. Real pieces are fine today (Asturias ≤ 20
   candidates per chord, 0.02 s), so this only matters for dense chords and for sweeps.
-- **`--track` on a type-0 MIDI** (2026-11-04): a single-track file with several channels (the
+- [ ] **`--track` on a type-0 MIDI** (2026-11-04): a single-track file with several channels (the
   "Mr Crowley.mid" in `archives-to-go-through/`) fails with "file has 1 tracks". The research
   corpus reader already splits by (track, channel); the converter could select a channel the
   same way (`--track` by channel when the file has one track, or a `--channel` flag).
-- **Read Power Tab (`.ptb`) and tab PDFs** (scottvr, 2026-11-04): `archives-to-go-through/` holds
+- [ ] **Read Power Tab (`.ptb`) and tab PDFs** (scottvr, 2026-11-04): `archives-to-go-through/` holds
   collections of third-party tabs as Power Tab files and PDFs (a Top-100 classic rock set among
   them), which would be R14's "tabs as written" input if gtrsnipe could read them. scottvr
   recalls the Power Tab Editor author open-sourcing it and starting a powertab2, both on
@@ -64,7 +47,7 @@ measurements are in [`DESIGN-tab-rhythm.md`](../app/DESIGN-tab-rhythm.md).
   documented in code. PDFs would need text extraction of the tab lines first. Pairs with the
   parked "write a file the tab editors open" entry below.
 
-- **Report the unfiltered counts, and revisit the "sounds unrelated" threshold** (scottvr,
+- [ ] **Report the unfiltered counts, and revisit the "sounds unrelated" threshold** (scottvr,
   2026-10-21). The R04 scan excludes pairs that sound alike (C₁ ≤ ½ and contour agreement
   ≤ 0.6), and where any such threshold sits is arguable. Two asks:
   - Always state the totals *before* each filter, so a reader can see what the decision "these
@@ -89,21 +72,21 @@ measurements are in [`DESIGN-tab-rhythm.md`](../app/DESIGN-tab-rhythm.md).
     Jet Girl*), a transposition only, a tempo difference only, tempo plus transposition,
     truncation or extension, and so on down to "fits six strings but sounds alike".
 
-- **More strings for homographs** (scottvr, 2026-09-27).
+- [ ] **More strings for homographs** (scottvr, 2026-09-27).
   - 7- and 8-string guitars: 7-string tunings and `--num-strings 7` already exist, and the
     solver's free mode allows up to 12 strings. Anchored/middle need an 8-string tuning and
     gauge set. Richness ≤ 7 or 8 widens eligibility.
   - "Ludicrous mode": a 12-string with all 12 strings tuned independently. Physical twist:
     fretting a course sounds *both* its strings, so each tab note becomes a dyad unless one
     string of the course is avoided. The model would need courses, not strings.
-- **`--min-note-length BEATS`**: drop notes shorter than a threshold, for MIDI from audio
+- [ ] **`--min-note-length BEATS`**: drop notes shorter than a threshold, for MIDI from audio
   transcription (from P01, 2026-09-27). Optional: `--velocity-cutoff` is the existing cruft
   filter, and since P01 short notes stay short rather than being stretched.
-- **A flatwound suffix for `--string-gauges`** (from F04, 2026-09-30; scottvr's jazz-set
+- [ ] **A flatwound suffix for `--string-gauges`** (from F04, 2026-09-30; scottvr's jazz-set
   example). Flatwound strings weigh more per gauge than the nickel roundwounds the physics
   is calibrated to (`WOUND_FACTOR` 0.83 of solid steel). An `f` suffix needs a real factor,
   calibrated against a maker's published flatwound tensions, not a guessed constant.
-- **Optimizer profiles with different *objectives*, not just weights** (scottvr, 2026-09-30;
+- [ ] **Optimizer profiles with different *objectives*, not just weights** (scottvr, 2026-09-30;
   e.g. "shred" vs "easy"). Profiles already change weights. What else could change:
   - **new features plus weights** (still today's objective): sweep-friendly shapes (one note
     per adjacent string), tapping and legato runs, position changes, open strings;
@@ -118,7 +101,7 @@ measurements are in [`DESIGN-tab-rhythm.md`](../app/DESIGN-tab-rhythm.md).
     (a Potts term) vs a cost per distinct position used over the song (a label cost, "stay in
     two positions").
   Pairs with the weights audit and the Viterbi-vs-greedy study above.
-- **Survey: how do tabs in the wild state their tuning?** (scottvr, 2026-10-07; a mental
+- [ ] **Survey: how do tabs in the wild state their tuning?** (scottvr, 2026-10-07; a mental
   to-do of his, raised when he worried that gtrsnipe's own `// Tuning:` line undercuts the
   homograph argument). What to count on a sample of third-party tabs (kept local, as R14):
   - string labels at the start of the lines: present or not; letters or nothing;
@@ -133,7 +116,7 @@ measurements are in [`DESIGN-tab-rhythm.md`](../app/DESIGN-tab-rhythm.md).
     the key is the argument made visible, not a counterexample: the staff alone doesn't
     determine the notes, so the tool has to say which key it means.
   - Pairs with R14 and with `--omit-comments` / `--homograph-neutral` (the bare text).
-- **Key changes: how many keys vs how many changes** (scottvr's question, 2026-10-04: do the
+- [ ] **Key changes: how many keys vs how many changes** (scottvr's question, 2026-10-04: do the
   offset measures have a role in key-finding, e.g. the correlation vs Euclidean gap?). Claude's
   reading; nothing here was searched in the literature.
   - *Not directly.* The offset measures need two note sequences aligned note for note;
@@ -148,7 +131,7 @@ measurements are in [`DESIGN-tab-rhythm.md`](../app/DESIGN-tab-rhythm.md).
     term (S, a Potts term), and a cost per distinct key used is the richness term (a label
     cost). Whether existing key-tracking models use the second is unchecked.
   - Scripts and cached histograms: `/Volumes/LaCie/data/midi/_tmp/keyest/`.
-- **Keys: what v0.6.18 left out** (from C04/C05/F02, 2026-10-04).
+- [ ] **Keys: what v0.6.18 left out** (from C04/C05/F02, 2026-10-04).
   - **Key changes.** A song has one key. A piece that modulates is spelled in its opening or
     overall key throughout; MIDI key changes after the first are ignored. Following them
     needs a key per section (windowed estimates, with a cost for changing key).
@@ -160,7 +143,7 @@ measurements are in [`DESIGN-tab-rhythm.md`](../app/DESIGN-tab-rhythm.md).
     and the final chord would catch many of them.
   - **Inversions of extended chords** (C9/E) aren't named: an extended name needs its root in
     the bass. Chord-chart diagrams for extended chords come from a fixed four-note voicing.
-- **Replace the fallback MIDI reader** (from the v0.6.19 bug sweep, 2026-10-05; scottvr: "I
+- [ ] **Replace the fallback MIDI reader** (from the v0.6.19 bug sweep, 2026-10-05; scottvr: "I
   never was thrilled that I had to have a fallback path"). When mido can't read a file,
   gtrsnipe falls back to py-midi, which is worse than no key signature:
   - on a file mido wrote, it garbled a track's leading events: it lost the key signature and
@@ -171,9 +154,9 @@ measurements are in [`DESIGN-tab-rhythm.md`](../app/DESIGN-tab-rhythm.md).
     could be a small, tolerant Standard MIDI File reader of our own (the format is simple:
     chunks, variable-length times, running status), tested against the files in the wild
     that mido rejects. First step: collect those files and see what actually fails.
-- **What a tab states that still isn't kept** (from v0.7.0). Its `// Title:` (the converter
+- [ ] **What a tab states that still isn't kept** (from v0.7.0). Its `// Title:` (the converter
   names every output after the input file); bends, slides, vibrato and other marks.
-- **`--omit-comments`: leave header lines out of a tab** (scottvr, 2026-10-07; maybe with a
+- [ ] **`--omit-comments`: leave header lines out of a tab** (scottvr, 2026-10-07; maybe with a
   list, `--omit-comments tuning,title`, or a separate `--omit-header`). scottvr used "header"
   and "comment" interchangeably and flagged that as worth a discussion. They aren't the same
   thing to a reader:
@@ -189,14 +172,14 @@ measurements are in [`DESIGN-tab-rhythm.md`](../app/DESIGN-tab-rhythm.md).
   - scottvr, later the same day: the conflation wasn't only a slip. Sometimes the wish is
     to leave out *everything* written as a `//` comment, whatever it says, so the plain
     form (`--omit-comments` with no list) should mean exactly that.
-- **Triplets in the note-length letters** (from F08, 2026-10-07). `--tab-letters` writes
+- [ ] **Triplets in the note-length letters** (from F08, 2026-10-07). `--tab-letters` writes
   `W H q e s t` with dots and `+` ties, which can't state a triplet's note, so a bar holding
   one gets no letters (its layout still carries the rhythm: such a bar is written in
   columns). A mark for it (`e3` for a triplet eighth, or a bracket over the group) would
   close the gap. Worth checking what tabs with rhythm lines already do before choosing;
   Guitar Pro's text export has a "Duration Legend" with similar letters (from memory, not
   checked).
-- **Is the command-line stamp still needed? Ship style profiles instead** (scottvr,
+- [ ] **Is the command-line stamp still needed? Ship style profiles instead** (scottvr,
   2026-10-07). Every generated tab carries `// Transcribed with: <the command line>`. It was
   there so a result could be reproduced, back when a good tab took a long line of options;
   profiles now do that job.
@@ -208,7 +191,7 @@ measurements are in [`DESIGN-tab-rhythm.md`](../app/DESIGN-tab-rhythm.md).
     them, and rework the examples to use them in place of long command lines.
   - Then the stamp could go, or shrink to the profile's name. (Today it also writes the
     user's full file paths into the tab.) It is one of the lines `--omit-comments` covers.
-- **Write a file the tab editors open: gtrsnipe as the generator they lack** (scottvr,
+- [ ] **Write a file the tab editors open: gtrsnipe as the generator they lack** (scottvr,
   2026-10-07). The tab programs are editors; few of them *make* a tab from MIDI, and gtrsnipe
   does little else. Facts checked that day:
   - Power Tab Editor 2 (open source again, GPL-3.0, github.com/powertab/powertabeditor) has no
@@ -223,7 +206,7 @@ measurements are in [`DESIGN-tab-rhythm.md`](../app/DESIGN-tab-rhythm.md).
     have to be the only place rhythm can live.
   - Related: standard notation in and out (below), and F05 (PDF output), which an editor
     would then do for us.
-- **Standard notation, in and out** (scottvr, 2026-10-07). Engrave proper scores (staff, clef,
+- [ ] **Standard notation, in and out** (scottvr, 2026-10-07). Engrave proper scores (staff, clef,
   time signature) with an existing tool, and, more interesting and probably more feasible,
   *read* scores so they can be written to the formats gtrsnipe already has. Notes (Claude):
   - MusicXML is the interchange format the notation programs share (MuseScore, LilyPond via
@@ -233,7 +216,7 @@ measurements are in [`DESIGN-tab-rhythm.md`](../app/DESIGN-tab-rhythm.md).
   - For engraving, writing LilyPond or MusicXML and letting those tools draw is far less work
     than drawing. LilyPond can set a tab staff under a notation staff.
   - gtrsnipe already reads one notation format, Humdrum kern, for the research corpora.
-- **Learned weights and a profile finder** (from the scoring-weights notes, 2026-09-27; kept
+- [ ] **Learned weights and a profile finder** (from the scoring-weights notes, 2026-09-27; kept
   parked at the 2026-10-05 triage). A structured perceptron trained on human-fingered tabs, or
   sampling settings and letting a player rank the distinct tabs. Both wait for the weights
   audit (M01) and for human fingerings to learn from. Notes: [`NOTES-playability.md`](NOTES-playability.md).

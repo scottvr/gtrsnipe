@@ -32,7 +32,8 @@ the story of how it happened. Start at [`research/README.md`](research/README.md
 - [`PARKING-LOT.md`](dev/PARKING-LOT.md): new ideas waiting for triage.
 - [`NOTES-playability.md`](dev/NOTES-playability.md): design notes for the backlog's
   playability items (M01–M07), carried over from the parking lot.
-- [`archive/`](dev/archive/): the v0.3.0-era plans and audit, frozen.
 
 The images in this folder (`gtrsnipe-*.png`) are logo assets.
-[`dev/DOCS-AUDIT.md`](dev/DOCS-AUDIT.md) records the state-of-the-docs audit of 2026-09-28.
+The v0.3.0-era plans and audit (`docs/dev/archive/`) and the 2026-09-28 state-of-the-docs
+audit (`docs/dev/DOCS-AUDIT.md`) were retired on 2026-11-07; git history keeps them, last at
+tag v0.8.1 (`git show v0.8.1:docs/dev/DOCS-AUDIT.md`).

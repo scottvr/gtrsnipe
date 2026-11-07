@@ -6,8 +6,8 @@
 
 _Epic B of v0.3.0. Branch `feat/viterbi-mapper`. This design was produced with
 independent adversarial verification; the corrections that survived that review
-are baked in below. Decision D3 and risk R1, cited below, are in the archived
-[v0.3.0 release plan](../dev/archive/RELEASE-PLAN-v0.3.0.md)._
+are baked in below. Decision D3 and risk R1, cited below, are in the v0.3.0 release plan,
+retired to git history (`git show v0.8.1:docs/dev/archive/RELEASE-PLAN-v0.3.0.md`)._
 
 ## 1. The problem, precisely
 
