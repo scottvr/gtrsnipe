@@ -44,3 +44,13 @@ def test_label_with_a_space_before_the_bar():
 def test_classtab_sustain_marks_are_not_notes():
     text = LABELED.replace("--0--3--", "--0==3==")
     assert _pitches(text) == [64, 67]
+
+
+def test_a_beat_line_with_a_bar_is_not_a_string():
+    text = "5  |   .   |   .   |\n" + LABELED
+    assert _pitches(text) == [64, 67]
+
+
+def test_a_repeat_mark_after_the_bar_is_still_a_string():
+    text = LABELED.replace("G|--", "G|*-").replace("D|--", "D|*-")
+    assert _pitches(text) == [64, 67]

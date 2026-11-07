@@ -41,8 +41,10 @@ class AsciiTabParser:
             last = evs[-1]
             last.duration = min(max(end - last.time, last.duration), bar)
 
-    _LABELED = re.compile(r'^\s*[^\s|\-]{1,3}\s*\|')          # e|---  E |---
-    _UNLABELED_BAR = re.compile(r'^\s*\|{1,2}[-=0-9]')          # |---  ||---
+    # The opening bar must be followed by tab (a dash, a sustain mark, a fret or another
+    # bar), so that a beat line such as "5  |   .   |" is not taken for a string.
+    _LABELED = re.compile(r'^\s*[^\s|\-]{1,3}\s*\|[-=0-9|*]')   # e|---  E |---  G|*---
+    _UNLABELED_BAR = re.compile(r'^\s*\|{1,2}[-=0-9*]')         # |---  ||---
     _LABEL_NO_BAR = re.compile(r'^\s*[A-Ga-g][#b]?\s?-{2,}')    # E-----
     _BARE = re.compile(r'^\s*-{2,}')                             # ------0--
     _TAB_CHARS = re.compile(r'[-=0-9|hpbrs/\\~^xX()*.<>vt ]+')
