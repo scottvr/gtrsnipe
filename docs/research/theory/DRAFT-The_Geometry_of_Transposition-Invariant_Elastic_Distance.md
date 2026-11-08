@@ -40,7 +40,7 @@
 * Algorithmic Landscapes: Classify the computing times for the various admissible distances.
 * Show that $d_S, d_{TV},$ and $d_J$ are standard shortest/bottleneck paths solvable in $O(nm)$ polynomial time.
    * Address the NP-hardness of $d_{richness}$ as a minimum-label path problem on general graphs.
-* The Guitar Bounded Case: Prove that for a physical interface where the vocabulary of transpositions is bounded by a fixed number of strings ($k \le 6$), the search space becomes fixed-parameter tractable (FPT), resolving to a trivial polynomial check.
+* The Bounded Cases: Separate three claims. A fixed offset budget $k$ (the instrument's strings, $k \le 6$) gives an $O(L^k nm)$ subset-enumeration algorithm: polynomial for fixed $k$, XP rather than FPT in $k$. A bounded pitch alphabet (MIDI, or the instrument's physical sounding range) bounds $L$ and makes the problem polynomial in $n, m$ outright. The parameterized status for variable $k$ on the difference-labelled grid is left open; Minimum Label Path on general graphs is W[2]-hard in $k$ (Fellows, Guo & Kanj 2010). State the exact algorithm actually used (set-in-state DP with dominance pruning, PROOF-alignment.md Caveats).
 
 ## VII. Conclusion & Musical Implications
 
