@@ -11,8 +11,9 @@ __pycache__/
 *.tab
 *.vex
 # ...except the worked examples, which ship their public-domain inputs and outputs
-!examples/**/*.abc
-!examples/**/*.tab
+!docs/app/homograph-examples/*.abc
+!docs/app/homograph-examples/*.tab
+!docs/research/results/aswritten/*.tab
 # ...but not the '._name' sidecar files macOS writes next to them on non-Apple volumes
 ._*
 

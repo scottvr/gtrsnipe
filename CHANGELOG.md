@@ -21,7 +21,7 @@ the last release.
 
 The research turn on the mapper (backlog M03 and M08), with scottvr: a difficulty measure, a
 graded tab set, the first measurements of gtrsnipe's fingerings against human editors', and
-a full factorial sweep of the scoring knobs, written up in
+a full power set sweep of the scoring knobs, written up in
 [`docs/dev/NOTES-playability.md`](docs/dev/NOTES-playability.md). Nothing a tab shows
 changes by default: the new mapper options are off unless given, and the Viterbi speed-up
 (B25) is byte-identical on every input tested. The tab reader now reads classtab.org's

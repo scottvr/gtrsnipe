@@ -3,15 +3,15 @@
 Run on 2026-09-26/27 with `gtrsnipe-research aswritten` (gtrsnipe 0.6.5), against every cached
 corpus: Essen, MTC-FS-INST, Nottingham, POP909 and Lakh Clean. For Lakh that includes skyline
 melodies. The tabs are gtrsnipe's own, from its wiki (none is a third-party tab); they're in
-[`examples/aswritten/`](../../../examples/aswritten/). Reproduce with:
+[`aswritten/`](aswritten/). Reproduce with:
 
 ```bash
 R="--corpora essen mtc-fs nottingham pop909 lakh-clean"
-gtrsnipe-research --data DIR aswritten examples/aswritten/asturias-v*.tab \
-    examples/aswritten/bach-prelude-measure-*.tab $R --json small.json
-gtrsnipe-research --data DIR aswritten examples/aswritten/bach-prelude-full.tab $R --solve 15 --json bach-full.json
+gtrsnipe-research --data DIR aswritten docs/research/results/aswritten/asturias-v*.tab \
+    docs/research/results/aswritten/bach-prelude-measure-*.tab $R --json small.json
+gtrsnipe-research --data DIR aswritten docs/research/results/aswritten/bach-prelude-full.tab $R --solve 15 --json bach-full.json
 # the 32-note tallies for the whole Prelude (every hit kept):
-gtrsnipe-research --data DIR aswritten examples/aswritten/bach-prelude-full.tab $R \
+gtrsnipe-research --data DIR aswritten docs/research/results/aswritten/bach-prelude-full.tab $R \
     --lengths 32 --keep 1000 --solve 0 --json bach-full-32.json
 ```
 
