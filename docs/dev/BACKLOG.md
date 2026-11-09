@@ -203,6 +203,12 @@ M03 and M06.
   - [ ] scottvr plays the differing tabs and judges; then the reference (0.5 s) and floor
     (0.05 s) get set from that, and the default decided
   - [ ] for tabs in the wild, compare approximate (dash-derived) against off, the same way
+  - [ ] **read the held-note mark** (`=`, "note held" in classtab's legend; 1,802 of classtab's
+    3,977 tabs use it, e.g. for pedal notes): the reader accepts it as a tab character but
+    takes no duration from it. A `sustain="held"` mode (a note lasts while its `=` run
+    continues, else to the next onset or its own string's next strike) would make those tabs
+    the release-aware input the end-to-start base needs, which so far only POP909 provides
+    (scottvr spotted it in Carcassi op. 59 no. 11, 2026-11-08)
   - [ ] the outcome is called out explicitly either way, in the notes and any paper, with
     the evidence beside it: if end-to-start wins, as a departure from Hori & Sagayama; if
     onset-to-onset wins, as a rationale they did not give (scottvr, 2026-11-07)
@@ -225,7 +231,7 @@ M03 and M06.
 
 - [ ] **H01** **The golden gate has no local cases on this machine.** Add the wiki examples
   (Mr Crowley, Bach Cello Prelude, Asturias, Barney Miller) as local golden cases. The
-  expected tabs are in `docs/wiki/` and `examples/aswritten/`, but the MIDI/audio inputs
+  expected tabs are in `docs/wiki/` and `docs/research/results/aswritten/`, but the MIDI/audio inputs
   aren't (they're on the machine in pieces). (S; RELEASE-PLAN v0.3.0)
 - [ ] **H03** Wiki: document v0.6.0 (homographs, string physics, `.tab` header behavior).
   (S–M; release)

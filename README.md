@@ -188,7 +188,7 @@ standard-tuning tab of *Old MacDonald*. Retune four strings (all within their
 gauges' safe range) and the very same tab plays *Twinkle, Twinkle*:
 
 ```text
-$ gtrsnipe --homograph examples/homograph/oldmac.abc examples/homograph/twinkle.abc@1-12 --homograph-octaves
+$ gtrsnipe --homograph docs/app/homograph-examples/oldmac.abc docs/app/homograph-examples/twinkle.abc@1-12 --homograph-octaves
 ...
 // Tuning: E2,A2,D3,G3,B3,E4
 // Homograph: this one tab plays a different song in each tuning (low->high):
@@ -238,7 +238,7 @@ report prints each tab's discomfort and fret range), `--homograph-transpose`/`-a
 `--scale-length`, `--string-gauges`. Every liberty taken is disclosed in the report
 and the tab header. Theory, proofs, physics, and limits:
 [`docs/app/DESIGN-homograph.md`](docs/app/DESIGN-homograph.md). Worked examples:
-[`examples/homograph/`](examples/homograph/).
+[`docs/app/homograph-examples/`](docs/app/homograph-examples/).
 
 #### Checking a tab against a recording's MIDI
 
@@ -277,7 +277,7 @@ gtrsnipe-research profile essen:deut4659#p1 essen:deut4659#p3 --subdivide 2   # 
 gtrsnipe-research profile a.mid:2@1-4 "C4 D4 E4 C4" --json      # files and inline melodies work too
 gtrsnipe-research families mtc-ann                         # tune-family retrieval, measure by measure
 gtrsnipe-research scan essen mtc-fs --solve 40 --tabs out/  # phrases of different songs that share a tab
-gtrsnipe-research aswritten examples/aswritten/*.tab       # can a tab's own fingering play another song?
+gtrsnipe-research aswritten docs/research/results/aswritten/*.tab       # can a tab's own fingering play another song?
 gtrsnipe-research segments mtc-ann --level phrase          # phrase/motif retrieval on MTC-ANN's annotations (R03b)
 gtrsnipe-research sweep asturias.tab --probes --sample nottingham:20   # vary one mapper knob at a time; count distinct tabs (M01)
 gtrsnipe-research optimizers --sample nottingham:100 essen:100         # Viterbi vs greedy on the same tunes, one objective (M02)

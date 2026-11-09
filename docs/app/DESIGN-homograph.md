@@ -13,7 +13,7 @@ entirely by an external key.
   including `scan` and `aswritten`, §5).
 - **Tests:** `tests/unit/test_homograph.py`, `tests/unit/test_strings.py`,
   `tests/unit/test_research*.py`.
-- **Worked examples:** [`examples/homograph/`](../../examples/homograph/).
+- **Worked examples:** [`homograph-examples/`](homograph-examples/).
 - **The research** (theory, literature, experiments): [`../research/README.md`](../research/README.md).
 
 ## 1. When can two songs share a tab? (the eligibility theorem)

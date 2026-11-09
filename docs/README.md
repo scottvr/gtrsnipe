@@ -7,8 +7,8 @@ A map of everything under `docs/`, by who it's for.
 - [`../README.md`](../README.md): installation, the CLI reference, and short examples.
 - [`wiki/`](wiki/): a snapshot of the GitHub wiki: the mapper's tunables and worked
   examples (Mr Crowley, the Bach Cello Suite Prelude, Asturias, Barney Miller).
-- [`../examples/homograph/`](../examples/homograph/): shared tabs for public-domain tunes.
-- [`../examples/aswritten/`](../examples/aswritten/): the wiki's tabs, as used by R05.
+- [`app/homograph-examples/`](app/homograph-examples/): `--homograph` worked examples: shared tabs for public-domain tunes.
+- [`research/results/aswritten/`](research/results/aswritten/): the wiki's tabs, the inputs to R05 and the reference fingerings of M01–M08.
 - [`../CHANGELOG.md`](../CHANGELOG.md): what changed in each release, and why.
 
 ## How gtrsnipe works: [`app/`](app/)

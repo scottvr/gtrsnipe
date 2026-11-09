@@ -28,7 +28,7 @@ Each of these is roughly one chapter, or one results doc, with a demo:
 
 | working title | the hook | sources |
 |---|---|---|
-| A tab is not a song | `--solve-tuning` and one tab that plays *Old MacDonald* and *Twinkle, Twinkle* | chapters 2–3, `examples/homograph/` |
+| A tab is not a song | `--solve-tuning` and one tab that plays *Old MacDonald* and *Twinkle, Twinkle* | chapters 2–3, `docs/app/homograph-examples/` |
 | How often do two songs share a tab? | a third of short folk phrase pairs; the charts | chapter 6, R04 |
 | The real filter is your hand | tension says yes, comfort says no | chapter 7, F06 |
 | Your tab says more than you think | real fingerings pin the music down | chapter 7, R05 |

@@ -1,6 +1,10 @@
 # Tabs for the as-written test (R05)
 
-Tabs extracted from the wiki (snapshot in [`docs/wiki/`](../../docs/wiki/)), all made by earlier
+Also the reference fingerings for the mapper measurements (M01 wiki replication, M03 knob
+sweep, M08 time bases): `asturias-v6.tab` and `bach-prelude-full.tab` are the pieces every
+sweep runs on.
+
+Tabs extracted from the wiki (snapshot in [`docs/wiki/`](../../../wiki/)), all made by earlier
 gtrsnipe versions from public-domain music. Each file has a `// Tuning:` header (STANDARD).
 
 | file | source | notes |
@@ -14,7 +18,7 @@ gtrsnipe versions from public-domain music. Each file has a `// Tuning:` header 
 Run the test:
 
 ```bash
-gtrsnipe-research aswritten examples/aswritten/*.tab --corpora essen mtc-fs nottingham pop909 lakh-clean
+gtrsnipe-research aswritten docs/research/results/aswritten/*.tab --corpora essen mtc-fs nottingham pop909 lakh-clean
 ```
 
-Results: [`docs/research/results/RESULTS-R05-aswritten.md`](../../docs/research/results/RESULTS-R05-aswritten.md).
+Results: [`docs/research/results/RESULTS-R05-aswritten.md`](../RESULTS-R05-aswritten.md).

@@ -137,6 +137,17 @@ each other.** So d_f is a metric on the quotient
   - *If:* pair the r-th run of A with the r-th run of B (any staircase through the block),
     and step (1, 1) between runs. Every pair then has offset c. ∎
 
+## Proposition: transposition invariance is not an extra axiom
+
+Let **c** be a constant sequence. Then f(x + **c**) = f(x) for every x, using only (b) and
+(d): f(x + **c**) ≤ f(x) + f(**c**) = f(x), and f(x) = f((x + **c**) − **c**) ≤ f(x + **c**) +
+f(−**c**) = f(x + **c**). So any statistic meeting the hypotheses is automatically unchanged by
+a global transposition of either melody; the theorem concerns transposition-invariant
+distances because of (b) and (d), not by a separate assumption.
+
+The quotient metric is well defined for the usual reason: if d_f(A, A′) = 0 and
+d_f(B, B′) = 0, two applications of the triangle inequality give d_f(A, B) = d_f(A′, B′).
+
 ## Corollary: which distances qualify
 
 Each statistic below satisfies (a)–(d). Since richness ≥ 1, the first uses log₂ r.
@@ -149,9 +160,22 @@ Each statistic below satisfies (a)–(d). Since richness ≥ 1, the first uses l
 | largest jump J | the same, as a maximum | |
 | range R | max(x + y) ≤ max x + max y, and min(x + y) ≥ min x + min y | R/2 = the least possible max\|δ − c\| over real transpositions c: **a transposition-invariant discrete Fréchet distance** (below). With whole-semitone c it is ⌈R/2⌉, still a pseudometric since ⌈(a+b)/2⌉ ≤ ⌈a/2⌉ + ⌈b/2⌉ |
 
-The class is closed under non-negative sums and under maxima of its members, so S + TV or
-max(R, J) qualify too. Stutter-invariance is *sufficient*, not claimed necessary. Entropy and
-1 − C₁ fail it, and the counterexample shows they fail the conclusion as well.
+The class is closed under non-negative linear combinations with at least one positive
+coefficient (all-zero coefficients give the zero functional, which fails (d)) and under maxima
+of its members, so S + TV or max(S, R) qualify too. max(R, J) does not add anything, because
+J ≤ R. Stutter-invariance is *sufficient*, not claimed necessary. Entropy and 1 − C₁ fail it,
+and the counterexample shows they fail the conclusion as well.
+
+**Order among the members.** For integer offsets, pointwise in δ:
+
+    J ≤ R ≤ TV,     S ≤ TV,     richness − 1 ≤ S,     richness − 1 ≤ R.
+
+(The largest step is at most the range; walking from the minimum to the maximum costs at least
+R; each change costs at least 1; a sequence with r distinct values has at least r runs; r
+distinct integers span at least r − 1.) A pointwise inequality f ≤ g survives minimization
+over the same set of paths, so d_J ≤ d_R ≤ d_TV, d_S ≤ d_TV, and
+d_{log₂ richness} ≤ log₂(d_S + 1), ≤ log₂(d_R + 1). Of the Hill numbers, only order 0
+(richness) is stutter-invariant; every positive order counts how long each offset lasts.
 
 ## Counterexample for entropy and modal share
 
@@ -162,8 +186,14 @@ Take A = (G4), B = (F4, F4) and C = (E4, F4), writing 7, 5 5 and 4 5 for pitches
 - d(A, C): the only path pairs G4 with E4 and with F4, so the offsets are −3, −2. That gives
   H = 1 and 1 − C₁ = 1/2.
 
-So d(A, C) > d(A, B) + d(B, C) for both measures. From B, a path may *repeat* the matching note
-to outvote the mismatch. A has only one note, so no path from A can reweight that way. In the
+So d(A, C) > d(A, B) + d(B, C) for both measures. **It is the smallest counterexample by total
+length.** With four notes or fewer the shapes are (1, 1, 1), (1, 2, 1), (1, 1, 2) and (2, 1, 1).
+When A and C are single notes, d(A, C) = 0. When A and B are single notes, d(A, B) = 0 and
+d(B, C) = d(A, C), because each has one path and the two offset sequences differ by a
+constant, which neither measure sees. (2, 1, 1) is the mirror image. So no triple of total
+length ≤ 4 violates, for any pitches; [`minimal_counterexample_check.py`](minimal_counterexample_check.py)
+confirms this exhaustively over an 8-pitch alphabet (0 violations at total length ≤ 4, 896 at
+total length 5). From B, a path may *repeat* the matching note to outvote the mismatch. A has only one note, so no path from A can reweight that way. In the
 lemma's terms, the lifted walk here is (1,1,1), (1,1,2), (1,2,2):
 - its sum sequence (−3, −2, −2) would satisfy the entropy bound (0.918 ≤ 0 + 0.918);
 - but the last triple repeats the A–C cell (1, 2);
@@ -226,7 +256,19 @@ The two distinguishing choices:
 
 **What is known, and what we did not find.**
 - The composition mechanism is known: it is the one in the standard proof that the discrete
-  Fréchet distance is a metric.
+  Fréchet distance is a metric, and its discrete form for warping paths is worked out by Jain
+  (2019): expansions by replication, the condensed form (our run collapse), warping functions
+  as monotone surjections, the remark that warping paths are not closed under composition,
+  and a common refinement of two warping functions onto the same middle sequence (his Lemma
+  28), which is our lifted walk. Jain stops at a warping-invariant *semi-metric* for his
+  summed DTW cost; a summed cost is occupancy-sensitive, so the triangle inequality is not
+  claimed there.
+- The property (a) has a name in the time-series literature: Diehl, Ebrahimi-Fard & Tapia
+  (2020) call a functional *time-warping invariant* when it is unchanged by duplicating any
+  element in place, and describe the series as allowed to "stand still" or "stutter". The
+  formal-methods *stutter equivalence* (equality after collapsing repeats) is the same
+  relation. "Stutter-invariant" is therefore not a false friend; the paper can keep it and
+  name the two other vocabularies once.
 - We did not find the general sufficient condition (any stutter-invariant, subadditive
   functional of the coupled differences) stated elsewhere; it may be known informally. It is
   presented with its proof, without a claim of priority.
@@ -246,7 +288,9 @@ The two distinguishing choices:
 - [ ] any standard source that DTW violates the triangle inequality — relied on for: DTW is not a metric
 - [ ] L. Chen, R. Ng, "On the marriage of Lp-norms and edit distance," VLDB 2004, pp. 792–803 — relied on for: ERP is a metric
 - [ ] P.-F. Marteau, "Time warp edit distance with stiffness adjustment for time series matching," *IEEE TPAMI* 31(2):306–318, 2009 — relied on for: TWED is a metric
-- [ ] any standard source for the minimum-label path problem being NP-hard on general graphs (e.g. the "minimum label path" / "minimum color path" literature) — relied on for: the complexity remark under Caveats
+- [x] M. R. Fellows, J. Guo, I. Kanj, "The parameterized complexity of some minimum label problems," *J. Computer and System Sciences* 76(8):727–740, 2010 (WG 2009) — relied on for: Minimum Label Path is NP-hard and W[2]-hard by number of labels even at bounded pathwidth (verified 2026-11-07 from the abstract and the WG slides; the bounded-pathwidth constant differs between sources, check the paper before quoting it)
+- [x] B. J. Jain, "Making the dynamic time warping distance warping-invariant," *Pattern Recognition* 94:35–52, 2019 (arXiv:1903.01454) — relied on for: expansions/condensed form, warping functions as monotone surjections, common refinement (Lemma 28), twi distance a semi-metric (Theorem 5) (verified 2026-11-07 against the ar5iv text)
+- [x] J. Diehl, K. Ebrahimi-Fard, N. Tapia, "Time-warping invariants of multidimensional time series," *Acta Applicandae Mathematicae* 170:265–290, 2020 (arXiv:1906.05823) — relied on for: the term "time-warping invariant" for a functional unchanged by duplicating an element, and the "stutter" wording (verified 2026-11-07 from the abstract and keywords; theorems not read)
 - [ ] J. Allali, P. Ferraro, P. Hanna, C. Iliopoulos, "Local transpositions in alignment of polyphonic musical sequences," SPIRE 2007 — relied on for: that a return to an earlier transposition is charged again (inferred in the survey, not confirmed)
 - [ ] A. Stefan, V. Athitsos, G. Das, "The Move-Split-Merge metric for time series," *IEEE TKDE* 25(6):1425–1438, 2013 — relied on for: MSM is a metric
 
@@ -275,10 +319,25 @@ What to look for while verifying:
   - d_R needs the best path *and* the best transposition. For each candidate window of
     offsets, check whether a path stays inside it: polynomial.
   - d_richness asks for the grid path using the fewest distinct offsets. That is a
-    minimum-label path problem, which is NP-hard on general graphs; its complexity on this
-    grid is open here, so don't claim anything about it. Fixed k is easy: try each set of at
-    most k offsets, then check whether a path exists through cells labelled with them. k ≤ 6
-    is the guitar case.
+    minimum-label path problem. On general graphs it is NP-hard, and W[2]-hard when
+    parameterized by the number of labels even at bounded pathwidth (Fellows, Guo & Kanj
+    2010, by reduction from Hitting Set). Its complexity on this grid, with the special
+    labels δ_ij = b_j − a_i, is open here, so don't claim anything about it. Three separate
+    true statements, not to be merged:
+    1. **Fixed offset budget k** (the guitar's k ≤ 6): try each set of at most k of the L
+       distinct offsets in the grid and test reachability: O(L^k · nm). Polynomial for each
+       fixed k, with k in the exponent: XP, not FPT in k.
+    2. **Bounded pitch alphabet** (MIDI, or an instrument's sounding range): L is a constant,
+       so even the full subset register is polynomial in nm, with a constant that may be
+       astronomical.
+    3. **Variable k, unbounded alphabet:** the parameterized status is not established by
+       either argument.
+    In practice the exact value is computed by a dynamic programme whose state is the grid
+    cell plus the set of offsets used so far (a bitmask), dropping sets larger than k and
+    keeping only inclusion-minimal sets per cell (`gtrsnipe/research/segments.py`,
+    `warped_richness`, R03b). The cap and the dominance rule are both lossless; the running
+    time is explained by dominance and by the small number of distinct offsets a real pair
+    of phrases produces, which no bound here accounts for.
 - **What this does not say.** The R03 experiment found that richness is a weak tune-family
   similarity measure under a fixed grid alignment. This result is about the *geometry* of the
   measures, not their usefulness.
@@ -301,3 +360,14 @@ R.
 
 scottvr then took the revised proof to Gemini, which approved it and contributed a figure
 template ([`../results/collision_plot_template.py`](../results/collision_plot_template.py)).
+
+Revised 2026-11-07 by Claude from the compiled adversarial feedback
+([`20261107-latest-feedback-compilation.md`](20261107-latest-feedback-compilation.md)):
+the transposition-invariance proposition and the quotient remark; the closure statement
+qualified and max(R, J) replaced by max(S, R); the order among the members; the counterexample
+shown minimal by total length (with a check script); the computing-richness caveat split into
+three claims with the register DP named; Jain 2019, Diehl et al. 2020 and Fellows–Guo–Kanj
+2010 added and verified. Still open from that feedback: whether the general theorem is a
+stated special case of a known coupling/quotient construction (the "crossing of mapped roads"
+assessment), and whether stutter-invariance can be weakened to a monotonicity under
+refinement.

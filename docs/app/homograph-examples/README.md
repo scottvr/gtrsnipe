@@ -3,7 +3,7 @@
 Public-domain melodies (plain ABC in C, explicit durations) and the shared tabs
 `gtrsnipe --homograph` builds from them. Each `*.report.txt` is the full report,
 and each `*.tab` is the tab itself, with every song's tuning key in its header.
-Theory: [`docs/app/DESIGN-homograph.md`](../../docs/app/DESIGN-homograph.md).
+Theory: [`docs/app/DESIGN-homograph.md`](../DESIGN-homograph.md).
 
 Decode any tab in any key through the ordinary converter, e.g.
 
@@ -21,7 +21,7 @@ gtrsnipe -i oldmac-twinkle.tab --tuning-pitches 'E2,A2,Bb2,Bb3,A3,C#4' -o b.mid 
 
 *Playability* is the report's discomfort, how many mapper points per note the shared
 tab scores below the first song's own best tab in the same tuning (0 = no comfort lost),
-and the frets the tab uses. See [`DESIGN-homograph.md`](../../docs/app/DESIGN-homograph.md)
+and the frets the tab uses. See [`DESIGN-homograph.md`](../DESIGN-homograph.md)
 §3, "Playability". The first tab costs little comfort; the others are awkward (a
 discomfort of 30 is roughly an extra 10-fret leap per note).
 

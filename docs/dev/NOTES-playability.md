@@ -824,6 +824,17 @@ command 140, string switch 2.5 or 1 or movement 6 all 144, string switch 0 154, 
 4 158 (Crowley lives above fret 4). Caveat: `--prefer-open` moves these bars to open position
 (4 of 16 notes agree), which is the Crowley side of the per-idiom split above.
 
+**scottvr's listening verdict on Crowley (2026-11-08):** *end* beats *onset*, and *end* plays
+the same as the wiki command under Viterbi (`crowley-organ-wiki.viterbi-ss8.tab`). The files
+agree with the ear: parsed note for note (168 notes), end and viterbi-ss8 differ in 4 notes,
+the opening E–F of the figure (and its repeat at bar 11) on the A string at frets 7–8 versus
+the D string at frets 2–3, which he rates equivalent to play; blind differs from viterbi-ss8
+in 8 notes (those four plus the G at fret 10 and the B at fret 9, which `--sweet-spot-high 8`
+forbids), onset differs from it in 14. Since Crowley holds every note to the next onset, the
+end base here is a flat ten-fold movement penalty, so the reading is: on this piece a much
+dearer hand move lands where the hand-ceiling knob lands, and the onset base's moderate
+thumb lands somewhere worse than either.
+
 **Agreement by grade, and a direction for defaults vs profiles** (2026-11-07). The defaults'
 agreement with the editors rises with the syllabus level: Preparatory to Level 4, 29 tabs,
 mean 40–47% with a 21–78% spread; Levels 5 to 8, 15 tabs, mean 49–67% with a narrow spread
