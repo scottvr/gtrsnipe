@@ -355,3 +355,54 @@ def test_cli_a_tab_round_trips_through_itself(monkeypatch, tmp_path):
     assert run(monkeypatch, "-i", str(first), "-o", str(second), "-o", str(mid), "-y", "--tab-letters") == 0
     assert staff(second.read_text()) == staff(first.read_text())             # as written, lengths and all
     assert header(second.read_text(), "Rhythm") == header(first.read_text(), "Rhythm")
+
+
+# -- bar numbers over the staff (--number-bars) ------------------------------------------------
+
+def numbers_rows(text):
+    """Per staff, the bar-number line (the topmost non-blank line of the block above the
+    strings, when it holds only digits), else ''."""
+    lines = text.splitlines()
+    rows = []
+    for i, l in enumerate(lines):
+        if not l.startswith("e|"):
+            continue
+        j = i - 1
+        while j >= 0 and lines[j].strip() and not lines[j].startswith("//"):
+            j -= 1
+        top = lines[j + 1]
+        rows.append(top if top.strip() and top.replace(" ", "").isdigit() and j + 1 < i else "")
+    return rows
+
+
+def test_number_bars_every_bar_and_every_nth_with_a_fresh_number_per_row():
+    eight = [(b * 4 + k, 0, (b + k) % 5) for b in range(8) for k in range(4)]    # 8 bars of quarters
+    plain = tab(eight, max_line_width=40)
+    assert numbers_rows(plain) == ["", "", ""]                                    # off by default
+    every = tab(eight, number_bars=1, max_line_width=40)
+    rows = numbers_rows(every)
+    assert [r.split() for r in rows] == [["1", "2", "3"], ["4", "5", "6"], ["7", "8"]]
+    fourth = tab(eight, number_bars=4, max_line_width=40)
+    assert [r.split() for r in numbers_rows(fourth)] == [["1"], ["4", "5"], ["7"]]   # row starts, then 1, 5
+    # each number sits over the first column after its bar line
+    e_line = [l for l in every.splitlines() if l.startswith("e|")][0]
+    for col, ch in enumerate(rows[0]):
+        if ch.isdigit() and (col == 0 or not rows[0][col - 1].isdigit()):
+            assert e_line[col - 1] == "|"
+
+
+def test_number_bars_stack_with_chord_names_and_letters_and_read_back():
+    text = tab(HYMN, number_bars=1, letters=True)
+    lines = text.splitlines()
+    top = next(i for i, l in enumerate(lines) if l.startswith("e|"))
+    assert lines[top - 2].split()[0] == "1" and lines[top - 1].strip()          # numbers, then letters
+    s = AsciiTabParser.parse(text, open_string_pitches=OPEN)
+    assert [(round(e.time, 4), e.string, e.fret) for e in sorted(s.tracks[0].events, key=lambda e: e.time)] == \
+        [(float(t), st, f) for t, st, f in HYMN]
+
+
+def test_number_bars_cli_flag_and_default():
+    args = setup_parser().parse_args(["-i", "x.mid", "-o", "y.tab"])
+    assert args.number_bars == 0
+    assert setup_parser().parse_args(["-i", "x.mid", "-o", "y.tab", "--number-bars"]).number_bars == 1
+    assert setup_parser().parse_args(["-i", "x.mid", "-o", "y.tab", "--number-bars", "4"]).number_bars == 4

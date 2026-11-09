@@ -214,6 +214,15 @@ M03 and M06.
     onset-to-onset wins, as a rationale they did not give (scottvr, 2026-11-07)
 - [ ] **M07** **Beginner's-version tabs**: a simplified, disclosed version of a complex tab,
   from M05 and M06 plus the difficulty measure. (M; scottvr)
+- [x] **M09** **Score a passage without cutting it out** (`gtrsnipe-research score TAB --bars
+  A-B [knobs]`): a tab's fingering as written, walked as a path and scored with the B26
+  features x weights, per onset and per bar inside the whole piece, beside the mapper's own
+  path for the same notes; the feature difference over the range and the single-knob tie
+  values (lower bounds, since the mapper re-optimises). Exact: a mapped path's recomputed
+  total is the Viterbi score. First use: Carcassi op. 59 no. 11, the open-B bars (notes).
+  (S; scottvr 2026-11-09, done 2026-11-09)
+  - [ ] a `--bars` slice on the converter itself (render or play only those bars), on the
+    same numbering
 
 ### Formats and analysis
 
@@ -226,6 +235,10 @@ M03 and M06.
 - [ ] **F07** **Tab checker follow-ups**: a `--check-tab REF` that lists every conflicting note
   and bar (not just the first bad string); partial alignment for tabs with a few missing or
   extra notes; batch mode over many tabs of one song. (M; parking lot)
+- [x] **F09** **Bar numbers over the staff** (`--number-bars [N]`): every row's first bar and
+  every Nth, counted from 1 at the first bar written; the reference `gtrsnipe-research score
+  --bars` uses. Plucking-hand marks (p i m a, or numerals) are a parking-lot idea: the mapper
+  has no model of the right hand yet. (S; scottvr 2026-11-09, done 2026-11-09)
 
 ### Tests and housekeeping
 

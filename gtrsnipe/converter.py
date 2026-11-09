@@ -182,7 +182,8 @@ def tab_options_from(args) -> dict:
     """The ASCII tab layout options (F08) as keyword arguments for the tab generator."""
     return {"rhythm": getattr(args, "tab_rhythm", None), "base": getattr(args, "tab_base", None),
             "odd_bars": getattr(args, "tab_odd_bars", "columns"),
-            "letters": getattr(args, "tab_letters", False)}
+            "letters": getattr(args, "tab_letters", False),
+            "number_bars": getattr(args, "number_bars", 0)}
 
 
 def transpose_song(song: Song, semitones: int, notes: bool = True) -> None:
@@ -483,8 +484,8 @@ def _load_homograph_song(spec: str, args, anchor_open: list):
     tab_open = None
     if os.path.exists(path):
         fmt = Path(path).suffix.lower().lstrip('.')
-        if fmt == 'tab':
-            with open(path) as f:
+        if fmt in ('tab', 'txt'):           # classtab.org and most tab sites ship .txt
+            with open(path, errors='replace') as f:
                 content = f.read()
             # A tab decodes in its own '// Tuning:' header, else the anchor tuning.
             tab_open = tab.AsciiTabParser.header_tuning(content) or anchor_open
@@ -494,7 +495,7 @@ def _load_homograph_song(spec: str, args, anchor_open: list):
             song = MusicConverter()._parse(path, fmt, track,
                                            quantization_resolution=args.quantization_resolution)
         else:
-            raise ValueError(f"{path}: --homograph reads .mid/.abc/.tab/.vex "
+            raise ValueError(f"{path}: --homograph reads .mid/.abc/.tab/.txt/.vex "
                              "(transcribe audio to .mid first)")
         title = Path(path).stem + (f":{track}" if track and fmt == 'mid' else "")
         if span:

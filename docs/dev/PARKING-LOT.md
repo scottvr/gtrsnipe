@@ -10,6 +10,11 @@ original notes in git history.
 
 ## Ideas
 
+- [ ] **Plucking-hand marks on the tab** (p i m a as classical editors write them, or
+  numerals): a decoration row like `--number-bars`, once something assigns right-hand
+  fingers, which the mapper does not model (its own problem in the literature). (scottvr,
+  2026-11-09)
+
 - [ ] **Transposed tabs: find the offset before comparing** (scottvr, 2026-11-07). Tabs in the
   wild are often not in the piece's key: the fingering was chosen for ease and a tuning or a
   capo would fix the pitch (classtab's Bach cello prelude is "in G", a tenth above ours). Any

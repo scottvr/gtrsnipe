@@ -13,6 +13,7 @@
     gtrsnipe-research sweep crowley.mid:5 asturias.tab --probes --sample nottingham:20
     gtrsnipe-research optimizers --sample nottingham:100 essen:100 --json m02.json
     gtrsnipe-research difficulty song.tab crowley.mid:5 --probes --both -v
+    gtrsnipe-research score editor.tab --bars 23-24 --prefer-open --sweet-spot-high 4
 
 A song is a corpus reference (``NAME:ID``, optionally ``@START-END`` in notes,
 1-based inclusive, or ``#pN`` for phrase N), or anything ``--homograph`` reads:
@@ -463,6 +464,35 @@ def cmd_difficulty(a) -> int:
     return 0
 
 
+def cmd_score(a) -> int:
+    """Score a tab's fingering bar by bar with the mapper's features x weights, beside the
+    mapper's own fingering of the same notes under the same knobs."""
+    import json
+    from . import score as S
+    from ..arguments import build_mapper_config, resolve_num_strings
+    lo, hi = S.parse_bars(a.bars)
+    cfg = build_mapper_config(a, tuning=a.tuning, num_strings=resolve_num_strings(a.tuning, a.num_strings))
+    report = []
+    for spec in a.songs:
+        song, label = load_song(spec, a.data)
+        paths = []
+        if S.fingered(song):
+            paths.append(S.score_path(song, cfg, label))
+        elif a.no_mapper:
+            raise ValueError(f"{spec} carries no fingering to score (give a .tab, or drop --no-mapper)")
+        if not a.no_mapper:
+            paths.append(S.mapper_path(song, cfg, "gtrsnipe"))
+        if len(a.songs) > 1:
+            print(f"### {label}")
+        print(S.format_report(paths, cfg, lo, hi, detail=a.verbose or a.bars is not None))
+        print()
+        report.append({"song": label, "bars": [lo, hi], "paths": [p.to_dict() for p in paths]})
+    if a.json:
+        with open(a.json, "w") as f:
+            json.dump(report, f, indent=1, default=str)
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(prog="gtrsnipe-research", description=__doc__.split("\n\n")[0])
     ap.add_argument("--data", help=f"corpus root folder (default: ${C.ROOT_ENV})")
@@ -604,6 +634,23 @@ def build_parser() -> argparse.ArgumentParser:
     df.add_argument("--json", help="also write the profiles here")
     df.add_argument("-v", "--verbose", action="store_true", help="per-onset detail")
     df.set_defaults(func=cmd_difficulty)
+
+    from ..arguments import add_mapper_args, add_tuning_args
+    sc = sub.add_parser("score", help="score a tab's fingering bar by bar with the mapper's objective, "
+                                      "beside the mapper's own fingering of the same notes",
+                        description="Each onset of the tab, as written, is scored with the mapper's features x "
+                                    "weights under the knobs given (the same flags as gtrsnipe); the mapper's own "
+                                    "fingering of the same notes is scored beside it. --bars shows the per-onset "
+                                    "terms inside a range and the single-knob change that would make the range "
+                                    "tie. Bars count from 1 at the first bar written (--number-bars shows them).")
+    sc.add_argument("songs", nargs="+", help="tabs (their own fingering is scored) or songs (mapper only)")
+    sc.add_argument("--bars", metavar="START[-END]", help="the bars to detail, 1-based inclusive ('23', '23-24', '23-')")
+    sc.add_argument("--no-mapper", action="store_true", help="score only the tabs as written")
+    sc.add_argument("--json", help="also write every path's steps here")
+    sc.add_argument("-v", "--verbose", action="store_true", help="per-onset terms for every bar shown")
+    add_tuning_args(sc.add_argument_group("instrument"))
+    add_mapper_args(sc.add_argument_group("mapper knobs (as in gtrsnipe)"))
+    sc.set_defaults(func=cmd_score)
     return ap
 
 

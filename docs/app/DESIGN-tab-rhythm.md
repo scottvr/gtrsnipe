@@ -246,6 +246,12 @@ the way to another.
   has them they are read first. They are written exactly or not at all: a bar holding a
   length they can't state (a triplet's note) gets no letters, and its layout carries the
   rhythm.
+- **`--number-bars [N]`** (off by default; added after v0.8.2): bar numbers over the staff,
+  on the line above the chord names and letters: over the first bar of every row and over
+  bars 1, N+1, 2N+1, ... (`--number-bars` alone: every bar), each at the first column after
+  its bar line. Bars count from 1 at the first bar written, as the legend's "bars 7, 12 in
+  columns" counts them, so a pickup is bar 1. The reader ignores the line, as it ignores
+  chord names. The same numbers name bars in `gtrsnipe-research score --bars`.
 - **`--max-line-width`** (default 80).
 - Leaving comment lines out is its own item (parking lot, `--omit-comments`). Without the
   `// Rhythm:` line a tab is still a tab; it just reads approximately.

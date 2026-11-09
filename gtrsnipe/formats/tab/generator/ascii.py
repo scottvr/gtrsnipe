@@ -30,7 +30,7 @@ class AsciiTabGenerator:
                  premapped: bool = False, name_chords: bool = False,
                  chord_tone_threshold: Optional[float] = None, shape_names: bool = False,
                  rhythm: Optional[str] = None, base: Optional[str] = None,
-                 odd_bars: str = "columns", letters: bool = False,
+                 odd_bars: str = "columns", letters: bool = False, number_bars: int = 0,
                  **kwargs) -> str:
         """
         Generates an ASCII tab string from a Song object.
@@ -54,6 +54,9 @@ class AsciiTabGenerator:
                 'columns' (and named in the legend), with the 'nearest' lengths, or is
                 an 'error'.
             letters: a line of note lengths (W H q e s t) over each row.
+            number_bars: 0 = no bar numbers; N > 0 = a number over the first bar of each
+                row and over every Nth bar (bars 1, N+1, 2N+1, ...), counting from 1 at the
+                first bar written, as the rhythm legend counts.
         """
         if rhythm is None:
             rhythm = "loose" if getattr(song, "rhythm_approximate", False) else "dashes"
@@ -114,7 +117,8 @@ class AsciiTabGenerator:
         return AsciiTabGenerator._format_score(score, command_line, max_line_width, base_unit_in_beats,
                                                mapper_config, chord_labels=chord_labels,
                                                chord_banner=banner, rhythm=rhythm, base=base_beats,
-                                               odd_bars=odd_bars, letters=letters)
+                                               odd_bars=odd_bars, letters=letters,
+                                               number_bars=number_bars)
 
     @staticmethod
     def _bar_chord_names(song: Song, threshold: float, naming=None, key=None) -> Dict[int, List[tuple]]:
@@ -434,13 +438,15 @@ class AsciiTabGenerator:
     def _format_score(score: TabScore, command_line: str, max_line_width: int, base_unit_in_beats: float,
                       config: MapperConfig, chord_labels: Optional[Dict[int, List[tuple]]] = None,
                       chord_banner: Optional[List[str]] = None, rhythm: str = "loose", base=None,
-                      odd_bars: str = "columns", letters: bool = False) -> str:
+                      odd_bars: str = "columns", letters: bool = False, number_bars: int = 0) -> str:
         """Formats the complete score, breaking lines based on character width.
 
         ``chord_labels`` (measure index -> [(beat in measure, chord name)]) adds a
         line of names above each staff: a name sits over the first note at or after
         its beat, and is written where the chord changes and again at the start of
-        each staff."""
+        each staff. ``number_bars`` N > 0 adds a line of bar numbers above that: over
+        the first bar of each staff and over bars 1, N+1, 2N+1, ... (1-based, as the
+        legend counts bars), each at the first column after its bar line."""
         
         # String labels are indexed 0 = highest, so we need names HIGH->low. Tuning
         # tuples (and custom_tuning) are stored low->high, so reverse them; a custom
@@ -511,8 +517,11 @@ class AsciiTabGenerator:
         last_label: Optional[str] = None
 
         lengths: List[tuple] = []         # (column, note-length letters) for the current staff
+        numbers: List[tuple] = []         # (column, bar number) for the current staff
 
         def flush():
+            if numbers:
+                body.append(AsciiTabGenerator._chord_name_line(numbers))
             if names:
                 body.append(AsciiTabGenerator._chord_name_line(names))
             if letters:
@@ -528,7 +537,10 @@ class AsciiTabGenerator:
                 tab_lines = [f"{name}|" for name in string_names]
                 names = []
                 lengths = []
+                numbers = []
             lengths += [(len(tab_lines[0]) + col, text) for col, text in bar_letters]
+            if number_bars > 0 and (not numbers or m_idx % number_bars == 0):
+                numbers.append((len(tab_lines[0]), str(m_idx + 1)))
 
             for beat, label in (chord_labels.get(m_idx, []) if chord_labels else []):
                 col = next((c for t, c in columns if t >= beat - 1e-6), None)

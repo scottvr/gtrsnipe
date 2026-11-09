@@ -281,6 +281,7 @@ gtrsnipe-research aswritten docs/research/results/aswritten/*.tab       # can a 
 gtrsnipe-research segments mtc-ann --level phrase          # phrase/motif retrieval on MTC-ANN's annotations (R03b)
 gtrsnipe-research sweep asturias.tab --probes --sample nottingham:20   # vary one mapper knob at a time; count distinct tabs (M01)
 gtrsnipe-research optimizers --sample nottingham:100 essen:100         # Viterbi vs greedy on the same tunes, one objective (M02)
+gtrsnipe-research score editor.tab --bars 23-24 --prefer-open          # a tab's fingering scored bar by bar with the mapper's objective, beside the mapper's own
 ```
 
 </details>
@@ -321,6 +322,10 @@ MIDI or ABC, has the rhythm that was written.
      q.   e H
   B|-5----3-3-----|
   ```
+- **`--number-bars [N]`** writes bar numbers over the staff, as published tabs do: over the
+  first bar of every row, and over every Nth bar (`--number-bars` alone numbers every bar;
+  `4` numbers bars 1, 5, 9, ...). Bars count from 1 at the first bar written, so a pickup is
+  bar 1, and the same numbers name bars in `gtrsnipe-research score --bars`.
 - **Rows** hold whole bars, as many as fit `--max-line-width` (default 80).
 - **A tab made from a tab that didn't state its rhythm stays `loose`**, unless you name a
   layout: gtrsnipe doesn't claim lengths its source never gave.
@@ -670,6 +675,7 @@ An abridged reference, grouped as in `gtrsnipe --help`. Run `gtrsnipe --help` fo
 - `--tab-base {auto,1/1,1/2,1/4,1/8,1/16,1/32}`: With `--tab-rhythm dashes`: the note that one dash stands for (default: `auto`, the longest note value no longer than the tune's shortest step).
 - `--tab-odd-bars {columns,nearest,error}`: With `--tab-rhythm dashes`: what to do with a bar holding a length the table lacks. `columns` (default): write that bar with columns as time and name it in the legend; `nearest`: use the nearest lengths and name the bar as approximate; `error`: stop and list such bars.
 - `--tab-letters`: ASCII tab output: a line of note lengths over each row (`W H q e s t`; a dot adds half), on top of any `--tab-rhythm`. Read back when the tab is used as input.
+- `--number-bars [N]`: ASCII tab output: bar numbers over the staff, at the first bar of every row and then every Nth bar (bars 1, N+1, 2N+1, ...; `--number-bars` alone numbers every bar). Bars count from 1 at the first bar written. See [Tab output](#tab-output-the-dashes-say-how-long).
 - `--name-chords`: ASCII tab output: chord names above the staff (see [Chord names over a tab](#chord-names-over-a-tab---name-chords)).
 - `--single-string {1,2,3,4,5,6}`: Force all notes onto a single string (1-6, high e to low E). Ideal for transcribing legato/tapping runs.
 - `--normalize-pitch`: Shift notes (+12 or -12) until they fit within the specified tuning and max fret range. Used when the input has many out-of-range notes that would otherwise be dropped.
