@@ -1,6 +1,6 @@
 # gtrsnipe backlog
 
-The single list of open work, as of **v0.8.2 (2026-11-07)**.
+The single list of open work, as of **v0.8.3 (2026-11-10)**.
 
 ## How this list works: The Dull Protocol
 
@@ -27,7 +27,6 @@ Sizes: **S** is an hour or less, **M** is about a session, **L** is several sess
 The decisions and by-hand checks only he can make, with where each one is written up, so
 that none of them lives in chat scrollback alone (collected 2026-11-09; keep current).
 
-- **B26** go/no-go on merging `feat/feature-vector-scorer` (`--no-ff`) and cutting v0.8.3.
 - **M03** the 65 weak graded-set candidates checked by hand; defaults vs profiles; the ear
   check on the three calibration tabs in `runs/m03-graded-set-2026-11-07/listen/`.
 - **M08** play the differing tabs in `runs/m08-2026-11-07/` (Crowley judged 2026-11-08: *end*
@@ -106,7 +105,7 @@ that none of them lives in chat scrollback alone (collected 2026-11-09; keep cur
   Hoisted, bucketed, step scores memoised per song; identical paths and scores (oracle test
   `tests/mapper/test_viterbi_equivalence.py`); chordal second-order pieces 10–18× faster.
   Next step if needed: split the scorer into per-fingering and per-transition parts.
-  ✓ unreleased, 2026-11-07
+  ✓ v0.8.3
 - [ ] **B26** **Feature-vector scorer** (scottvr's cache idea, 2026-11-07, as the parking lot
   framed it): the step score as `step_features` · `step_weights`, emission and transition
   parts cached separately in the DP, `map_paths_for_weights` for many weight vectors on one
@@ -126,9 +125,8 @@ that none of them lives in chat scrollback alone (collected 2026-11-09; keep cur
     names, nothing bothers him, CLI flags stay put; Claude flagged none either, noting only
     that the two `_break` features are the fixed −1000 sentinels, not exchange rates). They
     print in `gtrsnipe-research score` reports and JSON; a rename would flow from the tuple.
-  - [ ] **scottvr: go/no-go on merging `feat/feature-vector-scorer`** (`--no-ff`) and cutting
-    v0.8.3; the branch also carries F09 (`--number-bars`) and M09 (`gtrsnipe-research score`).
-    Defaults do not change, so 0.8.3 not 0.9.0.
+  - [x] merged and released, defaults unchanged ✓ v0.8.3 (the sweep routing and the
+    pure-weights items above stay open)
 - [ ] **B23** **Triplets don't survive a conversion.** (1) The default pre-quantize pass snaps
   every onset to a 32nd-note grid (`--quantization-resolution 0.125`), so a triplet eighth at
   1/3 of a beat lands on 0.375, in every output; the grid choices include no triplet grid, and
@@ -251,6 +249,7 @@ M03 and M06.
   path for the same notes; the feature difference over the range and the single-knob tie
   values (lower bounds, since the mapper re-optimises). Exact: a mapped path's recomputed
   total is the Viterbi score. First use: Carcassi op. 59 no. 11, the open-B bars (notes).
+  ✓ v0.8.3
   (S; scottvr 2026-11-09, done 2026-11-09)
   - [ ] a `--bars` slice on the converter itself (render or play only those bars), on the
     same numbering
@@ -269,7 +268,7 @@ M03 and M06.
 - [x] **F09** **Bar numbers over the staff** (`--number-bars [N]`): every row's first bar and
   every Nth, counted from 1 at the first bar written; the reference `gtrsnipe-research score
   --bars` uses. Plucking-hand marks (p i m a, or numerals) are a parking-lot idea: the mapper
-  has no model of the right hand yet. (S; scottvr 2026-11-09, done 2026-11-09)
+  has no model of the right hand yet. (S; scottvr 2026-11-09) ✓ v0.8.3
 
 ### Tests and housekeeping
 

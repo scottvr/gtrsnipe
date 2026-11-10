@@ -17,6 +17,13 @@ the last release.
 
 ## [Unreleased]
 
+## [0.8.3] — 2026-11-10
+
+The scorer rebuilt as a feature vector and a weight vector (B26), bit-identical to v0.8.2,
+with two tools built on it for comparing fingerings bar by bar: bar numbers over the staff
+(`--number-bars`, F09) and `gtrsnipe-research score` (M09), which scores a tab's own fingering
+with the mapper's objective. No default output changes.
+
 - Mapper (B26): the scorer is now features × weights (`GuitarMapper.step_features`,
   `step_weights`, `FEATURE_NAMES`), with emission and transition features cached separately in
   the Viterbi DP, and `map_paths_for_weights()` maps a song under many weight vectors from one
@@ -30,6 +37,11 @@ the last release.
   terms and, per feature, the single-knob value at which the range would tie. The recomputed
   total of a mapped path equals the Viterbi score to the last bit (test). The research loader
   now reads `.txt` tabs (classtab's suffix).
+- Docs: the top-level `examples/` folder is retired; the homograph worked examples live beside
+  their design doc in `docs/app/homograph-examples/`, and the wiki's Asturias and Bach tabs
+  that R05 and the mapper measurements run on in `docs/research/results/aswritten/`. The
+  backlog opens with a "Waiting on scottvr" roll-up of the decisions and by-hand checks.
+
 ## [0.8.2] — 2026-11-07
 
 The research turn on the mapper (backlog M03 and M08), with scottvr: a difficulty measure, a
