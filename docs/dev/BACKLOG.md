@@ -1,6 +1,6 @@
 # gtrsnipe backlog
 
-The single list of open work, as of **v0.8.1 (2026-11-07)**.
+The single list of open work, as of **v0.8.2 (2026-11-07)**.
 
 ## How this list works: The Dull Protocol
 
@@ -18,9 +18,31 @@ The single list of open work, as of **v0.8.1 (2026-11-07)**.
 - **Unreleased changes** are listed under `## [Unreleased]` at the top of the CHANGELOG as
   they are committed; the release renames the heading. Commit as work lands; push only with
   a version bump.
-- **IDs are stable** and never reused. Next free: B27, R19, P07, C08, M09, F09, H10.
+- **IDs are stable** and never reused. Next free: B27, R19, P07, C08, M10, F10, H10.
 
 Sizes: **S** is an hour or less, **M** is about a session, **L** is several sessions.
+
+## Waiting on scottvr
+
+The decisions and by-hand checks only he can make, with where each one is written up, so
+that none of them lives in chat scrollback alone (collected 2026-11-09; keep current).
+
+- **B26** go/no-go on merging `feat/feature-vector-scorer` (`--no-ff`) and cutting v0.8.3.
+- **M03** the 65 weak graded-set candidates checked by hand; defaults vs profiles; the ear
+  check on the three calibration tabs in `runs/m03-graded-set-2026-11-07/listen/`.
+- **M08** play the differing tabs in `runs/m08-2026-11-07/` (Crowley judged 2026-11-08: *end*
+  wins; POP909 and the refinger'd Asturias triple still to play), then set the reference and
+  floor and decide the default.
+- **Hand-position scoring**: the five points under "Where this leads (his call)" in
+  [`NOTES-playability.md`](NOTES-playability.md), his transition formula included.
+- **Homograph, the "sounds alike" remainder**: what "alike" means as something heard, whether
+  there is a cutoff, how to report the remainder and the pre-filter totals; parked as
+  "To discuss together" in [`PARKING-LOT.md`](PARKING-LOT.md) (2026-11-04).
+- **Theory**: the draft paper's restructuring is his; the literature question (is the general
+  theorem a stated special case of a known coupling/quotient construction, and can
+  stutter-invariance be weakened) is at the end of
+  [`PROOF-alignment.md`](../research/theory/PROOF-alignment.md).
+- **R13** the citation check, in progress.
 
 ---
 
@@ -98,11 +120,12 @@ Sizes: **S** is an hour or less, **M** is about a session, **L** is several sess
     because the DP loops, not the scoring, now dominate; a vectorised DP would be the next step
   - [ ] make `prefer_open`, `let_ring` on/off, `diagonal_span` pure weights where exact (the
     let-ring gate on the t-2 read is the obstacle; see §2.2)
-  - [ ] **scottvr: keep or rename the ten feature names** before they spread further
-    (`GuitarMapper.FEATURE_NAMES` in `gtrsnipe/guitar/mapper.py`: span, span_break,
-    in_sweet_spot, over_sweet_spot, barre; move, string_switch, diagonal_break, ringing,
-    fretted_open). They already print in `gtrsnipe-research score` reports and JSON; a rename
-    flows through from the tuple. Asked 2026-11-07, not blocking.
+  - [x] **the ten feature names** (`GuitarMapper.FEATURE_NAMES` in `gtrsnipe/guitar/mapper.py`:
+    span, span_break, in_sweet_spot, over_sweet_spot, barre; move, string_switch,
+    diagonal_break, ringing, fretted_open) kept as they are (scottvr, 2026-11-09: internal
+    names, nothing bothers him, CLI flags stay put; Claude flagged none either, noting only
+    that the two `_break` features are the fixed −1000 sentinels, not exchange rates). They
+    print in `gtrsnipe-research score` reports and JSON; a rename would flow from the tuple.
   - [ ] **scottvr: go/no-go on merging `feat/feature-vector-scorer`** (`--no-ff`) and cutting
     v0.8.3; the branch also carries F09 (`--number-bars`) and M09 (`gtrsnipe-research score`).
     Defaults do not change, so 0.8.3 not 0.9.0.
