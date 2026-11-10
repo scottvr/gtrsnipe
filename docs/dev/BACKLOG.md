@@ -98,6 +98,14 @@ Sizes: **S** is an hour or less, **M** is about a session, **L** is several sess
     because the DP loops, not the scoring, now dominate; a vectorised DP would be the next step
   - [ ] make `prefer_open`, `let_ring` on/off, `diagonal_span` pure weights where exact (the
     let-ring gate on the t-2 read is the obstacle; see §2.2)
+  - [ ] **scottvr: keep or rename the ten feature names** before they spread further
+    (`GuitarMapper.FEATURE_NAMES` in `gtrsnipe/guitar/mapper.py`: span, span_break,
+    in_sweet_spot, over_sweet_spot, barre; move, string_switch, diagonal_break, ringing,
+    fretted_open). They already print in `gtrsnipe-research score` reports and JSON; a rename
+    flows through from the tuple. Asked 2026-11-07, not blocking.
+  - [ ] **scottvr: go/no-go on merging `feat/feature-vector-scorer`** (`--no-ff`) and cutting
+    v0.8.3; the branch also carries F09 (`--number-bars`) and M09 (`gtrsnipe-research score`).
+    Defaults do not change, so 0.8.3 not 0.9.0.
 - [ ] **B23** **Triplets don't survive a conversion.** (1) The default pre-quantize pass snaps
   every onset to a 32nd-note grid (`--quantization-resolution 0.125`), so a triplet eighth at
   1/3 of a beat lands on 0.375, in every output; the grid choices include no triplet grid, and
