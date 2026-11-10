@@ -835,6 +835,22 @@ end base here is a flat ten-fold movement penalty, so the reading is: on this pi
 dearer hand move lands where the hand-ceiling knob lands, and the onset base's moderate
 thumb lands somewhere worse than either.
 
+**The open-B bars of Carcassi op. 59 no. 11, in numbers** (2026-11-09, with the new
+`gtrsnipe-research score`). scottvr's one steady disagreement with the classical two-knob set
+(`--prefer-open --sweet-spot-high 4`) on this piece: where the editor plays B3 on the G
+string at fret 4 (leaving the B string free), gtrsnipe plays the open B. Scored as written inside the whole piece, the editor's bars 25 and 26 come to
+−175.5 and −106.5 against gtrsnipe's −103.5 and −71.5, a margin of −107 over the two bars
+(−315 over the piece, 12 notes differ). The margin decomposes as: fretted_open 3 × −20 = −60,
+string_switch 6 × −5 = −30, over_sweet_spot 2 × −5 = −10, move 2 × −3 = −6, in_sweet_spot
+−1, and ringing +3 × 0. No penalty knob can tie it by itself without going negative: the
+editor's choice costs more of everything the scorer charges for. The one knob that can is
+the one it is not charging: the editor's fingering leaves three more strings ringing, and
+`let_ring_bonus` at about 36 would tie the two bars (a lower bound, since the mapper would
+re-optimise; the full sweep found let-ring at 210 drops this piece's agreement from 95% to
+84%). That is the mechanism behind his m. 23 remark: the editor's G:4 is a let-ring choice,
+and gtrsnipe's B:0 is what makes the Fischer edition's "impossible" low F reachable. A
+profile that honours it needs a let-ring weight sized for this idiom, not the Asturias one.
+
 **Agreement by grade, and a direction for defaults vs profiles** (2026-11-07). The defaults'
 agreement with the editors rises with the syllabus level: Preparatory to Level 4, 29 tabs,
 mean 40–47% with a 21–78% spread; Levels 5 to 8, 15 tabs, mean 49–67% with a narrow spread

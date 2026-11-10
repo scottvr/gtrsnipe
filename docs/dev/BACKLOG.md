@@ -1,6 +1,6 @@
 # gtrsnipe backlog
 
-The single list of open work, as of **v0.8.1 (2026-11-07)**.
+The single list of open work, as of **v0.8.3 (2026-11-10)**.
 
 ## How this list works: The Dull Protocol
 
@@ -18,9 +18,30 @@ The single list of open work, as of **v0.8.1 (2026-11-07)**.
 - **Unreleased changes** are listed under `## [Unreleased]` at the top of the CHANGELOG as
   they are committed; the release renames the heading. Commit as work lands; push only with
   a version bump.
-- **IDs are stable** and never reused. Next free: B26, R19, P07, C08, M09, F09, H10.
+- **IDs are stable** and never reused. Next free: B27, R19, P07, C08, M10, F10, H10.
 
 Sizes: **S** is an hour or less, **M** is about a session, **L** is several sessions.
+
+## Waiting on scottvr
+
+The decisions and by-hand checks only he can make, with where each one is written up, so
+that none of them lives in chat scrollback alone (collected 2026-11-09; keep current).
+
+- **M03** the 65 weak graded-set candidates checked by hand; defaults vs profiles; the ear
+  check on the three calibration tabs in `runs/m03-graded-set-2026-11-07/listen/`.
+- **M08** play the differing tabs in `runs/m08-2026-11-07/` (Crowley judged 2026-11-08: *end*
+  wins; POP909 and the refinger'd Asturias triple still to play), then set the reference and
+  floor and decide the default.
+- **Hand-position scoring**: the five points under "Where this leads (his call)" in
+  [`NOTES-playability.md`](NOTES-playability.md), his transition formula included.
+- **Homograph, the "sounds alike" remainder**: what "alike" means as something heard, whether
+  there is a cutoff, how to report the remainder and the pre-filter totals; parked as
+  "To discuss together" in [`PARKING-LOT.md`](PARKING-LOT.md) (2026-11-04).
+- **Theory**: the draft paper's restructuring is his; the literature question (is the general
+  theorem a stated special case of a known coupling/quotient construction, and can
+  stutter-invariance be weakened) is at the end of
+  [`PROOF-alignment.md`](../research/theory/PROOF-alignment.md).
+- **R13** the citation check, in progress.
 
 ---
 
@@ -84,7 +105,28 @@ Sizes: **S** is an hour or less, **M** is about a session, **L** is several sess
   Hoisted, bucketed, step scores memoised per song; identical paths and scores (oracle test
   `tests/mapper/test_viterbi_equivalence.py`); chordal second-order pieces 10–18× faster.
   Next step if needed: split the scorer into per-fingering and per-transition parts.
-  ✓ unreleased, 2026-11-07
+  ✓ v0.8.3
+- [ ] **B26** **Feature-vector scorer** (scottvr's cache idea, 2026-11-07, as the parking lot
+  framed it): the step score as `step_features` · `step_weights`, emission and transition
+  parts cached separately in the DP, `map_paths_for_weights` for many weight vectors on one
+  feature pass. Design note in `DESIGN-viterbi-mapper.md` §2.2.
+  - [x] scorer refactored, bit-identical scores (oracle test), 927 tests green (branch
+    `feat/feature-vector-scorer`)
+  - [x] `map_paths_for_weights` reproduces separate mappers: all 2,816 (piece, weight-vector)
+    rows of the graded sweep's weight-only quarter, to the note (`weights_demo.py` in the run folder)
+  - [ ] the research sweep and the weight fit go through it (`gtrsnipe-research`)
+  - [x] single-mapping cost recovered (emission cache); sweep-side gain is 2–3× per vector
+    because the DP loops, not the scoring, now dominate; a vectorised DP would be the next step
+  - [ ] make `prefer_open`, `let_ring` on/off, `diagonal_span` pure weights where exact (the
+    let-ring gate on the t-2 read is the obstacle; see §2.2)
+  - [x] **the ten feature names** (`GuitarMapper.FEATURE_NAMES` in `gtrsnipe/guitar/mapper.py`:
+    span, span_break, in_sweet_spot, over_sweet_spot, barre; move, string_switch,
+    diagonal_break, ringing, fretted_open) kept as they are (scottvr, 2026-11-09: internal
+    names, nothing bothers him, CLI flags stay put; Claude flagged none either, noting only
+    that the two `_break` features are the fixed −1000 sentinels, not exchange rates). They
+    print in `gtrsnipe-research score` reports and JSON; a rename would flow from the tuple.
+  - [x] merged and released, defaults unchanged ✓ v0.8.3 (the sweep routing and the
+    pure-weights items above stay open)
 - [ ] **B23** **Triplets don't survive a conversion.** (1) The default pre-quantize pass snaps
   every onset to a 32nd-note grid (`--quantization-resolution 0.125`), so a triplet eighth at
   1/3 of a beat lands on 0.375, in every output; the grid choices include no triplet grid, and
@@ -201,6 +243,16 @@ M03 and M06.
     onset-to-onset wins, as a rationale they did not give (scottvr, 2026-11-07)
 - [ ] **M07** **Beginner's-version tabs**: a simplified, disclosed version of a complex tab,
   from M05 and M06 plus the difficulty measure. (M; scottvr)
+- [x] **M09** **Score a passage without cutting it out** (`gtrsnipe-research score TAB --bars
+  A-B [knobs]`): a tab's fingering as written, walked as a path and scored with the B26
+  features x weights, per onset and per bar inside the whole piece, beside the mapper's own
+  path for the same notes; the feature difference over the range and the single-knob tie
+  values (lower bounds, since the mapper re-optimises). Exact: a mapped path's recomputed
+  total is the Viterbi score. First use: Carcassi op. 59 no. 11, the open-B bars (notes).
+  ✓ v0.8.3
+  (S; scottvr 2026-11-09, done 2026-11-09)
+  - [ ] a `--bars` slice on the converter itself (render or play only those bars), on the
+    same numbering
 
 ### Formats and analysis
 
@@ -213,6 +265,10 @@ M03 and M06.
 - [ ] **F07** **Tab checker follow-ups**: a `--check-tab REF` that lists every conflicting note
   and bar (not just the first bad string); partial alignment for tabs with a few missing or
   extra notes; batch mode over many tabs of one song. (M; parking lot)
+- [x] **F09** **Bar numbers over the staff** (`--number-bars [N]`): every row's first bar and
+  every Nth, counted from 1 at the first bar written; the reference `gtrsnipe-research score
+  --bars` uses. Plucking-hand marks (p i m a, or numerals) are a parking-lot idea: the mapper
+  has no model of the right hand yet. (S; scottvr 2026-11-09) ✓ v0.8.3
 
 ### Tests and housekeeping
 

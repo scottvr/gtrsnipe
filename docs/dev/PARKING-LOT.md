@@ -10,6 +10,11 @@ original notes in git history.
 
 ## Ideas
 
+- [ ] **Plucking-hand marks on the tab** (p i m a as classical editors write them, or
+  numerals): a decoration row like `--number-bars`, once something assigns right-hand
+  fingers, which the mapper does not model (its own problem in the literature). (scottvr,
+  2026-11-09)
+
 - [ ] **Transposed tabs: find the offset before comparing** (scottvr, 2026-11-07). Tabs in the
   wild are often not in the piece's key: the fingering was chosen for ease and a tuning or a
   capo would fix the pitch (classtab's Bach cello prelude is "in G", a tenth above ours). Any
@@ -266,7 +271,7 @@ original notes in git history.
   as a cost; the stylistic profiles (classical vs metal) would then set that threshold rather
   than the flag. Numbers: "The same sweep against the editors" and "Crowley by ear" in
   [`NOTES-playability.md`](NOTES-playability.md).
-- [ ] **Feature-vector scorer (and, behind it, a cache of step features)** (scottvr + Claude,
+- [x] **Feature-vector scorer (and, behind it, a cache of step features)** → backlog B26, started 2026-11-07 (scottvr + Claude,
   2026-11-07; from the B25 speed-up and scottvr's idea of a persistent LRU of repeating
   changes). A step score is a weighted sum of a handful of features (frets moved, strings
   changed, span, mean position over the ceiling, fretted notes with an open twin, strings left

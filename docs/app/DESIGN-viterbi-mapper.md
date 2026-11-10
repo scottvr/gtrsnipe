@@ -82,6 +82,35 @@ implementation:
 Because greedy's realized total is `Σ_t score(chosen_t, …)` over the same
 candidate universe and the same function, the DP optimum is provably **≥ greedy**.
 
+**Since the feature-vector refactor (branch `feat/feature-vector-scorer`, 2026-11-07):**
+the scorer *is* the decomposition framing, made explicit. `step_features(f, prev, pp, gap)`
+returns a 10-vector (`FEATURE_NAMES`): five **emission** features of the fingering alone
+(span, span break, in sweet spot, frets over the sweet spot, barre) and five
+**transition** features of the step into it (frets of travel × the M08 time factor,
+strings switched, diagonal break, strings left ringing, fretted notes with an open twin).
+`step_weights()` turns the config into the vector they are scored against (penalties
+negative; the two `-1000` short-circuits are weights on 0/1 features; the diagonal weight
+is 0 when the flag is off, the fretted-open weight is 0 unless `--prefer-open`).
+`_score_fingering` is their dot product, accumulated as ONE running sum in the old term
+order, so every score is bit-identical to the pre-refactor scorer (20/20 oracle runs). The
+order matters: adding the emission and transition halves as two partial sums moved the
+last bit on three-note fret averages and flipped a tie on one classtab piece, so the
+equivalence test asserts exact equality of path scores, not closeness. Structural settings
+stay in the features: the sweet-spot bounds, the unplayable span, ignore-open, the
+diagonal flag, and whether let-ring is on at all (the second-order gate reads the
+config's `let_ring_bonus > 0`, not the weight).
+
+What it buys: the DP caches emission features once per candidate per stage and
+transition features once per `(f_t, f_{t-1}, gap)`, and `map_paths_for_weights()` runs
+the DP for many weight vectors on **one** feature pass, which is what a knob sweep or a
+weight fit needs; a profile is a weight vector; tempo scaling (M08) is a multiplier on
+one component. Single mappings cost the same as before the refactor once the emission
+cache is in (Sor minuet, first order 1.0 s, second order 1.9 s against 25 s before B25);
+on a 64-vector sweep the DP itself, not the scoring, is now the cost, so the feature pass
+buys roughly 2 to 3× per vector on chordal pieces (measured on the 44 graded tabs), not
+the order of magnitude a vectorised DP would.
+
+
 ### 2.3 Adaptive model order — first-order by default, exact second-order when needed
 
 `score` depends on `f_{t-2}` **only** through the block guarded by

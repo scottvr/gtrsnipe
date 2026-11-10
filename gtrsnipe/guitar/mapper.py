@@ -114,120 +114,162 @@ class GuitarMapper:
             start = prev_group[0].time
         return max(0.0, (t - start) * spb)
 
-    def _score_fingering(self, fingering: Fingering, prev_fingering: Optional[Fingering], prev_prev_fingering: Optional[Fingering],
-                         gap_seconds: Optional[float] = None) -> float:
-        """Scores a fingering based on internal shape, position, and transition cost.
-        ``gap_seconds`` is the time the hand had for the move from ``prev_fingering`` (M08);
-        a per-stage constant, so it leaves first-order Viterbi exact."""
-        
-        # 1. Internal Shape Score (Compactness)
-        fret_span = self._chord_span(fingering)
-        score = -fret_span * self.config.fret_span_penalty
-        if fret_span > self.config.unplayable_fret_span:
-            # Wider than the hand: rank it below every fingering that fits, but keep
-            # scoring, so that when no fingering of a chord fits (all of them land here)
-            # the other terms still choose the least bad one instead of the first one.
-            score -= 1000
+    # ---- the scorer as features x weights -------------------------------------------
+    #
+    # A step score is a dot product: step_features() extracts what a fingering and its
+    # transition look like (frets of span, frets of hand travel, strings changed, ...) and
+    # step_weights() turns the config into the vector it is multiplied by. Structural
+    # settings (sweet-spot bounds, the unplayable span, ignore-open, the diagonal-span
+    # flag, and whether let-ring is on at all) live in the features; everything that is
+    # an exchange rate lives in the weights. This lets a profile be a weight vector,
+    # lets tempo scale one component (M08 multiplies the travel feature), and lets a
+    # sweep or a weight fit extract features once and re-score by dot product
+    # (map_paths_for_weights). The arithmetic is the pre-refactor scorer's, term by term
+    # and in the same order, so scores are identical to the last bit on every input
+    # tested (tests/mapper/test_viterbi_equivalence.py).
 
-        # 2. Positional Score (Where on the neck?)
+    FEATURE_NAMES: Tuple[str, ...] = (
+        "span",            # fret span of the fingering (open strings dropped under ignore_open)
+        "span_break",      # 1 if that span is wider than unplayable_fret_span
+        "in_sweet_spot",   # 1 if the mean fret is inside [sweet_spot_low, sweet_spot_high]
+        "over_sweet_spot", # frets the mean sits above sweet_spot_high (x low_string multiplier if a low string is used)
+        "barre",           # notes sharing the most common fretted fret, minus one
+        "move",            # frets of mean-position travel from the previous fingering, x the M08 time factor
+        "string_switch",   # strings used by exactly one of the two fingerings
+        "diagonal_break",  # 1 if the combined fretted span over the last two (or three) fingerings is unplayable
+        "ringing",         # previous strings this fingering leaves free to ring
+        "fretted_open",    # fretted notes whose pitch an open string could play
+    )
+
+    def step_weights(self) -> Tuple[float, ...]:
+        """The config as the weight vector step_features() is scored against (same order
+        as FEATURE_NAMES; penalties negative, bonuses positive)."""
+        c = self.config
+        return (
+            -c.fret_span_penalty,
+            -1000.0,
+            c.sweet_spot_bonus,
+            -c.high_fret_penalty,
+            c.barre_bonus - c.barre_penalty,
+            -c.movement_penalty,
+            -c.string_switch_penalty,
+            -1000.0 if c.diagonal_span_penalty else 0.0,
+            c.let_ring_bonus,
+            -c.fretted_open_penalty if c.prefer_open else 0.0,
+        )
+
+    EMISSION = 5   # the first EMISSION features depend on the fingering alone
+
+    def emission_features(self, fingering: Fingering) -> Tuple[float, ...]:
+        """The features of a fingering by itself: span, span_break, in_sweet_spot,
+        over_sweet_spot, barre (FEATURE_NAMES[:EMISSION]). The DP computes these once per
+        candidate per stage, not once per pair."""
+        c = self.config
+
+        # 1. internal shape
+        span = float(self._chord_span(fingering))
+        span_break = 1.0 if span > c.unplayable_fret_span else 0.0
+
+        # 2. position on the neck
+        in_spot = over = 0.0
         if fingering:
             avg_fret = sum(p.fret for p in fingering) / len(fingering)
-            if self.config.sweet_spot_low <= avg_fret <= self.config.sweet_spot_high:
-                score += self.config.sweet_spot_bonus
-            elif avg_fret > self.config.sweet_spot_high:
-                positional_penalty = (avg_fret - self.config.sweet_spot_high) * self.config.high_fret_penalty
-                strings_used = {pos.string for pos in fingering}
-                if any(s >= 4 for s in strings_used): # Penalize high frets on low strings more
-                    positional_penalty *= self.config.low_string_high_fret_multiplier
-                score -= positional_penalty
+            if c.sweet_spot_low <= avg_fret <= c.sweet_spot_high:
+                in_spot = 1.0
+            elif avg_fret > c.sweet_spot_high:
+                over = avg_fret - c.sweet_spot_high
+                if any(p.string >= 4 for p in fingering):   # high frets on the low strings
+                    over *= c.low_string_high_fret_multiplier
 
-        # 3. Barre Chord Score (Economy of Motion)
-        if len(fingering) > 1: # Only apply to chords of 2 or more notes
-            # We only consider fretted notes for barre shapes, ignoring open strings
-            fretted_notes = [pos.fret for pos in fingering if pos.fret > 0]
+        # 3. barre (two or more notes on the same fret)
+        barre = 0.0
+        if len(fingering) > 1:
+            fretted_notes = [p.fret for p in fingering if p.fret > 0]
             if fretted_notes:
-                # Count the occurrences of each fret number
-                fret_counts = Counter(fretted_notes)
-                # Find the most common fret in the chord
-                most_common_fret, count = fret_counts.most_common(1)[0]
-                
-                # If more than one note is on the same fret, it's a potential barre
+                _, count = Counter(fretted_notes).most_common(1)[0]
                 if count > 1:
-                    # The bonus/penalty is proportional to the number of notes in the barre
-                    score += (count - 1) * self.config.barre_bonus
-                    score -= (count - 1) * self.config.barre_penalty
+                    barre = float(count - 1)
 
-        # 4. Transition Score (Cost of movement from previous fingering)
+        return (span, span_break, in_spot, over, barre)
+
+    def transition_features(self, fingering: Fingering, prev_fingering: Optional[Fingering],
+                            prev_prev_fingering: Optional[Fingering],
+                            gap_seconds: Optional[float] = None) -> Tuple[float, ...]:
+        """The features of the step into a fingering: move, string_switch, diagonal_break,
+        ringing, fretted_open (FEATURE_NAMES[EMISSION:]). ``gap_seconds`` is the time the
+        hand had for the move (M08), a per-stage constant. (fretted_open depends on the
+        fingering alone but is scored after the transition terms, and the sum is kept in the
+        pre-refactor order so scores stay bit-identical.)"""
+        c = self.config
+        move = switch = diagonal = ringing = 0.0
         if prev_fingering and fingering:
-            # Penalize movement up/down the neck
-            avg_current_fret = sum(p.fret for p in fingering) / len(fingering)
-            avg_prev_fret = sum(p.fret for p in prev_fingering) / len(prev_fingering)
-            fret_diff = abs(avg_current_fret - avg_prev_fret)
-            score -= fret_diff * self.config.movement_penalty * self._movement_factor(gap_seconds)
-            
-            # Penalize changing strings
-            strings_used = {pos.string for pos in fingering}
-            prev_strings_used = {pos.string for pos in prev_fingering}
-            string_changes = len(strings_used.symmetric_difference(prev_strings_used))
-            score -= string_changes * self.config.string_switch_penalty
+            avg_current = sum(p.fret for p in fingering) / len(fingering)
+            avg_prev = sum(p.fret for p in prev_fingering) / len(prev_fingering)
+            move = abs(avg_current - avg_prev) * self._movement_factor(gap_seconds)
 
-            # Penalize fingerings that require an impossible stretch from the previous note.
-            if self.config.diagonal_span_penalty:
-                all_frets = [pos.fret for pos in fingering if pos.fret > 0]
-                prev_frets = [pos.fret for pos in prev_fingering if pos.fret > 0]
-                
-                # Include the "previous-previous" frets if let-ring is on ---
-                # This checks the span of the full three-note context.
-                #
+            strings_used = {p.string for p in fingering}
+            prev_strings_used = {p.string for p in prev_fingering}
+            switch = float(len(strings_used.symmetric_difference(prev_strings_used)))
+
+            if c.diagonal_span_penalty:
+                all_frets = [p.fret for p in fingering if p.fret > 0]
+                prev_frets = [p.fret for p in prev_fingering if p.fret > 0]
                 # LANDMINE GUARD: this is the ONLY place the scorer reads t-2
-                # (prev_prev_fingering). The Viterbi mapper's first-order collapse
-                # is exact only because the score depends on t-2 solely through
-                # this let_ring + diagonal_span gate — see `needs_second_order` in
-                # map_multi_string(). If you add any deeper-history read here,
-                # update needs_second_order (and its test) or global optimality
-                # silently breaks. map_multi_string's _t2_delta mirrors this block
-                # for the bucketed second-order DP: change both together.
-                if self.config.let_ring_bonus > 0 and prev_prev_fingering:
-                    prev_prev_frets = [pos.fret for pos in prev_prev_fingering if pos.fret > 0]
-                    prev_frets.extend(prev_prev_frets)
-
+                # (prev_prev_fingering). The Viterbi mapper's first-order collapse is
+                # exact only because the score depends on t-2 solely through this
+                # let_ring + diagonal_span gate; see `second_order` in _viterbi and
+                # `_t2_delta`, which mirrors this block. Any deeper-history read here
+                # must update both (and the test), or global optimality silently breaks.
+                if c.let_ring_bonus > 0 and prev_prev_fingering:
+                    prev_frets.extend(p.fret for p in prev_prev_fingering if p.fret > 0)
                 if all_frets and prev_frets:
-                    # Calculate the maximum span between any note in the previous fingering
-                    # and any note in the current fingering.
-                    min_fret_combined = min(all_frets + prev_frets)
-                    max_fret_combined = max(all_frets + prev_frets)
-                    diagonal_span = max_fret_combined - min_fret_combined
-                    
-                    if diagonal_span > self.config.unplayable_fret_span:
-                        # Apply a heavy penalty to effectively disqualify this fingering.
-                        score -= 1000 
+                    if max(all_frets + prev_frets) - min(all_frets + prev_frets) > c.unplayable_fret_span:
+                        diagonal = 1.0
 
-            # Reward fingerings that leave the previous note's string open.
-            if self.config.let_ring_bonus > 0:
-                # Find which strings from the previous fingering are now free.
-                ringing_strings = prev_strings_used - strings_used
-                if ringing_strings:
-                    # Apply a bonus for each string that is now allowed to ring out.
-                    score += len(ringing_strings) * self.config.let_ring_bonus
+            ringing = float(len(prev_strings_used - strings_used))
 
-        if self.config.prefer_open:
-            # Create a set of open string pitches for fast lookups
-            open_pitches_set = set(self.open_string_pitches)
-            
-            for pos in fingering:
-                # If this is a fretted note...
-                if pos.fret > 0:
-                    # ...calculate its pitch.
-                    current_pitch = self.open_string_pitches[pos.string] + pos.fret
-                    
-                    # If that same pitch exists as an open string...
-                    if current_pitch in open_pitches_set:
-                        # ...apply a penalty to this fretted fingering.
-                        score -= self.config.fretted_open_penalty
+        # fretted notes an open string could have played
+        fretted_open = 0.0
+        open_pitches = self.open_string_pitches
+        for p in fingering:
+            if p.fret > 0 and (open_pitches[p.string] + p.fret) in open_pitches:
+                fretted_open += 1.0
 
-        return score    
-    
-    
+        return (move, switch, diagonal, ringing, fretted_open)
+
+    def step_features(self, fingering: Fingering, prev_fingering: Optional[Fingering],
+                      prev_prev_fingering: Optional[Fingering],
+                      gap_seconds: Optional[float] = None) -> Tuple[float, ...]:
+        """The feature vector of one step (see FEATURE_NAMES): emission_features of the
+        fingering followed by transition_features of the step into it."""
+        return self.emission_features(fingering) + self.transition_features(
+            fingering, prev_fingering, prev_prev_fingering, gap_seconds)
+
+    @staticmethod
+    def score_features(features: Tuple[float, ...], weights: Tuple[float, ...],
+                       more: Tuple[float, ...] = (), more_weights: Tuple[float, ...] = ()) -> float:
+        """Dot product accumulated term by term in feature order, continuing through
+        ``more`` (the transition features after the emission ones) in ONE running sum: the
+        pre-refactor scorer's order, so scores are bit-identical and near-ties break the
+        same way. (Two partial sums added together moved the last bit on fret averages
+        over three notes and flipped a tie on one classtab piece.)"""
+        score = 0.0
+        for f, w in zip(features, weights):
+            if f:
+                score += f * w
+        for f, w in zip(more, more_weights):
+            if f:
+                score += f * w
+        return score
+
+    def _score_fingering(self, fingering: Fingering, prev_fingering: Optional[Fingering], prev_prev_fingering: Optional[Fingering],
+                         gap_seconds: Optional[float] = None) -> float:
+        """Score of a fingering given the previous (and, under the second-order gate, the one
+        before): step_features() dotted with step_weights(). Kept as the one scoring entry
+        point the greedy path, the tests and the research code call."""
+        return self.score_features(self.step_features(fingering, prev_fingering, prev_prev_fingering, gap_seconds),
+                                   self.step_weights())
+
     def _find_optimal_fingering(self, notes: List[MusicalEvent], prev_fingering: Optional[Fingering], prev_prev_fingering: Optional[Fingering],
                                 gap_seconds: Optional[float] = None) -> Optional[Fingering]:
         note_positions = []
@@ -388,9 +430,11 @@ class GuitarMapper:
         return valid
 
     def _t2_delta(self, rk, rj, rpp) -> float:
-        """What the scorer's t-2 term adds to score(f_k, f_j, None) when the true
-        f_{t-2} has fretted range ``rpp``: the diagonal-span check over the three
-        fingerings' fretted frets fires (-1000) where the check over two did not.
+        """Whether (and by how much, -1000) the scorer's t-2 term would change
+        score(f_k, f_j, None) when the true f_{t-2} has fretted range ``rpp``: the
+        diagonal-span check over the three fingerings' fretted frets fires where the
+        check over two did not. The DP uses it as a test and re-scores with the
+        diagonal feature set, so the bits match the plain scorer.
         Mirrors the LANDMINE GUARD block in _score_fingering exactly (the only t-2
         read), with ranges in place of fret lists; the equivalence test holds the
         plain triple loop as the oracle for both."""
@@ -410,19 +454,9 @@ class GuitarMapper:
         frets = [p.fret for p in fingering if p.fret > 0]
         return (min(frets), max(frets)) if frets else None
 
-    def map_multi_string(self, time_groups: List[List[MusicalEvent]]) -> List[MusicalEvent]:
-        """Global-optimum fretboard mapping via Viterbi/DP over a trellis.
-
-        Each time-group is a stage whose nodes are its valid fingerings. Edge and
-        emission costs come from the UNMODIFIED _score_fingering, so the DP's
-        objective is identical to greedy's, and its optimum is provably >= greedy.
-        First-order Viterbi is exact unless the scorer's t-2 term is active
-        (let_ring + diagonal_span), in which case an ordered pair-state carries
-        the true f_{t-2}. See DESIGN-viterbi-mapper.md.
-        """
-        NONE = -1  # sentinel index for "no fingering" (absent prev / prev_prev)
-        self.last_path_score = None    # until this call finds a path (the early returns below)
-
+    def _trellis(self, time_groups: List[List[MusicalEvent]]):
+        """Stages of the DP: the kept groups, their candidate fingerings, and the time each
+        hand move had (M08). Dead-end groups are dropped as greedy drops them."""
         kept: List[List[MusicalEvent]] = []
         cand: List[List[Fingering]] = []
         for g in time_groups:
@@ -432,38 +466,58 @@ class GuitarMapper:
                 kept.append(g2)
                 cand.append(cs)
             else:
-                # Dead-end group: notes not emitted, context does not advance
-                # (identical to greedy's None-skip).
                 logger.warning(f"Could not find a playable fingering for notes at time {g[0].time}")
+        gaps = [None] + [self._gap_seconds(kept[t - 1], kept[t]) for t in range(1, len(kept))]
+        return kept, cand, gaps
 
+    def _viterbi(self, cand: List[List[Fingering]], gaps: List[Optional[float]],
+                 weights: Tuple[float, ...], memo: dict):
+        """Best path through the trellis under ``weights``: (chosen candidate index per
+        stage, path score), or (None, None) if there is none. ``memo`` caches step
+        feature vectors by (fingering, previous, gap) and may be shared across calls with
+        different weights (map_paths_for_weights): features do not depend on weights.
+
+        First-order Viterbi is exact unless the scorer's t-2 term is active (let_ring +
+        diagonal_span), in which case an ordered pair-state carries the true f_{t-2}.
+        See DESIGN-viterbi-mapper.md. Both stage loops below are exact rewrites of the
+        plain triple loop "for k, for j, for i", with the same tie-break (the smallest i
+        among equal values); tests/mapper/test_viterbi_equivalence.py keeps that loop as
+        the oracle."""
+        NONE = -1
         T = len(cand)
         if T == 0:
-            return []
-
+            return None, None
         second_order = bool(self.config.diagonal_span_penalty and self.config.let_ring_bonus > 0)
-        # Per-song memo of step scores (scottvr, 2026-11-07): pieces repeat their progressions,
-        # so the same (fingering, previous, gap) comes round again; hit rates 27-78% measured.
-        _score, _memo = self._score_fingering, {}
-        def sc(f, p, pp, gap=None):
+        emit, trans, dot = self.emission_features, self.transition_features, self.score_features
+        E = self.EMISSION
+        w_e, w_t = weights[:E], weights[E:]
+        emis = memo.setdefault("emission", {})      # fingering -> emission features
+        pairs = memo.setdefault("transition", {})   # (fingering, prev, gap) -> transition features
+
+        DIAG = self.FEATURE_NAMES.index("diagonal_break") - E
+
+        def sc(f, p, pp, gap=None, broken=False):
+            """Step score; ``broken`` re-scores the memoised pair with the diagonal-break
+            feature set, which is exactly what the true f_{t-2} would have done to it
+            (same term order, so the same bits as the plain scorer)."""
+            e = emis.get(f)
+            if e is None:
+                e = emis[f] = emit(f)
             if pp is not None:
-                return _score(f, p, pp, gap)
+                return dot(e, w_e, trans(f, p, pp, gap), w_t)
             key = (f, p, gap)
-            v = _memo.get(key)
+            v = pairs.get(key)
             if v is None:
-                v = _memo[key] = _score(f, p, None, gap)
-            return v
-        # M08: the time each stage's hand move had, a per-stage constant (None = time base off)
-        gaps = [None] + [self._gap_seconds(kept[t - 1], kept[t]) for t in range(1, T)]
+                v = pairs[key] = trans(f, p, None, gap)
+            if broken:
+                v = v[:DIAG] + (1.0,) + v[DIAG + 1:]
+            return dot(e, w_e, v, w_t)
 
         BP = [dict() for _ in range(T)]
-
-        # stage 0: virtual predecessor; emission = score(f, None, None)
         V = {}
         for j, fj in enumerate(cand[0]):
             V[(NONE, j)] = sc(fj, None, None)
             BP[0][(NONE, j)] = None
-
-        # stage 1: prev_prev is still None (matches greedy at t=1)
         if T > 1:
             Vn = {}
             for j, fj in enumerate(cand[1]):
@@ -477,23 +531,14 @@ class GuitarMapper:
                         BP[1][st] = (NONE, i)
             V = Vn
 
-        # stages t >= 2: ordered pair-state (f_{t-1}, f_t).
-        #
-        # Both branches below are exact rewrites of the plain triple loop
-        # "for k, for j, for i: V[(i, j)] + score(f_k, f_j, f_i)", with the same
-        # tie-break (among equal values, the smallest i), so the path and its
-        # score are identical; tests/mapper/test_viterbi_equivalence.py holds the
-        # plain loop as the oracle. The rewrites remove a factor of K_{t-2} from
-        # the work on chordal music, where K reaches the hundreds.
         ranges = [[self._fretted_range(f) for f in cs] for cs in cand] if second_order else None
         for t in range(2, T):
             Vn = {}
-            prev_c, pp_c = cand[t - 1], cand[t - 2]
+            prev_c = cand[t - 1]
             if second_order:
-                # The scorer reads f_{t-2} only through the lowest and highest fretted
-                # fret it carries (the combined-span check), so f_{t-2} candidates that
-                # share that pair are interchangeable: keep the best path value per
-                # (pair, j) and score once per bucket instead of once per candidate.
+                # f_{t-2} matters only through its (lowest, highest) fretted fret, so bucket
+                # the predecessors by that and score once per (f_{t-1}, f_t) pair, adding the
+                # flat t-2 delta per bucket.
                 keys = ranges[t - 2]
                 buckets: List[dict] = [dict() for _ in prev_c]   # j -> {key: (V, i)}
                 for (i, j), v in V.items():
@@ -504,14 +549,18 @@ class GuitarMapper:
                 for k, fk in enumerate(cand[t]):
                     rk = ranges[t][k]
                     for j, fj in enumerate(prev_c):
-                        # score(f_k, f_j, f_i) == score(f_k, f_j, None) + _t2_delta(...): the
-                        # t-2 term is a flat -1000 the combined-span check may add, nothing else.
                         base = sc(fk, fj, None, gaps[t])
+                        broken = None                        # scored lazily, once per (k, j)
                         rj = ranges[t - 1][j]
                         best_s = None
                         best_i = -1
                         for key, (v, i) in buckets[j].items():
-                            s = v + base + self._t2_delta(rk, rj, key)
+                            if self._t2_delta(rk, rj, key):
+                                if broken is None:
+                                    broken = sc(fk, fj, None, gaps[t], broken=True)
+                                s = v + broken
+                            else:
+                                s = v + base
                             if best_s is None or s > best_s or (s == best_s and i < best_i):
                                 best_s = s
                                 best_i = i
@@ -520,10 +569,8 @@ class GuitarMapper:
                         Vn[(j, k)] = best_s
                         BP[t][(j, k)] = (best_i, j)
             else:
-                # The score is independent of f_{t-2}: the best predecessor of each j
-                # is the same for every k, so find it once per j, then add the step
-                # cost once per (j, k).
-                best_prev: dict = {}                          # j -> (V, i)
+                # the best predecessor of each j is the same for every k
+                best_prev: dict = {}
                 for (i, j), v in V.items():
                     cur = best_prev.get(j)
                     if cur is None or v > cur[0] or (v == cur[0] and i < cur[1]):
@@ -538,26 +585,57 @@ class GuitarMapper:
             V = Vn
 
         if not V:
-            return []
-
-        # termination + traceback (store current-fingering index at each stage)
+            return None, None
         end_state = max(sorted(V, key=lambda s: (s[0], s[1])), key=lambda s: V[s])
-        self.last_path_score = V[end_state]
-        chosen_idx = [0] * T
+        chosen = [0] * T
         st = end_state
         for t in range(T - 1, -1, -1):
-            chosen_idx[t] = st[1]
+            chosen[t] = st[1]
             st = BP[t][st]
+        return chosen, V[end_state]
 
-        # index-aligned write-back
+    def map_multi_string(self, time_groups: List[List[MusicalEvent]]) -> List[MusicalEvent]:
+        """Global-optimum fretboard mapping via Viterbi/DP over a trellis.
+
+        Each time-group is a stage whose nodes are its valid fingerings. Edge and
+        emission costs come from the UNMODIFIED _score_fingering (features x the
+        config's weights), so the DP's objective is identical to greedy's and its
+        optimum is provably >= greedy's."""
+        self.last_path_score = None    # until this call finds a path
+        kept, cand, gaps = self._trellis(time_groups)
+        chosen, score = self._viterbi(cand, gaps, self.step_weights(), {})
+        if chosen is None:
+            return []
+        self.last_path_score = score
         out: List[MusicalEvent] = []
         for t, g2 in enumerate(kept):
-            f = cand[t][chosen_idx[t]]
+            f = cand[t][chosen[t]]
             for i, ev in enumerate(g2):
                 ev.fret, ev.string = f[i].fret, f[i].string
             self._report_no_fit(g2, f)
             out.extend(g2)
         return out
+
+    def map_paths_for_weights(self, time_groups: List[List[MusicalEvent]],
+                              weight_vectors: List[Tuple[float, ...]]):
+        """The best path under each weight vector, from ONE feature pass: the trellis is
+        built once and step features are memoised across all the vectors (research use:
+        knob sweeps, weight fits). Returns, per vector, (fingerings per kept group, path
+        score, kept groups). Structural settings come from this mapper's config and are
+        shared by every vector: sweet-spot bounds, the unplayable span, ignore-open, the
+        diagonal-span flag and whether let-ring is on at all (the second-order gate), so
+        a vector that turns let-ring on or off against the config is not a faithful
+        stand-in for a mapper built with that config. Weights are the exchange rates:
+        span, position, barre, travel, string switch, ringing, fretted-open. Events are
+        not written back."""
+        kept, cand, gaps = self._trellis(time_groups)
+        memo: dict = {}
+        results = []
+        for w in weight_vectors:
+            chosen, score = self._viterbi(cand, gaps, tuple(w), memo)
+            path = None if chosen is None else [cand[t][chosen[t]] for t in range(len(kept))]
+            results.append((path, score, kept))
+        return results
 
     def _map_multi_string_greedy(self, time_groups: List[List[MusicalEvent]]) -> List[MusicalEvent]:
         """Legacy greedy per-step mapping, kept behind --optimizer greedy.

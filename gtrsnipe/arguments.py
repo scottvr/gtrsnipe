@@ -832,6 +832,13 @@ def setup_parser() -> ArgumentParser:
         help="ASCII tab output: a line of note lengths over each row (W H q e s t; a dot adds "
              "half), on top of any --tab-rhythm. Read back when the tab is used as input."
     )
+    parser.add_argument(
+        "--number-bars", type=int, nargs="?", const=1, default=0, metavar="N",
+        help="ASCII tab output: bar numbers over the staff, at the first bar of every row and "
+             "then every Nth bar (1, N+1, 2N+1, ...; default when given: every bar). Bars count "
+             "from 1 at the first bar written, as the rhythm legend counts them, so a pickup is "
+             "bar 1. The same numbers name bars in gtrsnipe-research score --bars."
+    )
     add_key_arg(parser)
     parser.add_argument(
         "--name-chords",

@@ -42,7 +42,9 @@ Hori & Sagayama 2016), and estimating how hard a tab is to play has a smaller, n
   answered there, including hand position as the index finger (2026-11-07);
 - the difficulty literature, [`literature/LITERATURE-difficulty.md`](literature/LITERATURE-difficulty.md),
   and the first cut of a tab difficulty measure (M03), `gtrsnipe-research difficulty`;
-- the commands: `gtrsnipe-research sweep`, `optimizers`, `difficulty`.
+- the commands: `gtrsnipe-research sweep`, `optimizers`, `difficulty`, and `score` (a tab's
+  fingering scored bar by bar with the mapper's own features x weights, beside the mapper's
+  fingering of the same notes, with the single-knob change that would make a bar tie).
 
 ## Where the claims stand (2026-09-30)
 
